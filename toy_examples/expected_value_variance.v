@@ -2,7 +2,7 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
 From mathcomp Require Import reals.
-Require Import fdist proba.
+Require Import ssralg_ext fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2 *)
 
@@ -15,6 +15,10 @@ Local Open Scope ring_scope.
 Local Open Scope ring_scope.
 
 Import GRing.Theory.
+
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
 
 Section expected_value_variance.
 
@@ -91,14 +95,14 @@ Local Open Scope proba_scope.
 
 Definition d : {fdist 'I_3} := FDist.mk pmf01.
 
-Definition X : {RV d -> R} := (fun i => i.+1%:R).
+Definition X : {RV d -> R^o} := (fun i => i.+1%:R).
 
 Lemma expected : `E X = 5/3.
 Proof.
 rewrite /Ex.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addr0.
-rewrite /X mul1r.
+rewrite /X/= !scaler1.
 rewrite /f !ffunE /= ifT; last by I3_eq.
 rewrite (_ : (bump 0 0).+1%:R = 2) //.
 rewrite /= ifF; last by I3_neq.
@@ -107,6 +111,7 @@ rewrite (_ : (bump 0 (bump 0 0)).+1%:R = 3)//.
 rewrite /f /= ifF; last by I3_neq.
 rewrite ifF; last by I3_neq.
 rewrite ifT; last by I3_eq.
+rewrite -!mulr_regl.
 lra.
 Qed.
 
@@ -116,10 +121,10 @@ rewrite VarE.
 rewrite expected.
 rewrite /Ex /X.
 do 3 rewrite big_ord_recl.
-rewrite big_ord0 addr0 /=.
+rewrite big_ord0 addr0 -!ssralg_ext.mulr_regl /=.
 rewrite /sq_RV /comp_RV /=.
-rewrite expr1n mul1r.
 rewrite {1}/pmf !ffunE /=.
+rewrite expr1n.
 rewrite ifT; last by I3_eq.
 rewrite (_ : (bump 0 0).+1%:R = 2) //.
 rewrite /f /=.
@@ -133,4 +138,3 @@ lra.
 Qed.
 
 End expected_value_variance.
-

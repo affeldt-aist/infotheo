@@ -20,6 +20,10 @@ Local Open Scope proba_scope.
 
 Import Order.POrderTheory Order.Theory Num.Theory GRing.Theory.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 (**md**************************************************************************)
 (* # resilience, robustmean                                                   *)
 (*                                                                            *)
@@ -164,27 +168,27 @@ Qed.
 Lemma cEx_ExInd (X : {RV P -> R}) F :
   `E_[X | F] = `E (X `* Ind (A:=U) F) / Pr P F.
 Proof.
-rewrite /Pr /cEx (* need some lemmas to avoid unfolds *) -big_distrl /=.
+rewrite /cEx (* need some lemmas to avoid unfolds *) -big_distrl /=.
 apply: congr2=> //.
 under eq_bigr => i _.
-  rewrite big_distrr/=.
+  rewrite big_distrl.
   have -> :
-    \sum_(i0 in finset (preim X (pred1 i)) :&: F) (i * P i0) =
+    \sum_(i0 in finset (preim X (pred1 i)) :&: F) (P i0 * i) =
     \sum_(i0 in finset (preim X (pred1 i)) :&: F)
-     (X i0 * @Ind _ U F i0 * P i0).
+     (P i0 * (X i0 * @Ind _ U F i0)).
     apply congr_big => // i0.
     rewrite in_setI /Ind inE/= => /andP[/eqP -> ->].
     by rewrite mulr1.
   have H1 :
-    \sum_(i0 in finset (preim X (pred1 i)) :\: F) X i0 * Ind F i0 * P i0 = 0.
+    \sum_(i0 in finset (preim X (pred1 i)) :\: F) P i0 * (X i0 * Ind F i0) = 0.
   (* This should be true because all elements of the sum are 0 *)
     rewrite big1 // => i1.
     rewrite in_setD => /andP [H2 H3].
-    by rewrite /Ind (negbTE H2) mulr0 mul0r.
+    by rewrite /Ind (negbTE H2) !mulr0.
   have :
-    \sum_(i0 in finset (preim X (pred1 i))) X i0 * Ind F i0 * P i0 =
-    \sum_(i0 in finset (preim X (pred1 i)) :&: F) X i0 * Ind F i0 * P i0 +
-    \sum_(i0 in finset (preim X (pred1 i)) :\: F) X i0 * Ind F i0 * P i0
+    \sum_(i0 in finset (preim X (pred1 i))) P i0 * (X i0 * Ind F i0) =
+    \sum_(i0 in finset (preim X (pred1 i)) :&: F) P i0 * (X i0 * Ind F i0) +
+    \sum_(i0 in finset (preim X (pred1 i)) :\: F) P i0 * (X i0 * Ind F i0)
     by apply: big_setID.
   rewrite H1 addr0 => <-.
   under eq_bigl do rewrite inE.
@@ -192,19 +196,19 @@ under eq_bigr => i _.
 by rewrite -partition_big_fin_img.
 Qed.
 
-Lemma cExE (X : {RV P -> R}) F : `E_[X | F] = (\sum_(u in F) X u * P u) / Pr P F.
+Lemma cExE (X : {RV P -> R}) F : `E_[X | F] = (\sum_(u in F) P u * X u) / Pr P F.
 Proof.
 rewrite cEx_ExInd.
 congr (_ / _).
 rewrite /Ex /ambient_dist /Ind.
-under eq_bigr do rewrite /mul_RV 2!fun_if if_arg mulr0 mul0r mulr1.
+under eq_bigr do rewrite /mul_RV 2!fun_if mulr0 scaler0 mulr1.
 rewrite [in RHS]big_mkcond /=.
 exact: eq_bigr.
 Qed.
 
 Lemma Ex_square_expansion a b (X Y : {RV P -> R}):
   `E ((a `cst* X `+ b `cst* Y) `^2) =
-  a * a * `E (X `^2) + b * b * `E (Y `^2) + 2 * a * b * `E (X `* Y:{RV P -> R}).
+  a * a * `E (X `^2) + b * b * `E (Y `^2) + 2 * a * b * `E (X `* Y).
 Proof.
 suff : `E ((a `cst* X `+ b `cst* Y) `^2) =
        `E ((a * a) `cst* (X `^2) `+
@@ -212,25 +216,26 @@ suff : `E ((a `cst* X `+ b `cst* Y) `^2) =
   by rewrite !E_add_RV !E_scalel_RV.
 apply eq_bigr => i H.
 unfold ambient_dist, "`cst*", "`+", "`^2", "`o", "^", "`*".
-rewrite !expr2 /=.
+rewrite !expr2 /= -!mulr_regl.
 lra.
 Qed.
 
-Lemma Ex_square_eq0 X :
-  (forall x, X x = 0 \/ P x = 0) <-> `E (X `^2 : {RV P -> R}) = 0.
+Lemma Ex_square_eq0 (X : {RV P -> R}) :
+  (forall x, X x = 0 \/ P x = 0) <-> `E (X `^2) = 0.
 Proof.
 split=> [XP|EX20].
 - rewrite /Ex big1// => u _.
-  have [|->] := XP u; last by rewrite mulr0.
-  by rewrite sq_RVE /mul_RV=> ->; rewrite !mul0r.
+  have [|->] := XP u; last by rewrite scale0r.
+  by rewrite sq_RVE /mul_RV=> ->; rewrite mulr0 scaler0.
 - move=> x; rewrite !(rwP eqP); apply/orP.
   rewrite -(sqrf_eq0 (X x)) (_ : _ ^+ 2 = (X `^2: {RV P -> R}) x) // -mulf_eq0.
-  have -> // := psumr_eq0P _ EX20 => *.
-  by rewrite mulr_ge0 // sq_RV_ge0.
+  rewrite mulrC mulr_regl.
+  have -> // := psumr_eq0P _ EX20.
+  by move=> i _; rewrite -mulr_regl mulr_ge0 // sq_RV_ge0.
 Qed.
 
 Lemma Cauchy_Schwarz_proba (X Y : {RV P -> R}):
-  (`E (X `* Y : {RV P -> R})) ^+ 2 <= `E (X `^2) * `E (Y `^2).
+  (`E (X `* Y)) ^+ 2 <= `E (X `^2) * `E (Y `^2).
 Proof.
 pose a : R := Num.sqrt (`E (Y `^2)).
 pose b : R := Num.sqrt (`E (X `^2)).
@@ -241,22 +246,22 @@ have H2ab : 2 * a * b * (b * a) = a * a * `E (X `^2) + b * b * `E (Y `^2).
 have [|a0] := eqVneq a 0.
   move/eqP; rewrite sqrtr_eq0. move/(conj EYge0)/andP/le_anti/esym=> a0.
   have HY : forall y, Y y = 0 \/ P y = 0 by apply/Ex_square_eq0/a0.
-  have -> : `E (X `* Y: {RV P -> R}) = 0.
+  have -> : `E (X `* Y) = 0.
     apply/eqP.
     rewrite psumr_eq0.
       apply/allP => u _; rewrite inE /=.
-      by case: (HY u) => ->; rewrite ?mulr0 ?mul0r.
+      by case: (HY u) => ->; rewrite ?mulr0 ?scaler0 ?scale0r.
     move => u _; rewrite /= .
-    by case : (HY u) => -> ; rewrite ?mulr0 ?mul0r.
+    by case : (HY u) => -> ; rewrite ?mulr0 ?scaler0 ?scale0r.
   by rewrite expr0n; exact/mulr_ge0.
 have [|b0] := eqVneq b 0.
   move/eqP; rewrite sqrtr_eq0. move/(conj EXge0)/andP/le_anti/esym=> b0.
   have HX : forall x, X x = 0 \/ P x = 0 by apply /Ex_square_eq0/b0.
-  have -> : `E (X `* Y: {RV P -> R}) = 0.
+  have -> : `E (X `* Y) = 0.
     apply/eqP; rewrite psumr_eq0 /mul_RV; last first.
-      by move=> u _; case : (HX u) => -> ; rewrite ?mulr0 ?mul0r.
+      by move=> u _; case : (HX u) => -> ; rewrite ?mul0r ?scaler0 ?scale0r.
     apply/allP => u _; rewrite inE/=.
-    by case : (HX u) => -> ; rewrite ?mulr0 ?mul0r.
+    by case : (HX u) => -> ; rewrite ?mul0r ?scaler0 ?scale0r.
   by rewrite expr0n; exact/mulr_ge0.
 have {}a0 : 0 < a. (*removes a0 hypothesis and reuse it*)
   by rewrite lt_neqAle eq_sym; apply/andP; split=> //; exact/sqrtr_ge0.
@@ -291,16 +296,16 @@ Lemma cEx_trans_sub_RV (X : {RV P -> R}) m F : Pr P F != 0 ->
 Proof.
 move=> PF0.
 rewrite !cExE.
-under eq_bigr do rewrite /trans_sub_RV mulrDl.
+under eq_bigr do rewrite /trans_sub_RV mulrDr.
 rewrite big_split/= mulrDl; congr (_ + _).
-by rewrite -big_distrr /= -mulrA divff // mulr1.
+by rewrite -big_distrl /= -mulrAC divff // mul1r.
 Qed.
 
 Lemma cEx_sub (X : {RV P -> R}) (F G: {set U}) :
   0 < Pr P F ->
   F \subset G ->
   `| `E_[ X | F ] - `E_[X | G] |
-= `| `E ((X `-cst `E_[X | G]) `* Ind F : {RV P -> R}) | / Pr P F.
+= `| `E ((X `-cst `E_[X | G]) `* Ind F) | / Pr P F.
 Proof.
 move=> PrPF_gt0 FsubG.
 rewrite -[X in _ / X]ger0_norm ?ltW // -normf_div.
@@ -328,7 +333,7 @@ have [H|] := boolP (0 < Pr P F)%R; last first.
   rewrite -leNgt.
   have:= Pr_ge0 P F => /[conj] /andP /le_anti H.
   rewrite /cVar /cEx; apply big_ind; [by []|exact: addr_ge0|move=> i _].
-  by rewrite setIC Pr_domin_setI // mulr0 mul0r.
+  by rewrite setIC Pr_domin_setI // !mul0r.
 rewrite /cVar cEx_ExInd mulr_ge0 ?invr_ge0 ?(ltW H) //.
 apply/Ex_ge0=> u /=.
 by rewrite mulr_ge0 ?Ind_ge0 // sq_RV_ge0.
@@ -384,7 +389,7 @@ move: (@cEx_cVar X F [set: U] H) => /=.
 by rewrite Pr_setT mulr1 subsetT; apply.
 Qed.
 
-Lemma cEx_cptl (X: {RV P -> R}) F:
+Lemma cEx_cptl (X : {RV P -> R}) F:
   0 < Pr P F -> Pr P F < 1 ->
     `E_[X | F] * Pr P F + `E_[X | (~: F)] * Pr P (~: F) = `E X.
 Proof.
@@ -395,10 +400,10 @@ rewrite mulVf ?Pr_setC ?subr_eq0 1?eq_sym ?neq_lt ?PrFlt1 // !mulr1.
 rewrite /Ex -big_split /=.
 apply: eq_bigr=> i _.
 rewrite /Ind inE.
-by case: ifP=> _ /=; rewrite mulr1 mulr0 mul0r ?addr0 ?add0r.
+by case: ifP=> _ /=; rewrite mulr1 mulr0 scaler0 ?addr0 ?add0r.
 Qed.
 
-Lemma cEx_Inv_int (X: {RV P -> R}) F:
+Lemma cEx_Inv_int (X : {RV P -> R}) F:
 0 < Pr P F -> Pr P F < 1 ->
   Pr P F * (`E_[X | F] - `E X) = Pr P (~: F) * - (`E_[X | (~: F)] - `E X).
 Proof.
@@ -431,7 +436,7 @@ by rewrite mul0r -cEx_sub ?lt0Pr// subrr normr0.
 Qed.
 
 (* NB: not used *)
-Lemma cEx_Inv (X: {RV P -> R}) F :
+Lemma cEx_Inv (X : {RV P -> R}) F :
   0 < Pr P F -> Pr P F < 1 ->
   `| `E_[X | F] - `E X| = (1 - Pr P F) / Pr P F * `| `E_[X | (~: F)] - `E X|.
 Proof.
@@ -453,8 +458,8 @@ Proof.
 rewrite !cEx_ExInd -mulrDl.
 congr (_ * _).
 rewrite -E_add_RV.
-  apply congr_big => // i HiU.
-  by rewrite /mul_RV mulrDl.
+apply congr_big => // i HiU.
+by rewrite /mul_RV mulrDl.
 Qed.
 
 Lemma cEx_sub_RV (X Y: {RV P -> R}) F: `E_[X `- Y | F] = `E_[X|F] - `E_[Y|F].
@@ -482,7 +487,7 @@ Lemma cEx_scaler_RV (X : {RV (P) -> (R)}) (k : R) F:
 Proof.
 rewrite !cEx_ExInd mul_RVAC mulrAC /Ex; congr (_ / _).
 rewrite big_distrl /=.
-by under [LHS]eq_bigr do rewrite /= mulrAC.
+by under [RHS]eq_bigr do rewrite -mulrA.
 Qed.
 
 Lemma cEx_scalel_RV (X : {RV (P) -> (R)}) (k : R) F:
@@ -498,7 +503,7 @@ Lemma cEx_trans_RV_id_rem (X: {RV P -> R}) m F:
 Proof.
 rewrite !cEx_ExInd; congr *%R; apply: eq_bigr => a _.
 rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scalel_RV /=.
-lra.
+by rewrite -!mulr_regl; lra.
 Qed.
 
 Lemma cEx_Pr_eq0 (X: {RV P -> R}) F : Pr P F = 0 -> `E_[X | F] = 0.
@@ -558,7 +563,7 @@ rewrite !cExE -!mulrA !mulVf // !mulr1 -big_union_nondisj /=; last first.
   have/setIidPl/(congr1 (Pr P)):= FsubGUH.
   rewrite setIUr Pr_setU FGHF=> /eqP.
   rewrite -subr_eq0 addrAC subrr add0r oppr_eq0 => /eqP /psumr_eq0P P0.
-  by rewrite big1 // => *; rewrite P0 // mulr0.
+  by rewrite big1 // => *; rewrite P0 // mul0r.
 by rewrite -setIUr; have/setIidPl->:= FsubGUH.
 Qed.
 
@@ -720,7 +725,7 @@ have Exbad_bound : 0 < Pr P (bad :\: drop) ->
   rewrite 2!cEx_ExInd -mulNr mulrA -(I_double P) -mulrDl big_distrr /=.
   rewrite /Ex -big_split /= [X in `|X / _|](_ : _ =
       \sum_(i in U) (X i - mu) * @Ind _ U (bad :\: drop) i * P i); last first.
-    by apply: eq_bigr => u _; rewrite -mulrA mulNr -mulrBl mulrA.
+    by apply: eq_bigr => u _; rewrite -!mulr_regl; lra.
   rewrite normrM (@ger0_norm _ _^-1); last by rewrite ltW // invr_gt0.
   rewrite ler_pdivrMr //; apply: (le_trans (ler_norm_sum _ _ _)).
   rewrite (bigID [pred i | i \in bad :\: drop]) /=.

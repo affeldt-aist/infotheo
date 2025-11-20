@@ -32,6 +32,10 @@ Local Open Scope ring_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory Num.Def Order.TotalTheory.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 (* TODO: move to log_sum? *)
 Section log_sum_ord.
 Variable R : realType.
@@ -264,7 +268,6 @@ rewrite /Ex (partition_big (inordf (size \o f)) (fun i => i \in 'I_Nmax.+1)) //=
 apply: eq_bigr => i _.
 rewrite ffunE pfwd1E.
 rewrite mulrC big_distrl /=.
-under eq_bigr do rewrite mulrC.
 apply: congr_big=>[//| x| x]; last by move/eqP<-; rewrite inordfE.
 rewrite inE; apply/eqP/eqP=> [<-|].
   by rewrite inordfE /X/=.
@@ -275,8 +278,8 @@ Qed.
 Lemma le_1_EX : 1 <= `E X.
 Proof.
 rewrite -(FDist.f1 P); apply: ler_sum => i _.
-rewrite -{1}(mul1r (P i)).
-apply ler_wpM2r; first exact/FDist.ge0.
+rewrite -{1}(mulr1 (P i)).
+apply ler_wpM2l; first exact/FDist.ge0.
 by move: (Xpos i); rewrite (_ : 1 = 1%:R) //= (_ : 0 = 0%:R) // ltr_nat ler_nat.
 Qed.
 
@@ -293,7 +296,8 @@ have eq_0_P : forall a, X a <> 1 -> 0 = P a.
     apply/ler_wpM2r; first exact/FDist.ge0.
     by move: (Xpos i); rewrite (_ : 1 = 1%:R) //= (_ : 0 = 0%:R) // ltr_nat ler_nat.
   have [//|] := eqVneq (P a) 0.
-  have : (size (f a))%:R * P a = P a by rewrite (H EX1 a).
+  have : (size (f a))%:R * P a = P a.
+    by rewrite H// -EX1; under eq_bigr do rewrite mulrC mulr_regl.
   rewrite -{2}(mul1r (P a)) => + Pa0.
   move=> /(congr1 (fun x => x * (P a)^-1)).
   by rewrite -!mulrA divff// !mulr1.
@@ -718,7 +722,7 @@ rewrite /E_leng_cw /=  /fm.
 pose X := (fun x => x%:R : R) \o size \o f.
 elim: m => [|m'].
   rewrite mul0r /Ex big1 // => i _.
-  rewrite fdist_rV0 ?mulr1.
+  rewrite fdist_rV0 scale1r.
   rewrite /comp_RV.
   rewrite [tuple_of_row]lock /= -lock.
   rewrite (_ : tuple_of_row i = [tuple]) //.

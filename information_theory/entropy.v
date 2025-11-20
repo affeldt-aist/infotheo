@@ -54,10 +54,14 @@ Local Open Scope ring_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 Section entropy_definition.
 Variables (R : realType) (A : finType) (P : R.-fdist A).
 
-Definition entropy : R^o := - \sum_(a in A) P a * log (P a).
+Definition entropy := - \sum_(a in A) P a * log (P a).
 Local Notation "'`H'" := (entropy).
 
 (** the entropy is non-negative: *)
@@ -86,7 +90,7 @@ Context (R : realType) (A : finType).
 Lemma entropy_Ex (P : R.-fdist A) : `H P = `E (`-- (`log P)).
 Proof.
 rewrite /entropy /log_RV /= big_morph_oppr.
-by apply eq_bigr => a _; rewrite mulrC -mulNr.
+by apply eq_bigr => a _; rewrite -mulrN.
 Qed.
 
 (** the entropy is the natural entropy scaled by ln(2): *)
@@ -309,7 +313,7 @@ Definition centropy1 a := - \sum_(b in B)
   \Pr_QP [ [set b] | [set a] ] * log (\Pr_QP [ [set b] | [set a] ]).
 
 (*eqn 2.11 *)
-Definition centropy : R^o := \sum_(a in A) (QP`2) a * centropy1 a.
+Definition centropy : R := \sum_(a in A) (QP`2) a * centropy1 a.
 
 End conditional_entropy_def.
 #[deprecated(since="infotheo 0.9.2", note="renamed to `centropy1`")]

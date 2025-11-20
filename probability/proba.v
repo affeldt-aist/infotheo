@@ -144,6 +144,10 @@ Local Open Scope proba_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 (* TODO: mv *)
 Lemma m1powD {R : pzRingType} k :
   k <> 0%nat -> (-1) ^+ (k-1) = - (-1) ^+ k :> R.
@@ -960,31 +964,28 @@ Definition cast_fun_rV10 U (T : eqType) (Xs : 'rV[U -> T]_1) : 'rV[U]_1 -> T :=
 Local Close Scope vec_ext_scope.
 
 Section expected_value_def.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
+Context {R : realType} {V : lmodType R}.
+Variables (U : finType) (P : R.-fdist U) (X : {RV P -> V}).
 
-Definition Ex := \sum_(u in U) X u * P u.
-
-Lemma Ex_ge0 : (forall u, 0 <= X u) -> 0 <= Ex.
-Proof. move=> H; apply/sumr_ge0 => u _; rewrite mulr_ge0//; exact/RleP. Qed.
+Definition Ex := \sum_(u in U) P u *: X u.
 
 End expected_value_def.
-Arguments Ex {R U} _ _.
+Arguments Ex {R V U} _ _.
 
-Notation "'`E'" := (@Ex _ _ _) : proba_scope.
+Notation "'`E'" := (@Ex _ _ _ _) : proba_scope.
 
 (* Alternative definition of the expected value: *)
 Section Ex_alt.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
+Context {R : realType} {V : lmodType R}.
+Variables (U : finType) (P : R.-fdist U) (X : {RV P -> V}).
 
-Definition Ex_alt := \sum_(r <- fin_img X) r * `Pr[ X = r ].
+Definition Ex_alt := \sum_(r <- fin_img X) `Pr[ X = r ] *: r.
 
 Lemma Ex_altE : Ex_alt = `E X.
 Proof.
 rewrite /Ex.
-transitivity (\sum_(r <- fin_img X) \sum_(u in U | X u == r) (X u * P u)).
-  apply eq_bigr => /= r _; rewrite pfwd1E big_distrr /=.
+transitivity (\sum_(r <- fin_img X) \sum_(u in U | X u == r) (P u *: X u)).
+  apply eq_bigr => /= r _; rewrite pfwd1E scaler_suml /=.
   by apply eq_big => //= a; rewrite !inE // => /eqP ->.
 by rewrite -partition_big_fin_img.
 Qed.
@@ -995,56 +996,59 @@ Section expected_value_prop.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X Y : {RV P -> R}).
 
+Lemma Ex_ge0 : (forall u, 0 <= X u) -> 0 <= `E X.
+Proof. move=> H; apply/sumr_ge0 => u _; rewrite mulr_ge0//; exact/RleP. Qed.
+
 Lemma E_opp_RV : `E (`-- X) = - `E X.
 Proof.
-by rewrite /Ex/= big_morph_oppr/=; apply: eq_bigr => u _; rewrite mulNr.
+by rewrite /Ex/= big_morph_oppr/=; apply: eq_bigr => u _; rewrite scalerN.
 Qed.
 
 Lemma E_scalel_RV k : `E (k `cst* X) = k * `E X.
 Proof.
-by rewrite /scalel_RV {2}/Ex big_distrr /=; apply eq_bigr => a _; rewrite mulrA.
+rewrite /scalel_RV {2}/Ex big_distrr /=.
+by apply eq_bigr => a _; rewrite scalerAr.
 Qed.
 
 Lemma E_scaler_RV k : `E (X `*cst k) = `E X * k.
 Proof.
-by rewrite big_distrl /=; apply: eq_bigr => i Hi; rewrite mulrAC.
+by rewrite big_distrl /=; apply: eq_bigr => i Hi; rewrite scalerAl.
 Qed.
 
 Lemma E_add_RV : `E (X `+ Y) = `E X + `E Y.
-Proof. rewrite -big_split; apply eq_bigr => a _ /=; by rewrite -mulrDl. Qed.
+Proof. by rewrite -big_split; apply eq_bigr => a _ /=; rewrite scalerDr. Qed.
 
 Lemma E_sumR I r p (Z : I -> {RV P -> R}) :
   `E (sumR_RV r p Z) = \sum_(i <- r | p i) (`E (Z i)).
 Proof.
 rewrite /Ex.
-under eq_bigr do rewrite big_distrl.
-rewrite /=.
+under eq_bigr do rewrite scaler_sumr.
 by rewrite exchange_big /=; apply: eq_bigr => i Hi.
 Qed.
 
 Lemma E_sub_RV : `E (X `- Y) = `E X - `E Y.
 Proof.
 rewrite {3}/Ex big_morph_oppr -big_split /=.
-by apply eq_bigr => u _; by rewrite -mulNr -mulrDl.
+by apply eq_bigr => u _; rewrite scalerDr scalerN.
 Qed.
 
-Lemma E_const_RV k : `E (const_RV P k) = k.
-Proof. by rewrite /Ex /const_RV /= -big_distrr /= FDist.f1 mulr1. Qed.
+Lemma E_const_RV k : `E (const_RV P (T := R) k) = k.
+Proof. by rewrite /Ex /const_RV /= -big_distrl /= FDist.f1 mul1r. Qed.
 
 Lemma E_trans_add_RV m : `E (X `+cst m) = `E X + m.
 Proof.
 rewrite /trans_add_RV /=.
-transitivity (\sum_(u in U) (X u * P u + m * P u)).
-  by apply eq_bigr => u _ /=; rewrite mulrDl.
-by rewrite big_split /= -big_distrr /= FDist.f1 mulr1.
+transitivity (\sum_(u in U) (P u *: X u + P u *: m)).
+  by apply eq_bigr => u _ /=; rewrite scalerDr.
+by rewrite big_split /= -big_distrl /= FDist.f1 mul1r.
 Qed.
 
 Lemma E_trans_sub_RV m : `E (X `-cst m) = `E X - m.
 Proof.
 rewrite /trans_sub_RV /=.
-transitivity (\sum_(u in U) (X u * P u + - m * P u)).
-  by apply eq_bigr => u _ /=; rewrite mulrDl.
-by rewrite big_split /= -big_distrr /= FDist.f1 mulr1.
+transitivity (\sum_(u in U) (P u * X u + P u *: - m)).
+  by apply eq_bigr => u _ /=; rewrite scalerDr.
+by rewrite big_split /= -big_distrl /= FDist.f1 mul1r.
 Qed.
 
 Lemma E_trans_RV_id_rem m :
@@ -1052,15 +1056,12 @@ Lemma E_trans_RV_id_rem m :
 Proof.
 apply eq_bigr => a _.
 rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scalel_RV /=.
-by rewrite /ambient_dist; lra.
+by congr (_ *: _); lra.
 Qed.
 
-Lemma E_comp_RV f k : (forall x y, f (x * y) = f x * f y) ->
-  `E (f `o (k `cst* X)) = `E ((f k) `cst* (f `o X)).
+Lemma E_comp_RV (f : R -> R) k : (forall x y, f (x * y) = f x * f y) ->
+  `E (f `o (k `cst* X)) = `E (f k `cst* (f `o X)).
 Proof. by move=> H; rewrite /comp_RV /=; apply eq_bigr => u _; rewrite H. Qed.
-
-Lemma E_comp_RV_ext f : X = Y -> `E (f `o X) = `E (f `o Y).
-Proof. move=> H; by rewrite /comp_RV /= H. Qed.
 
 End expected_value_prop.
 
@@ -1076,7 +1077,7 @@ Context {R : realType}.
 Variable (U : finType) (P : R.-fdist U) (X : {RV P -> R}) (F : {set U}).
 
 Definition cEx :=
-  \sum_(r <- fin_img X) r * Pr P (finset (X @^-1 r) :&: F) / Pr P F.
+  \sum_(r <- fin_img X) Pr P (finset (X @^-1 r) :&: F) * r / Pr P F.
 
 End conditional_expectation_def.
 Notation "`E_[ X | F ]" := (cEx X F).
@@ -1087,20 +1088,20 @@ Variable (U I : finType) (P : R.-fdist U) (X : {RV P -> R}) (F : I -> {set U}).
 Hypothesis dis : forall i j, i != j -> [disjoint F i & F j].
 Hypothesis cov : cover [set F i | i in I] = [set: U].
 
-Lemma Ex_cEx : `E X = \sum_(i in I) `E_[X | F i] * Pr P (F i).
+Lemma Ex_cEx : `E X = \sum_(i in I) Pr P (F i) * `E_[X | F i].
 Proof.
 apply/esym; rewrite /cEx.
 evar (f : I -> R); rewrite (eq_bigr f); last first.
-  move=> i _; rewrite big_distrl /f; reflexivity.
+  move=> i _; rewrite big_distrr /f; reflexivity.
 rewrite {}/f /= (bigID (fun i => Pr P (F i) != 0)) /=.
 rewrite [in X in _ + X = _]big1 ?addr0; last first.
-  by move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _; rewrite mulr0.
+  by move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _; rewrite mul0r.
 transitivity (\sum_(i in I | Pr P (F i) != 0)
-  \sum_(j <- fin_img X) (j * Pr P (finset (X @^-1 j) :&: F i))).
+  \sum_(j <- fin_img X) (Pr P (finset (X @^-1 j) :&: F i)) * j).
   apply: eq_bigr => i Fi0; apply eq_bigr => r _.
-  by rewrite -mulrA mulVf ?mulr1.
+  by rewrite -mulrCA mulfV ?mulr1.
 rewrite -Ex_altE /Ex_alt exchange_big /=; apply: eq_bigr => r _.
-rewrite -big_distrr /=; congr (_ * _).
+rewrite -big_distrl /=; congr (_ * _).
 transitivity (\sum_(i in I) Pr P (finset (X @^-1 r) :&: F i)).
   rewrite big_mkcond /=; apply eq_bigr => i _.
   case: ifPn => //; rewrite negbK => /eqP PFi0.
@@ -1162,8 +1163,8 @@ Qed.
 Lemma E_Ind (P : R.-fdist A) s : `E (Ind s : {RV P -> R}) = Pr P s.
 Proof.
 rewrite /Ex /Ind /Pr (bigID (mem s)) /=.
-rewrite [X in _ + X = _]big1; last by move=> i /negbTE ->; rewrite mul0r.
-by rewrite addr0; apply: eq_bigr => i ->; rewrite mul1r.
+rewrite [X in _ + X = _]big1; last by move=> i /negbTE ->; rewrite scaler0.
+by rewrite addr0; apply: eq_bigr => i ->; rewrite -[RHS]mulr1 mulr_regl.
 Qed.
 
 End Ind.
@@ -1264,12 +1265,14 @@ Theorem Pr_bigcup_incl_excl n (S : 'I_n -> {set A}) :
 Proof.
 rewrite -E_Ind /=.
 rewrite /Ex.
-under [LHS]eq_bigr do rewrite Ind_bigcup_incl_excl.
-under [LHS]eq_bigr do rewrite big_distrl.
-rewrite /=.
+under [LHS]eq_bigr => i _.
+  rewrite Ind_bigcup_incl_excl scaler_sumr.
+  under eq_bigr => j _ do rewrite scalerAr.
+  over.
 rewrite exchange_big /=.
 apply: eq_bigr => i _.
-by rewrite -E_SumIndCap -E_scalel_RV.
+rewrite -E_SumIndCap -E_scalel_RV.
+by under [LHS]eq_bigr => j _ do rewrite -scalerAr.
 Qed.
 
 End probability_inclusion_exclusion.
@@ -1279,19 +1282,19 @@ Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 Hypothesis X_ge0 : forall u, 0 <= X u.
 
-Lemma Ex_lb (r : R) : r * `Pr[ X >= r] <= `E X.
+Lemma Ex_lb (r : R) : `Pr[ X >= r] *: r <= `E X.
 Proof.
 rewrite /Ex (bigID [pred a' | X a' >= r]) /= -[a in a <= _]addr0.
 rewrite lerD//; last first.
   by apply/sumr_ge0 => a _; rewrite mulr_ge0//; exact/RleP/X_ge0.
-apply (@le_trans _ _ (\sum_(i | X i >= r) r * P i)).
-  rewrite big_distrr /= le_eqVlt; apply/orP; left; apply/eqP.
+apply (@le_trans _ _ (\sum_(i | X i >= r) P i *: r)).
+  rewrite scaler_suml /= le_eqVlt; apply/orP; left; apply/eqP.
   by apply/eq_bigl => a; rewrite inE.
-by apply: ler_sum => u Xur; exact/ler_wpM2r.
+by apply: ler_sum => u Xur; rewrite -!mulr_regl; exact/ler_wpM2l.
 Qed.
 
 Lemma markov (r : R) : 0 < r -> `Pr[ X >= r ] <= `E X / r.
-Proof. by move=> r0; rewrite ler_pdivlMr // mulrC; exact/Ex_lb. Qed.
+Proof. by move=> r0; rewrite ler_pdivlMr //; exact/Ex_lb. Qed.
 
 End markov_inequality.
 
@@ -1299,12 +1302,12 @@ Section thm61.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}) (phi : R -> R).
 
-Lemma Ex_comp_RV : `E (phi `o X) = \sum_(r <- fin_img X) phi r * `Pr[ X = r ].
+Lemma Ex_comp_RV : `E (phi `o X) = \sum_(r <- fin_img X) `Pr[ X = r ] * phi r.
 Proof.
 rewrite /Ex.
-rewrite (partition_big_fin_img _ X (fun u => (phi `o X) u * P u)) /=.
+rewrite (partition_big_fin_img _ X (fun u => P u *: (phi `o X) u))/=.
 apply: eq_bigr => a _.
-rewrite pfwd1E /Pr big_distrr /=; apply eq_big.
+rewrite pfwd1E /Pr big_distrl /=; apply eq_big.
   by move=> u; rewrite inE.
 by move=> u /eqP Xua; rewrite /comp_RV -Xua.
 Qed.
@@ -1336,11 +1339,10 @@ Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 Lemma Var_scale k : `V (k `cst* X) = k ^+ 2 * `V X.
 Proof.
 rewrite {1}/`V [in X in X = _]/= E_scalel_RV.
-pose Y : {RV P -> R} := k `cst* (X `+cst - `E X).
-rewrite (@E_comp_RV_ext _ _ P ((k `cst* X) `-cst k * `E X) Y) //; last first.
-  rewrite boolp.funeqE => /= x.
-  by rewrite /Y /scalel_RV /= /trans_sub_RV /trans_add_RV; lra.
-by rewrite E_comp_RV ?E_scalel_RV // => *; lra.
+rewrite /Var -[in RHS]E_scalel_RV; congr Ex.
+apply/boolp.funext => x/=.
+rewrite /sq_RV /scalel_RV /trans_sub_RV /trans_add_RV /comp_RV.
+lra.
 Qed.
 
 Lemma Var_trans m : `V (X `+cst m) = `V X.
@@ -1372,13 +1374,13 @@ Proof.
 move=> He; rewrite ler_pdivlMr ?exprn_gt0//.
 rewrite mulrC /Var.
 apply (@le_trans _ _ (\sum_(a in U | `| X a - `E X | >= epsilon)
-    (((X `-cst `E X) `^2) a  * P a))); last first.
+    P a *: (((X `-cst `E X) `^2) a))); last first.
   rewrite /Ex big_mkcondr/=; apply: ler_sum => a _; case: ifPn => // _.
   by apply mulr_ge0 => //; exact: sq_RV_ge0.
 rewrite /Pr big_distrr/= [_ ^+ 2]lock /= -!lock big_mkcond/= [leRHS]big_mkcond/=.
 apply: ler_sum => u _; rewrite inE/=; case: ifPn => //.
 rewrite -!/(_ ^+ 2) => H.
-apply: ler_wpM2r => //=.
+rewrite mulrC ler_wpM2l => //=.
 apply (@le_trans _ _ ((X u - `E X) ^+ 2)); last by rewrite lexx.
 by rewrite -real_normK ?num_real// -[leRHS]real_normK ?num_real// ler_sqr// gtr0_norm.
 Qed.
@@ -2245,19 +2247,19 @@ Let X2' : {RV P -> R} := fun x => X2 (rbehead x).
 Lemma E_sum_2 : X \= X1 @+ X2 -> `E X = `E X1 + `E X2.
 Proof.
 move=> Hsum; transitivity (\sum_(ta in 'rV[A]_n.+2)
-  (X1 (ta ``_ ord0) * P ta + X2 (rbehead ta) * P ta)).
-  by apply eq_bigr => ta _; rewrite Hsum mulrDl.
+  (P ta *: X1 (ta ``_ ord0) + P ta *: X2 (rbehead ta))).
+  by apply eq_bigr => ta _; rewrite Hsum scalerDr.
 rewrite big_split => //=; congr (_ + _).
 - transitivity (\sum_(a in A)
-    (X1 a * \sum_(ta in 'rV_n.+1) (fdist_prod_of_rV P (a, ta)))).
+    (\sum_(ta in 'rV_n.+1) (fdist_prod_of_rV P (a, ta))) * X1 a).
   + rewrite -(big_rV_cons_behead _ xpredT xpredT); apply eq_bigr => a _.
-    rewrite big_distrr /=; apply eq_bigr => i _.
+    rewrite big_distrl /=; apply eq_bigr => i _.
     by rewrite row_mx_row_ord0 fdist_prod_of_rVE.
   + by apply eq_bigr => a _; rewrite fdist_fstE.
 - transitivity (\sum_(ta in 'rV_n.+1)
-    (X2 ta * \sum_(a in A) (fdist_prod_of_rV P (a, ta)))).
+    (\sum_(a in A) (fdist_prod_of_rV P (a, ta))) * X2 ta).
   + rewrite -(big_rV_cons_behead _ xpredT xpredT) exchange_big /=.
-    apply eq_bigr => ta _; rewrite big_distrr /=.
+    apply eq_bigr => ta _; rewrite big_distrl /=.
     by apply eq_bigr => a _; rewrite rbehead_row_mx fdist_prod_of_rVE.
   + by apply eq_bigr => ta _; rewrite fdist_sndE.
 Qed.
@@ -2274,7 +2276,8 @@ apply trans_eq with (\sum_(r <- undup (map X1 (enum A)))
    ( r * r' * `Pr[X1 = r] * `Pr[X2 = r'])); last first.
   rewrite [in RHS]big_distrl /=; apply eq_bigr => i _.
   rewrite big_distrr /=; apply eq_bigr => j _.
-  by rewrite -!mulrA [in RHS](mulrCA _ j).
+  rewrite -!mulr_regl; apply: esym.
+  by rewrite mulrAC mulrA -mulrA (mulrC i) [LHS]mulrC mulrA.
 rewrite -(big_rV_cons_behead _ xpredT xpredT) /=.
 apply trans_eq with (\sum_(a in A) \sum_(j in 'rV[A]_n.+1)
   (X1 a * X2 j * P (row_mx (\row_(k < 1) a) j))).
@@ -2317,12 +2320,12 @@ Proof.
 move=> Hsum Hinde.
 rewrite -![in RHS]Ex_altE.
 transitivity (\sum_(i in 'rV_n.+2)
-  ((X1 (i ``_ ord0) + X2 (rbehead i)) ^+ 2%N * P i)).
+  P i *: ((X1 (i ``_ ord0) + X2 (rbehead i)) ^+ 2%N)).
   apply eq_bigr => i _; rewrite /sq_RV /=.
   by rewrite /comp_RV Hsum.
-transitivity (\sum_(i in 'rV_n.+2) ((X1 (i ``_ ord0)) ^+ 2 +
-    2 * X1 (i ``_ ord0) * X2 (rbehead i) + (X2 (rbehead i)) ^+ 2) * P i).
-  by apply eq_bigr => ? _; rewrite sqrrD -mulrA mulr_natl.
+transitivity (\sum_(i in 'rV_n.+2) P i * ((X1 (i ``_ ord0)) ^+ 2 +
+    2 * X1 (i ``_ ord0) * X2 (rbehead i) + (X2 (rbehead i)) ^+ 2)).
+  by apply eq_bigr => ? _; rewrite sqrrD -mulrA mulr_natl -!mulr_regl.
 transitivity (\sum_(i in 'rV_n.+2) ((X1 (i ``_ ord0)) ^+ 2 * P i + 2 *
   X1 (i ``_ ord0) * X2 (rbehead i) * P i + (X2 (rbehead i)) ^+ 2 * P i)).
   by apply eq_bigr => ? ?; lra.
@@ -2332,7 +2335,7 @@ rewrite !big_split /=; congr (_ + _ + _).
   transitivity (X1 i ^+ 2 * \sum_(j in 'rV_n.+1) (fdist_prod_of_rV P) (i, j)).
   + rewrite big_distrr /=; apply eq_bigr => i0 _.
     by rewrite row_mx_row_ord0 fdist_prod_of_rVE.
-  + by rewrite fdist_fstE.
+  + by rewrite fdist_fstE/= -mulr_regl mulrC.
 - rewrite -mulrA.
   rewrite !Ex_altE.
   rewrite -E_id_rem_helper // big_distrr /=.
@@ -2342,7 +2345,7 @@ rewrite !big_split /=; congr (_ + _ + _).
   transitivity (X2 t ^+ 2 * \sum_(i in A) (fdist_prod_of_rV P) (i, t)).
   + rewrite big_distrr /=; apply eq_bigr => i _.
     by rewrite rbehead_row_mx fdist_prod_of_rVE.
-  + by congr (_ * _); rewrite fdist_sndE.
+  + by rewrite mulrC; congr (_ * _); rewrite fdist_sndE.
 Qed.
 
 Lemma V_sum_2 : X \= X1 @+ X2 -> P |= X1' _|_ X2'  ->
@@ -2371,19 +2374,19 @@ Lemma E_prod_2 : P |= X' _|_ Y' -> `E XmY = `E X * `E Y.
 Proof.
 move=> Hinde.
 transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
-    x * y * `Pr[ XY = (x, y) ]).
-  rewrite /Ex /= (eq_bigr (fun u => X u.1 * Y u.2 * P (u.1, u.2))); last by case.
-  rewrite -(pair_bigA _ (fun u1 u2 => X u1 * Y u2 * P (u1, u2))) /=.
+    `Pr[ XY = (x, y) ] *: (x * y)).
+  rewrite /Ex /= (eq_bigr (fun u => P (u.1, u.2) *: (X u.1 * Y u.2))); last by case.
+  rewrite -(pair_bigA _ (fun u1 u2 => P (u1, u2) *: (X u1 * Y u2))) /=.
   rewrite (partition_big_fin_img _ X) /=; apply eq_bigr => x _.
   rewrite exchange_big /= (partition_big_fin_img _ Y) /=; apply eq_bigr => y _.
-  rewrite pfwd1E /Pr big_distrr /= exchange_big pair_big /=.
+  rewrite pfwd1E /Pr scaler_suml /= exchange_big pair_big /=.
   apply eq_big.
     by move=> -[a b] /=; rewrite inE.
   by case=> a b /= /andP[/eqP -> /eqP ->].
 transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
-    x * y * `Pr[ X = x ] * `Pr[ Y = y ]).
+    `Pr[ X = x ] * `Pr[ Y = y ] *: (x * y)).
   apply eq_bigr => x _; apply eq_bigr => y _.
-  rewrite -!mulrA.
+  rewrite -!mulr_regl.
   have {}Hinde := Hinde x y.
   congr (_ * (_ * _)).
   transitivity (`Pr[ X' = x ] * `Pr[ Y' = y ]); last first.
@@ -2396,7 +2399,7 @@ transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
 rewrite -!Ex_altE.
 rewrite /Ex_alt big_distrl; apply eq_bigr => x _ /=; rewrite big_distrr /=.
 apply eq_bigr=> y _.
-by rewrite -!mulrA; congr (_ * _); rewrite mulrCA.
+by rewrite -mulrA (mulrCA x) -mulr_regl !mulrA.
 Qed.
 
 End thm64.
@@ -2462,11 +2465,14 @@ Lemma prod_dist_inde_RV_rV {R : realType} (A : finType) (P : R.-fdist A)
 Proof.
 have /= := @prod_dist_inde_RV _ _ _ P (P `^ n) _ _ X Y x y.
 rewrite !pfwd1E -!fdist_prod_of_fdist_rV.
-rewrite (_ : [set x0 | _] = (finset (X @^-1 x)) `* (finset (Y @^-1 y))); last first.
+rewrite (_ : [set x0 | _] =
+    (finset (X @^-1 x)) `* (finset (Y @^-1 y))); last first.
   by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
-rewrite Pr_fdist_prod_of_rV (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
+rewrite Pr_fdist_prod_of_rV
+    (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
   by apply/setP => a; rewrite !inE.
-rewrite Pr_fdist_prod_of_rV1 (_ : [set x0 | _] = T`* (finset (Y @^-1 y))); last first.
+rewrite Pr_fdist_prod_of_rV1.
+rewrite (_ : [set x0 | _] = T`* (finset (Y @^-1 y))); last first.
   by apply/setP => a; rewrite !inE.
 move=> Hinde.
 apply: eq_trans.
@@ -2500,7 +2506,8 @@ elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
   apply Eqdep_dec.inj_pair2_eq_dec in H2; last exact Peano_dec.eq_nat_dec.
   subst Z Xs.
   rewrite big_ord_recl.
-  rewrite [X in _ = _ + X](_ : _ = \sum_(i < n.+1) `E (Xs0 ``_ i)); last first.
+  rewrite [X in _ = _ + X](_ : _ =
+      \sum_(i < n.+1) `E (Xs0 ``_ i : {RV P -> R})); last first.
     apply eq_bigr => i _ /=.
     apply eq_bigr => a _ /=.
     rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.

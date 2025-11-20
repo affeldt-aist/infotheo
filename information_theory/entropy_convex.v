@@ -48,7 +48,7 @@ Local Open Scope convex_scope.
 Local Open Scope entropy_scope.
 
 Import Order.POrderTheory GRing.Theory Num.Theory.
-Import numFieldTopology.Exports.
+
 Import numFieldNormedType.Exports.
 
 Section entropy_log_div.
@@ -107,7 +107,7 @@ Definition avg_dom_pair p (x y : dom_pair) : dom_pair :=
   exist _ (ab <| p |> cd) (dom_conv p b_dom_a d_dom_c).
 
 Definition uncurry_dom_pair
-  U (f : {fdist A} -> {fdist A} -> U) (x : dom_pair) : U^o :=
+  U (f : {fdist A} -> {fdist A} -> U) (x : dom_pair) : U :=
   f (sval x).1 (sval x).2.
 
 Let avg := avg_dom_pair.
@@ -206,7 +206,7 @@ Hypothesis cardA_gt0 : (0 < #|A|)%nat.
 Let cardApredS : #|A| = #|A|.-1.+1.
 Proof. by rewrite prednK. Qed.
 
-Lemma entropy_concave : concave_function (fun P : R.-fdist A => `H P).
+Lemma entropy_concave : concave_function (fun P : R.-fdist A => `H P : R^o).
 Proof.
 apply RNconcave_function => p q t; rewrite /convex_function_at.
 rewrite !(entropy_log_div _ cardApredS) [in X in _ <= X]avgRE.
@@ -222,7 +222,6 @@ Module entropy_concave_alternative_proof_binary_case.
 Import classical_sets.
 
 Section realType.
-
 Variable R : realType.
 Local Notation H2 := (@H2 R^o : R^o -> R^o).
 
@@ -291,7 +290,7 @@ Lemma mutual_information_concave :
   concave_function (fun P : {fdist A} => mutual_info (P `X W)).
 Proof.
 suff : concave_function
-  (fun P : {fdist A} => let PQ := fdistX (P `X W) in `H PQ`1 - centropy PQ).
+  (fun P : {fdist A} => let PQ := fdistX (P `X W) in `H PQ`1 - centropy PQ : R^o).
   set f := fun _ => _. set g := fun _ => _.
   suff -> : f = g by [].
   rewrite boolp.funeqE => d.
@@ -303,7 +302,7 @@ apply: R_concave_functionB.
   apply: le_trans (concave_H (p `X W)`2 (q `X W)`2 t).
   under eq_bigr do rewrite fdist_prod2_conv.
   by rewrite lexx.
-suff : affine (fun x : {fdist A} => centropy (fdistX (x `X W))).
+suff : affine (fun x : {fdist A} => centropy (fdistX (x `X W)) : R^o).
   by case/affine_functionP.
 move=> t p q.
 rewrite /= avgRE /centropy /centropy1.

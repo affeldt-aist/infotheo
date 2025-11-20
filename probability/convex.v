@@ -2862,7 +2862,7 @@ Qed.
 Section linear_function_image0.
 Local Open Scope classical_set_scope.
 Local Open Scope ring_scope.
-Variables (R : ringType) (T U : lmodType R).
+Variables (R : pzRingType) (T U : lmodType R).
 
 (* TODO: move to mathcomp *)
 Lemma preimage_add_ker (f : {linear T -> U}) (A: set U) :
