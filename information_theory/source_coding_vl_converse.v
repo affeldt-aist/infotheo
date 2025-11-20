@@ -719,7 +719,7 @@ Qed.
 Lemma ELC_TupleFDist : @E_leng_cw _ _ _ (P `^ n)%fdist fm = m%:R * @E_leng_cw _ _ _ P f.
 Proof.
 rewrite /E_leng_cw /=  /fm.
-pose X : {RV ((P `^ n)%fdist) -> R^o} := (fun x => x%:R : R) \o size \o f.
+pose X : {RV ((P `^ n)%fdist) -> R} := (fun x => x%:R : R) \o size \o f.
 elim: m => [|m'].
   rewrite mul0r /Ex big1 // => i _.
   rewrite fdist_rV0 scale1r.
@@ -739,9 +739,9 @@ elim: m' => [_ |m'' _ IH].
     by apply eq_from_tnth => a; rewrite {a}(ord1 a) tnth_mktuple.
   by rewrite /extension /= cats0.
 pose fm1 (x : 'rV['rV[A]_n]_(m''.+1)) := extension f (tuple_of_row x).
-pose Xm1 : {RV _ -> R^o} := (fun x => x%:R : R) \o size \o fm1.
+pose Xm1 : {RV _ -> R} := (fun x => x%:R : R) \o size \o fm1.
 pose fm2 (x : 'rV['rV[A]_n]_(m''.+2)) := extension f (tuple_of_row x).
-pose Xm2 : {RV _ -> R^o} := (fun x => x%:R : R) \o size \o fm2.
+pose Xm2 : {RV _ -> R} := (fun x => x%:R : R) \o size \o fm2.
 have X_Xm1_Xm2 : (Xm2 _ _) \= X @+ (Xm1 _ _).
   move=> ? ? ? ?.
   rewrite /Xm2 => x /=.

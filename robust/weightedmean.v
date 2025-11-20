@@ -73,7 +73,7 @@ Section def.
 Local Open Scope ring_scope.
 (* Let R := Rdefinitions.R. *)
 Context {R : realType}.
-Variables (A : finType) (d0 : R.-fdist A) (g : {ffun A -> R^o}).
+Variables (A : finType) (d0 : R.-fdist A) (g : {ffun A -> R}).
 Hypotheses g0 : forall a, 0 <= g a.
 
 Definition total := \sum_(a in A) g a * d0 a.
@@ -222,7 +222,7 @@ by rewrite inE.
 Qed.
 End fst_RV'.
 
-Lemma cVar (X : {RV P -> R^o}) A : `V_[ fst_RV X | A `* [set: bool]] = `V_[X | A].
+Lemma cVar (X : {RV P -> R}) A : `V_[ fst_RV X | A `* [set: bool]] = `V_[X | A].
 Proof. by rewrite /cVar/= -cEx [RHS]cEx. Qed.
 
 End def.
@@ -264,7 +264,7 @@ End emean_cond.
 Section emean.
 Local Open Scope ring_scope.
 Let R := Rdefinitions.R.
-Variables (U : finType) (P : {fdist U}) (X : {RV P -> R^o}) (C : {ffun U -> R^o})
+Variables (U : finType) (P : {fdist U}) (X : {RV P -> R^o}) (C : {ffun U -> R})
   (PC0 : Weighted.total P C != 0).
 Hypotheses C0 : forall u, 0 <= C u.
 Let WP := Weighted.d C0 PC0.

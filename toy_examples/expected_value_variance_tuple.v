@@ -15,6 +15,10 @@ Local Open Scope reals_ext_scope.
 Local Open Scope tuple_ext_scope.
 Local Open Scope ring_scope.
 
+(* NB: to get rid of ^o in R^o *)
+From mathcomp Require Import normedtype.
+Import numFieldNormedType.Exports.
+
 Section expected_value_variance_tuple.
 Variable R : realType.
 
@@ -41,7 +45,7 @@ Local Open Scope proba_scope.
 
 Definition P : {fdist 'I_3} := FDist.mk p_sum01.
 
-Definition X : {RV P -> R^o} := (fun i => i.+1%:R).
+Definition X : {RV P -> R} := (fun i => i.+1%:R).
 
 Lemma expected : `E X = 5/3.
 Proof.

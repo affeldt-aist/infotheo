@@ -75,7 +75,7 @@ Proof. by rewrite -V_mlog /Var; apply: Ex_ge0 => ?; exact: sq_RV_ge0. Qed.
 End mlog_prop.
 
 Definition sum_mlog_prod {R : realType} (A : finType) (P : R.-fdist A) n :
-    {RV ((P `^ n)%fdist)-> R^o} :=
+    {RV ((P `^ n)%fdist)-> R} :=
   (fun t => \sum_(i < n) - log (P (t ``_ i)))%R.
 
 Arguments sum_mlog_prod {R} {A} _ _.
