@@ -1044,7 +1044,7 @@ rewrite /filter1D.
 have tr x y : Rleb x y <> true -> y < x by move=> /negP/RlebP/RleP; rewrite -ltNge.
 have tr' x y : Rleb x y = true -> x <= y by move=> /RlebP/RleP.
 have := base_case P S.
-apply: filter1D_rec_ind => //=.
+apply filter1D_rec_ind => //=.
 - move=> C C0 C01 PC0 /tr' evar16 _ Inv.
   apply: le_trans; first by apply: (bound_mean_emean C eps_max) => //; lra.
   apply: lerD; first by rewrite mulrA.
