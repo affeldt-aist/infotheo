@@ -48,11 +48,11 @@ Proof.
 rewrite /dH /wH.
 rewrite (_ : tuple_of_row _ =
     [tuple of map (fun x => F2_of_bool (x != a%R)) (tuple_of_row v)]); last first.
-  apply eq_from_tnth => i.
+  apply: eq_from_tnth => i.
   rewrite tnth_mktuple tnth_map tnth_mktuple !mxE.
   by case/F2P : a; case: F2P => //; rewrite ?subrr ?subr0 ?sub0r ?oppr_pchar2.
 rewrite {1}/num_occ count_map /preim.
-apply eq_count => /= x.
+apply: eq_count => /= x.
 rewrite !inE.
 by case/F2P : a; case/F2P : x.
 Qed.
@@ -62,8 +62,8 @@ Lemma num_occ_negF2 a r (v : r.-tuple 'F_2) : N(a | v) + N(negF2 a | v) = r.
 Proof.
 rewrite /num_occ -[RHS](size_tuple v) -[RHS](count_predC (fun x => a == x) v).
 congr (_ + _).
-  apply eq_count => /= i; by rewrite inE eq_sym.
-apply eq_count => /= i; rewrite !inE.
+  apply: eq_count => /= i; by rewrite inE eq_sym.
+apply: eq_count => /= i; rewrite !inE.
 by case/F2P : i; case/F2P : a.
 Qed.
 
@@ -262,19 +262,19 @@ case: ifPn => //.
 rewrite negb_and negbK.
 case/orP => H1 [<-{h}].
 - case: wC => /eqP -> //.
-  rewrite 2!dH_num_occ_opp; apply num_occ_tuple_F2.
+  rewrite 2!dH_num_occ_opp; apply: num_occ_tuple_F2.
   rewrite (_ : N(_ | _) = r.+1 - N(1%R | tuple_of_row u))%nat; last first.
     rewrite -[in X in _ = (X - _)%nat](num_occ_negF2 1%R (tuple_of_row u)).
     by rewrite addnC addnK.
   rewrite (@leq_ltn_trans (r.+1 - (r.+1)./2)%nat) //.
     by rewrite -{2}(odd_double_half r.+1) -addnn addnA addnC addnA addnK leq_addr.
-  apply ltn_sub2l; last by rewrite ltn_neqAle H eq_sym H1.
+  apply: ltn_sub2l; last by rewrite ltn_neqAle H eq_sym H1.
   rewrite (leq_ltn_trans H) //.
   rewrite -ltn_double (_ : _./2.*2 = r.+1 - odd r.+1)%nat; last first.
     by rewrite -{2}(odd_double_half r.+1) addnC addnK.
   by rewrite -addnn (@leq_ltn_trans r.+1) // ?leq_subr // addnS ltnS ltn_addr.
 - case : wC => /eqP -> //.
-  rewrite 2!dH_num_occ_opp; apply num_occ_tuple_F2.
+  rewrite 2!dH_num_occ_opp; apply: num_occ_tuple_F2.
   rewrite (_ : N(_ | _) = r.+1 - N(1%R | tuple_of_row u))%nat; last first.
     rewrite -[in X in _ = (X - _)%nat](num_occ_negF2 1%R (tuple_of_row u)).
     by rewrite addnC addnK.

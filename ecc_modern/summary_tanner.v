@@ -137,7 +137,7 @@ Lemma checksubsum_dproj d t s s0 : (forall i, i \in s :\: s0 -> t ``_ i = d ``_ 
 Proof.
 move=> H1.
 rewrite /checksubsum; congr (_ == Zp0).
-apply eq_big => n1 // Hn1.
+apply: eq_big => n1 // Hn1.
 case/boolP : (n1 \in s0) => [H|H]; first by rewrite dproj_in.
 by rewrite dproj_out // H1 // in_setD H.
 Qed.
@@ -300,7 +300,7 @@ Lemma rmul_rsum_commute0 (R := Rdefinitions.R) d n0 (B : finType) (t : 'rV[B]_n)
 Proof.
 rewrite (big_distr_big_dep d [pred x in 'F n0] (fun i => freeon ('V(i, n0) :\ n0) d)) [LHS]/=.
 rewrite (reindex_onto (dprojs_V H d n0) (comb_V H d n0)); last first.
-  rewrite /= => f Hf; by apply (@dprojs_comb_V d n0 (fun n => 'F n)).
+  rewrite /= => f Hf; by apply: (@dprojs_comb_V d n0 (fun n => 'F n)).
 rewrite [LHS]/=.
 apply/esym/eq_big.
 - move=> /= t'.
@@ -310,14 +310,14 @@ apply/esym/eq_big.
       by rewrite (freeon_notin Hlhs) // !inE eqxx.
     by rewrite eqxx andbT pfamily_dprojs_V.
   apply/esym/negbTE.
-  move/negbT : Hlhs; apply contra.
+  move/negbT : Hlhs; apply: contra.
   case/andP => _ /eqP <-.
   by rewrite freeon_comb_dprojs_V.
 - move=> /= t' Ht'.
-  apply eq_bigr => m0 Hm0.
+  apply: eq_bigr => m0 Hm0.
   congr (_ * _)%R.
   + by rewrite /dprojs_V sub_vec_dprojs.
-  + apply eq_bigr => m1 Hm1.
+  + apply: eq_bigr => m1 Hm1.
     by rewrite HF // -(freeon_notin Ht') //= !inE eqxx.
 Qed.
 
@@ -361,7 +361,7 @@ Lemma checksubsum_dprojs_V2 d m0 n0 (t' t : 'rV_n) n1 m1 m2
   \delta ('V m2) t.
 Proof.
 move=> H0; rewrite /checksubsum; congr (_ == _).
-apply eq_bigr => n2 n2m2.
+apply: eq_bigr => n2 n2m2.
 rewrite /dprojs_V /dprojs_V2.
 case/boolP : (n2 \in `V( m1, n1) :\ n1) => [Hn2|].
   rewrite dprojs_in // dprojs_in //inE /ssgraph Hn1 /=.
@@ -596,7 +596,7 @@ rewrite inE.
 case/andP => n1'm1' /connectP [] /= p.
 case/shortenP => p' Hp' Hun p'p Hlast.
 exfalso.
-apply (@Hacyclic [:: inl m0, inr n1', inl m1' & p'] isT).
+apply: (@Hacyclic [:: inl m0, inr n1', inl m1' & p'] isT).
 apply: uniq_path_ucycle_extend_1 => //.
 - by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
 - rewrite rcons_path Hp' /= -Hlast.
@@ -608,7 +608,7 @@ apply: uniq_path_ucycle_extend_1 => //.
   apply/negP => Hx.
   case/splitPr : Hx => p1 p2 in Hp' Hun p'p Hlast.
   rewrite last_cat /= in Hlast.
-  apply (@Hacyclic [:: inl m0, inr n1', inl m1' & p1] isT).
+  apply: (@Hacyclic [:: inl m0, inr n1', inl m1' & p1] isT).
   apply: uniq_path_ucycle_extend_1 => //.
   + by rewrite /= -VnextE; move: Hn1'; rewrite in_setD1 => /andP[].
   + move: Hp'; by rewrite -cat_rcons cat_path => /andP[].
@@ -682,7 +682,7 @@ rewrite 2!inE.
 case/andP => m1n3 /connectP [] /= p.
 case/shortenP => p' Hp' Hun pp' Hlast.
 exfalso.
-apply (@Hacyclic [:: inl m0, inr n3, inl m1 & p'] isT).
+apply: (@Hacyclic [:: inl m0, inr n3, inl m1 & p'] isT).
 apply: uniq_path_ucycle_extend_1 => //.
 - by rewrite /= -VnextE; move: Hn3; rewrite in_setD1 => /andP[].
 - rewrite rcons_path Hp' /= -Hlast exceptE /= andbT -VnextE.
@@ -696,7 +696,7 @@ apply: uniq_path_ucycle_extend_1 => //.
   apply/negP => Hx.
   case/splitPr : Hx => p1 p2 in Hp' Hun pp' Hlast.
   rewrite last_cat /= in Hlast.
-  apply (@Hacyclic [:: inl m0, inr n3, inl m1 & p1] isT).
+  apply: (@Hacyclic [:: inl m0, inr n3, inl m1 & p1] isT).
   apply: uniq_path_ucycle_extend_1 => //.
   + by rewrite /= -VnextE; move: Hn3; rewrite in_setD1 => /andP[].
   + by move: Hp'; rewrite -cat_rcons cat_path => /andP[].

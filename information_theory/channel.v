@@ -113,10 +113,10 @@ suff H : (\sum_(g : {ffun 'I_n -> B}) \prod_(i < n) f' i (g i) = 1)%R.
   rewrite (reindex_onto (fun vb : 'rV_n => [ffun x => vb ``_ x])
     (fun g  => \row_(k < n) g k)) /=; last first.
     move=> g _; apply/ffunP => /= i; by rewrite ffunE mxE.
-  apply eq_big => vb.
+  apply: eq_big => vb.
   - rewrite inE.
     apply/esym/eqP/rowP => a; by rewrite mxE ffunE.
-  - move=> _; rewrite ffunE; apply eq_bigr => i _; by rewrite ffunE.
+  - move=> _; rewrite ffunE; apply: eq_bigr => i _; by rewrite ffunE.
 by rewrite -bigA_distr_bigA /= /f' big1 // => i _; rewrite FDist.f1.
 Qed.
 
@@ -179,7 +179,7 @@ Let f1 : \sum_(b in B) f b = 1.
 Proof.
 under eq_bigr do rewrite ffunE /=.
 rewrite exchange_big /= -[RHS](FDist.f1 P).
-by apply eq_bigr => a _; rewrite -big_distrl /= (FDist.f1 (W a)) mul1r.
+by apply: eq_bigr => a _; rewrite -big_distrl /= (FDist.f1 (W a)) mul1r.
 Qed.
 
 Definition fdist_out : {fdist B} := locked (FDist.make f0 f1).
@@ -210,8 +210,8 @@ apply: eq_big.
 - move=> a /=; apply/andP; split; first exact/finfun.familyP.
   by apply/eqP/rowP => a'; rewrite mxE ffunE.
 - move=> a Ha; rewrite big_split /=; congr (_ * _)%R.
-  + by apply eq_bigr => i /= _; rewrite ffunE.
-  + by rewrite fdist_rVE; apply eq_bigr => i /= _; rewrite ffunE.
+  + by apply: eq_bigr => i /= _; rewrite ffunE.
+  + by rewrite fdist_rVE; apply: eq_bigr => i /= _; rewrite ffunE.
 Qed.
 Local Close Scope ring_scope.
 
@@ -249,10 +249,10 @@ rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first
 transitivity (\sum_(i | Q i) (P `^ n) i * (\sum_(y in 'rV[B]_n) W ``(y | i))).
   apply: eq_bigr => ta Sta; rewrite big_distrr; apply: eq_bigr => tb _ /=.
   rewrite DMCE [in RHS]fdist_rVE -[in RHS]big_split /= fdist_rVE.
-  by apply eq_bigr => j _; rewrite fdist_prodE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
+  by apply: eq_bigr => j _; rewrite fdist_prodE /= -fst_tnth_prod_rV -snd_tnth_prod_rV.
 transitivity (\sum_(i | Q i) (P `^ _) i).
-  by apply eq_bigr => i _; rewrite (FDist.f1 (W ``(| i))) mulr1.
-by rewrite /Pr; apply eq_bigl => t; rewrite !inE.
+  by apply: eq_bigr => i _; rewrite (FDist.f1 (W ``(| i))) mulr1.
+by rewrite /Pr; apply: eq_bigl => t; rewrite !inE.
 Qed.
 
 Lemma Pr_DMC_out m (S : {set 'rV_m}) :
@@ -275,7 +275,7 @@ rewrite (reindex_onto (fun p : 'rV[A]_m => [ffun x => p ord0 x])
 apply: eq_big => ta.
   by rewrite inE; apply/esym/eqP/rowP => a; rewrite mxE ffunE.
 move=> Hta.
-rewrite fdist_rVE /=; apply eq_bigr => l _.
+rewrite fdist_rVE /=; apply: eq_bigr => l _.
 by rewrite fdist_prodE -fst_tnth_prod_rV -snd_tnth_prod_rV ffunE mulrC.
 Qed.
 

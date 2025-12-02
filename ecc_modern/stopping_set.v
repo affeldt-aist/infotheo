@@ -56,7 +56,7 @@ case: ifP => /= ij; last by rewrite ij.
 rewrite /colFnextD1.
 case/orP : (letter_split (y ``_ j)) => [/existsP[x /eqP Hx]|].
   rewrite Hx.
-  apply Prod_colFnext_Bit => //; apply/allP => /= m1.
+  apply: Prod_colFnext_Bit => //; apply/allP => /= m1.
   by rewrite mem_enum in_setD1 !mxE => /andP[m1i ->].
 move: (Hblank j).
 case/letterP : (y ``_ j) => // _ _.
@@ -123,7 +123,7 @@ Proof.
 move=> n0s m0n0 HwH.
 have : s :&: `V m0 :\ n0 != set0.
   move: HwH.
-  apply contra.
+  apply: contra.
   move/eqP.
   move/(f_equal (fun x => n0 |: x)).
   rewrite setD1K; last by rewrite inE n0s -FnextE.
@@ -233,7 +233,7 @@ Definition largest_stopset := maxset (stopset H) E.
 Lemma largest_stopset_is_unique : is_unique largest_stopset
   (fun E' => E' \subset E /\ covered_by (stopset H) E E' /\ stopset H E').
 Proof.
-apply maxset_is_unique.
+apply: maxset_is_unique.
 exact: stopset0.
 exact: stopsetU.
 Qed.
@@ -370,7 +370,7 @@ rewrite {}Halpha => Hbeta.
 move: x alpha Hbeta Hn0.
 elim => [ //= | lmax IHmax ] alpha Hbeta.
 rewrite -(addn1 lmax) iterD => EstiStar(*NB: not used?*).
-apply IHmax.
+apply: IHmax.
   rewrite /= /cols_starblank => n1 Hns1; apply/colP => m1.
   rewrite !mxE.
   case: ifPn => /= m1n1.
@@ -493,7 +493,7 @@ Lemma all_stopsets_in_erasures_in_SP_BEC c E (Hc : syndrome H c = 0) :
 Proof.
 apply/forallP => /= s; apply/implyP.
 rewrite inE => /andP[H0 H1].
-apply stopset_subset_erasures_SP_BEC => //; by rewrite erasures_erase.
+apply: stopset_subset_erasures_SP_BEC => //; by rewrite erasures_erase.
 Qed.
 
 End erase.
@@ -693,7 +693,7 @@ Qed.
 Lemma starFnext_iter_mxSumProd (Hc : syndrome H c = 0) l :
   starFnext H y (iSP_BEC0 H y l) = erasures (Esti H y (iSP_BEC0 H y l)).
 Proof.
-case: l => [|l]; [exact starFnext_mxStar | exact: starFnext_iter_mxSumProdS].
+case: l => [|l]; [exact: starFnext_mxStar | exact: starFnext_iter_mxSumProdS].
 Qed.
 
 End starFnext_prop.
@@ -765,7 +765,7 @@ case: l n0 m0 => [n0 m0 n0m0|].
   by rewrite PCM_instanceE // FnextE.
 move=> l n1 m0 n1m0.
 rewrite mxE FnextE n1m0.
-apply (@Prod_erase_Star _ _ H c E m0 n1 (iSP_BEC0 H y l.+1)).
+move=> ?; case: (@Prod_erase_Star _ _ H c E m0 n1 (iSP_BEC0 H y l.+1)) => //.
 move=> j0; exact: (all_starletter_iSP_BEC0D1 l.+1 j0 m0).
 Qed.
 
@@ -796,7 +796,7 @@ have : (forall n1, all
   by move: m2n2; rewrite 2!mem_enum in_setD1 => /andP[m2m0 m2Fn2] /(_ m2Fn2).
 move/(@Prod_erase_Star _ _ H c E m0 n0 (mxSum H (PiSP_BEC0 H y l))).
 move/(_ H1) => [H2 H3].
-by apply H2.
+by apply: H2.
 Qed.
 
 Lemma fixed_point_stopset_starFnext l :
@@ -813,8 +813,8 @@ apply/set0Pn; exists n1.
 rewrite FnextE in m0n1.
 rewrite in_setD1 in_setI n1n0 /= m0n1 /= /starFnext /=.
 have [H1 H2] : (forall m1, m1 \in `F n1 :\ m0 -> iSP_BEC0 H y l m1 n1 = Star) /\ y ``_ n1 = Star.
-  apply Prod_erase_Star.
-  - move=> ?; by apply all_starletter_iSP_BEC0D1.
+  apply: Prod_erase_Star.
+  - move=> ?; by apply: all_starletter_iSP_BEC0D1.
   - rewrite /colFnextD1 (@PiSP_BEC0_Star_inv l _ _ m0n1) // Prod_cons_Star.
     apply/eqP.
     rewrite Prod_starblank_is_Star //.
@@ -885,8 +885,8 @@ Lemma largest_stopset_erasures_SP_BEC :
   largest_stopset H E = erasures (SP_BEC BEC_y).
 Proof.
 rewrite -(@largest_stopset_is_unique _ _ H _ (erasures (SP_BEC BEC_y))) //.
-split; first by apply erasures_SP_BEC_subset.
-split; first by apply all_stopsets_in_erasures_in_SP_BEC.
+split; first by apply: erasures_SP_BEC_subset.
+split; first by apply: all_stopsets_in_erasures_in_SP_BEC.
 exact: stopset_erasures_SP_BEC.
 Qed.
 

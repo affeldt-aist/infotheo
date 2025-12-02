@@ -183,8 +183,8 @@ Definition jtype_pickle (A B : finType) n (P : P_ n (A , B)) : nat.
 destruct P as [d t H].
 exact: (pickle t).
 (*destruct (finfun_countMixin A [finType of {ffun B -> 'I_n.+1}]) as [pi unpi Hcan].
-apply pi.
-exact t.*)
+apply: pi.
+exact: t.*)
 Defined.
 
 Definition jtype_unpickle (A B : finType) n (m : nat) : option (P_ n ( A , B )).
@@ -199,11 +199,11 @@ refine (
     end
 ).
 (*case: (finfun_countMixin A [finType of {ffun B -> 'I_n.+1}]) => pi unpi Hcan.
-case: (unpi m); last by exact None.
+case: (unpi m); last by exact: None.
 move=> f.*)
 pose unpi : option {ffun A -> {ffun B -> 'I_n.+1}} := unpickle m.
 case: unpi; last first.
-  exact None.
+  exact: None.
 move=> f.
 refine (match Sumbool.sumbool_of_bool (\sum_(a in A) \sum_(b in B) f a b == n)%N with
           | left Hf => _
@@ -223,7 +223,7 @@ case/card_gt0P : (e) => a Ha.
 move: (fdist_card_neq0 (c a)) => Bnot0.
 destruct Sumbool.sumbool_of_bool; last by rewrite Bnot0 in e0.
 rewrite pickleK.
-(*rewrite pcan_pickleK; last by apply valK.*)
+(*rewrite pcan_pickleK; last by apply: valK.*)
 set d1 := chan_of_jtype _ _ _.
 have ? : d1 = Channel1.mkChan c Anot0.
   apply/Channel1.chan_star_eq.
@@ -258,7 +258,7 @@ Proof.
 case=> d f Hf H /=.
 have : Finite.axiom (enum (Finite.clone _ { f : {ffun A -> {ffun B -> 'I_n.+1}}  |
     (\sum_(a in A) \sum_(b in B) f a b == n)%N })).
-  rewrite enumT; by apply enumP.
+  rewrite enumT; by apply: enumP.
 move/(_ (@exist _ _ f Hf)) => <-.
 rewrite /jtype_enum /=.
 rewrite /jtype_enum_f /=.
@@ -298,7 +298,7 @@ eq_ind_r
   congr Some.
   by apply/jtype_eqP => /=.
 rewrite count_map.
-by apply eq_count.
+by apply: eq_count.
 Qed.
 
 HB.instance Definition _ A B n := @isFinite.Build (P_ n (A , B)) _ (@jtype_enumP A B n).
@@ -310,8 +310,8 @@ Local Open Scope nat_scope.
 
 Lemma jtype_entry_ub (V : P_ n ( A , B )) b : \sum_(a : A) (JType.f V) a b < n.+1.
 Proof.
-apply (@leq_ltn_trans (\sum_ (a : A) \sum_ (b : B) (JType.f V) a b)).
-- apply leq_sum => a _.
+apply: (@leq_ltn_trans (\sum_ (a : A) \sum_ (b : B) (JType.f V) a b)).
+- apply: leq_sum => a _.
   by rewrite (bigD1 b) //= leq_addr.
 - case: V => c f Hf H /=.
   move/eqP in Hf.
@@ -340,12 +340,12 @@ Qed.
 Lemma bound_card_jtype : #| P_ n (A , B) | <= expn n.+1 (#|A| * #|B|).
 Proof.
 rewrite -(card_ord n.+1) mulnC expnM -2!card_ffun cardE /enum_mem.
-apply (@leq_trans (size (map (@ffun_of_jtype A B n) (Finite.enum (P_ n (A, B)))))).
+apply: (@leq_trans (size (map (@ffun_of_jtype A B n) (Finite.enum (P_ n (A, B)))))).
   by rewrite 2!size_map.
 rewrite cardE.
 apply: uniq_leq_size.
   rewrite map_inj_uniq.
-  rewrite -enumT; by apply enum_uniq.
+  rewrite -enumT; by apply: enum_uniq.
   move=> [c f Hf Hc] [c1 f1 Hf1 Hc1] /= ?; subst f1.
   by apply/jtype_eqP => /=.
 move=> /= x.
@@ -411,7 +411,7 @@ Hypothesis Htb : tb \in V.-shell ta.
 Lemma occ_co_occ : forall a b, N(a, b| ta, tb) = (JType.f V) a b.
 Proof.
 move: Htb => Htb' x0 y0 ; rewrite /shell inE in Htb'.
-apply/eqP; move: y0; apply/forallP; move: x0; apply/forallP; exact Htb'.
+apply/eqP; move: y0; apply/forallP; move: x0; apply/forallP; exact: Htb'.
 Qed.
 
 Variable P : P_ n ( A ).
@@ -458,7 +458,7 @@ Lemma card_shelled_tuples_perm : #| V.-shell ta | = #| V.-shell (perm_tuple s ta
 Proof.
 rewrite perm_Stuples_Stuples_perm.
 symmetry.
-apply card_imset.
+apply: card_imset.
 apply: perm_tuple_inj.
 Qed.
 
@@ -491,7 +491,7 @@ Defined.
 Definition split_tuple : (sum_num_occ ta k.+1).-tuple B ->
   (sum_num_occ ta k).-tuple B * N(enum_val k | ta).-tuple B.
 case => a b.
-apply pair.
+apply: pair.
 - apply: (@Tuple _ _ (take (sum_num_occ ta k) a)).
   rewrite size_take.
   move/eqP : b => ->.
@@ -510,7 +510,7 @@ Proof.
 case=> sb Hsb sb_Z sb_Z'.
 apply/imsetP.
 exists (split_tuple (Tuple Hsb)) => //.
-apply val_inj => /=.
+apply: val_inj => /=.
 rewrite -{1}(cat_take_drop (sum_num_occ ta k) sb).
 f_equal.
 rewrite take_oversize // size_drop.
@@ -528,9 +528,9 @@ have <- : #| cons_tuples @: Z' | = #|Z'|.
   apply: card_in_imset; case=> [a1 a2] [b1 b2] Ha Hb [] /eqP.
   rewrite eqseq_cat; last by rewrite 2!size_tuple.
   case/andP => /eqP H1 /eqP H2.
-  f_equal; by apply val_inj.
+  f_equal; by apply: val_inj.
 apply/subset_leq_card/subsetP => tb Htb.
-by apply (split_cons_tuples Htb), Hincl.
+exact/(split_cons_tuples Htb)/Hincl.
 Qed.
 
 Hypothesis ta_sorted : sorted (@le_rank _) ta.
@@ -540,16 +540,16 @@ Local Open Scope tuple_ext_scope.
 Lemma drop_take_is_filter : drop (sum_num_occ ta k) (take (sum_num_occ ta k.+1) ta) =
   filter (pred1 (enum_val k)) ta.
 Proof.
-apply (@eq_from_nth _ (enum_val k)) => [|i Hi].
+apply: (@eq_from_nth _ (enum_val k)) => [|i Hi].
   rewrite size_drop size_take size_tuple -/(minn (sum_num_occ ta k.+1) n) minn_sum_num_occ_n.
   by rewrite (sum_num_occ_sub _ k) /num_occ -size_filter.
 rewrite size_drop size_take size_tuple -/(minn (sum_num_occ ta k.+1) n) minn_sum_num_occ_n ltn_subRL in Hi.
 rewrite nth_drop nth_take => //.
-have Hsumk : sum_num_occ ta k + i < n by apply (leq_trans Hi (sum_num_occ_leq_n ta k.+1)).
+have Hsumk : sum_num_occ ta k + i < n by apply: (leq_trans Hi (sum_num_occ_leq_n ta k.+1)).
 transitivity (enum_val k).
   transitivity (ta!_(Ordinal Hsumk)).
     by rewrite [in X in _ = X](tnth_nth (enum_val k)).
-  apply sum_num_occ_enum_val => //=; by rewrite Hi andbT leq_addr.
+  apply: sum_num_occ_enum_val => //=; by rewrite Hi andbT leq_addr.
 rewrite -ltn_subRL (sum_num_occ_sub ta k) in Hi.
 by rewrite filter_pred1_num_occ nth_nseq Hi.
 Qed.
@@ -565,7 +565,7 @@ case/card_gt0P : Bnot0 => b _.
 rewrite -(mkseq_nth (a, b) (zip ta tb)) -map_take -map_drop filter_map size_zip 2!size_tuple minnn.
 f_equal.
 rewrite drop_take_iota; last by rewrite sum_num_occ_inc_loc sum_num_occ_leq_n.
-apply eq_in_filter => /= i.
+apply: eq_in_filter => /= i.
 rewrite mem_iota leq0n add0n /= => Hi.
 rewrite nth_zip /=; last by rewrite 2!size_tuple.
 transitivity (ta!_(Ordinal Hi) == a); by [rewrite -sum_num_occ_is_enum_val | rewrite (tnth_nth a)].
@@ -592,7 +592,7 @@ set a := enum_val k.
 rewrite /num_co_occ /num_occ // Hsb -!size_filter.
 rewrite -(_ : filter (fun p => p.2 == b) (filter (fun p => p.1 == a) (zip ta tb)) =
               filter (pred1 (a, b)) (zip ta tb)) ; last first.
-  rewrite -filter_predI /predI; apply eq_in_filter => i Hi /=.
+  rewrite -filter_predI /predI; apply: eq_in_filter => i Hi /=.
   symmetry; by rewrite andbC {1}(surjective_pairing i) xpair_eqE.
 set l1 := drop _ _.
 set l2 := filter _ (zip ta tb).
@@ -617,7 +617,7 @@ Definition take_shell (k : nat) : {set (sum_num_occ ta k).-tuple B} :=
 (* Same set modulo cast: *)
 Lemma full_take_shell : #| take_shell #|A| | = #| V.-shell ta |.
 Proof.
-apply card_imset; rewrite /injective => /= v v' vv'.
+apply: card_imset; rewrite /injective => /= v v' vv'.
 exact: (tcast_take_inj (full_sum_num_occ_n ta (leqnn #|A|)) vv').
 Qed.
 
@@ -669,8 +669,8 @@ assert (d1 : (\sum_(b : B) d b = 1)%R).
   suff -> : lhs = N(a | ta).
     by rewrite mulfV // (_ : 0%R = 0%:R)// eqr_nat.
   rewrite /lhs /f /= -[in X in _ = X](Hrow_num_occ Hta a).
-  apply eq_bigr => b _; by rewrite ffunE.
-by apply (@type.mkType _ _ (FDist.make d0 d1) f) => b; rewrite ffunE.
+  apply: eq_bigr => b _; by rewrite ffunE.
+by apply: (@type.mkType _ _ (FDist.make d0 d1) f) => b; rewrite ffunE.
 Defined.
 
 Hypothesis ta_sorted : sorted (@le_rank _) ta.
@@ -729,7 +729,7 @@ Lemma card_take_shell (k : 'I_#|A|) (Ha : N(enum_val k | ta) != 0) :
   #|take_shell ta V k.+1| <= #|take_shell ta V k| * #| T_{type_of_row Ha} |.
 Proof.
 rewrite -cardX -[X in _ <= X]cardsE.
-apply (subset_leq_card_split_tuple (card_take_shell_incl Ha)).
+apply: (subset_leq_card_split_tuple (card_take_shell_incl Ha)).
 Qed.
 
 Lemma card_take_shell0 (k : 'I_#|A|) (Ha : N(enum_val k | ta) == 0) :
@@ -737,7 +737,7 @@ Lemma card_take_shell0 (k : 'I_#|A|) (Ha : N(enum_val k | ta) == 0) :
 Proof.
 move/eqP : (Ha).
 move/esym => Ha'.
-eapply leq_trans; first by apply (subset_leq_card_split_tuple (card_take_shell_incl0 Ha')).
+apply/leq_trans; first by apply: (subset_leq_card_split_tuple (card_take_shell_incl0 Ha')).
 by rewrite cardsX cards1 muln1.
 Qed.
 
@@ -753,14 +753,14 @@ Proof.
 elim.
 - move=> _; rewrite big_pred0; last by move=> ? /=; rewrite ltn0.
   rewrite -(expn0 #|B|) -[X in _ <= expn _ X](sum_num_occ_0 ta) -card_tuple -cardsT.
-  by apply subset_leq_card, subsetT.
+  exact/subset_leq_card/subsetT.
 - move=> k IH HSk /=.
   move: (IH (ltnW HSk)) => {}IH.
   rewrite (bigD1 (Ordinal HSk)) //=.
   rewrite (eq_bigl (fun i : 'I_#|A| => i < k) _); last first.
     move=> i /=.
     have [ik|ki] := ltnP i k.
-    - have -> : i != Ordinal HSk by rewrite neq_ltn; apply/orP; apply or_introl.
+    - have -> : i != Ordinal HSk by rewrite neq_ltn; apply/orP; apply: or_introl.
       by rewrite andbC /= ltnW.
     - rewrite andbC -ltn_neqAle.
       by apply/negbTE; rewrite -leqNgt.
@@ -778,8 +778,8 @@ Lemma card_shelled_tuples_leq_prod_card :
 Proof.
 rewrite -full_take_shell.
 rewrite [leqRHS](_ : _ = \prod_(i < #|A| | i < #|A|) card_type_of_row i); last first.
-  by apply eq_bigl => ?; exact/esym/ltn_ord.
-exact (split_nocc_rec (leqnn #|A|)).
+  by apply: eq_bigl => ?; exact/esym/ltn_ord.
+exact: (split_nocc_rec (leqnn #|A|)).
 Qed.
 
 End take_shell_row_num_occ.
@@ -801,7 +801,7 @@ Lemma card_shell_leq_exp_entropy :
   #| V.-shell ta |%:R <= 2 `^ (n%:R * `H(V | P)%channel).
 Proof.
 rewrite cond_entropy_chanE2.
-apply (@le_trans _ _ (\prod_(i < #|A|) card_type_of_row Hta Vctyp i)%:R).
+apply: (@le_trans _ _ (\prod_(i < #|A|) card_type_of_row Hta Vctyp i)%:R).
 - rewrite ler_nat.
   exact/card_shelled_tuples_leq_prod_card.
 - rewrite (mulrC n%:R) powRrM' natr_prod.
@@ -811,15 +811,15 @@ apply (@le_trans _ _ (\prod_(i < #|A|) card_type_of_row Hta Vctyp i)%:R).
   rewrite (reindex_onto enum_rank enum_val) => [|i _]; last by rewrite enum_valK.
   rewrite (_ : \prod_(j | enum_val (enum_rank j) == j) _ =
                \prod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R); last first.
-    by apply eq_bigl => a; rewrite enum_rankK; exact/eqP.
-  apply ler_prod => a aA; apply/andP; split => //.
+    by apply: eq_bigl => a; rewrite enum_rankK; exact/eqP.
+  apply: ler_prod => a aA; apply/andP; split => //.
   rewrite -powRrM'.
   rewrite /card_type_of_row; case: Bool.bool_dec => [e|/Bool.eq_true_not_negb e].
     rewrite -[X in X <= _](powRr0 2).
     by rewrite gt1_ler_powRr ?ltr1n// !mulr_ge0//; exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
   rewrite (_ : _ `^ _ = 2 `^ (N(a | ta)%:R * `H pta0)).
-    by rewrite -[in X in _ <= _ _ (X * _)](enum_rankK a); apply card_typed_tuples.
+    by rewrite -[in X in _ <= _ _ (X * _)](enum_rankK a); apply: card_typed_tuples.
   congr (_ `^ _).
   rewrite mulrC mulrA.
   congr *%R.
@@ -853,7 +853,7 @@ elim=> // h t IH p n0 H /=.
 rewrite IH.
 - rewrite cats0.
   transitivity (filter xpred0 (nseq (n0 h) h)).
-    apply eq_in_filter => a /nseqP[-> _].
+    apply: eq_in_filter => a /nseqP[-> _].
     apply/negP/negP/H; by rewrite in_cons eqxx.
   by rewrite filter_pred0.
 by move=> x0 Hx0; rewrite H// in_cons Hx0 orbC.
@@ -873,11 +873,11 @@ case/predU1P.
     apply/eqP => ?; subst x0.
     by rewrite x0_t in H1.
   rewrite (_ : filter _ _ = filter xpredT (nseq (n0 h) h)); last first.
-    apply eq_in_filter => i /nseqP[-> /= ]; by rewrite eqxx.
+    apply: eq_in_filter => i /nseqP[-> /= ]; by rewrite eqxx.
   by rewrite filter_predT /= cats0.
 move=> a_t.
 rewrite IH // (_ : filter _ _ = filter xpred0 (nseq (n0 h) h)); last first.
-  apply eq_in_filter => i /nseqP[-> /= _].
+  apply: eq_in_filter => i /nseqP[-> /= _].
   by apply: contraNF H1 => /eqP  ->.
 by rewrite filter_pred0.
 Qed.
@@ -903,13 +903,13 @@ have /eqP Hy : size cdom = n.
   rewrite size_flatten /shape -map_comp sumn_big_addn big_map [LHS]big_filter.
   rewrite -[RHS](sum_num_occ_all ta).
   rewrite [RHS](reindex_onto enum_rank enum_val) => [|i _] ; last by rewrite enum_valK.
-  apply eq_big.
+  apply: eq_big.
   - move=> ? /=; by rewrite enum_rankK eqxx.
   - move=> a _ /=.
     rewrite [in RHS]enum_rankK.
     rewrite size_flatten /shape -map_comp sumn_big_addn big_map big_filter.
     transitivity (\sum_(b : B) JType.f V a b).
-      apply eq_bigr => ? _ /=; by rewrite size_nseq.
+      apply: eq_bigr => ? _ /=; by rewrite size_nseq.
     by rewrite (Hrow_num_occ Hta).
 exists Hy.
 rewrite in_set.
@@ -920,24 +920,24 @@ apply/eqP.
 rewrite (@sorted_is_flattened _ _ (@le_rank_trans _)
   (@le_rank_asym _) (@le_rank_refl _) #|A| (enum A) ta) //; last 4 first.
   by rewrite cardE.
-  by apply enum_uniq.
-  by apply sorted_enum.
+  by apply: enum_uniq.
+  by apply: sorted_enum.
   move=> ? _; by rewrite mem_enum.
 have -> : [seq filter (pred1 elt) ta | elt <- enum A] = [seq nseq N(x0 | ta) x0 | x0 <- enum A].
-  apply eq_in_map => ? _; by rewrite filter_pred1_num_occ.
+  apply/eq_in_map => ? _; by rewrite filter_pred1_num_occ.
 have sz_flat : forall a, size (flatten [seq nseq (JType.f V a b) b | b <- enum B]) = N(a | ta).
   move=> a'; rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
   rewrite -(Hrow_num_occ Hta a') /= enumT.
-  apply eq_bigr => b' _; by rewrite size_nseq.
+  apply: eq_bigr => b' _; by rewrite size_nseq.
 set dom := flatten _.
 have Hdom : size dom = n.
   rewrite /dom size_flatten /shape -map_comp sumn_big_addn big_map.
   rewrite big_filter -[RHS](sum_num_occ_alt ta).
-  apply eq_bigr => a' _ /=; by rewrite size_nseq.
+  apply: eq_bigr => a' _ /=; by rewrite size_nseq.
 move/eqP in Hy.
 rewrite -size_filter (_ : filter _ _ = filter
   (predI (fun x => x.2 == b) (fun x => x.1 == a)) (zip dom cdom)); last first.
-  apply eq_in_filter; case=> i1 i2 Hi /=; by rewrite xpair_eqE andbC.
+  apply: eq_in_filter; case=> i1 i2 Hi /=; by rewrite xpair_eqE andbC.
 rewrite filter_predI (@filter_zip_L _ _ n) //.
 have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (JType.f V a b) b | b <- enum B].
   have [A1 [A2 A12]] : exists A1 A2, enum A = A1 ++ a :: A2.
@@ -947,7 +947,7 @@ have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (JType.f V a b) b | 
   rewrite [in X in mask _ X]map_cat flatten_cat mask_cat; last first.
     rewrite size_map size_flatten /shape -map_comp sumn_big_addn big_map.
     rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
-    apply eq_bigr => i _ /=; by rewrite sz_flat size_nseq.
+    apply: eq_bigr => i _ /=; by rewrite sz_flat size_nseq.
   rewrite (_ : _ :: _ = [:: a] ++ A2) //.
   rewrite map_cat.
   rewrite [in X in _ ++ mask _ X = _]map_cat flatten_cat.
@@ -961,15 +961,15 @@ have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (JType.f V a b) b | 
     rewrite (_ : mask (map _ (flatten [seq _ a | a <- A2])) _ = [::]); last first.
       by rewrite map_pred1_nseq // mask_false.
     by rewrite 3!cats0 cat0s.
-  rewrite /= 2!cats0 map_nseq /= eqxx mask_true // sz_flat; by apply eq_leq.
+  rewrite /= 2!cats0 map_nseq /= eqxx mask_true // sz_flat; by apply: eq_leq.
 rewrite (@filter_zip_R _ _ N(a | ta)) //; last first.
   rewrite /dom filter_flatten size_flatten /shape -!map_comp sumn_big_addn.
   rewrite big_map (bigD1 a) // big1 /= => [|a1 Ha1].
   - rewrite (_ : filter _ _ = filter (xpredT) (nseq N(a | ta) a)); last first.
-      apply eq_in_filter => i /nseqP[-> _]; by rewrite /pred1 /= eqxx.
+      apply: eq_in_filter => i /nseqP[-> _]; by rewrite /pred1 /= eqxx.
     by rewrite addn0 filter_predT size_nseq.
   - rewrite (_ : filter _ _ = filter (xpred0) (nseq N(a1 | ta) a1)); last first.
-      apply eq_in_filter => j /nseqP[-> _].
+      apply: eq_in_filter => j /nseqP[-> _].
       by rewrite /pred1 /= (negbTE Ha1).
     by rewrite filter_pred0.
 rewrite size_zip size_mask; last first.
@@ -978,7 +978,7 @@ rewrite size_zip size_mask; last first.
   by rewrite size_nseq.
 rewrite size_filter.
 set x1 := count _ _. set x2 := count _ _.
-have -> : x1 = x2 by rewrite /x1 /x2 count_map; apply eq_in_count.
+have -> : x1 = x2 by rewrite /x1 /x2 count_map; apply: eq_in_count.
 have -> : x2 = JType.f V a b.
   rewrite /x2 -size_filter (_ : filter _ _ = nseq (JType.f V a b) b); last first.
     by rewrite filter_flatten map_filter_pred1_nseq // ?enum_uniq // ?mem_enum.
@@ -1054,7 +1054,7 @@ move/implyP in Vctyp.
 move: {Vctyp}(Vctyp Hta) => Vctyp.
 case/set0Pn : Vctyp => tb V_tb.
 have V'_tb : tb \in V'.-shell ta by rewrite -H.
-apply val_inj => /=.
+apply: val_inj => /=.
 move: V_tb; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => <-.
 move: V'_tb; by rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => <-.
 Qed.
@@ -1074,14 +1074,14 @@ split=> H.
 - apply/forallP => ta.
   apply/implyP => Hta.
   apply/set0Pn.
-  by apply shell_not_empty with P.
+  exact: (shell_not_empty H).
 - move=> ta Hta a.
   move/forallP : H => /(_ ta)/implyP/(_ Hta).
   case/set0Pn => tb.
   rewrite /shell in_set.
   move/forallP/(_ a)/forallP => H.
   rewrite -(num_co_occ_num_occ ta tb).
-  apply eq_bigr => b _.
+  apply: eq_bigr => b _.
   by move/eqP : (H b) => <-.
 Qed.
 
@@ -1140,7 +1140,7 @@ apply/eqP.
 rewrite /OutType.P /OutType.d /OutType.f ffunE.
 do 2 f_equal.
 rewrite -(num_co_occ_partial_sum_alt tb ta).
-apply eq_bigr => a _.
+apply: eq_bigr => a _.
 rewrite num_co_occ_sym.
 by move/forallP/(_ a)/forallP/(_ b)/eqP : Htb.
 Qed.
@@ -1154,7 +1154,7 @@ rewrite /fdist_of_ffun /= /OutType.d /OutType.f => b /=.
 rewrite ffunE.
 rewrite natr_sum.
 rewrite big_distrl//=.
-rewrite fdist_outE; apply eq_bigr => a _.
+rewrite fdist_outE; apply: eq_bigr => a _.
 case: (typed_tuples_not_empty P) => /= ta Hta.
 move: (Vctyp).
 rewrite in_set.
@@ -1180,7 +1180,7 @@ Qed.
 Lemma output_type_out_entropy : `H (`tO( V )) = `H(P `o V).
 Proof.
 rewrite /entropy; f_equal.
-apply eq_bigr => b _; by rewrite output_type_out_fdist.
+apply: eq_bigr => b _; by rewrite output_type_out_fdist.
 Qed.
 
 End output_type_facts.
@@ -1204,13 +1204,13 @@ have H : sort (@le_rank _) ta =
 have {}Hta': ta = perm_tuple s (sort_tuple (@le_rank _) ta) by rewrite {1}Hta'.
 rewrite (card_shelled_tuples_perm V ta (s^-1)).
 rewrite Hta' perm_tuple_comp mulVg perm_tuple_id.
-apply card_shell_leq_exp_entropy => //.
+apply: card_shell_leq_exp_entropy => //.
 - rewrite in_set.
   apply/forallP => a /=.
   rewrite H num_occ_perm.
   move: a; apply/forallP.
   by move: Hta; rewrite in_set.
-- apply cond_type_equiv.
+- apply/cond_type_equiv.
   move: (Vctyp); by rewrite in_set.
 - exact/sort_sorted/le_rank_total.
 Qed.
@@ -1235,15 +1235,15 @@ assert (Hf : \sum_(a in A) \sum_(b in B) f a b == n).
   rewrite /f.
   apply/eqP.
   transitivity (\sum_a \sum_b N(a, b|ta, tb)); last by rewrite num_co_occ_sum.
-  apply eq_big => a //= _.
-  apply eq_big => b //= _.
+  apply: eq_big => a //= _.
+  apply: eq_big => b //= _.
   by rewrite 2!ffunE.
 assert (H : forall a b,
         (chan_of_jtype Anot0 Bnot0 f) a b =
         (let ln := (\sum_(b0 in B) (f a) b0)%N in
          if ln == O then #|B|%:R^-1 else (((f a) b)%:R / ln%:R))).
   by move=> a b; rewrite ffunE.
-exact (@JType.mk _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf H).
+exact: (@JType.mk _ _ _ (chan_of_jtype Anot0 Bnot0 f) f Hf H).
 Defined.
 
 Definition relYn (ta : n.-tuple A) (tb tb' : n.-tuple B) :=
@@ -1269,9 +1269,9 @@ rewrite in_set; apply/bigcupP.
 exists (num_co_occ_jtype ta tb).-shell ta.
 - apply/imsetP; exists (num_co_occ_jtype ta tb) => //.
   rewrite inE.
-  apply cond_type_equiv => ta' Hta' a.
+  apply/cond_type_equiv => ta' Hta' a.
   transitivity (\sum_(b in B) N(a, b | ta, tb)).
-  - apply eq_bigr => b _.
+  - apply: eq_bigr => b _.
     by rewrite /num_co_occ_jtype /= 2!ffunE.
   - rewrite num_co_occ_partial_sum_alt.
     move: Hta'; rewrite in_set => /forallP/(_ a)/eqP => Hta'.
@@ -1292,7 +1292,7 @@ Lemma trivIset_shell' tb tb' V : tb \in V.-shell ta ->
 Proof.
 rewrite 2!in_set => H.
 rewrite /relYn.
-apply eq_forallb => a; apply eq_forallb => b; move: H.
+apply: eq_forallb => a; apply: eq_forallb => b; move: H.
 by move/forallP/(_ a)/forallP/(_ b)/eqP => ->.
 Qed.
 
@@ -1342,7 +1342,7 @@ Let sum_tuples_ctypes' f : \sum_ (tb : _ ) (f : _ -> R) tb =
   \sum_ (V | V \in \nu^{B}(P)) \sum_ (tb in V.-shell ta) f tb.
 Proof.
 transitivity (\sum_ (tb in [set: n.-tuple B]) f tb).
-  by apply eq_bigl => tb; rewrite in_set.
+  by apply: eq_bigl => tb; rewrite in_set.
 rewrite -(cover_shell Anot0 Bnot0 Hta) -sum_tuples_ctypes''// big_trivIset//.
 exact: trivIset_shell.
 Qed.
@@ -1355,7 +1355,7 @@ rewrite big_mkcond /=.
 transitivity (\sum_(V | V \in \nu^{B}(P)) \sum_(tb in V.-shell ta)
     if F tb then f tb else 0).
   exact: sum_tuples_ctypes'.
-apply eq_bigr => s _.
+apply: eq_bigr => s _.
 rewrite [in LHS]big_mkcond /= [in RHS]big_mkcond /=.
 apply/esym/eq_bigr => tb _.
 by case/boolP : (tb \in s.-shell ta).

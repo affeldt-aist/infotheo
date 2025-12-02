@@ -113,7 +113,7 @@ rewrite (@total_prob_cond _ _ _ _ _ (fun i => T`* F i)); last 2 first.
     exists (T`* F i).
       by apply/imsetP; exists i.
     by rewrite inE.
-by apply eq_bigr => i _; rewrite -Pr_setTX -setTE; congr (_ * _); rewrite jcPrE.
+by apply: eq_bigr => i _; rewrite -Pr_setTX -setTE; congr (_ * _); rewrite jcPrE.
 Qed.
 
 End total_probability.
@@ -167,7 +167,7 @@ Proof.
 move=> dis cov i; rewrite jBayes; congr (_ / _).
 move: (@jtotal_prob_cond _ _ _ QP I F E dis cov).
 rewrite {1}/QP fdistX1 => ->.
-by apply eq_bigr => j _; rewrite -/QP {2}/QP fdistX2.
+by apply: eq_bigr => j _; rewrite -/QP {2}/QP fdistX2.
 Qed.
 
 End bayes.
@@ -366,7 +366,7 @@ rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   by rewrite mem_undup; apply/mapP; exists u => //; rewrite mem_enum.
 rewrite big_const iter_addr mul0rn !addr0.
 rewrite big_uniq; last by rewrite /fin_img undup_uniq.
-apply eq_bigr => b; rewrite mem_undup => /mapP[u _ bWu].
+apply: eq_bigr => b; rewrite mem_undup => /mapP[u _ bWu].
 rewrite /Q jfdist_condE // fdistX_RV2.
 by rewrite jcPrE -cpr_inE' cpr_in1.
 Qed.
@@ -374,7 +374,7 @@ Qed.
 Lemma jcPr_1 {R : realType} (A B : finType) (P : R.-fdist (A * B)) a : P`1 a != 0 ->
   \sum_(b in B) \Pr_(fdistX P)[ [set b] | [set a] ] = 1.
 Proof.
-move=> Xa0; rewrite -[RHS](FDist.f1 (P `(| a ))); apply eq_bigr => b _.
+move=> Xa0; rewrite -[RHS](FDist.f1 (P `(| a ))); apply: eq_bigr => b _.
 by rewrite jfdist_condE.
 Qed.
 
@@ -463,7 +463,7 @@ rewrite -(pair_bigA _ (fun k l =>
           if l == i
           then e `X (fun j0 : 'I_m => fdist1 (K j0)) (k, l)
           else 0))%R /=.
-apply eq_bigr => k _.
+apply: eq_bigr => k _.
 rewrite -big_mkcond /= big_pred1_eq !fdistE /= eq_sym.
 by case: ifP; rewrite (mulr1,mulr0).
 Qed.

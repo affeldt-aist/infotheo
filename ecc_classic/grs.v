@@ -80,7 +80,7 @@ rewrite (eq_bigr (fun i : 'I_r => (\sum_(j in supp y) 'X^i * (y ``_ j * b ``_ j 
 rewrite exchange_big /=.
 rewrite (eq_bigr (fun j => (y ``_ j * b ``_ j)%:P * \sum_(l < r) ((a ``_ j ^+ l)%:P * 'X^l))) //.
 move=> i isupp.
-rewrite !big_distrr /=; apply eq_bigr => j _.
+rewrite !big_distrr /=; apply: eq_bigr => j _.
 by rewrite mulrC mulrA polyCM.
 Qed.
 
@@ -124,10 +124,10 @@ rewrite [in X in _ + X = _](eq_bigr (fun=> 0)); last first.
 rewrite big_const iter_addr0 addr0 big_ord_narrow //.
 apply/eq_bigr => l _.
 have Hl : widen_ord rn l = inord l.
-  apply val_inj => /=; by rewrite inordK // (leq_trans (ltn_ord l)).
+  apply: val_inj => /=; by rewrite inordK // (leq_trans (ltn_ord l)).
 rewrite !mxE Hl; congr (_ * (_ *+ _ )).
 rewrite (_ : inord j = widen_ord rn j) -?Hl //.
-apply val_inj => /=; by rewrite inordK //(leq_trans (ltn_ord j)).
+apply: val_inj => /=; by rewrite inordK //(leq_trans (ltn_ord j)).
 Qed.
 
 Variable (a : 'rV[F]_n).
@@ -136,7 +136,7 @@ Hypothesis a_inj : injective [ffun i => a``_i]. (* pairwise distinct *)
 Lemma rank_GRS_PCM_sq (b : 'rV_n) (rn : r <= n) (b0 : forall i, b ``_i != 0) :
   \rank (GRS_PCM_sq a b r) = r.
 Proof.
-apply mxrank_unit.
+apply: mxrank_unit.
 rewrite unitmxE unitfE GRS_PCM_sq_vander // det_mulmx mulf_neq0 //; last first.
   by rewrite det_diag prodf_seq_neq0; apply/allP => /= i _; rewrite mxE b0.
 case: r rn => [|r' rn]; first by rewrite det_mx00 oner_neq0.
@@ -169,10 +169,10 @@ rewrite [in X in _ + X = _](eq_bigr (fun=> 0)); last first.
   apply/negbTE; by apply: contra kj => /eqP -> /=.
 rewrite big_const iter_addr0 addr0.
 rewrite big_ord_narrow //.
-apply eq_bigr => k _.
+apply: eq_bigr => k _.
 rewrite !mxE /=.
 rewrite (_ : widen_ord _ _ = inord k); last first.
-  apply val_inj => /=; by rewrite inordK // (leq_trans (ltn_ord k)).
+  apply: val_inj => /=; by rewrite inordK // (leq_trans (ltn_ord k)).
 congr (_ * (_ *+ nat_of_bool _)).
 rewrite esymK.
 apply/idP/idP => [|/eqP ->]; last first.
@@ -205,13 +205,13 @@ have [r0|r0] := eqVneq r 0.
   rewrite r0 mulr1.
   rewrite /GRS.syndromep poly_def big_ord0 mulr0.
   apply/eqP; rewrite eq_sym addr_eq0; apply/eqP.
-  rewrite /GRS_mod /Omega /erreval -sumrN; apply eq_bigr => j jy.
+  rewrite /GRS_mod /Omega /erreval -sumrN; apply: eq_bigr => j jy.
   rewrite expr0 mulr1 mulrN opprK [in RHS]mulrC mulrC -!scalerA.
   rewrite -scalerAl mulrC mul_polyC; congr (_ *: (_ *: _)).
-  by apply eq_bigl => k; rewrite in_setD1 andbC.
+  by apply: eq_bigl => k; rewrite in_setD1 andbC.
 rewrite /GRS_mod big_distrl /= /Omega /erreval -big_split /=.
 rewrite GRS.syndromepE big_distrr /=.
-apply eq_bigr => i iy.
+apply: eq_bigr => i iy.
 rewrite -3!scalerAl -scalerA -scalerDr.
 rewrite polyCM -!mulrA mulrCA !mulrA mul_polyC -!scalerAl; congr (_ *: _).
 rewrite /Sigma /errloc.
@@ -229,7 +229,7 @@ rewrite (_ : x = (b ``_ i)%:P * (1 - (a ``_ i ^+ r)%:P * 'X^r)); last first.
   rewrite addrCA [X in X + _](_ : _ = 0) ?add0r; last first.
     rewrite sumrN.
     apply/eqP; rewrite subr_eq0; apply/eqP.
-    apply eq_bigr => j _.
+    apply: eq_bigr => j _.
     rewrite -!scalerAl mulrCA -exprS !scalerAl; congr (_ * _).
     by rewrite -mul_polyC -polyCM -exprS.
   by rewrite -mulrCA -scalerAl -exprS 2!mul_polyC scalerA -exprSr.

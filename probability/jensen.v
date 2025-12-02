@@ -36,7 +36,7 @@ Lemma jensen_dist (r : A -> R) (X : R.-fdist A) :
   f (\sum_(a in A) X a * r a) <= \sum_(a in A) X a * f (r a).
 Proof.
 move=> HDr.
-apply (@proj1 _ (\sum_(a in fdist_supp X) X a * r a \in D)).
+apply: (@proj1 _ (\sum_(a in fdist_supp X) X a * r a \in D)).
 rewrite [in X in _ <= X]sum_fdist_supp [in X in X <= _]sum_fdist_supp /=.
 apply: (@fdist_ind _ A (fun X =>
    f (\sum_(a in fdist_supp X) X a * r a) <=
@@ -73,7 +73,7 @@ split; last first.
   by rewrite classical_sets.in_setE; apply; rewrite -classical_sets.in_setE.
 have:= (convex_f (probfdist X b) (HDr b) HDd).
 move/le_trans; apply.
-by rewrite lerD2l; apply ler_wpM2l => //; rewrite onem_ge0.
+by rewrite lerD2l; apply: ler_wpM2l => //; rewrite onem_ge0.
 Qed.
 
 Local Open Scope proba_scope.
@@ -97,7 +97,7 @@ Let g x := - f x.
 Let convex_g : convex_function_in D g.
 Proof.
 rewrite /convex_function_in => x y t Dx Dy.
-apply /R_convex_function_atN/concave_f => //; by case: t.
+apply/R_convex_function_atN/concave_f => //; by case: t.
 Qed.
 
 Lemma jensen_dist_concave (r : A -> R) (X : R.-fdist A) :

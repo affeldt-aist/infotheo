@@ -326,7 +326,7 @@ set l := [seq _ | _ in _].
 case/boolP : (Bit b \in l) => Hl.
   left.
   transitivity (Prod [seq M m0 n0 | m0 <- (enum s)]) => //.
-  apply (Prod_starletter H1).
+  apply: (Prod_starletter H1).
   case/mapP : Hl => m1 H2 H3.
   exists m1; rewrite -?H3 //; by rewrite mem_enum in H2.
 right.
@@ -379,7 +379,7 @@ suff : (num_stars A <= num_stars B) && ((num_stars A == num_stars B) ==>
   by rewrite ltn_neqAle A_le_B A_not_B orbT.
 rewrite /num_stars.
 elim/big_ind3 : _ => //.
-  by apply Kop_proof.
+  by apply: Kop_proof.
 move=> i _.
 set lft := (_ <= _).
 set rgt := (_ == _).
@@ -393,7 +393,7 @@ suff : lft && (rgt ==> \big[andb/true]_(j < n) (A i j == B i j)).
   by rewrite mem_index_enum !mxE => /(_ isT)/eqP.
 rewrite /lft /rgt.
 elim/big_ind3 : _ => //.
-  apply Kop_proof.
+  apply: Kop_proof.
 move=> j _.
 move/'forall_forallP : Hle => /(_ i j).
 by case/letterP : (A i j); case/letterP : (B i j).
@@ -492,7 +492,7 @@ Lemma sum_rowVnextD1 (c : 'rV['F_2]_n) (r : 'rV[letter]_n) m0 n0 :
 Proof.
 move=> H0.
 rewrite /sum_letter big_filter big_map big_mkcond /= big_filter.
-apply eq_bigr => n1 Hn1; by rewrite H0.
+apply: eq_bigr => n1 Hn1; by rewrite H0.
 Qed.
 
 Section rowVnext_codeword.
@@ -519,7 +519,7 @@ have Hrhs : rhs = \sum_(i0 < _ | i0 \in 'V m0 :\ n0) c ``_ i0.
       by rewrite big_const /= iter_addr0.
     move=> /= i0 /andP[] i0j.
     rewrite FnextE VnextE tanner_relE -F2_eq0 => /eqP ->; by rewrite mul0r.
-  apply eq_big.
+  apply: eq_big.
     by move=> j0 /=; rewrite in_setD1 FnextE.
   move=> i0 /andP[] H1.
   rewrite FnextE VnextE tanner_relE => /eqP ->; by rewrite mul1r mxE.
@@ -562,7 +562,7 @@ rewrite Prod1 //; split => //.
 set l := [seq _ | _ in _].
 case/boolP : (Bit b \in l) => Hlst.
 - left.
-  apply Prod_starletter.
+  apply: Prod_starletter.
     apply/allP => x xFn0m0.
     by move: H1 => /allP/(_ x) /(_ xFn0m0).
   case/mapP : Hlst => m1 H2 H3.
@@ -686,13 +686,13 @@ case: ifP => Hi.
   rewrite /Sum.
   case: ifPn => [Hn1 | _].
     case: ifPn => // /negP Hn2.
-    exfalso; apply Hn2; move: Hn1.
+    exfalso; apply: Hn2; move: Hn1.
     exact/has_starblank_rowVnextD1/(mxProd_monotone c_le_y).
   case: ifPn => // Hn2.
   apply/orP; left.
   apply/eqP; congr Bit.
   rewrite /sum_letter 2!big_filter 2!big_map [in LHS]big_mkcond /=.
-  rewrite [in RHS]big_mkcond /= 2!big_filter; apply eq_bigr => i Hi'.
+  rewrite [in RHS]big_mkcond /= 2!big_filter; apply: eq_bigr => i Hi'.
   rewrite 2![(row _ _) _ _]mxE.
   move/forallP/(_ m0)/forallP/(_ i): (mxProd_monotone c_le_y Ha Ha' Haa') => /orP [/eqP -> //|].
   move: Hn2.
@@ -755,7 +755,7 @@ move=> Hap Halpha.
 have Hap' := approx_mxSumProd Hap.
 have Hap'' := approx_mxSumProd Hap'.
 rewrite Hap'' /=.
-by apply (mxSumProd_monotone c_le_y).
+by apply: (mxSumProd_monotone c_le_y).
 Qed.
 
 End mxSumProd_codeword.
@@ -797,7 +797,7 @@ Qed.
 Next Obligation.
 move=> y M BEC_y lelM SP_BEC0_rec M0 filtered_var H0 Heq_anonymous.
 case: BEC_y => y' [Hy'1 Hy'2] y'a.
-exists y' => //; by apply approx_mxSumProd.
+exists y' => //; by apply: approx_mxSumProd.
 Qed.
 Next Obligation.
 move=> y M BEC_y lelM SP_BEC0_rec M0 filtered_var H0 Heq_anonymous.

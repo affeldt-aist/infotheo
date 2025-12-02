@@ -58,10 +58,10 @@ apply: (le_trans (success_bound W Mnot0 c)).
 set Pmax := [arg max_(P > _) _]%O.
 set tc :=  _.-typed_code _.
 rewrite exprD -mulrA.
-apply ler_wpM2l.
+apply: ler_wpM2l.
   by rewrite exprn_ge0//.
 apply: (le_trans (typed_success_bound W Mnot0 (Pmax.-typed_code c))).
-apply ler_wpM2l.
+apply: ler_wpM2l.
   by rewrite exprn_ge0//.
 set Vmax := [arg max_(V > _) _]%O.
 rewrite /success_factor_bound /exp_cdiv.
@@ -74,7 +74,7 @@ have {}Hcase : Pmax |- Vmax << W.
   move=> a Hp; apply/dominatesP => b /eqP Hw.
   move/forallP : Hcase.
   by move/(_ a)/implyP/(_ Hp)/forallP/(_ b)/implyP/(_ Hw)/eqP.
-apply (le_trans (HDelta Pmax Vmax Hcase)) => /=.
+apply: (le_trans (HDelta Pmax Vmax Hcase)) => /=.
 rewrite lerD2l//.
 (* TODO: lemma *)
 rewrite Order.TotalTheory.ge_max.
@@ -134,7 +134,7 @@ set aux := _%:R * (_ * _).
 have aux_gt0 : 0 < aux.
   rewrite mulr_gt0 ?ltr0n ?fact_gt0// divr_gt0//.
   by rewrite invr_gt0// exprn_gt0// mulr_gt0// ln_gt0 ?ltr1n.
-apply (@le_trans _ _ ((n.+1%:R / n%:R) ^+ K * aux)); last first.
+apply: (@le_trans _ _ ((n.+1%:R / n%:R) ^+ K * aux)); last first.
   rewrite ler_pM2r//.
   rewrite lerXn2r ?nnegrE ?divr_ge0//.
   rewrite ler_pdivrMr ?ltr0n//.

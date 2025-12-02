@@ -118,7 +118,7 @@ Proof. by rewrite /fdcoor linearZ /= hornerZ. Qed.
 
 Lemma fdcoorE y i : y ^`_ i = \sum_(j < n) (y ``_ j) * (u ``_ i) ^+ j.
 Proof.
-rewrite /fdcoor horner_poly; apply eq_bigr => j _; rewrite insubT //= => jn.
+rewrite /fdcoor horner_poly; apply: eq_bigr => j _; rewrite insubT //= => jn.
 rewrite /Sub/= (_ : Ordinal jn = j) //.
 exact/val_inj.
 Qed.
@@ -145,13 +145,13 @@ Lemma dftE (v : 'rV[F]_n) :
 Proof.
 rewrite /dft.
 under eq_bigr do rewrite scaler_sumr.
-rewrite exchange_big /= /rVpoly poly_def; apply eq_bigr => i _.
+rewrite exchange_big /= /rVpoly poly_def; apply: eq_bigr => i _.
 under [in RHS]eq_bigr do rewrite scalerA.
 rewrite /fdcoor -scaler_suml; congr (_ *: _).
 rewrite insubT // => ni.
 rewrite mxE (@horner_coef_wide _ n); last by rewrite /rVpoly size_poly.
-rewrite -sum_supp; apply eq_bigr => j _.
-by rewrite coef_rVpoly_ord (_ : Sub _ _ = i) //; apply val_inj.
+rewrite -sum_supp; apply: eq_bigr => j _.
+by rewrite coef_rVpoly_ord (_ : Sub _ _ = i) //; apply: val_inj.
 Qed.
 
 End discrete_Fourier_transform.
@@ -206,14 +206,14 @@ suff : a ^+ k ^+ n - 1 = (a ^+ k - 1) * \sum_(j < n) a ^+ k ^+ j.
   rewrite mulf_eq0 => /orP[|/eqP tmp].
     rewrite subr_eq0 -(prim_order_dvd an) gtnNdvd //; by case/andP : kn.
   rewrite -[in RHS]tmp.
-  apply eq_bigr => i _; by rewrite mulnC exprM.
+  apply: eq_bigr => i _; by rewrite mulnC exprM.
 rewrite mulrDl mulN1r.
 destruct n as [|n'] => //.
 rewrite {1}big_ord_recr /= mulrDr (addrC (a ^+ k * _)).
 rewrite -(exprM _ k n') -exprD -mulnS -exprM -addrA; congr (_ + _).
 rewrite big_distrr /= addrC big_ord_recl expr0 opprD.
 apply/eqP; rewrite -subr_eq; apply/eqP; congr (-1 - _).
-apply eq_bigr => i _.
+apply: eq_bigr => i _.
 by rewrite -!exprM -exprD -mulnS.
 Qed.
 
@@ -248,14 +248,14 @@ apply/rowP => i; rewrite !mxE.
 rewrite /idft_coef.
 transitivity (n %:R^-1 * \sum_(k < n) \sum_(j' < n) v ``_ j' * a ^+ (j' * k) / a ^+ (i * k)).
   congr (_ * _).
-  apply eq_bigr => k _.
-  rewrite mxE /fdcoor horner_poly big_distrl /=; apply eq_bigr => j' _.
+  apply: eq_bigr => k _.
+  rewrite mxE /fdcoor horner_poly big_distrl /=; apply: eq_bigr => j' _.
   rewrite insubT // => j'n.
-  rewrite mxE inordK // -exprM mulnC; congr (v ``_ _ * _ * _); by apply val_inj.
+  rewrite mxE inordK // -exprM mulnC; congr (v ``_ _ * _ * _); by apply: val_inj.
 transitivity (n %:R^-1 * \sum_(j' < n) v ``_ j' * \sum_(k < n) a ^+ (j' * k) / a ^+ (i * k)).
   congr (_ * _); rewrite exchange_big /=.
-  apply eq_bigr => i0 _.
-  rewrite big_distrr /=; apply eq_bigr => j' _; by rewrite mulrA.
+  apply: eq_bigr => i0 _.
+  rewrite big_distrr /=; apply: eq_bigr => j' _; by rewrite mulrA.
 rename i into j.
 rewrite (bigD1 j) //= (eq_bigr (fun=> 1)); last first.
   by move=> k _; rewrite divff // expf_neq0.
@@ -319,7 +319,7 @@ Lemma tdcoor_of_fdcoor i (v : 'rV[F]_n) :
 Proof.
 rewrite -[in LHS](dftK Hchar an v) mxE.
 rewrite /idft_coef; congr (_ * _); rewrite horner_poly.
-apply eq_bigr => j _.
+apply: eq_bigr => j _.
 rewrite insubT // => jn.
 rewrite (_ : Sub _ _ = j); last by apply/val_inj.
 by rewrite -!exprVn exprM.
@@ -339,10 +339,10 @@ Lemma wH_phase_shift (v : 'rV[F]_n) (m : nat) : wH (phase_shift v m.+1) = wH v.
 Proof.
 elim: m => [|m IH].
   rewrite /phase_shift /wH !count_map.
-  apply eq_count => i /=.
+  apply: eq_count => i /=.
   by rewrite mxE mul1n mulf_eq0 negb_or expf_neq0 // andbT.
 rewrite -IH /phase_shift /wH !count_map.
-apply eq_count => i /=.
+apply: eq_count => i /=.
 by rewrite !mxE !mulf_eq0 !negb_or !expf_neq0.
 Qed.
 
@@ -354,7 +354,7 @@ Proof.
 rewrite !mxE /fdcoor !horner_poly.
 apply/eq_bigr => /= j _.
 rewrite insubT // => jn.
-rewrite !mxE -mulrA (_ : Sub _ _ = j); last by apply val_inj.
+rewrite !mxE -mulrA (_ : Sub _ _ = j); last by apply: val_inj.
 congr (_ * _).
 rewrite inordK ?ltn_pmod //.
 rewrite inordK //.
@@ -441,16 +441,16 @@ suff : n - m > count (fun i : 'I_n => (rVpoly w)`_i == 0) (enum 'I_n).
   by apply/eq_leq/eq_count.
 rewrite (_ : count _ _ = count (fun i : 'I_n =>
   (rVpoly (dft (rVexp a n) n (\row_i gmorph w ``_ i))).[a ^- i] == 0) (enum 'I_n)); last first.
-  apply eq_count => i.
+  apply: eq_count => i.
   rewrite coef_poly (ltn_ord i) insubT // => ni.
-  apply eq_trans with ((\row_i0 gmorph w ``_ i0) ``_ i == 0).
+  transitivity ((\row_i0 gmorph w ``_ i0) ``_ i == 0).
     rewrite mxE.
     apply/idP/idP => [/eqP H|].
-      rewrite (_ : Sub _ _ = i) in H; last by apply val_inj.
+      rewrite (_ : Sub _ _ = i) in H; last by apply: val_inj.
       by rewrite H rmorph0.
     rewrite [X in _ == X -> _](_ : 0 = gmorph 0); last by rewrite rmorph0.
     move/eqP/fmorph_inj.
-    rewrite (_ : Sub _ _ = i) //; last by apply val_inj.
+    rewrite (_ : Sub _ _ = i) //; last by apply: val_inj.
     by move/eqP.
   rewrite (tdcoor_of_fdcoor Hchar an i (\row_i gmorph w ``_ i)).
   rewrite mulf_eq0 invr_eq0 /=.
@@ -476,9 +476,9 @@ move: (root_rVpoly _ rs_root rs_uniq).
 apply/negP.
 rewrite -ltnNge subn1 prednK // ?subn_gt0 // /rs size_filter.
 apply: (leq_trans abs).
-apply eq_leq.
+apply: eq_leq.
 rewrite [in RHS]count_map.
-by apply eq_count => i /=.
+by apply: eq_count => i /=.
 Qed.
 
 End BCH_argument.

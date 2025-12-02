@@ -212,9 +212,9 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   by rewrite logM//.
 rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
   rewrite -[RHS](FDist.f1 (P `^ n0)%fdist).
-  by apply eq_bigr => i _; rewrite fdist_rVE.
+  by apply: eq_bigr => i _; rewrite fdist_rVE.
 rewrite -big_distrl /= mulr1 [in RHS]addrC; congr +%R.
-rewrite -big_distrl /= FDist.f1 mul1r; apply eq_bigr => i _.
+rewrite -big_distrl /= FDist.f1 mul1r; apply: eq_bigr => i _.
 by rewrite fdist_rVE.
 Qed.
 
@@ -279,7 +279,7 @@ Lemma le_1_EX : 1 <= `E X.
 Proof.
 rewrite -(FDist.f1 P); apply: ler_sum => i _.
 rewrite -{1}(mulr1 (P i)).
-apply ler_wpM2l; first exact/FDist.ge0.
+apply: ler_wpM2l; first exact/FDist.ge0.
 by move: (Xpos i); rewrite (_ : 1 = 1%:R) //= (_ : 0 = 0%:R) // ltr_nat ler_nat.
 Qed.
 
@@ -538,7 +538,7 @@ rewrite -big_union //; last first.
   rewrite disjoints_subset.
   rewrite (_ : ~: [set x | PN x == 0] = [set x | PN x != 0])//.
   by apply/setP => i; rewrite !inE.
-by apply eq_bigl => i; rewrite !inE orbN.
+by apply: eq_bigl => i; rewrite !inE orbN.
 Qed.
 
 Lemma rewrite_HP_with_Pf : `H P =
@@ -576,10 +576,10 @@ rewrite rsum_disjoints_set [Y in Y + _ = _]big1 ?add0r; last first.
   rewrite {1}/Pf.
   case: pickP => [a /eqP fai0|]; last by rewrite mul0r.
   by rewrite H ?mul0r // inE fai0 size_tuple.
-apply : eq_bigr => i.
+apply: eq_bigr => i.
 rewrite inE /eqP => Pr_non0.
 rewrite big_distrr /=.
-apply : eq_bigr => i0 _.
+apply: eq_bigr => i0 _.
 rewrite ffunE.
 rewrite {1}/Pf'.
 rewrite ffunE.
@@ -736,7 +736,7 @@ elim: m' => [_ |m'' _ IH].
   rewrite /comp_RV.
   rewrite [tuple_of_row]lock /= -lock.
   rewrite (_ : tuple_of_row i = [tuple of [:: i ``_ ord0]]); last first.
-    by apply eq_from_tnth => a; rewrite {a}(ord1 a) tnth_mktuple.
+    by apply: eq_from_tnth => a; rewrite {a}(ord1 a) tnth_mktuple.
   by rewrite /extension /= cats0.
 pose fm1 (x : 'rV['rV[A]_n]_(m''.+1)) := extension f (tuple_of_row x).
 pose Xm1 := (fun x => x%:R : R) \o size \o fm1.
@@ -755,7 +755,7 @@ have X_Xm1_Xm2 : Xm2 \= X @+ Xm1.
   rewrite map_cat flatten_cat.
   congr (_ ++ _).
   rewrite (_ : tuple_of_row _ = [tuple of [:: x ``_ ord0]]); last first.
-    by apply eq_from_tnth => i; rewrite {i}(ord1 i) /= tnth_mktuple mxE.
+    by apply: eq_from_tnth => i; rewrite {i}(ord1 i) /= tnth_mktuple mxE.
   by rewrite /= cats0.
 rewrite (E_sum_2 X_Xm1_Xm2).
 rewrite -natr1 mulrDl -IH addrC; congr +%R.

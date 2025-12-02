@@ -54,7 +54,7 @@ Lemma num_occ_map_filter (B : finType) (f : B -> A) (s : {set B}) (p : pred A) (
   N(a | [seq f i | i <- enum s & p (f i)]) = N(a | [seq f i | i in s]).
 Proof.
 rewrite /num_occ count_map count_filter /= count_map.
-apply eq_count => /= m0 /=; by rewrite andb_idr // => /eqP ->.
+apply: eq_count => /= m0 /=; by rewrite andb_idr // => /eqP ->.
 Qed.
 
 Lemma notin_num_occ_0 (t : seq A) : (a \notin t) = (N(a | t) == O).
@@ -92,7 +92,7 @@ Qed.
 Lemma sum_num_occ_size (A : finType) s : (\sum_(a in A) N(a|s))%nat = size s.
 Proof.
 elim: s => [|a s IH] /=.
-+ by apply big1_eq.
++ by apply: big1_eq.
 + by rewrite big_split /= IH -big_mkcond /= (big_pred1 a) // => x; rewrite eq_sym.
 Qed.
 
@@ -128,7 +128,7 @@ Proof.
 rewrite (bigID (pred1 a)) /= big_pred1_eq /= eqxx /= addn0.
 rewrite (_ : \sum_(_ | _) _ = \sum_(a' : A | a' != a) 0).
 by rewrite sum_nat_const muln0.
-apply eq_bigr => a'' /negbTE Ha''; by rewrite eq_sym Ha''.
+apply: eq_bigr => a'' /negbTE Ha''; by rewrite eq_sym Ha''.
 Qed.
 
 End num_occ_tuple.
@@ -142,7 +142,7 @@ elim : n t => [[] [] // Hi|m IH y].
   by rewrite (eq_bigr (fun=> 0)) // big_const iter_addn.
 rewrite (eq_bigr (fun a => N(a | [tuple of [:: thead y]]) + N(a | tbehead y))).
   by rewrite big_split /= (IH (tbehead y)) sum_num_occ_seq1 add1n.
-move=> a _; by apply num_occ_thead.
+move=> a _; by apply: num_occ_thead.
 Qed.
 
 Lemma sum_num_occ_all : \sum_(i < #|A|) N(enum_val i | t) = n.
@@ -150,7 +150,7 @@ Proof.
 symmetry.
 rewrite -{1}sum_num_occ_alt.
 rewrite (reindex_onto enum_rank enum_val) /= => [|i _]; last by rewrite enum_valK.
-apply eq_big => x0 ; by rewrite enum_rankK // eqxx.
+apply: eq_big => x0 ; by rewrite enum_rankK // eqxx.
 Qed.
 
 Local Open Scope group_scope.
@@ -199,10 +199,10 @@ Proof. by rewrite /num_co_occ /num_occ /= !addn0 xpair_eqE eqxx andbC. Qed.
 Lemma num_co_occ_sym : N(a, b | ta, tb) = N(b, a | tb, ta).
 Proof.
 rewrite /num_co_occ /num_occ.
-rewrite (_ : zip tb ta = map (fun x => (x.2, x.1)) (zip ta tb)); last by apply zip_swap.
+rewrite (_ : zip tb ta = map (fun x => (x.2, x.1)) (zip ta tb)); last by apply: zip_swap.
 rewrite -2!size_filter filter_map size_map.
 congr (size _).
-apply eq_filter; case=> a' b' /=.
+apply: eq_filter; case=> a' b' /=.
 by rewrite 2!xpair_eqE andbC.
 Qed.
 
@@ -214,15 +214,15 @@ Variables (A B : finType) (n : nat) (a : A) (b : B) (ta : n.-tuple A) (tb : n.-t
 Definition set_co_occ := [set i | (ta !_ i == a) && (tb !_ i == b)].
 
 Lemma num_co_occ_leq_n : N(a, b | ta, tb) <= n.
-Proof. rewrite /num_co_occ ; by apply num_occ_leq_n. Qed.
+Proof. rewrite /num_co_occ ; by apply: num_occ_leq_n. Qed.
 
 Lemma num_co_occ_ub : N(a, b | ta, tb) < n.+1.
-Proof. rewrite ltnS ; apply num_co_occ_leq_n. Qed.
+Proof. rewrite ltnS ; apply: num_co_occ_leq_n. Qed.
 
 Lemma num_co_occ_alt : N(a, b | ta, tb) = #| set_co_occ |.
 Proof.
 rewrite /num_co_occ num_occ_alt /set_occ.
-apply eq_card => i.
+apply: eq_card => i.
 rewrite !in_set /zip_tuple (tnth_nth (a, b)) nth_zip ?size_tuple //.
 by rewrite -2!tnth_nth xpair_eqE.
 Qed.
@@ -273,12 +273,12 @@ Proof.
 elim: n ta tb => [x' y' | m IHm x1 y1].
   rewrite (tuple0 x') (tuple0 y') num_occ0.
   transitivity (\sum_(y0 : B) 0).
-    by apply eq_bigr => b _.
+    by apply: eq_bigr => b _.
   by rewrite big_const iter_addn mul0n addn0.
 rewrite num_occ_thead.
 transitivity (\sum_y0 (N(a, y0 | [tuple thead x1], [tuple thead y1]) +
                        N(a, y0 | tbehead x1, tbehead y1))).
-  apply eq_bigr => i _.
+  apply: eq_bigr => i _.
   by rewrite {1}/num_co_occ {1}(tuple_eta x1) {1}(tuple_eta y1) /num_co_occ /num_occ /= addn0.
 rewrite big_split /=.
 move: {IHm}(IHm (tbehead x1) (tbehead y1)) => ->.
@@ -288,10 +288,10 @@ set tmp := \sum_(_ | _) _.
 suff : tmp = 0 by move=> ->; rewrite addn0.
 rewrite {}/tmp.
 transitivity (\sum_(H | H != thead y1) 0).
-  apply eq_bigr => b Hb.
+  apply: eq_bigr => b Hb.
   apply/eqP.
   rewrite /num_co_occ -notin_num_occ_0.
-  move: Hb; apply contra => Hb.
+  move: Hb; apply: contra => Hb.
   case/tnthP : Hb => i.
   rewrite (tnth_nth (a, b)) /= (ord1 i) /=.
   by case => _ ->.
@@ -342,14 +342,14 @@ Variable ta : n.-tuple A.
 Definition sum_num_occ (k : nat) := \sum_(i < #|A| | i < k) N(enum_val i | ta).
 
 Lemma sum_num_occ_0 : sum_num_occ 0 = 0.
-Proof. rewrite /sum_num_occ; apply big_pred0 => i /=; by rewrite ltn0. Qed.
+Proof. rewrite /sum_num_occ; apply: big_pred0 => i /=; by rewrite ltn0. Qed.
 
 Lemma sum_num_occ_rec (k : 'I_#|A|) : sum_num_occ k.+1 = sum_num_occ k + N(enum_val k | ta).
 Proof.
-rewrite /sum_num_occ (bigD1 k) /=; last by exact (leqnn k).
+rewrite /sum_num_occ (bigD1 k) /=; last by exact: (leqnn k).
 rewrite addnC.
 apply/eqP; rewrite eqn_add2r; apply/eqP.
-apply eq_bigl => i; by rewrite andbC -ltn_neqAle.
+apply: eq_bigl => i; by rewrite andbC -ltn_neqAle.
 Qed.
 
 Lemma sum_num_occ_sub (k : 'I_#|A|) : sum_num_occ k.+1 - sum_num_occ k = N(enum_val k | ta).
@@ -360,7 +360,7 @@ Qed.
 
 Lemma full_sum_num_occ (k : nat) : #|A| <= k ->
   sum_num_occ k = \sum_(i < #|A|) N(enum_val i | ta).
-Proof. move=> Hk; apply eq_bigl => i; by rewrite (leq_trans (ltn_ord i) Hk). Qed.
+Proof. move=> Hk; apply: eq_bigl => i; by rewrite (leq_trans (ltn_ord i) Hk). Qed.
 
 Lemma full_sum_num_occ_n (k : nat) : #|A| <= k -> sum_num_occ k = n.
 Proof. move=> Hk; by rewrite full_sum_num_occ // sum_num_occ_all. Qed.
@@ -368,9 +368,9 @@ Proof. move=> Hk; by rewrite full_sum_num_occ // sum_num_occ_all. Qed.
 Lemma sum_num_occ_inc_loc (k : nat) : sum_num_occ k <= sum_num_occ k.+1.
 Proof.
 case/boolP : (k < #|A|) => Hcase.
-- move: (sum_num_occ_rec (Ordinal Hcase)) => /= ->; by apply leq_addr.
+- move: (sum_num_occ_rec (Ordinal Hcase)) => /= ->; by apply: leq_addr.
 - rewrite -leqNgt in Hcase.
-  rewrite !full_sum_num_occ //; by apply (leq_trans Hcase).
+  rewrite !full_sum_num_occ //; by apply: (leq_trans Hcase).
 Qed.
 
 Lemma sum_num_occ_inc (k l : nat) : k <= l -> sum_num_occ k <= sum_num_occ l.
@@ -385,19 +385,16 @@ Qed.
 
 Lemma sum_num_occ_leq_n (k : nat) : sum_num_occ k <= n.
 Proof.
-case/boolP : (k < #|A|) => Hcase.
-- rewrite -(@full_sum_num_occ_n #|A| _); last by apply leqnn.
-  apply ltnW in Hcase.
-  by apply sum_num_occ_inc.
-- rewrite -leqNgt in Hcase.
-  by rewrite full_sum_num_occ_n.
+have[]:= ltnP k #|A|.
+- by move/ltnW/sum_num_occ_inc; rewrite (@full_sum_num_occ_n #|A|).
+- by move/full_sum_num_occ_n->.
 Qed.
 
 Lemma minn_sum_num_occ_n (k : nat) : minn (sum_num_occ k) n = sum_num_occ k.
-Proof. apply/minn_idPl ; apply sum_num_occ_leq_n. Qed.
+Proof. apply/minn_idPl ; apply: sum_num_occ_leq_n. Qed.
 
 Lemma min_sum_num_occ (k : nat) : minn (sum_num_occ k) (sum_num_occ k.+1) = sum_num_occ k.
-Proof. apply/minn_idPl; by apply sum_num_occ_inc. Qed.
+Proof. apply/minn_idPl; by apply: sum_num_occ_inc. Qed.
 
 Section order_surgery.
 Hypothesis ta_cansorted : sorted (@le_rank A) ta.
@@ -409,19 +406,19 @@ elim: l => [kr | l IH HSl].
 - apply/eqP; rewrite cards_eq0; apply/eqP.
   apply/setP => i; by rewrite !inE.
 - rewrite addnS in HSl.
-  have : k + l <= r by apply: (leq_trans _ HSl); apply leqnSn.
+  have : k + l <= r by apply: (leq_trans _ HSl); apply: leqnSn.
   move/IH => Hl.
   rewrite -sum1_card (bigD1 (Ordinal HSl)) /=.
   rewrite (_ : \sum_(i in [set i0 : 'I_r | nat_of_ord i0 \in iota k l.+1] | _) 1 =
                \sum_(i in [set i0 : 'I_r | nat_of_ord i0 \in iota k l]) 1); last first.
-    apply eq_bigl => i; rewrite !in_set.
+    apply: eq_bigl => i; rewrite !in_set.
     case/boolP : (i != Ordinal HSl) => Hcase.
     - rewrite andbT -addn1 iotaD /= mem_cat !inE.
       set tmp := _ == _ + _.
       suff -> : tmp = false by rewrite orbC.
       apply/eqP/eqP.
       move: Hcase; apply: contra => /eqP Hcase.
-      by apply/eqP; apply val_inj.
+      by apply/eqP; apply: val_inj.
     - rewrite negbK in Hcase.
       move/eqP : Hcase => ->.
       by rewrite andbC /= mem_iota /= ltnn andbC.
@@ -439,7 +436,7 @@ move: (ltnSn k).
 set k':= {2}k.+1.
 move: k' => k'.
 elim: k' l k => [l k /= | m IH l k km]; first by rewrite ltn0.
-case/boolP : (k < m) => Hcase; first by apply IH.
+case/boolP : (k < m) => Hcase; first by apply: IH.
 rewrite -leqNgt in Hcase.
 have : m = k by apply/eqP; rewrite eqn_leq; apply/andP.
 rewrite {Hcase} => ?; subst m.
@@ -453,15 +450,15 @@ case/boolP : (lt_rank ta!_l (enum_val k)) => Hcase.
     apply/negbTE; rewrite negb_and.
     case/boolP : (ta!_i == ta!_l) => ta_il //.
     rewrite negb_or; apply/andP; split.
-    - move: ta_il; apply contra => /eqP ->; by rewrite eqxx.
-    - move: ta_il; apply contra => ta_il.
-      apply/eqP; rewrite -(enum_rankK (ta!_l)); by apply IH.
+    - move: ta_il; apply: contra => /eqP ->; by rewrite eqxx.
+    - move: ta_il; apply: contra => ta_il.
+      apply/eqP; rewrite -(enum_rankK (ta!_l)); by apply: IH.
   rewrite (_ : #|[set i | (i == l) || (sum_num_occ (enum_rank ta!_l) <= i < sum_num_occ (enum_rank ta!_l).+1)]| = N(ta!_l | ta).+1) in Hcontr; first by rewrite ltnn in Hcontr.
   symmetry; rewrite -addn1 sum_num_occ_rec -sum1_card.
-  rewrite (bigD1 l) /=; last by rewrite in_set; apply/orP; apply or_introl.
+  rewrite (bigD1 l) /=; last by rewrite in_set; apply/orP; apply: or_introl.
   rewrite addnC; apply/eqP; rewrite eqn_add2l; apply/eqP.
   transitivity (\sum_(i in [set i0 : 'I_n | nat_of_ord i0 \in iota (sum_num_occ (enum_rank ta!_l)) N(enum_val (enum_rank ta!_l) | ta)]) 1); last first.
-    apply eq_bigl => i; rewrite !in_set.
+    apply: eq_bigl => i; rewrite !in_set.
     case/boolP : (i != l) => Hcase2.
     - rewrite mem_iota.
       move/negPf in Hcase2; by rewrite andbT Hcase2 orFb.
@@ -482,19 +479,19 @@ case/boolP : (lt_rank ta!_l (enum_val k)) => Hcase.
   move/negP : (ltnn N(enum_val k | ta)) => abs; contradict abs.
   rewrite {1}num_occ_alt.
   have H : #|[set i | ta!_i == enum_val k]| <= #|[set i : 'I_n | (sum_num_occ k <= i < l)]|.
-    apply subset_leq_card.
+    apply: subset_leq_card.
     rewrite subsetE; apply/pred0P => i /=.
     rewrite !in_set /=.
     apply/negP/negP.
     rewrite negb_and negbK.
-    case/boolP : (sum_num_occ k <= i < l) => Hcase2; first by apply/orP; apply or_introl.
+    case/boolP : (sum_num_occ k <= i < l) => Hcase2; first by apply/orP; apply: or_introl.
     case/boolP : (l <= i) => Hcase3.
-    + rewrite eq_sym; apply lt_neq_rank.
-      eapply lt_le_rank_trans; first by apply Hcase.
-      apply sorted_of_tnth_leq => //; [exact/le_rank_trans | exact/le_rank_refl].
+    + rewrite eq_sym; apply: lt_neq_rank.
+      apply/lt_le_rank_trans; first by apply: Hcase.
+      apply: sorted_of_tnth_leq => //; [exact/le_rank_trans | exact/le_rank_refl].
     + rewrite -ltnNge in Hcase3.
       rewrite Hcase3 andbT -ltnNge {Hcase3} in Hcase2.
-      apply lt_neq_rank.
+      apply: lt_neq_rank.
       have lt0m : 0 < k.
         rewrite ltnNge leqn0 ; apply/eqP => abs2.
         contradict Hcase2 ; by rewrite abs2 sum_num_occ_0 ltn0.
@@ -502,18 +499,18 @@ case/boolP : (lt_rank ta!_l (enum_val k)) => Hcase.
       case; elim.
       - move=> H0 l0 /= _ abs2 ; contradict abs2 ; by rewrite sum_num_occ_0 ltn0.
       - move=> k' HR' HSk l0 /= k'k Hl0.
-        have Hk' : k' < #|A| by apply: (leq_trans k'k _); apply ltnW.
+        have Hk' : k' < #|A| by apply: (leq_trans k'k _); apply: ltnW.
         apply: (@le_lt_rank_trans _ _ (enum_val (Ordinal Hk'))).
-        - case/boolP : (l0 < sum_num_occ k') => Hcase3; rewrite /le_rank leq_eqVlt; apply/orP; [apply or_intror | apply or_introl].
-          - rewrite -lt_rank_alt; apply HR'; by [apply: (leq_ltn_trans (leq_pred _) k'k) | apply Hcase3].
+        - case/boolP : (l0 < sum_num_occ k') => Hcase3; rewrite /le_rank leq_eqVlt; apply/orP; [apply: or_intror | apply: or_introl].
+          - rewrite -lt_rank_alt; apply: HR'; by [apply: (leq_ltn_trans (leq_pred _) k'k) | apply: Hcase3].
           - rewrite -leqNgt in Hcase3; rewrite (IH _ (Ordinal Hk')) //; by apply/andP.
-        - rewrite lt_rank_alt !enum_valK; by apply ltnSn.
-      apply H2 ; by [rewrite -{2}(prednK lt0m) ; apply ltnSn | apply Hcase2].
+        - rewrite lt_rank_alt !enum_valK; by apply: ltnSn.
+      apply: H2 ; by [rewrite -{2}(prednK lt0m) ; apply: ltnSn | apply: Hcase2].
   rewrite -(subnKC Hlm1) in H.
   set lhs := #| _ | in H.
   have {}H : lhs <= #|[set i : 'I_n | nat_of_ord i \in iota (sum_num_occ k) (l - sum_num_occ k)]|.
-    apply (leq_trans H), eq_leq.
-    by apply eq_card => /= i; rewrite !inE mem_iota.
+    apply/(leq_trans H)/eq_leq.
+    by apply: eq_card => /= i; rewrite !inE mem_iota.
   rewrite set_predleq_size in H; last by rewrite (subnKC Hlm1) ltnW.
   apply: (leq_ltn_trans H _).
   by rewrite -sum_num_occ_sub /= ltn_sub2r // (leq_ltn_trans Hlm1 Hlm2).
@@ -530,20 +527,20 @@ have : #|[set i | (i == l) || (sum_num_occ k <= i < sum_num_occ k.+1)]| <= N(ta!
   apply/negbTE; rewrite negb_or; apply/andP; split.
   - move: ta_il; apply: contra => /eqP ?; subst l; by rewrite eqxx.
   - move: ta_il; apply: contra => Hsum_num_occ.
-    apply/eqP; rewrite Hkl; by apply sum_num_occ_enum_val.
+    apply/eqP; rewrite Hkl; by apply: sum_num_occ_enum_val.
 suff -> : #|[set i | (i == l) || (sum_num_occ k <= i < sum_num_occ k.+1)]| = N(ta!_l | ta).+1.
   by rewrite ltnn.
 symmetry; rewrite -addn1 sum_num_occ_rec -sum1_card.
-rewrite (bigD1 l) /=; last by rewrite in_set; apply/orP; apply or_introl.
+rewrite (bigD1 l) /=; last by rewrite in_set; apply/orP; apply: or_introl.
 rewrite addnC; apply/eqP; rewrite eqn_add2l; apply/eqP.
 transitivity ( \sum_(i in [set i0 : 'I_n | nat_of_ord i0 \in iota (sum_num_occ k) N(enum_val k | ta)]) 1 ).
-  rewrite sum1_card set_predleq_size; by [rewrite Hkl | rewrite -sum_num_occ_rec; apply sum_num_occ_leq_n].
-apply eq_bigl => i; rewrite !in_set.
+  rewrite sum1_card set_predleq_size; by [rewrite Hkl | rewrite -sum_num_occ_rec; apply: sum_num_occ_leq_n].
+apply: eq_bigl => i; rewrite !in_set.
 case/boolP : (i != l) => [/negPf |] il.
 - by rewrite andbT il orFb mem_iota.
 - rewrite negbK in il; move/eqP in il; subst i.
   rewrite andbF mem_iota.
-  apply/negbTE; move: abs; apply contra.
+  apply/negbTE; move: abs; apply: contra.
   by rewrite -sum_num_occ_rec.
 Qed.
 

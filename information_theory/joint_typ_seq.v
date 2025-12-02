@@ -137,7 +137,7 @@ have : (JTS_1_bound <= n)%nat ->
     move: (set_typ_seq_incl P m (ltW He)) => Hincl.
     rewrite (Pr_DMC_fst P W (fun x => x \notin `TS P m epsilon)).
     apply/subset_Pr/subsetP => i /=; rewrite !inE.
-    apply contra.
+    apply: contra.
     by move/subsetP : Hincl => /(_ i); rewrite !inE.
   have {H1}HnP : forall n, (Nup (aep_bound P (epsilon / 3)) <= n)%N ->
     Pr ((P `X W) `^ n)%fdist [set x | (rV_prod x).1 \notin `TS P n epsilon ] <= epsilon /3.
@@ -158,7 +158,7 @@ have : (JTS_1_bound <= n)%nat ->
     have Hincl := set_typ_seq_incl (`O(P , W)) m (ltW He).
     rewrite Pr_DMC_out.
     apply/subset_Pr/subsetP => i /=; rewrite !inE.
-    apply contra.
+    apply: contra.
     move/subsetP : Hincl => /(_ i).
     by rewrite !inE.
   have {H1}HnPW m : (Nup (aep_bound (`O(P , W)) (epsilon / 3)) <= m)%nat ->
@@ -179,7 +179,7 @@ have : (JTS_1_bound <= n)%nat ->
     Pr ((P `X W) `^ m)%fdist (~: `TS ((P `X W)) m (epsilon / 3)).
     have Hincl := set_typ_seq_incl ((P `X W)) m (ltW He).
     apply/subset_Pr/subsetP => /= v; rewrite !inE.
-    apply contra.
+    apply: contra.
     by move/subsetP : Hincl => /(_ v); by rewrite !inE.
   have {H1}HnP_W m : (Nup (aep_bound ((P `X W)) (epsilon / 3)) <= m)%nat ->
     Pr ((P `X W) `^ m)%fdist (~: `TS ((P `X W)) m epsilon) <= epsilon /3.
@@ -197,20 +197,20 @@ have : (JTS_1_bound <= n)%nat ->
   rewrite [in X in _ <= X](_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3); last by field.
   move: Hn; rewrite 2!geq_max => /andP[Hn1 /andP[Hn2 Hn3]].
   rewrite !Pr_DMC_rV_prod.
-  apply lerD; first by apply lerD; [exact: HnP | exact: HnPW].
+  apply: lerD; first by apply: lerD; [exact: HnP | exact: HnPW].
   apply: le_trans; last exact/HnP_W/Hn3.
   by apply/eqW; congr Pr; apply/setP => /= tab; rewrite !inE rV_prodK.
 move=> Hn_Pr Hn.
 suff H : Pr ((P `X W) `^ n)%fdist (~: `JTS P W n epsilon) <= epsilon.
   rewrite -(Pr_cplt ((P `X W) `^ n)%fdist (`JTS P W n epsilon)).
   by rewrite lerBlDr lerD2l.
-apply (@le_trans _ _ (Pr ((P `X W) `^ n)%fdist
+apply: (@le_trans _ _ (Pr ((P `X W) `^ n)%fdist
                     ([set x | ((rV_prod x).1 \notin `TS P n epsilon)] :|:
                     ([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
                     (~: `TS (P `X W) n epsilon))))).
   by apply/eqW; congr Pr; apply/setP => xy;  rewrite !inE 2!negb_and orbA.
 apply: le_trans; last exact: Hn_Pr.
-apply (@le_trans _ _ (
+apply: (@le_trans _ _ (
  Pr ((P `X W) `^ n)%fdist [set x | (rV_prod x).1 \notin `TS P n epsilon] +
  Pr ((P `X W) `^ n)%fdist ([set x | ((rV_prod x).2 \notin `TS (`O( P , W)) n epsilon)] :|:
                       (~: `TS ((P `X W)) n epsilon)))).
@@ -228,7 +228,7 @@ Lemma non_typical_sequences : Pr ((P `^ n) `x ((`O(P , W)) `^ n))%fdist
   [set x | prod_rV x \in `JTS P W n epsilon] <= 2 `^ (- n%:R * (`I(P, W) - 3 * epsilon)).
 Proof.
 rewrite /Pr /=.
-apply (@le_trans _ _ (\sum_(i | i \in `JTS P W n epsilon)
+apply: (@le_trans _ _ (\sum_(i | i \in `JTS P W n epsilon)
     (2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W ) - epsilon))))) => /=.
   rewrite (reindex_onto (fun y => prod_rV y) (fun x => rV_prod x)) /=; last first.
     by move=> ? ?; rewrite rV_prodK.
@@ -242,7 +242,7 @@ rewrite (_ : \sum_(_ | _) _ =
   #| `JTS P W n epsilon|%:R *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W) - epsilon)));
   last by rewrite big_const iter_addr addr0 -[LHS]mulr_natl mulrA.
-apply (@le_trans _ _ (2 `^ (n%:R * (`H( P , W )%channel + epsilon)) *
+apply: (@le_trans _ _ (2 `^ (n%:R * (`H( P , W )%channel + epsilon)) *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W ) - epsilon)))).
   by rewrite !ler_wpM2r ?powR_ge0 // JTS_sup.
 apply/eqW.

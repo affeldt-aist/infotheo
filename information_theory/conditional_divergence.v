@@ -89,10 +89,10 @@ Lemma cdiv_is_div_joint_dist : D(V || W | P) = D((P `X V) || (P `X W)).
 Proof.
 rewrite (_ : D(V || W | P) = \sum_(a in A) (\sum_(b in B)
     V a b * (log (V a b / W a b)) * P a)); last first.
-  apply eq_bigr => a _; rewrite big_distrr//=.
+  apply: eq_bigr => a _; rewrite big_distrr//=.
   by apply: eq_bigr => b _; rewrite mulrC.
 rewrite pair_bigA big_mkcond /=.
-apply eq_bigr => -[a b] /= _.
+apply: eq_bigr => -[a b] /= _.
 rewrite fdist_prodE /= (mulrC (P a)) [in RHS]mulrAC.
 have [->|Pa0] := eqVneq (P a) 0; first by rewrite !mulr0.
 congr *%R.
@@ -123,7 +123,7 @@ move=> PQ.
 rewrite /cond_relative_entropy cdiv_is_div_joint_dist; last exact/dom_by_cdom_by.
 rewrite /div.
 under eq_bigr do rewrite big_distrr /=.
-rewrite pair_big /=; apply eq_bigr => -[a b] _ /=.
+rewrite pair_big /=; apply: eq_bigr => -[a b] _ /=.
 rewrite (_ : (R `X P) (a, b) = (R `X P) (a, b)); last by rewrite fdist_prodE.
 rewrite (_ : (R `X Q) (a, b) = (R `X Q) (a, b)); last by rewrite fdist_prodE.
 rewrite mulrA.
@@ -162,7 +162,7 @@ Proof.
 transitivity (\prod_(a : A) \prod_(b : B) \prod_(i < n)
   if (a == x ``_ i) && (b == y ``_ i) then W `(y ``_ i | x ``_ i) else 1).
   rewrite pair_big exchange_big /= DMCE.
-  apply eq_bigr => i _.
+  apply: eq_bigr => i _.
   rewrite (bigD1 (x ``_ i, y ``_ i)) //= 2!eqxx andbT.
   rewrite big1; first by rewrite mulr1.
   case=> a b /=.
@@ -170,12 +170,12 @@ transitivity (\prod_(a : A) \prod_(b : B) \prod_(i < n)
   case/orP.
   - by move/negbTE => ->.
   - move/negbTE => ->; by rewrite andbF.
-apply eq_bigr => a _; apply eq_bigr => b _.
+apply: eq_bigr => a _; apply: eq_bigr => b _.
 rewrite num_co_occ_alt -sum1_card.
 rewrite (@big_morph _ _ (fun x => W a b ^+ x) 1 *%R O addn) //; last first.
   by move=> * /=; rewrite exprD.
 rewrite [in RHS]big_mkcond.
-apply eq_bigr => i _.
+apply: eq_bigr => i _.
 case: ifP.
   case/andP => /eqP Ha /eqP Hb.
   by rewrite inE 2!tnth_mktuple -Ha -Hb 2!eqxx /= expr1.
@@ -203,11 +203,11 @@ Proof.
 rewrite dmc_cdiv_cond_entropy_aux cond_entropy_chanE2.
 rewrite /cdiv /entropy -big_split /=.
 rewrite big_distrr/= powR2sum.
-apply eq_bigr => a _.
+apply: eq_bigr => a _.
 rewrite big_morph_oppr.
 rewrite /div /= -mulrDr mulrA -big_split /=.
 rewrite big_distrr/= powR2sum.
-apply eq_bigr => b _.
+apply: eq_bigr => b _.
 have [Pa0|Pa0] := eqVneq (type.d P a) 0.
   move: Hy; rewrite in_set => /forallP/(_ a)/forallP/(_ b)/eqP => ->.
   move: (HV); rewrite in_set => /cond_type_equiv/(_ _ Hx a).
@@ -299,7 +299,7 @@ rewrite /exp_cdiv.
 case : ifP => Hcase.
 - rewrite -powRD; last by rewrite pnatr_eq0 implybT.
   rewrite -mulrDr.
-  apply dmc_cdiv_cond_entropy => //.
+  apply: dmc_cdiv_cond_entropy => //.
   (* TODO: lemma? *)
   move=> a Pa; apply/dominatesP => b /eqP Wab.
   by move: Hcase => /forallP/(_ a)/implyP/(_ Pa)/forallP/(_ b)/implyP/(_ Wab)/eqP.

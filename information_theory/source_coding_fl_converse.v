@@ -70,26 +70,26 @@ Hypothesis Hk : SrcConverseBound <= k.+1%:R.
 
 Lemma Hr1 : 0 < (`H P - r) / 2.
 Proof.
-apply divr_gt0; last lra.
+apply: divr_gt0; last lra.
 by case/andP: Hr => ? ?; lra.
 Qed.
 
 Lemma Hepsilon1 : 0 < (1 - epsilon) / 2.
 Proof.
-apply divr_gt0; last lra.
+apply: divr_gt0; last lra.
 by case/andP: Hepsilon => ? ?; lra.
 Qed.
 
 Lemma lambda0 : 0 < lambda.
 Proof.
-by rewrite /lambda lt_min; apply/andP; split; [exact Hepsilon1 | exact Hr1].
+by rewrite /lambda lt_min; apply/andP; split; [exact: Hepsilon1 | exact: Hr1].
 Qed.
 
 Lemma Hdelta : 0 < delta.
 Proof.
 rewrite /delta lt_min; apply/andP; split.
-case/andP: Hr => ? ?; apply divr_gt0; lra.
-apply divr_gt0; [exact lambda0 | lra].
+case/andP: Hr => ? ?; apply: divr_gt0; lra.
+apply: divr_gt0; [exact: lambda0 | lra].
 Qed.
 
 Definition e0 := `H P - r.
@@ -117,7 +117,7 @@ Definition no_failure := [set x : 'rV[A]_k.+1 | dec sc (enc sc x) == x].
 
 Lemma no_failure_sup : #| no_failure |%:R <= ((2:R) `^ (k.+1%:R * (`H P - e0)))%R.
 Proof.
-apply (@le_trans _ _ (2%R `^ n%:R)%R).
+apply: (@le_trans _ _ (2%R `^ n%:R)%R).
   rewrite /no_failure.
   have Hsubset : [set x | dec sc (enc sc x) == x] \subset dec sc @: (enc sc @: [set: 'rV[A]_k.+1]).
     apply/subsetP => x; rewrite inE => /eqP Hx.
@@ -150,10 +150,10 @@ set b := \sum_(_ | _) _.
 suff : 1 = a + b by move=> ->; ring.
 rewrite /a {a}.
 have -> : b = \sum_(i in [set i | dec sc (enc sc i) == i]) (P `^ k.+1)%fdist i.
-  by apply eq_big => // i /=; rewrite inE.
+  by apply: eq_big => // i /=; rewrite inE.
 rewrite -(FDist.f1 (P `^ k.+1)).
 rewrite (bigID [pred a | a \in [set i0 | dec sc (enc sc i0) == i0]]) /= addrC.
-by congr (_ + _); apply eq_bigl => t /=; rewrite !inE.
+by congr (_ + _); apply: eq_bigl => t /=; rewrite !inE.
 Qed.
 
 Local Open Scope typ_seq_scope.
@@ -164,8 +164,8 @@ Lemma step2 : 1 - (esrc(P , sc)) =
 Proof.
 rewrite step1 (bigID [pred x | x \in `TS P k.+1 delta]) /= addrC.
 f_equal.
-- by apply eq_bigl => x; rewrite in_setI in_setC.
-- by apply eq_bigl => x; rewrite in_setI.
+- by apply: eq_bigl => x; rewrite in_setI in_setC.
+- by apply: eq_bigl => x; rewrite in_setI.
 Qed.
 
 Lemma step3 : 1 - (esrc(P , sc)) <=
@@ -187,11 +187,11 @@ apply/(le_trans step3); rewrite lerD//.
   rewrite -[in X in _ <= X](opprK delta) lerNr -(@lerD2l _ 1).
   apply: (le_trans Hdelta).
   by rewrite Pr_to_cplt lexx.
-- apply (@le_trans _ _
+- apply: (@le_trans _ _
     (\sum_(x in 'rV[A]_k.+1 | x \in no_failure :&: `TS P k.+1 delta)
       2 `^ (- k.+1%:R * (`H P - delta)))); last first.
     by rewrite big_const iter_addr mulr_natl addr0.
-  apply ler_sum => /= i.
+  apply: ler_sum => /= i.
   rewrite in_setI => /andP[i_B i_TS].
   move: (typ_seq_definition_equiv2 i_TS) => /andP[+ _].
   rewrite -[in X in X -> _](@ler_nM2l _ (- (k.+1%:R))); last first.
@@ -205,11 +205,11 @@ Qed.
 
 Lemma step5 : 1 - (esrc(P , sc)) <= delta + 2 `^ (- k.+1%:R * (e0 - delta)).
 Proof.
-apply (@le_trans _ _ (delta + #| no_failure |%:R * 2 `^ (- k.+1%:R * (`H P - delta)))).
+apply: (@le_trans _ _ (delta + #| no_failure |%:R * 2 `^ (- k.+1%:R * (`H P - delta)))).
 - apply/(le_trans step4); rewrite lerD2l ler_wpM2r ?powR_ge0// ler_nat.
   exact/subset_leqif_cards/subsetIl.
 - rewrite lerD2l.
-  apply (@le_trans _ _ (2 `^ (k.+1%:R * (`H P - e0)) * 2 `^ (- k.+1%:R * (`H P - delta))));
+  apply: (@le_trans _ _ (2 `^ (k.+1%:R * (`H P - e0)) * 2 `^ (- k.+1%:R * (`H P - delta))));
     last first.
     rewrite -powRD; last by rewrite pnatr_eq0 implybT.
     by rewrite gt1_ler_powRr ?ltr1n//; lra.
@@ -246,7 +246,7 @@ rewrite -[X in _ <= X]opprK lerNr opprB lerBlDr addrC.
 rewrite -(@ler_pM2l _ (2^-1)%R) ?invr_gt0//.
 rewrite mulrA mulVf ?mul1r /delta ?pnatr_eq0//.
 have H1 : lambda / 2 <= 2^-1 * (1 - epsilon).
-  apply (@le_trans _ _ lambda).
+  apply: (@le_trans _ _ lambda).
     by rewrite ler_pdivrMr// ler_peMr// ?ler1n// ltW// lambda0.
   by rewrite /lambda mulrC ge_min lexx.
 apply: (@minr_case_strong _ ((`H P - r) / 2) (lambda / 2)

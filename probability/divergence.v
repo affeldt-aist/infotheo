@@ -48,7 +48,7 @@ move=> x0 yx; rewrite le_eqVlt => /predU1P[/esym|] y0.
     by rewrite log_exp1_Rle_0.
   + rewrite (_ : y - x = x * (y / x - 1)); last first.
       by rewrite mulrDr mulrCA mulfV ?gt_eqF// mulr1 mulrN1.
-    rewrite -mulrA; apply (ler_wpM2l (ltW x0)).
+    rewrite -mulrA; apply: (ler_wpM2l (ltW x0)).
     by rewrite log_id_cmp// divr_gt0.
 Qed.
 
@@ -108,7 +108,7 @@ rewrite /div [X in _ <= X](_ : _ =
   have Qa0 := dominatesEN P_dom_by_Q H0.
   by rewrite -logV ?invf_div// divr_gt0// ?fdist_gt0.
 rewrite lerNr oppr0.
-apply (@le_trans _ _ ((\sum_(a | a \in A) (Q a - P a)) * log (expR 1))).
+apply: (@le_trans _ _ ((\sum_(a | a \in A) (Q a - P a)) * log (expR 1))).
   rewrite big_distrl/=.
   apply: ler_sum => a _; apply: div_diff_ub => //.
   - by move/dominatesP : P_dom_by_Q; exact.
@@ -118,7 +118,7 @@ Qed.
 
 Lemma divPP : D(Q || Q) = 0.
 Proof.
-rewrite /div; apply big1 => a _.
+rewrite /div; apply: big1 => a _.
 have [->|H0] := eqVneq (Q a) 0; first by rewrite mul0r.
 by rewrite divff // log1 mulr0.
 Qed.
@@ -127,14 +127,14 @@ Lemma div0P : D(P || Q) = 0 <-> P = Q.
 Proof.
 split => [HPQ | ->]; last by rewrite divPP.
 apply/fdist_ext => a.
-apply log_id_diff => //.
+apply: log_id_diff => //.
 - by move/dominatesP : P_dom_by_Q; exact.
-- apply/esym; move: a (erefl true); apply leR_sumR_eq.
-  + move=> a' _; apply div_diff_ub => //.
+- apply/esym; move: a (erefl true); apply: leR_sumR_eq.
+  + move=> a' _; apply: div_diff_ub => //.
     * by move/dominatesP : P_dom_by_Q; exact.
   + apply: (@trans_eq _ _ 0%R); last first.
       rewrite -{1}oppr0 -{1}HPQ -sumrN.
-      apply eq_bigr => a _; rewrite -mulrN.
+      apply: eq_bigr => a _; rewrite -mulrN.
       have [->|H0] := eqVneq (P a) 0; first by rewrite !mul0r.
       congr (_ * _).
       have Qa0 := dominatesEN P_dom_by_Q H0.

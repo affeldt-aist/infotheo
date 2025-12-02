@@ -202,7 +202,7 @@ Proof.
 move=> ? /[dup] q01 /[!in_itv] /= q01'.
 rewrite [leLHS](_ : _ = pinsker_fun 0 c 0); last first.
   by rewrite pinsker_fun_p0 // /pinsker_function_spec /= subr0 log1; field.
-apply pinsker_fun_p0_increasing_on_0_to_1=> //; [lra | | lra].
+apply: pinsker_fun_p0_increasing_on_0_to_1=> //; [lra | | lra].
 by rewrite in_itv /= lexx /=.
 Qed.
 
@@ -250,7 +250,7 @@ Proof.
 move=> /[dup] x0p /[1!in_itv] /= x0p' /[dup] y0p /[!in_itv] /= y0p' xy.
 rewrite -lerN2.
 set f := (fun x => -pinsker_fun p c x).
-apply (derivable1_homo x0p y0p (derivableN_pinsker_fun p01))=> //.
+apply: (derivable1_homo x0p y0p (derivableN_pinsker_fun p01))=> //.
 move=> t /[dup] xty /[!in_itv] /= xty'; have: 0 < t < 1 by lra.
 rewrite deriveN; last first.
   apply: derivable_pinsker_fun=> //.
@@ -341,12 +341,12 @@ have [q1|q1] := eqVneq q 1%:pr.
   by move/eqP : p1; apply; apply/val_inj; rewrite /= -p1_.
 rewrite -(pinsker_fun_p p c).
 have/orP[qp|qp]:= le_total q p.
-  apply pinsker_fun_decreasing_on_0_to_p => //.
+  apply: pinsker_fun_decreasing_on_0_to_p => //.
   - lra.
   - by apply/andP; split; [rewrite -prob_gt0 | rewrite -prob_lt1].
   - by apply/andP; split; [apply/prob_gt0 | ].
   - by apply/andP; split; [exact/prob_gt0 | exact/lexx].
-apply pinsker_fun_increasing_on_p_to_1 => //.
+apply: pinsker_fun_increasing_on_p_to_1 => //.
 - lra.
 - by apply/andP; split; [rewrite -prob_gt0 |rewrite -prob_lt1].
 - by apply/andP; split; [by rewrite lexx |apply/prob_lt1].
@@ -422,7 +422,7 @@ Proof.
 set lhs := _ * _.
 set rhs := D(_ || _).
 rewrite -subr_ge0 -pinsker_fun_p_eq.
-apply pinsker_fun_pos with A card_A => //.
+apply: (@pinsker_fun_pos _ _ _ A card_A) => //.
 by rewrite lexx andbT invr_ge0 mulr_ge0// ln2_ge0.
 Qed.
 
@@ -438,7 +438,7 @@ Proof.
 move: (charac_bdist P card_A) => [r1 Hp].
 move: (charac_bdist Q card_A) => [r2 Hq].
 rewrite Hp Hq.
-apply Pinsker_2_inequality_bdist.
+apply: Pinsker_2_inequality_bdist.
 by rewrite -Hp -Hq.
 Qed.
 
@@ -480,14 +480,14 @@ have dis : A_ 0 :&: A_ 1 = finset.set0.
 pose P_A := bipart dis cov P.
 pose Q_A := bipart dis cov Q.
 have step1 : D(P_A || Q_A) <= D(P || Q).
-  by apply partition_inequality; exact P_dom_by_Q.
+  by apply: partition_inequality; exact: P_dom_by_Q.
 suff : (2 * ln 2)^-1 * d(P , Q) ^+ 2 <= D(P_A || Q_A).
-  move=> ?; apply (@le_trans _ _ (D(P_A || Q_A))) => //; exact/ge_le.
+  move=> ?; apply: (@le_trans _ _ (D(P_A || Q_A))) => //; exact/ge_le.
 have -> : d( P , Q ) = d( P_A , Q_A ).
   rewrite /var_dist.
   transitivity (\sum_(a | a \in A0) `| P a - Q a | + \sum_(a | a \in A1) `| P a - Q a |).
     rewrite -big_union //; last by rewrite -setI_eq0 -dis /A_ finset.setIC.
-    apply eq_bigl => a; by rewrite cov finset.in_set.
+    apply: eq_bigl => a; by rewrite cov finset.in_set.
   transitivity (`| P_A 0 - Q_A 0 | + `| P_A 1 - Q_A 1 |).
     congr (_ + _).
     - rewrite /P_A /Q_A /bipart /= /bipart_pmf /=.
@@ -496,7 +496,7 @@ have -> : d( P , Q ) = d( P_A , Q_A ).
         by rewrite ger0_norm ?subr_ge0.
       rewrite big_split /= ger0_norm; last first.
         rewrite subr_ge0; rewrite !ffunE.
-        by apply ler_sum => ?; rewrite inE.
+        by apply: ler_sum => ?; rewrite inE.
       by rewrite -big_morph_oppr // 2!ffunE.
     - rewrite /P_A /Q_A /bipart /= !ffunE /=.
       have [A1_card | A1_card] : #|A1| = O \/ (0 < #|A1|)%nat.
@@ -504,7 +504,7 @@ have -> : d( P , Q ) = d( P_A , Q_A ).
       + move/eqP : A1_card; rewrite cards_eq0; move/eqP => A1_card.
         by rewrite A1_card !big_set0 subrr normr0.
       + transitivity (\sum_(a | a \in A1) - (P a - Q a)).
-          apply eq_bigr => a; rewrite /A1 finset.in_set => Ha.
+          apply: eq_bigr => a; rewrite /A1 finset.in_set => Ha.
           by rewrite ltr0_norm // subr_lt0.
         rewrite -big_morph_oppr // big_split /= ltr0_norm; last first.
           rewrite subr_lt0; apply: ltR_sumR_support => // a.

@@ -107,7 +107,7 @@ Lemma rsum_freeon0 (d : 'rV['F_2]_n) (F : 'rV_n -> R) :
   \sum_(t = d [~set0]) F t = F d.
 Proof.
 transitivity (\sum_(t | t == d) F t)%R.
-  apply eq_bigl => /= t; by rewrite freeon0 eq_sym.
+  apply: eq_bigl => /= t; by rewrite freeon0 eq_sym.
 by rewrite (big_pred1 d).
 Qed.
 
@@ -115,7 +115,7 @@ Lemma rsum_freeon1 n2 (d : 'rV['F_2]_n) (F : 'rV_n -> R) :
   \sum_(t = d [~[set n2]]) F t = (F (d `[ n2 := Zp0 ]) + F (d `[ n2 := Zp1 ]))%R.
 Proof.
 transitivity (\sum_(t | (t \in [set d `[ n2 := x ] | x in 'F_2])) F t)%R.
-  apply eq_bigl => /= t.
+  apply: eq_bigl => /= t.
   by rewrite freeon1.
 rewrite big_imset /=; last by exact: inj_row_set.
 rewrite (bigID (pred1 Zp0)) /= (big_pred1 Zp0) //.
@@ -154,12 +154,12 @@ transitivity (\sum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
     move=> k0 Hk0.
     apply/rowP => b.
     by rewrite !mxE 2!tcastE tnth_mktuple esymK -enum_rank_ord -enum_val_ord enum_rankK.
-  apply eq_big.
+  apply: eq_big.
     move=> t.
     congr (_ && _).
       rewrite freeon_sym; congr (freeon s _ d).
       apply/rowP => i; by rewrite !mxE ffunE tcastE.
-    congr (_  == t); apply eq_from_tnth => i /=.
+    congr (_  == t); apply: eq_from_tnth => i /=.
     rewrite !tcastE tnth_mktuple mxE tcastE tnth_fgraph ffunE.
     by rewrite esymK -enum_val_ord.
   move=> t Ht.
@@ -183,7 +183,7 @@ transitivity (\sum_(f in {ffun 'I_n -> bool} | freeon s d (\row_i F2_of_bool (f 
     move=> /= f Hf.
     apply/ffunP => /= k0.
     by rewrite !ffunE bool_of_F2K.
-  apply eq_big.
+  apply: eq_big.
     move=> /= f.
     rewrite freeon_sym -[RHS]andbT; congr (freeon s d _ && _).
       apply/rowP => i; by rewrite !mxE ffunE.
@@ -198,7 +198,7 @@ transitivity (\sum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
       e (\row_k0 (if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0)))%R.
   have @f' : {set 'I_n} -> {ffun 'I_n -> bool} := (fun x => [ffun i => i \in x]).
   rewrite (reindex_onto (fun f : {ffun 'I_n -> bool} => [set x | f x ]) f').
-    apply eq_big => /= f.
+    apply: eq_big => /= f.
       rewrite -[LHS]andbT; congr (freeon s d _ && _).
         by apply/rowP => i; rewrite !mxE inE.
       apply/esym/eqP/ffunP => /= i.
@@ -212,7 +212,7 @@ transitivity (\sum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
   apply/setP => /= k0.
   by rewrite inE /f' ffunE.
 transitivity (\sum_(f in {set 'I_n} | f \subset s) e (\row_(k0 < n) if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0))%R; last first.
-  apply eq_bigl => /= s0.
+  apply: eq_bigl => /= s0.
   by rewrite powersetE.
 rewrite (reindex_onto (fun f => f :|: [set j | (j \notin s) && bool_of_F2 (d ``_ j)])
                       (fun f => f :&: s)); last first.
@@ -221,7 +221,7 @@ rewrite (reindex_onto (fun f => f :|: [set j | (j \notin s) && bool_of_F2 (d ``_
   rewrite !inE.
   case K : (k0 \in f) => /=; case L : (k0 \in s) => //=;
     by move/forallP : fs => /(_ k0); rewrite L implyTb mxE K => /eqP ->.
-apply eq_big => /= s0.
+apply: eq_big => /= s0.
   apply/andP/subsetP.
     case=> /forallP H1 H2 /= k0 Hk0.
     rewrite -(eqP H2) !inE in Hk0.
@@ -234,7 +234,7 @@ apply eq_big => /= s0.
     move: (s0s k0).
     by rewrite K (negbTE Hk0) => /(_ erefl).
   apply/eqP/setP => /= k0; rewrite !inE.
-  case K : (k0 \in s0) => /=; first by apply s0s.
+  case K : (k0 \in s0) => /=; first by apply: s0s.
   by case: (k0 \in s) => //; rewrite andbF.
 move=> K.
 congr e.
@@ -270,7 +270,7 @@ rewrite (_ : [set n1 \in (s0 : {set 'I_n}) | s0 in _] = [set: bool]); last first
   - exists set0; last by rewrite in_set0.
     by rewrite powersetE sub0set.
 rewrite (reindex F2_of_bool bijective_F2_of_bool).
-apply eq_big => [i|i _]; first by rewrite /= !inE.
+apply: eq_big => [i|i _]; first by rewrite /= !inE.
 case/andP : Hs => /= Hn1 Hs.
 rewrite -IH; last by [].
 rewrite (reindex_onto (fun f => if i then n1 |: f else f) (fun f => f :\ n1)); last first.
@@ -279,7 +279,7 @@ rewrite (reindex_onto (fun f => if i then n1 |: f else f) (fun f => f :\ n1)); l
   case: i => Hi.
     by rewrite setD1K // (eqP Hi).
   by apply/eqP; rewrite eqEsubset subD1set /= subsetD1 (eqP Hi) andbT.
-apply eq_big=> j; last first.
+apply: eq_big=> j; last first.
   move=> Hi.
   congr e.
   apply/rowP => k; rewrite !mxE !inE /=.

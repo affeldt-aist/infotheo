@@ -35,7 +35,7 @@ Definition var_dist (P Q : R.-fdist A) := \sum_(a : A) `| P a - Q a |.
 Local Notation "'d(' P ',' Q ')' " := (var_dist P Q).
 
 Lemma symmetric_var_dist p q : d(p , q) = d(q , p).
-Proof. rewrite /var_dist; apply eq_bigr => ? _; by rewrite distrC. Qed.
+Proof. rewrite /var_dist; apply: eq_bigr => ? _; by rewrite distrC. Qed.
 
 Lemma pos_var_dist p q : 0 <= d(p , q).
 Proof. by apply/sumr_ge0 => ? _; apply/normr_ge0. Qed.

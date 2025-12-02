@@ -55,7 +55,7 @@ Lemma bipartite_path_kind_even : colorable g kind ->
 Proof.
 move=> Hcol; elim=> // i IH h [//|t1 [//|t2 t3]] h0 ht it2.
 rewrite -[in RHS]muln2 mulSn add2n muln2 -(bipartite_path_kind_next Hcol) //.
-  apply IH => //; by rewrite (leq_trans _ it2).
+  apply: IH => //; by rewrite (leq_trans _ it2).
 move: it2 => /=.
 rewrite ltnS -(@leq_pmul2r 2) // !muln2 => /leq_ltn_trans; apply.
 by rewrite -{2}(odd_double_half (size t3)) ltnS leq_addl.
@@ -70,7 +70,7 @@ suff /Hcol : kind (last h t) = kind h.
 apply/esym.
 rewrite -nth_last (_ : nth _ _ _ = nth h (h :: t) (size t)); last by destruct t.
 rewrite -(odd_double_half (size t)) (negbTE abs) add0n.
-apply (bipartite_path_kind_even Hcol) => //.
+apply: (bipartite_path_kind_even Hcol) => //.
 move: Hcycle; by rewrite /= rcons_path => /andP[].
 Qed.
 
@@ -82,10 +82,10 @@ Variable (V : eqType) (g : rel V).
 Definition simple := forall v, ~~ g v v.
 
 Lemma simple_neg : simple -> forall v w, g v w -> v != w.
-Proof. move=> H v w; apply: contraTN => /eqP ->; by apply H. Qed.
+Proof. move=> H v w; apply: contraTN => /eqP ->; by apply: H. Qed.
 
 Lemma colorable_is_simple n (coloring : V -> 'I_n) : colorable g coloring -> simple.
-Proof. by move=> H v; apply H. Qed.
+Proof. by move=> H v; apply: H. Qed.
 
 End simple.
 
@@ -106,7 +106,7 @@ case Hli: (last b (c :: p1) == b).
   move/andP/proj1: Hun.
   by rewrite -cat_cons mem_cat -(eqP Hli) /= mem_last.
 suff: false by []; rewrite -Hli.
-apply (ac a b (c :: p1)).
+apply: (ac a b (c :: p1)).
   apply/negP => Ha.
   by rewrite (cat_uniq [:: b,c & p1] [:: a & p2]) /= Ha /= !andbF in Hun.
 rewrite -cat_rcons -cat_cons cat_path in Hp.
@@ -180,7 +180,7 @@ Proof. by rewrite exceptE /= !negb_and !negbK eqxx !orbT. Qed.
 Lemma path_except n h t : n \notin h :: t -> path g h t -> path (except n) h t.
 Proof.
 move=> nt /pathP H.
-apply/(pathP n) => i it; rewrite exceptE; apply/and3P; split; [by apply H | | ].
+apply/(pathP n) => i it; rewrite exceptE; apply/and3P; split; [by apply: H | | ].
 - apply: contra nt => /eqP <-.
   apply: mem_nth => /=; by rewrite ltnS ltnW.
 - apply: contra nt => /eqP <-; by rewrite inE mem_nth ?orbT.
@@ -242,7 +242,7 @@ Proof.
 rewrite 2!inE => gnm; rewrite negb_and -implybE gnm implyTb.
 apply/connectP => -[[_ /=| h s]].
 - apply/eqP/negP => /eqP nm; move: gnm; rewrite nm; by apply/negP.
-- move=> /path_except_notin => /negP ns nsm; apply ns.
+- move=> /path_except_notin => /negP ns nsm; apply: ns.
   by rewrite nsm /= mem_last.
 Qed.
 
@@ -285,7 +285,7 @@ exists (subgraph g h n).
 rewrite inE /=.
 rewrite /= in nt.
 case/andP : nt => -> ht /=.
-apply/connectP; exists t => //; apply path_except => //.
+apply/connectP; exists t => //; apply: path_except => //.
 by rewrite /= in uniq_nt; case/andP : uniq_nt.
 Qed.
 
@@ -365,7 +365,7 @@ apply/idP/idP => [|Hlhs].
   apply: sub_path_except (Hl') => //.
     case/andP : Hsucc_m; by rewrite eq_sym.
   apply/negP => nl'.
-  suff : ucycle g ([:: n; m; succ_m] ++ take (index n l') l') by apply acyclic_g.
+  suff : ucycle g ([:: n; m; succ_m] ++ take (index n l') l') by apply: acyclic_g.
   apply/andP; split; last first.
     rewrite -cat1s -(cat1s m) -!catA catA cat_uniq; apply/and3P; split; last first.
       move: uniql' => /= /andP[K1 K2].
@@ -428,7 +428,7 @@ Lemma uniq_path_ucycle_extend_1 m n m' l (mn : g m n) (nm' : g n m')
 Proof.
 apply/andP; split.
   by rewrite /= mn nm' /=; move/except_path : Hl.
-apply uniq_extend_1 => //; try by rewrite (simple_neg simple_g).
+apply: uniq_extend_1 => //; try by rewrite (simple_neg simple_g).
 by move: Hl; rewrite rcons_path => /andP[/path_except_notin].
 Qed.
 
@@ -450,21 +450,21 @@ rewrite in_cons => /predU1P[->{x}|xl].
   rewrite /= !inE (negbTE m'm) /=.
   apply/negP; rewrite negb_or andbC eq_sym (simple_neg simple_g) //=.
   apply/eqP => m'n1.
-  suff : ucycle g [:: m; n; n1] by apply acyclic_g.
+  suff : ucycle g [:: m; n; n1] by apply: acyclic_g.
   rewrite /ucycle /= andbT nm /= andbT -m'n1 nm' /= m'n1 symmetric_g mn1 /=.
   by rewrite mem_seq1 eq_sym n1n andbT mem_seq2 negb_or mn eq_sym.
 rewrite /= !inE => /predU1P[xn1|].
   move: xl; rewrite {}xn1 {x} => xl.
   case/splitPr : xl => k11 k12 in Hl Hun.
-  suff : ucycle g [:: n1, m, n, m' & k11] by apply acyclic_g.
-  apply uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
+  suff : ucycle g [:: n1, m, n, m' & k11] by apply: acyclic_g.
+  apply: uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
     move: Hl; rewrite -cat_rcons rcons_cat cat_path => /andP[Hl _] /=.
     rewrite (sub_path_except _ _ Hl) // ?andbT 1?eq_sym //.
       by rewrite exceptE /= nm' eq_sym mn.
     rewrite mem_rcons inE negb_or eq_sym n1m /=; apply/negP => mk11.
     case/splitPr : mk11 => k111 k112 in Hl Hun.
-    suff : ucycle g [:: m, n, m' & k111] by apply acyclic_g.
-    apply uniq_path_ucycle_extend_1 => //.
+    suff : ucycle g [:: m, n, m' & k111] by apply: acyclic_g.
+    apply: uniq_path_ucycle_extend_1 => //.
     by move: Hl; rewrite -cat_rcons rcons_cat cat_path => /andP[].
     move: Hun; rewrite -2!cat_cons -(cat1s m) catA -(catA _ _ (n1 :: k12)).
     by rewrite cat_uniq cats1 => /and3P[].
@@ -475,7 +475,7 @@ rewrite /= !inE => /predU1P[xn1|].
 case/predU1P => [xm|/eqP xn].
   move: xl; rewrite {}xm {x} => ml.
   case/splitPr : ml => k11 k12 in Hl Hun.
-  suff : ucycle g [:: m, n, m' & k11] by apply acyclic_g.
+  suff : ucycle g [:: m, n, m' & k11] by apply: acyclic_g.
   apply: uniq_path_ucycle_extend_1 => //.
     by move: Hl; rewrite -cat_rcons rcons_cat cat_path => /andP[].
   by move: Hun; rewrite -cat_cons -(cat1s m) catA cat_uniq cats1 => /andP[].
@@ -505,24 +505,24 @@ apply/hasP; case => x; rewrite inE => /predU1P[->{x} /=|xl].
   apply/negP.
   rewrite !inE !negb_or m'm /= (@eq_sym _ m' n) (simple_neg simple_g nm') andbT.
   apply/andP; split; (apply/eqP => ?; subst m').
-  - suff : ucycle g [:: m'1; n1; m; n] by apply acyclic_g.
+  - suff : ucycle g [:: m'1; n1; m; n] by apply: acyclic_g.
     rewrite /ucycle /= !inE !negb_or andbT symmetric_g n1m'1 /= symmetric_g.
     by rewrite mn1 /= mn /= andbT nm' /= m'1n1 /= m'm m'1n /= n1m /= n1n.
-  - suff : ucycle g [:: m ; n ; n1] by apply acyclic_g.
+  - suff : ucycle g [:: m ; n ; n1] by apply: acyclic_g.
     apply/andP; split; first by rewrite /= mn /= nm' /= andbT symmetric_g.
     by rewrite /= andbT mem_seq1 eq_sym n1n andbT mem_seq2 negb_or m_not_n /= eq_sym.
 rewrite /= !inE => /predU1P[xm'1|].
   move: xl; rewrite {}xm'1 {x} => m'1l.
   case/splitPr : m'1l => l1 l2 in Hl Hun.
-  suff : ucycle g (m'1 :: n1 :: m :: n :: m' :: l1) by apply acyclic_g.
-  apply uniq_path_ucycle_extend_2 => //; [by rewrite symmetric_g|by rewrite eq_sym| |].
+  suff : ucycle g (m'1 :: n1 :: m :: n :: m' :: l1) by apply: acyclic_g.
+  apply: uniq_path_ucycle_extend_2 => //; [by rewrite symmetric_g|by rewrite eq_sym| |].
     move: Hl; rewrite -cat_rcons rcons_cat cat_path => /andP[Hl _].
     rewrite /= (sub_path_except _ _ Hl) ?andbT 1?eq_sym //.
       by rewrite exceptE /= nm' /= eq_sym m_not_n.
     rewrite mem_rcons inE eq_sym negb_or m'1m /=; apply/negP => ml1.
     case/splitPr : ml1 => l11 l12 in Hl Hun.
-    suff : ucycle g [:: m, n, m' & l11] by apply acyclic_g.
-    apply uniq_path_ucycle_extend_1 => //.
+    suff : ucycle g [:: m, n, m' & l11] by apply: acyclic_g.
+    apply: uniq_path_ucycle_extend_1 => //.
     by move: Hl; rewrite -cat_rcons rcons_cat cat_path => /andP[Hl].
     move: Hun.
     rewrite -2!cat_cons -(cat1s m) catA -(catA _ _ (m'1 :: _)) cat_uniq => /and3P[Hun _ _].
@@ -533,14 +533,14 @@ rewrite /= !inE => /predU1P[xm'1|].
 case/predU1P => [xn1|].
   move: xl; rewrite {}xn1 => n1l.
   case/splitPr : n1l => l1 l2 in Hl Hun.
-  suff : ucycle g [:: n1, m, n, m' & l1] by apply acyclic_g.
+  suff : ucycle g [:: n1, m, n, m' & l1] by apply: acyclic_g.
   apply: uniq_path_ucycle_extend_2 => //.
   by move: Hl; rewrite rcons_path -cat_rcons cat_path -andbA => /andP[].
   by move: Hun; rewrite -cat_cons cat_uniq => /andP[].
 case/predU1P => [xm|/eqP xn].
   move: xl; rewrite {}xm {x} => ml.
   case/splitPr : ml => l1 l2 in Hl Hun.
-  suff : ucycle g [:: m, n, m' & l1] by apply acyclic_g.
+  suff : ucycle g [:: m, n, m' & l1] by apply: acyclic_g.
   apply: uniq_path_ucycle_extend_1 => //.
   by move: Hl; rewrite -cat_rcons rcons_cat cat_path => /andP[].
   by move: Hun; rewrite -cat_cons -(cat1s m) catA cat_uniq cats1 => /and3P[].
@@ -610,8 +610,8 @@ apply/andP; split.
       move => ?; subst y.
       rewrite /= mem_cat mem_rev mem_seq1 eq_sym (negbTE n2n1) orbF => Hm.
       case/splitPr : Hm => l21 l22 in Hl2 Hun2.
-      suff : ucycle g [:: n1, m, n2 & l21] by apply acyclic_g.
-      apply uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
+      suff : ucycle g [:: n1, m, n2 & l21] by apply: acyclic_g.
+      apply: uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
       by move: Hl2; rewrite -cat_rcons rcons_cat cat_path => /andP[].
       by move: Hun2; rewrite -cat_cons -(cat1s n1) catA cat_uniq cats1 => /and3P[].
     rewrite ?inE(*TODO(rei): not necessary since mc1.16.0*) mem_cat mem_seq1 => /orP[|].
@@ -619,9 +619,9 @@ apply/andP; split.
       case/splitPr : yl1 => l11 l12 in Hl1 Hun1 Hp.
       case/splitPr : yl2 => l21 l22 in Hl2 Hun2 Hp.
       suff : ucycle g ((y :: rev l21) ++ n2 :: m :: n1 :: l11).
-        apply acyclic_g; by rewrite /= size_cat /= 2!addnS.
-      apply (IH (size (l11 ++ l21))) => //.
-      apply (@leq_trans p'.-1).
+        apply: acyclic_g; by rewrite /= size_cat /= 2!addnS.
+      apply: (IH (size (l11 ++ l21))) => //.
+      apply: (@leq_trans p'.-1).
         rewrite -Hp !size_cat /= 3!addnS /= addSnnS -!addnA leq_add2l.
         by rewrite -addnS addnC -addnA leq_addr.
       rewrite -(leq_add2r 1) 2!addn1.
@@ -633,8 +633,8 @@ apply/andP; split.
       by move: Hun2; rewrite -cat_cons cat_uniq => /and3P[].
     move/eqP => ?; subst y.
     case/splitPr : yl1 => l11 l12 in Hl1 Hun1.
-    suff : ucycle g [:: n2, m, n1 & l11] by apply acyclic_g.
-    apply uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
+    suff : ucycle g [:: n2, m, n1 & l11] by apply: acyclic_g.
+    apply: uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
     by move: Hl1; rewrite -cat_rcons rcons_path cat_path -andbA => /andP[].
     by move: Hun1; rewrite -cat_cons -(cat1s n2) catA cat_uniq cats1 => /and3P[].
   rewrite inE => /eqP ?; subst y.
@@ -643,9 +643,9 @@ apply/andP; split.
     move=> xl2.
     case/splitPr : xl2 => l21 l22 in Hl2 Hun2 Hp.
     suff : ucycle g ((x :: rev l1) ++ n1 :: m :: n2 :: l21).
-      apply acyclic_g; by rewrite /= size_cat /= 2!addnS.
-    apply (IH (size (l1 ++ l21))) => //.
-    apply (@leq_trans p'.-1).
+      apply: acyclic_g; by rewrite /= size_cat /= 2!addnS.
+    apply: (IH (size (l1 ++ l21))) => //.
+    apply: (@leq_trans p'.-1).
       by rewrite -Hp !size_cat /= 2!addnS /= leq_add2l leq_addr.
       by rewrite -subn1 leq_subLR -addn1.
     by rewrite 2!size_cat addnC.
@@ -653,13 +653,13 @@ apply/andP; split.
     by move: Hl2; rewrite -cat_rcons rcons_cat cat_path => /andP[].
     by move: Hun2; rewrite -cat_cons cat_uniq => /andP[].
   move/eqP => ?; subst x.
-  suff : ucycle g [:: n2, m, n1 & l1] by apply acyclic_g.
-    apply uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
+  suff : ucycle g [:: n2, m, n1 & l1] by apply: acyclic_g.
+    apply: uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
     rewrite rcons_uniq Hun1 andbT inE negb_or n2n1 /=.
     apply/negP => n2l1.
     case/splitPr : n2l1 => l11 l12 in Hl1 Hun1 Hp.
-    suff : ucycle g (n2 :: m :: n1 :: l11) by apply acyclic_g.
-    apply uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
+    suff : ucycle g (n2 :: m :: n1 :: l11) by apply: acyclic_g.
+    apply: uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
     by move: Hl1; rewrite -cat_rcons rcons_cat cat_path => /andP[].
     by move: Hun1; rewrite -cat_cons -(cat1s n2) catA cat_uniq cats1 => /and3P[].
 rewrite -(cat1s m) -(cat1s n1).
@@ -678,14 +678,14 @@ case/predU1P=> [? | yl1].
   rewrite /= inE.
   case/predU1P.
     move => ?; subst x.
-    suff : ucycle g [:: n1, m, n2 & l2] by apply acyclic_g.
-    apply uniq_path_ucycle_extend_1 => //.
+    suff : ucycle g [:: n1, m, n2 & l2] by apply: acyclic_g.
+    apply: uniq_path_ucycle_extend_1 => //.
     by rewrite symmetric_g.
     rewrite rcons_uniq Hun2 andbT inE negb_or eq_sym n2n1 /=.
     apply/negP => n1l2.
     case/splitPr : n1l2 => l21 l22 in Hl2 Hun2.
-    suff : ucycle g [:: n1, m, n2 & l21] by apply acyclic_g.
-    apply uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
+    suff : ucycle g [:: n1, m, n2 & l21] by apply: acyclic_g.
+    apply: uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
     by move: Hl2; rewrite -cat_rcons rcons_cat cat_path => /andP[].
     by move: Hun2; rewrite -cat_cons -(cat1s n1) catA cat_uniq cats1 => /and3P[].
   rewrite inE.
@@ -695,9 +695,9 @@ case/predU1P.
   move => ?; subst y.
   case/splitPr : yl1 => l11 l12 in Hl1 Hun1 Hp.
   suff : ucycle g ((x :: rev l2) ++ n2 :: m :: n1 :: l11).
-    apply acyclic_g; by rewrite /= size_cat /= 2!addnS.
-  apply (IH (size (l11 ++ l2))) => //.
-  apply (@leq_trans p'.-1).
+    apply: acyclic_g; by rewrite /= size_cat /= 2!addnS.
+  apply: (IH (size (l11 ++ l2))) => //.
+  apply: (@leq_trans p'.-1).
     by rewrite -Hp !size_cat addnS addSn /= -addnA leq_add2l leq_addl.
     by rewrite -subn1 leq_subLR -addn1.
   by move: Hl1; rewrite -cat_rcons; rewrite rcons_cat cat_path => /andP[].
@@ -721,7 +721,7 @@ rewrite -(cat1s m2) catA.
 rewrite cat_cons.
 rewrite (_ : rev l2 ++ [:: m2] = rev (m2 :: l2)); last first.
   by rewrite rev_cons cats1.
-apply uniq_path_ucycle_cat => //.
+apply: uniq_path_ucycle_cat => //.
 by rewrite symmetric_g.
 by rewrite symmetric_g.
 by rewrite eq_sym.
@@ -733,18 +733,18 @@ rewrite mem_rcons inE orbC; apply/negP.
 case/orP.
   move=> yl1.
   case/splitPr : yl1 => l11 l12 in Hl1 Hunl1.
-  suff : ucycle g (m :: n1 :: m1 :: l11) by apply acyclic_g.
-  apply uniq_path_ucycle_extend_1 => //.
+  suff : ucycle g (m :: n1 :: m1 :: l11) by apply: acyclic_g.
+  apply: uniq_path_ucycle_extend_1 => //.
   by move: Hl1; rewrite -cat_rcons rcons_cat cat_path => /andP[].
   by move: Hunl1; rewrite -cat_cons -(cat1s m) catA cats1 cat_uniq => /and3P[].
 move/eqP => ?; subst x.
-suff : ucycle g (m :: n1 :: m1 :: l1) by apply acyclic_g.
-apply uniq_path_ucycle_extend_1 => //.
+suff : ucycle g (m :: n1 :: m1 :: l1) by apply: acyclic_g.
+apply: uniq_path_ucycle_extend_1 => //.
 rewrite rcons_uniq Hunl1 andbT inE negb_or eq_sym m1m /=.
 apply/negP => ml1.
 case/splitPr : ml1 => l11 l12 in Hl1 Hunl1.
-suff : ucycle g (m :: n1 :: m1 :: l11) by apply acyclic_g.
-apply uniq_path_ucycle_extend_1 => //.
+suff : ucycle g (m :: n1 :: m1 :: l11) by apply: acyclic_g.
+apply: uniq_path_ucycle_extend_1 => //.
 by move: Hl1; rewrite -cat_rcons rcons_cat cat_path => /andP[].
 by move: Hunl1; rewrite -cat_cons -(cat1s m) catA cat_uniq cats1 => /and3P[].
 rewrite -(cat1s m2) rcons_cat cat_path /= andbT.
@@ -754,18 +754,18 @@ apply: sub_path_except (Hl2) => //; first by rewrite eq_sym.
 rewrite mem_rcons inE orbC ; apply/negP => /orP[|].
   move=> yl2.
   case/splitPr : yl2 => l21 l22 in Hl2 Hunl2.
-  suff : ucycle g (m :: n2 :: m2 :: l21) by apply acyclic_g.
-  apply uniq_path_ucycle_extend_1 => //.
+  suff : ucycle g (m :: n2 :: m2 :: l21) by apply: acyclic_g.
+  apply: uniq_path_ucycle_extend_1 => //.
   by move: Hl2; rewrite -cat_rcons rcons_cat cat_path => /andP[].
   by move: Hunl2; rewrite -cat_cons -(cat1s m) catA cats1 cat_uniq => /and3P[].
 move/eqP => ?; subst x.
-suff : ucycle g (m :: n2 :: m2 :: l2) by apply acyclic_g.
-apply uniq_path_ucycle_extend_1 => //.
+suff : ucycle g (m :: n2 :: m2 :: l2) by apply: acyclic_g.
+apply: uniq_path_ucycle_extend_1 => //.
 rewrite rcons_uniq Hunl2 andbT inE negb_or eq_sym m2m /=.
 apply/negP => ml2.
 case/splitPr : ml2 => l21 l22 in Hl2 Hunl2.
-suff : ucycle g (m :: n2 :: m2 :: l21) by apply acyclic_g.
-apply uniq_path_ucycle_extend_1 => //.
+suff : ucycle g (m :: n2 :: m2 :: l21) by apply: acyclic_g.
+apply: uniq_path_ucycle_extend_1 => //.
 by move: Hl2; rewrite -cat_rcons rcons_cat cat_path => /andP[].
 by move: Hunl2; rewrite -cat_cons -(cat1s m) catA cats1 cat_uniq => /and3P[].
 rewrite -(cat1s n1) cat_uniq Hunl1 /= andbT !inE /= negb_or.
@@ -892,10 +892,10 @@ have {}m'v : connect (except g n) m' v.
     rewrite /ucycle; apply/andP; split.
       by rewrite /path.cycle rcons_path /= gmn /= symmetric_g n'm' /= symmetric_g.
     by rewrite /= !inE /= eq_sym negb_or m'm /= andbT (simple_neg Hg) //= eq_sym.
-   move: (Hl'); apply sub_path_except => //.
+   move: (Hl'); apply: sub_path_except => //.
    apply/negP => nl'.
    case/splitPr : nl' => l1 l2 in Hl' l'l Hun Hlast.
-   suff : (ucycle g [:: n, m, n', m' & l1]) by apply acyclic_g.
+   suff : (ucycle g [:: n, m, n', m' & l1]) by apply: acyclic_g.
    apply/andP; split.
      rewrite /path.cycle rcons_path /= symmetric_g gmn gmn' n'm' /=.
      move: Hl'.
@@ -909,7 +909,7 @@ have {}m'v : connect (except g n) m' v.
   rewrite [n' :: _]lock /= -lock; apply/andP; split.
     rewrite !inE !negb_or (simple_neg Hg) //= eq_sym m'm /=.
     apply/negP => ml1; case/splitPr: ml1 => l11 l12 in Hl' l'l Hun Hlast.
-    suff : ucycle g ([:: m, n', m' & l11]) by apply acyclic_g.
+    suff : ucycle g ([:: m, n', m' & l11]) by apply: acyclic_g.
     apply/andP; split.
     rewrite /path.cycle rcons_path /= gmn' n'm' /=.
       move: Hl'; rewrite -catA cat_path.
@@ -933,10 +933,10 @@ have {}m'v : connect (except g n) m' v.
      by move: Hl'; rewrite cat_path; case/andP => /path_except_notin.
    rewrite -(cat1s m') catA cat_uniq in Hun; by case/andP : Hun.
 apply: connect_trans _ m'v.
-apply (@connect_trans _ _ n').
-- apply connect1.
+apply: (@connect_trans _ _ n').
+- apply: connect1.
   by rewrite exceptE /= gmn' n'n andbT /= (simple_neg Hg).
-- apply connect1.
+- apply: connect1.
   rewrite exceptE /= n'm' n'n /=.
   apply/eqP => abs; subst m'.
   apply: (@acyclic_g [:: m; n'; n] erefl).
@@ -950,7 +950,7 @@ Lemma trivIset_sub_ver_suc_suc_helper (Hg : simple g) m n1 n2 m2 l :
   n1 = last m2 l -> False.
 Proof.
 move=> mn1 mn2 n2m2 m2m Hl Hun Hlast.
-suff : ucycle g [:: m, n2, m2 & l] by apply acyclic_g.
+suff : ucycle g [:: m, n2, m2 & l] by apply: acyclic_g.
 apply/andP; split.
   by rewrite /= mn2 /= n2m2 /= rcons_path -Hlast (except_path Hl) symmetric_g.
 rewrite -(cat1s m) -(cat1s n2) catA cat_uniq Hun andbT.
@@ -961,7 +961,7 @@ rewrite 2!inE.
 case/orP => /eqP ?; subst x; last first.
   move/path_except_notin : Hl; by rewrite Hx.
 case/splitPr : Hx => l1 l2 in Hl Hun Hlast.
-suff : ucycle g [:: m, n2, m2 & l1] by apply acyclic_g.
+suff : ucycle g [:: m, n2, m2 & l1] by apply: acyclic_g.
 apply/andP; split.
   rewrite /= mn2 n2m2 /=.
   by move: Hl; rewrite -cat_rcons cat_path => /andP[/except_path].
@@ -987,7 +987,7 @@ Lemma trivIset_subgraph_succ2_D1_helper (Hg : simple g) m n1 n2 m1 m2 v
 Proof.
 case: l Hlast => //= vm1; subst m1.
 exfalso.
-suff : ucycle g [:: n1, m, n2, m2 & k'] by apply acyclic_g.
+suff : ucycle g [:: n1, m, n2, m2 & k'] by apply: acyclic_g.
 apply/andP; split.
   rewrite /= symmetric_g mn1 /= mn2 /= n2m2 /= rcons_path.
   by rewrite (except_path Hk') /= -Hkast symmetric_g.
@@ -997,7 +997,7 @@ apply/andP; split.
 rewrite /= !inE /= !negb_or /=; apply/andP; split.
   rewrite m2m andTb andbC (simple_neg Hg) //= 1?symmetric_g //.
   apply/eqP => ?; subst m2.
-  suff : ucycle g [:: m; n2; n1] by apply acyclic_g.
+  suff : ucycle g [:: m; n2; n1] by apply: acyclic_g.
   apply/andP; split; first by rewrite /= mn2 n2m2 symmetric_g mn1.
   rewrite /= !inE negb_or /= andbT (simple_neg Hg mn2) /= eq_sym.
   by rewrite eq_sym (simple_neg Hg) //= eq_sym.
@@ -1005,7 +1005,7 @@ apply/hasP; case=> x Hx /=.
 rewrite !inE; case/predU1P => [xn1|].
   move: Hx; rewrite {}xn1 {x} => Hx.
   case/splitPr : Hx => k1 k2 in Hk' Hunk k'k Hkast.
-  suff : ucycle g [:: n1, m, n2, m2 & k1] by apply acyclic_g.
+  suff : ucycle g [:: n1, m, n2, m2 & k1] by apply: acyclic_g.
   apply/andP; split.
     rewrite /path.cycle rcons_path /= symmetric_g mn1 /= mn2 /= n2m2 /=.
     move: Hk'; rewrite cat_path => /andP[/except_path -> /=].
@@ -1026,7 +1026,7 @@ rewrite !inE; case/predU1P => [xn1|].
     move: Hunk; by rewrite -xn1 /= -cat_rcons cat_uniq rcons_uniq xk1 /= andbF.
   case/orP => /eqP ?; subst x.
     case/splitPr : xk1 => k11 k12 in Hk' Hunk k'k Hkast m2k1.
-    suff : ucycle g [:: m, n2, m2 & k11] by apply acyclic_g.
+    suff : ucycle g [:: m, n2, m2 & k11] by apply: acyclic_g.
     move: Hk'; rewrite cat_path => /andP[Hk' _]; move: Hk'.
     rewrite -[in X in X -> _](cat1s m) catA cat_path cats1 => /andP[Hk' _].
     move: Hunk; rewrite -cat_cons cat_uniq; case/andP => Hunk _; move: Hunk.
@@ -1037,7 +1037,7 @@ rewrite !inE; case/predU1P => [xn1|].
 case/predU1P => [xm|/eqP xn2].
   move: Hx; rewrite {}xm {x} => xk'.
   case/splitPr : xk' => k1 k2 in Hk' Hunk k'k Hkast.
-  suff : ucycle g [:: m, n2, m2 & k1] by apply acyclic_g.
+  suff : ucycle g [:: m, n2, m2 & k1] by apply: acyclic_g.
   move: Hk'; rewrite -[in X in X -> _](cat1s m) catA cat_path cats1 => /andP[Hk' _].
   move: Hunk; rewrite -[in X in X -> _](cat1s m2) -[in X in X -> _](cat1s m) 2!catA cat_uniq cats1 => /andP[Hunk _].
   exact: uniq_path_ucycle_extend_1 Hk' Hunk.
@@ -1076,7 +1076,7 @@ case/shortenP => l' Hl' Hunl l'l Hlast.
 case/bigcupP : vn2 => m'2 Hm'2.
 rewrite /subgraph inE => /andP[n2m'2 /connectP[k]].
 case/shortenP => k' Hk' Hunk k'k Hkast.
-suff : ucycle g [:: n1, m, n2, m'2 & k' ++ rev (belast m'1 l')] by apply acyclic_g.
+suff : ucycle g [:: n1, m, n2, m'2 & k' ++ rev (belast m'1 l')] by apply: acyclic_g.
 apply/andP; split.
   rewrite /= symmetric_g Hn1 /= Hn2 /= n2m'2 /= rcons_cat cat_path.
   rewrite (except_path Hk') /= rcons_path; apply/andP; split.
@@ -1100,7 +1100,7 @@ apply/andP; split.
   case/predU1P => [->{x}|].
     rewrite /= !inE.
     case/predU1P => [m'2n1|].
-      suff : ucycle g [:: m; n2; n1] by apply acyclic_g.
+      suff : ucycle g [:: m; n2; n1] by apply: acyclic_g.
       apply/andP; split; first by rewrite /= andbT Hn2 /= andbC symmetric_g Hn1 /= -m'2n1.
       by rewrite /= !inE negb_or /= (simple_neg Hg) //= (simple_neg Hg) //= eq_sym n1n2.
     rewrite orbC eq_sym (negbTE (simple_neg _ n2m'2)) //= => /eqP m'2m.
@@ -1109,15 +1109,15 @@ apply/andP; split.
     rewrite !inE => /predU1P[xn1|].
       move: Hx; rewrite {}xn1 {x} => Hx.
       case/splitPr : Hx => k1 k2 in Hk' Hunk k'k Hkast.
-      suff : ucycle g [:: n1, m, n2, m'2 & k1] by apply acyclic_g.
-      apply uniq_path_ucycle_extend_2 => //.
+      suff : ucycle g [:: n1, m, n2, m'2 & k1] by apply: acyclic_g.
+      apply: uniq_path_ucycle_extend_2 => //.
       by move: Hm'2; rewrite in_setD1 => /andP[].
       by move: Hk'; rewrite -(cat1s n1) catA cats1 cat_path => /andP[].
       by move: Hunk; rewrite -cat_cons cat_uniq => /and3P[].
     case/predU1P => [xm|/eqP xn2].
       move: Hx; rewrite {}xm {x} => Hx.
       case/splitPr : Hx => k1 k2 in Hk' Hunk k'k Hkast.
-      suff : ucycle g [:: m, n2, m'2 & k1] by apply acyclic_g.
+      suff : ucycle g [:: m, n2, m'2 & k1] by apply: acyclic_g.
       move: Hk'; rewrite -[in X in X -> _](cat1s m) catA cat_path cats1 => /andP[Hk' _].
       move: Hunk; rewrite -[in X in X -> _](cat1s m'2) -[in X in X -> _](cat1s m).
       rewrite 2!catA cat_uniq cats1 => /and3P[Hunk _ _].
@@ -1127,7 +1127,7 @@ apply/andP; split.
     rewrite !inE /= => /orP[|].
       apply/negP; by rewrite (simple_neg Hg) // symmetric_g.
     case/predU1P => [m'1m|/eqP m'1n2]; first by move: Hm'1; rewrite m'1m in_setD1 eqxx.
-    suff : ucycle g [:: m; n2; n1] by apply acyclic_g.
+    suff : ucycle g [:: m; n2; n1] by apply: acyclic_g.
     rewrite /ucycle /= !andbT !inE Hn2 /= symmetric_g -{1}m'1n2 n1m'1 /= symmetric_g Hn1 /=.
     by rewrite (negbTE (simple_neg _ Hn2)) //= (simple_neg Hg) //= eq_sym.
   rewrite !inE /= => /orP[|].
@@ -1135,15 +1135,15 @@ apply/andP; split.
   case/predU1P => [xm|/eqP xn2].
     move: xl'; rewrite {}xm {x} => Hx.
     case/splitPr : Hx => l1 l2 in Hl' Hunl l'l Hlast.
-    suff : ucycle g [:: m, n1, m'1 & l1] by apply acyclic_g.
+    suff : ucycle g [:: m, n1, m'1 & l1] by apply: acyclic_g.
     move: Hl'; rewrite -[in X in X -> _](cat1s m) catA cat_path cats1 => /andP[Hl' _].
     move: Hunl; rewrite -[in X in X -> _](cat1s m'1) -[in X in X -> _](cat1s m).
     rewrite 2!catA cat_uniq cats1 => /and3P[Hunl _ _].
     exact: uniq_path_ucycle_extend_1 Hl' Hunl.
   move: xl'; rewrite xn2 => Hx.
   case/splitPr : Hx => l1 l2 in Hl' Hunl l'l Hlast.
-  suff : ucycle g [:: n2, m, n1, m'1 & l1] by apply acyclic_g.
-  apply uniq_path_ucycle_extend_2 => //.
+  suff : ucycle g [:: n2, m, n1, m'1 & l1] by apply: acyclic_g.
+  apply: uniq_path_ucycle_extend_2 => //.
   by move: Hm'1; rewrite in_setD1 => /andP[].
   by move: Hl'; rewrite -[in X in X -> _](cat1s n2) catA cats1 cat_path => /andP[].
   by move: Hunl; rewrite -[in X in X -> _](cat1s m'1) catA cat_uniq => /andP[].
@@ -1155,14 +1155,14 @@ rewrite mem_rev => /mem_belast.
 rewrite inE => /predU1P[->{x}|].
   rewrite !inE.
   case/predU1P => [m'1m'2|m'1k].
-    suff : ucycle g [:: n2; m; n1; m'1] by apply acyclic_g.
+    suff : ucycle g [:: n2; m; n1; m'1] by apply: acyclic_g.
     rewrite /ucycle /= symmetric_g Hn2 /= Hn1 /= n1m'1 /= !andbT symmetric_g m'1m'2 n2m'2 /=.
     rewrite !inE !negb_or /= eq_sym (simple_neg Hg) //= eq_sym n1n2 /= (simple_neg Hg) //=.
     rewrite (simple_neg Hg) //= -m'1m'2 andbC (simple_neg Hg) //=.
     by move: Hm'1; rewrite in_setD1 eq_sym => /andP[].
   case/splitPr : m'1k => k1 k2 in Hk' Hunk k'k Hkast.
-  suff : ucycle g [:: m'1, n1, m, n2, m'2 & k1] by apply acyclic_g.
-  apply uniq_path_ucycle_extend_3 => //.
+  suff : ucycle g [:: m'1, n1, m, n2, m'2 & k1] by apply: acyclic_g.
+  apply: uniq_path_ucycle_extend_3 => //.
   by move: Hm'2; rewrite in_setD1 => /andP[].
   by move: Hm'1; rewrite in_setD1 => /andP[].
   by move: Hk'; rewrite -[in X in X -> _](cat1s m'1) catA cats1 cat_path => /andP[].
@@ -1171,8 +1171,8 @@ rewrite /= inE => Hx.
 case/predU1P => [xm'2|xl'].
   move: Hx; rewrite xm'2 => xl'.
   case/splitPr : xl' => l1 l2 in Hl' Hunl l'l Hlast.
-  suff : ucycle g [:: m'2, n2, m, n1, m'1 & l1] by apply acyclic_g.
-  apply uniq_path_ucycle_extend_3 => //; first by rewrite eq_sym.
+  suff : ucycle g [:: m'2, n2, m, n1, m'1 & l1] by apply: acyclic_g.
+  apply: uniq_path_ucycle_extend_3 => //; first by rewrite eq_sym.
   by move: Hm'1; rewrite in_setD1 => /andP[].
   by move: Hm'2; rewrite in_setD1 => /andP[].
   by move: Hl'; rewrite -[in X in X -> _](cat1s m'2) catA cats1 cat_path => /andP[].
@@ -1180,8 +1180,8 @@ case/predU1P => [xm'2|xl'].
 case/splitPr : Hx => l1 l2 in Hl' Hunl l'l Hlast.
 case/splitPr : xl' => k1 k2 in Hk' Hunk k'k Hkast.
 suff : ucycle g ((x :: rev k1) ++ (m'2 :: n2 :: m :: n1 :: m'1 :: l1)).
-  apply acyclic_g; by rewrite /= size_cat /= addnC.
-apply uniq_path_ucycle_cat_extend => //.
+  apply: acyclic_g; by rewrite /= size_cat /= addnC.
+apply: uniq_path_ucycle_cat_extend => //.
 by move: Hm'2; rewrite in_setD1 => /andP[].
 by move: Hm'1; rewrite in_setD1 => /andP[].
 by move: Hl'; rewrite -(cat1s x) catA cat_path cats1 => /andP[].
@@ -1199,7 +1199,7 @@ rewrite inE negb_and n1m1 /=.
 apply/negP => abs.
 case/connectP : abs => p.
 case/shortenP => p' Hp' Hun p'p Hlast.
-suff : ucycle g [:: m0, n1, m1 & p'] by apply acyclic_g.
+suff : ucycle g [:: m0, n1, m1 & p'] by apply: acyclic_g.
 apply/andP; split.
   rewrite [m1 :: _]lock /= -lock rcons_path symmetric_g n1m0 /= n1m1 /=.
   by rewrite (@except_path _ _ n1) // -Hlast.
@@ -1214,8 +1214,8 @@ rewrite /= inE.
 case/predU1P.
   move => ?; subst x.
   case/splitPr : Hx => p1 p2 in Hp' Hun p'p Hlast.
-  suff : ucycle g [:: m0, n1, m1 & p1] by apply acyclic_g.
-  apply uniq_path_ucycle_extend_1 => //.
+  suff : ucycle g [:: m0, n1, m1 & p1] by apply: acyclic_g.
+  apply: uniq_path_ucycle_extend_1 => //.
   by rewrite symmetric_g.
   by move: Hp';  rewrite -(cat1s m0) catA cat_path -cats1 => /andP[].
   by move: Hun; rewrite -cat_cons -(cat1s m0) catA cat_uniq cats1 => /andP[].
@@ -1231,7 +1231,7 @@ rewrite inE => /andP[_ /connectP[p]].
 case/shortenP => p' Hp' Hun p'p Hlast.
 apply/negP => abs.
 suff : ucycle g [:: n0, m0 & p'].
-  apply acyclic_g => /=.
+  apply: acyclic_g => /=.
   move: Hlast.
   destruct p' => //= /eqP; by rewrite (negbTE m1m0).
 apply/andP; split.

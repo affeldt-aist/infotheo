@@ -125,7 +125,7 @@ rewrite -VnextE n0m0 /=.
 rewrite !inE /= in Hn2.
 case/orP : Hn2 => Hn2.
   move/eqP in Hn2; subst n2.
-  apply connect1 => /=.
+  apply: connect1 => /=.
   move: (Hn1); rewrite in_setD1 exceptE /= -VnextE => /andP[_ -> /=].
   by apply: contra n2n0 => /eqP [] ->.
 case/andP : Hn2 => m1n1 Hn2.
@@ -142,7 +142,7 @@ apply/andP; split.
 apply/andP; split.
   rewrite andbT.
   by apply: contra n1n0 => /eqP [] ->.
-apply (@sub_path_except _ _ (inr n1)) => //.
+apply: (@sub_path_except _ _ (inr n1)) => //.
 apply/negP => n0p'.
 case/splitPr : n0p' => p1 p2 in Hp' Hun p'p Hlast.
 suff : path.ucycle (tanner_rel H) [:: inr n0, inl m0, inr n1, inl m1 & p1].
@@ -247,7 +247,7 @@ split.
   apply/setP => /= j.
   move Hlhs : (j \in _) => [|]; first by case/imsetP : Hlhs => /= k kz ->.
   apply/esym/negbTE.
-  move/negbT : Hlhs; apply contra => Hlhs.
+  move/negbT : Hlhs; apply: contra => Hlhs.
   apply/imsetP.
   by exists j.
 apply/setP => /= j.
@@ -257,7 +257,7 @@ move Hlhs : (j \in z) => [|].
   exists (inl j) => //.
   by rewrite Hz /Fgraph inE in Hlhs.
 apply/esym/negbTE.
-move/negbT : Hlhs; apply contra.
+move/negbT : Hlhs; apply: contra.
 case/imsetP => /= p Hp ?; subst p.
 by rewrite Hz inE.
 Qed.
@@ -277,7 +277,7 @@ split.
   apply/setP => /= j.
   move Hlhs : (j \in _) => [|]; first by case/imsetP : Hlhs => /= k kz ->.
   apply/esym/negbTE.
-  move/negbT : Hlhs; apply contra => Hlhs.
+  move/negbT : Hlhs; apply: contra => Hlhs.
   apply/imsetP.
   by exists j.
 apply/setP => /= j.
@@ -291,14 +291,14 @@ move Hlhs : (j \in z) => [|].
     by rewrite (negbTE jn0) in jn0'.
   by rewrite inE.
 apply/esym/negbTE.
-move/negbT : Hlhs; apply contra.
+move/negbT : Hlhs; apply: contra.
 rewrite inE.
 case/imsetP => /= p Hp ?; subst p.
 rewrite Hz !inE.
 apply/andP; split.
   apply/negP => /eqP ?; subst j.
   move: Hp; apply/negP.
-  apply (root_notin_subgraph (simple_tanner_rel _)).
+  apply: (root_notin_subgraph (simple_tanner_rel _)).
   by rewrite inE /= -VnextE -FnextE.
 rewrite inE in Hp.
 by rewrite Hp orbT.
@@ -367,7 +367,7 @@ have K3 : 'V(m0, n1) :\ n1 != 'V(m1, n1) :\ n1.
       apply/eqP; case => ?; subst m1; by rewrite eqxx in Hm1.
     apply/negP => m0p.
     case/splitPr : m0p => p1 p2 in Hp' Hun pp' Hlast.
-    suff : ucycle (tanner_rel H) (inl m0 :: inr n1 :: inl m1 :: p1) by apply Hacyclic.
+    suff : ucycle (tanner_rel H) (inl m0 :: inr n1 :: inl m1 :: p1) by apply: Hacyclic.
     apply: uniq_path_ucycle_extend_1.
     exact: simple_tanner_rel.
     by rewrite /= -VnextE.
@@ -523,12 +523,12 @@ Lemma rprod_Fgraph_part_fnode (R : numDomainType) g n0:
   \prod_(m0 < m) g m0 = \prod_(m0 in 'F n0) \prod_(m1 in 'F(m0, n0)) g m1 :> R.
 Proof.
 transitivity (\prod_(m0 in [set: 'I_m]) g m0).
-  apply eq_bigl => /= ?; by rewrite in_set.
+  apply: eq_bigl => /= ?; by rewrite in_set.
 rewrite -(cover_Fgraph_part_fnode n0).
 rewrite big_trivIset /=; last exact: trivIset_Fgraph_part_fnode.
 rewrite big_imset // => //.
 move=> m1 m2 Hm1 Hm2 /=.
-apply Fgraph_injective => //; by rewrite -FnextE.
+apply: Fgraph_injective => //; by rewrite -FnextE.
 Qed.
 
 Lemma disjoint_Vgraph (m0 m1 : 'I_m) (n1 n0 : 'I_n) : n1 != n0 -> m0 != m1 ->
@@ -542,9 +542,9 @@ have Hm1' : n0 \in 'V m1.
   apply: contraLR Hm1.
   move/Vgraph_set1 => ->; by rewrite in_set1.
 have Hdiff : 'V(m0, n0) :\ n0 != 'V(m1, n0) :\ n0.
-  move: m0m1; apply contra.
+  move: m0m1; apply: contra.
   move/eqP => abs; apply/eqP; move: abs.
-  apply Vgraph_injective => //.
+  apply: Vgraph_injective => //.
   apply/set0Pn; exists n1; by rewrite in_setD1 n1n0 Hn1.
   apply/set0Pn; exists n1; by rewrite in_setD1 n1n0 Hm1.
 move: (trivIset_Vgraph_part_vnode n0).
@@ -553,11 +553,11 @@ move/(_ ('V(m0, n0) :\ n0) ('V(m1, n0) :\ n0)) => /= abs.
 have : 'V(m0, n0) :\ n0 \in Vgraph_part_vnode n0.
   case: imsetP => // abs'.
   exfalso.
-  apply abs'; exists m0 => //; by rewrite FnextE.
+  apply: abs'; exists m0 => //; by rewrite FnextE.
 move/abs => {}abs.
 have : 'V(m1, n0) :\ n0 \in Vgraph_part_vnode n0.
    case: imsetP => // abs'; exfalso.
-   apply abs'; exists m1 => //; by rewrite FnextE.
+   apply: abs'; exists m1 => //; by rewrite FnextE.
 move/abs => {}abs.
 move: (abs Hdiff) => {abs}abs'.
 move/disjoint_setI0 : abs' => abs'.
@@ -613,7 +613,7 @@ move Hlhs : ( _ \in _ ) => [|].
 apply/esym/negbTE.
 rewrite negb_and negbK.
 case/boolP : (m1 == m0) => // m1m0 /=.
-move/negbT : Hlhs; apply contra => Hlhs.
+move/negbT : Hlhs; apply: contra => Hlhs.
 apply/bigcupP => /=.
 rewrite inE in Hlhs.
 rewrite /Fgraph_part_Fgraph.
@@ -696,7 +696,7 @@ case: ifP.
     by rewrite inE.
   by rewrite !inE {2}tanner_relE.
 rewrite !inE /=.
-move/negbT/negP => abs' abs; apply abs' => {abs'}.
+move/negbT/negP => abs' abs; apply: abs'.
 case: abs => m2 Hm Hm1.
 apply/bigcupP => /=.
 exists (inl m2).
@@ -783,7 +783,7 @@ destruct p0' as [|p0'1 p0'2].
   rewrite [p'1 :: _]lock /= -lock in unp; by case/andP : unp.
 suff : ucycle (tanner_rel H)
   ((inl m1 :: rev (belast p0'1 p0'2)) ++ (inl m3 :: inr n2 :: inl m0 :: inr n1 :: inl m2 :: belast p'1 p'2)).
-  apply Hacyclic; by rewrite size_cat addnC.
+  apply: Hacyclic; by rewrite size_cat addnC.
 apply: uniq_path_ucycle_cat_extend; try assumption.
 exact: sym_tanner_rel.
 exact: simple_tanner_rel.
@@ -893,7 +893,7 @@ case: p' Hp' unp pp' lastp => [// | p'1 p'2] Hp' unp pp' lastp.
 elim/last_ind : q' Hq' unq qq' lastq => [// | q'1 q'2 _] Hq' unq qq' lastq.
 rewrite last_rcons in lastq; subst q'2.
 suff : ucycle (tanner_rel H) ((inr n2 :: rev q'1) ++ [:: inl m1', inr n1', inl m0, inr n1, inl m1 & belast p'1 p'2]).
-  by apply Hacyclic; rewrite size_cat addnC.
+  by apply: Hacyclic; rewrite size_cat addnC.
 apply: uniq_path_ucycle_cat_extend => //.
 exact: sym_tanner_rel.
 exact: simple_tanner_rel.
@@ -961,7 +961,7 @@ move Hlhs : ( _ \in _ ) => [|].
     by rewrite inE sym_tanner_rel.
   by rewrite 3!inE Hn1 orbT.
 apply/esym/negbTE.
-move/negbT : Hlhs; apply contra.
+move/negbT : Hlhs; apply: contra.
 case/andP.
 rewrite 2!inE.
 move=> n1n0.
@@ -1050,7 +1050,7 @@ case: ifP.
     rewrite !inE /= m2n1 andbT.
     by apply: contra m2m0 => /eqP ->.
   by rewrite in_setD1 m1n1 /= inE in_set1 (negbTE m1n1) orFb inE.
-move/bigcupP => abs abs'; apply abs => {abs}.
+move/bigcupP => abs abs'; apply: abs.
 case: abs' => m2 Hm2 Hm1 /=.
 exists (inl m2).
   rewrite !inE /= -VnextE -FnextE.

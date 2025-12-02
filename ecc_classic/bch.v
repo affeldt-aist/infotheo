@@ -60,7 +60,7 @@ Lemma BCH_PCM_altP2 (x : 'rV[F]_n) :
 Proof.
 move=> H i.
 have @j : 'I_t.*2 by refine (@Ordinal _ i.*2 _); rewrite -!muln2 ltn_pmul2r.
-rewrite -[RHS](H j); by apply eq_bigr => /= k _.
+rewrite -[RHS](H j); by apply: eq_bigr => /= k _.
 Qed.
 
 Lemma BCH_PCM_altP1 (x : 'rV['F_2]_n) :
@@ -72,7 +72,7 @@ elim: i {-2}i (leqnn i) => [|i IH j ji i1].
   move=> i; rewrite leqn0 => /eqP -> i0.
   destruct t.
     exfalso; by rewrite -muln2 mul0n ltnn in i0.
-  by rewrite -[RHS](H ord0); apply eq_bigr.
+  by rewrite -[RHS](H ord0); apply: eq_bigr.
 case/boolP : (odd j) => [odd_j|even_j]; last first.
   have j2t : j./2 < t by rewrite -divn2 ltn_divLR // muln2.
   rewrite -[in RHS](H (Ordinal j2t)) /=.
@@ -93,7 +93,7 @@ have j2t : (j.-1)./2 < t.*2.
   by rewrite /= (ltn_trans i1) // ltnS muln2 -[in X in _ <= X]addnn leq_addl.
 move/(_ j2t)/(congr1 (fun x => x ^+ 2)).
 rewrite expr0n /= sum_sqr ?char_GFqm // => H'.
-rewrite -[RHS]H'; apply eq_bigr => k _.
+rewrite -[RHS]H'; apply: eq_bigr => k _.
 rewrite exprMn_comm; last by rewrite /GRing.comm mulrC.
 congr (_ * _); last first.
   rewrite /= -exprM muln2; congr (_ ^+ _).
@@ -112,20 +112,20 @@ apply/idP/idP.
   suff H' : forall j : 'I_t.*2, \sum_j0 (GF2_of_F2 (x ``_ j0) * (a ``_ j0) ^+ j.+1) = 0.
     apply/eqP/rowP => j; rewrite !mxE.
     rewrite -[RHS](H' j).
-    apply eq_bigr => /= i _.
+    apply: eq_bigr => /= i _.
     by rewrite !mxE mulrC.
   move=> j.
-  apply BCH_PCM_altP1 => i.
+  apply: BCH_PCM_altP1 => i.
   move/eqP/rowP : H => /(_ i).
   rewrite !mxE => H; rewrite -[RHS]H.
-  by apply eq_bigr => /= k _; rewrite !mxE /= mulrC.
+  by apply: eq_bigr => /= k _; rewrite !mxE /= mulrC.
 - rewrite /BCH.PCM_alt /BCH.PCM /syndrome => H.
   apply/eqP/rowP => i.
   have @j : 'I_t.*2.
     by refine (@Ordinal _ i.*2 _); rewrite -!muln2 ltn_pmul2r.
   move/eqP : H => /matrixP/(_ ord0 j).
   rewrite !mxE => {2}<-.
-  by apply eq_bigr => k _; rewrite !mxE.
+  by apply: eq_bigr => k _; rewrite !mxE.
 Qed.
 
 End BCH_PCM_alt.
@@ -168,9 +168,9 @@ Lemma fdcoor_syndrome_coord (y : 'rV['F_2]_n) i (it : i < t.*2) :
   fdcoor (rVexp a n) (F2_to_GF2 m y) (inord i.+1) =
   GRS.syndrome_coord (rVexp a n) (rVexp a n) i (F2_to_GF2 m y).
 Proof.
-rewrite /fdcoor /GRS.syndrome_coord horner_poly; apply eq_bigr => j _.
+rewrite /fdcoor /GRS.syndrome_coord horner_poly; apply: eq_bigr => j _.
 rewrite insubT // => jn.
-rewrite !mxE -mulrA; congr (GF2_of_F2 (y _ _) * _); first by apply val_inj.
+rewrite !mxE -mulrA; congr (GF2_of_F2 (y _ _) * _); first by apply: val_inj.
 by rewrite -exprS -exprM mulnC exprM inordK // ltnS (leq_trans it).
 Qed.
 
@@ -204,7 +204,7 @@ apply/idP/idP.
   apply/forallP => /= i; apply/eqP; rewrite /fdcoor horner_poly.
   move: (Hc i ord0); rewrite !mxE => H1; rewrite -[RHS]H1.
   apply/eq_bigr => /= j _; rewrite insubT // => jn.
-  rewrite mulrC 3![in RHS]mxE; congr (_ * (map_mx _ c) ord0 _); last by apply val_inj.
+  rewrite mulrC 3![in RHS]mxE; congr (_ * (map_mx _ c) ord0 _); last by apply: val_inj.
   rewrite inordK //; last first.
     move: (ltn_ord i).
     rewrite -(@ltn_pmul2r 2) // !muln2 -(ltn_add2r 1) !addn1.
@@ -214,11 +214,11 @@ apply/idP/idP.
     move/leq_ltn_trans; by apply.
   by rewrite exprAC.
 - move/forallP => H.
-  case: BCHcode => code condition /=; apply (proj2 (condition _)).
+  case: BCHcode => code condition /=; apply: (proj2 (condition _)).
   rewrite mem_kernel_syndrome0; apply/eqP/rowP => i; rewrite !mxE.
   rewrite -[RHS](eqP (H i)) /fdcoor horner_poly; apply/eq_bigr => /= j _.
   rewrite insubT // => jn.
-  rewrite !mxE mulrC; congr (GF2_of_F2 (c ord0 _) * _); first by apply val_inj.
+  rewrite !mxE mulrC; congr (GF2_of_F2 (c ord0 _) * _); first by apply: val_inj.
   rewrite inordK //; first by rewrite exprAC.
   move: (ltn_ord i).
   rewrite -(@ltn_pmul2r 2) // !muln2 -(ltn_add2r 1) !addn1.
@@ -254,7 +254,7 @@ apply/idP/idP.
   apply/eqP.
   rewrite !mxE in K.
   rewrite -[RHS]K.
-  apply eq_bigr => k _.
+  apply: eq_bigr => k _.
   rewrite !mxE mulrC; congr (_ * _).
   rewrite -exprM mulnC exprM; congr (a ^+ _ ^+ _).
   by rewrite inord_val // inordK // (leq_ltn_trans (ltn_ord i)).
@@ -273,7 +273,7 @@ apply/idP/idP.
     by apply/negbTE; rewrite eq_sym.
   rewrite big_const iter_addr0 addr0 fdcoorE coefZ coefXn eqxx mulr1 => K.
   rewrite -[RHS]K.
-  apply eq_bigr => k _.
+  apply: eq_bigr => k _.
   rewrite !mxE mulrC; congr (_ * _).
   by rewrite -exprM mulnC exprM inordK // (leq_ltn_trans _ tn).
 Qed.
@@ -389,7 +389,7 @@ have {}Hf : \sum_(i < r'.+1) GF2_of_F2 x ``_ (f i) *:
   move/colP : Hf => /(_ (widen_ord (ltnW Hr') j)).
   rewrite !mxE summxE => Hf.
   rewrite -[RHS]Hf.
-  by apply eq_bigr => /= i _; rewrite !mxE.
+  by apply: eq_bigr => /= i _; rewrite !mxE.
 have /negP := det_B_neq0 Hr' Hinj.
 rewrite -det_tr; apply.
 apply/det0P; exists (\row_i GF2_of_F2 x ``_ (f i)).
@@ -407,7 +407,7 @@ apply/det0P; exists (\row_i GF2_of_F2 x ``_ (f i)).
 apply/rowP => i; rewrite !mxE.
 move/colP : Hf => /(_ i).
 rewrite !mxE => Hf; rewrite -[RHS]Hf.
-by rewrite summxE; apply eq_bigr=> k _; rewrite !mxE.
+by rewrite summxE; apply: eq_bigr=> k _; rewrite !mxE.
 Qed.
 
 End BCH_minimum_distance_lb.
@@ -439,11 +439,11 @@ under eq_bigr.
   rewrite (_ : \sigma_(rVexp a n, y) =
     \sigma_(rVexp a n, y, i) * (1 - ((rVexp a n) ``_ i) *: 'X)); last first.
     rewrite /errloc (bigD1 i) //= mulrC; congr (_ * _).
-    by apply eq_bigl => ij; rewrite in_setD1 andbC.
+    by apply: eq_bigl => ij; rewrite in_setD1 andbC.
   over.
 transitivity (\sum_(i in supp y) y ``_ i *:
      (\sigma_(rVexp a n, y, i) * (1 - a ^+ (i * n) *: 'X^n))).
-  apply eq_bigr => /= i ie; congr (_ *: _).
+  apply: eq_bigr => /= i ie; congr (_ *: _).
   rewrite -mulrA; congr (_ * _).
   rewrite mulrDl mul1r mulNr big_distrr /=.
   rewrite [X in _ - X](eq_bigr (fun j : 'I_n => a ^+ (i * j.+1) *: 'X^(j.+1))); last first.
@@ -454,9 +454,9 @@ transitivity (\sum_(i in supp y) y ``_ i *:
   rewrite big_ord_recr /= opprD addrA.
   rewrite (_ : forall a b c d, b = c -> a + b - c - d = a - d) //.
   move=> a0 b c d -> //; by rewrite addrK.
-  apply eq_bigr => j _; by rewrite mxE -exprM mulnC inordK // ltnS.
+  apply: eq_bigr => j _; by rewrite mxE -exprM mulnC inordK // ltnS.
 rewrite /BCH_erreval [in RHS]big_distrl /=.
-apply eq_bigr => i ie.
+apply: eq_bigr => i ie.
 rewrite mxE -scalerAl mulr1; congr (_ *: (_ * _)).
 by rewrite mulnC exprM an1 expr1n scale1r.
 Qed.
@@ -502,7 +502,7 @@ move: (@GRS_key_equation F n (F2_to_GF2 m y) (rVexp a n) (rVexp a n) t.*2) => H0
 rewrite BCH_syndromep_is_GRS_syndromep // H0; congr (_ + _ * _).
   rewrite /Omega /BCH_erreval; apply/polyP => i.
   rewrite !coef_sum supp_twisted //.
-  apply eq_bigr => /= j jy.
+  apply: eq_bigr => /= j jy.
   by rewrite !mxE mulr1.
 by rewrite -BCH_mod_is_GRS_mod.
 Qed.
@@ -591,7 +591,7 @@ case: ifPn => syn_y.
   apply/negP.
   rewrite -ltnNge (@BCH_min_dist1 _ _ _ H1 _ _ e0 _ C) //.
   rewrite (_ : e = y - c); last by rewrite /y addrAC subrr add0r.
-  apply Lcode0.aclosed => //; last by rewrite Lcode0.oclosed.
+  apply: (@Lcode0.aclosed _ _ _).2 => //; last by rewrite Lcode0.oclosed.
   apply: (proj2 (Rcode.P C _)).
   by rewrite mem_kernel_syndrome0 BCH_syndrome_synp.
 have size_r1 : size r1 <= size ('X^(t.*2) : {poly F}).

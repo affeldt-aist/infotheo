@@ -59,38 +59,38 @@ wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   have kspos : 0 < k by exact: divr_gt0.
   set kg := [ffun x => k * g x].
   have kg_pos : forall a, 0 <= kg a.
-    by move=> a; rewrite /kg /= ffunE; apply mulr_ge0 => //; exact: ltW.
+    by move=> a; rewrite /kg /= ffunE; apply: mulr_ge0 => //; exact: ltW.
   have kabs_con : f `<< kg.
     by apply/dominates_scale => //; rewrite ?gt_eqF//.
   have kgspos : forall a, a \in C -> 0 < kg a.
-    by move=> a a_C; rewrite ffunE; apply mulr_gt0 => //; exact: gspos.
+    by move=> a a_C; rewrite ffunE; apply: mulr_gt0 => //; exact: gspos.
   have Hkg : \sum_{C} kg = \sum_{C} f.
     transitivity (\sum_(a in C) k * g a).
-      by apply eq_bigr => a aC; rewrite /= ffunE.
+      by apply: eq_bigr => a aC; rewrite /= ffunE.
     by rewrite -big_distrr /= /k -mulrA mulVf ?mulr1.
   have Htmp : \sum_{ C } kg != 0.
     rewrite /=.
     evar (h : A -> R); rewrite (eq_bigr h); last first.
       by move=> a aC; rewrite ffunE /h; reflexivity.
     rewrite {}/h (_ : \sum_(i in C) _ = \sum_{C} f) // -Hkg.
-    by apply eq_bigr => a aC /=; rewrite ffunE.
+    by apply: eq_bigr => a aC /=; rewrite ffunE.
   symmetry in Hkg.
   move: {Hwlog}(Hwlog Fnot0 kg kg_pos Htmp kabs_con kgspos Hkg) => /= Hwlog.
   rewrite Hkg mulfV // log1  mulr0 in Hwlog.
   set rhs := \sum_(_ | _) _ in Hwlog.
   rewrite (_ : rhs = \sum_(a | a \in C) (f a * log (f a / g a) - f a * log k)) in Hwlog; last first.
     rewrite /rhs.
-    apply eq_bigr => a a_C.
+    apply: eq_bigr => a a_C.
     rewrite logM; last 2 first.
       exact/fspos.
       by rewrite ffunE invr_gt0// mulr_gt0//; exact/gspos.
     rewrite logV; last first.
-      rewrite ffunE; apply mulr_gt0 => //; exact: gspos.
+      rewrite ffunE; apply: mulr_gt0 => //; exact: gspos.
     rewrite ffunE logM //; last exact: gspos.
     rewrite logM //; last 2 first.
       exact/fspos.
-      by rewrite invr_gt0//; apply gspos.
-    by rewrite logV; [lra | apply gspos].
+      by rewrite invr_gt0//; apply: gspos.
+    by rewrite logV; [lra | apply: gspos].
   rewrite big_split /= -big_morph_oppr -big_distrl /= in Hwlog.
   by rewrite -subr_ge0.
 move=> Htmp; rewrite Htmp.
@@ -101,11 +101,11 @@ suff : 0 <= \sum_(a | a \in C) f a * ln (f a / g a).
   set rhs := \sum_( _ | _ ) _.
   have -> : rhs = \sum_(H | H \in C) (f H * (ln (f H / g H))) / ln 2.
     rewrite /rhs.
-    by apply eq_bigr => a a_C; by rewrite -mulrA.
+    by apply: eq_bigr => a a_C; by rewrite -mulrA.
   rewrite -big_distrl /=.
   by rewrite mulr_ge0// invr_ge0// ln2_ge0.
-apply (@le_trans _ _ (\sum_(a | a \in C) f a * (1 - g a / f a))).
-  apply (@le_trans _ _ (\sum_(a | a \in C) (f a - g a))).
+apply: (@le_trans _ _ (\sum_(a | a \in C) f a * (1 - g a / f a))).
+  apply: (@le_trans _ _ (\sum_(a | a \in C) (f a - g a))).
     by rewrite big_split /= -big_morph_oppr Htmp subrr.
   rewrite le_eqVlt; apply/orP; left; apply/eqP.
   apply/eq_bigr => a a_C.
@@ -114,12 +114,12 @@ apply (@le_trans _ _ (\sum_(a | a \in C) f a * (1 - g a / f a))).
     by rewrite mul0r mulr0.
   by rewrite mulrCA divff ?mulr1// gt_eqF//; exact/(fspos _ a_C).
 apply: ler_sum => a C_a.
-apply ler_wpM2l; first exact/ltW/fspos.
+apply: ler_wpM2l; first exact/ltW/fspos.
 rewrite -[X in _ <= X]opprK lerNr -lnV; last first.
-  by rewrite posrE divr_gt0//; [apply fspos | apply gspos].
+  by rewrite posrE divr_gt0//; [apply: fspos | apply: gspos].
 rewrite invfM.
 rewrite invrK mulrC; apply: le_trans.
-  by apply/ln_id_cmp; rewrite divr_gt0//; [apply gspos | apply fspos].
+  by apply/ln_id_cmp; rewrite divr_gt0//; [apply: gspos | apply: fspos].
 by rewrite opprB.
 Qed.
 
@@ -149,13 +149,13 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     rewrite setUC in DUD'.
     rewrite DUD' (big_union _ f DID') /=.
     rewrite (_ : \sum_{D'} f = \sum_(a | a \in D') 0); last first.
-      apply eq_bigr => a.
+      apply: eq_bigr => a.
       rewrite /D' in_set.
       by case/andP => _ /eqP.
     by rewrite big_const iter_addr addr0 mul0rn add0r.
   rewrite -H1 in H.
   have pos_F : 0 <= \sum_{C} f by apply/sumr_ge0 => ? ?.
-  apply (@le_trans _ _ (\sum_{C} f * log (\sum_{C} f / \sum_{D} g))).
+  apply: (@le_trans _ _ (\sum_{C} f * log (\sum_{C} f / \sum_{D} g))).
     move: pos_F; rewrite le_eqVlt => /predU1P[pos_F|pos_F].
       by rewrite -pos_F !mul0r.
     have H2 : 0 <= \sum_(a | a \in D) g a by apply/sumr_ge0.
@@ -175,8 +175,8 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
     apply/ler_wpM2l => //.
       exact/ltW.
     rewrite ler_log// ?posrE//; last 2 first.
-      by apply divr_gt0 => //; rewrite -HG.
-      by apply divr_gt0 => //; rewrite -HG.
+      by apply: divr_gt0 => //; rewrite -HG.
+      by apply: divr_gt0 => //; rewrite -HG.
     apply/ler_wpM2l => //.
       exact/ltW.
     rewrite lef_pV2//.
@@ -189,7 +189,7 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
   rewrite DUD' (big_union _ (fun a => f a * log (f a / g a)) DID') /=.
   rewrite (_ : \sum_(_ | _ \in D') _ = 0); last first.
     transitivity (\sum_(a | a \in D') (0:R)).
-      apply eq_bigr => a.
+      apply: eq_bigr => a.
       by rewrite /D' in_set => /andP[a_C /eqP ->]; rewrite mul0r.
     by rewrite big1.
   by rewrite add0r lexx.

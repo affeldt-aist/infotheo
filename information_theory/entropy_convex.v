@@ -147,7 +147,7 @@ have [/onem_eq0 /val_inj ->|t0] := eqVneq (Prob.p p).~ 0.
   by rewrite !conv1 mul1r onem1 mul0r addr0.
 have quv (q u v : R) : q != 0 -> q * u / (q * v) = u / v.
   by move=> ?; rewrite invfM mulrACA divff// mul1r.
-apply ler_sum => a _; rewrite 2!fdist_convE.
+apply: ler_sum => a _; rewrite 2!fdist_convE.
 have [y2a0|y2a0] := eqVneq (y.2 a) 0.
   rewrite y2a0 (_ : y.1 a = 0) ?(mulR0,addR0,mul0R); last first.
     by move/dominatesP : Hy; exact.
@@ -208,7 +208,7 @@ Proof. by rewrite prednK. Qed.
 
 Lemma entropy_concave : concave_function (fun P : R.-fdist A => `H P : R^o).
 Proof.
-apply RNconcave_function => p q t; rewrite /convex_function_at.
+apply: RNconcave_function => p q t; rewrite /convex_function_at.
 rewrite !(entropy_log_div _ cardApredS) [in X in _ <= X]avgRE.
 rewrite !opprD !mulrDr addrACA -mulrDl add_onemK mul1r lerD ?lexx// !opprK.
 have := convex_relative_entropy t (dom_by_uniform p cardApredS)
@@ -306,10 +306,10 @@ suff : affine (fun x : {fdist A} => centropy (fdistX (x `X W)) : R^o).
   by case/affine_functionP.
 move=> t p q.
 rewrite /= avgRE /centropy /centropy1.
-rewrite 2!big_distrr -big_split /=; apply eq_bigr => a _.
+rewrite 2!big_distrr -big_split /=; apply: eq_bigr => a _.
 rewrite !fdistX2 !fdist_fstE !mulrN -opprD; congr (- _).
-rewrite !big_distrr -big_split /=; apply eq_bigr => b _.
-rewrite !big_distrl !big_distrr -big_split /=; apply eq_bigr => b0 _.
+rewrite !big_distrr -big_split /=; apply: eq_bigr => b _.
+rewrite !big_distrl !big_distrr -big_split /=; apply: eq_bigr => b0 _.
 rewrite !fdist_prodE /= fdist_convE /= !(mulrA (Prob.p t)) !(mulrA (Prob.p t).~).
 have [Hp|Hp] := eqVneq (Prob.p t * p a) 0.
   rewrite Hp ?(add0R,mul0R).
@@ -363,7 +363,7 @@ have -> : mutual_info (P `X (fun x => p1yx x <| t |> p2yx x)) = D(plambdaxy || q
 have -> : qlambdaxy = q1xy <| t |> q2xy.
   apply/fdist_ext => -[a b].
   rewrite !fdist_prodE !fdist_convE /= /q1xy /q2xy !fdist_prodE /= /p1 /plambday.
-  rewrite !fdist_sndE !big_distrr /= -big_split /=; apply eq_bigr => a0 _.
+  rewrite !fdist_sndE !big_distrr /= -big_split /=; apply: eq_bigr => a0 _.
   rewrite /plambdaxy /= !fdist_prodE /= /p1xy /plambdayx fdist_convE /=.
   ring.
 have -> : plambdaxy = p1xy <| t |> p2xy.

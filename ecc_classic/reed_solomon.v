@@ -141,13 +141,13 @@ Lemma syndrome_syndromep y :
 Proof.
 apply/rowP => i; rewrite !mxE /syndromep poly_def coef_sum.
 evar (tmp : 'I_d -> F); transitivity (\sum_j (tmp j)); last first.
-  apply eq_bigr => /= j _.
+  apply: eq_bigr => /= j _.
   apply/esym; rewrite /fdcoor coefZ horner_poly big_distrl /= /tmp; reflexivity.
-rewrite {}/tmp (exchange_big_dep xpredT) //=; apply eq_bigr => j _; rewrite !mxE.
+rewrite {}/tmp (exchange_big_dep xpredT) //=; apply: eq_bigr => j _; rewrite !mxE.
 have @i' :  'I_d.
-  by apply (@Ordinal _ i); rewrite (leq_trans (ltn_ord i)).
+  by apply: (@Ordinal _ i); rewrite (leq_trans (ltn_ord i)).
 rewrite (bigD1 i') //= coefXn insubT //= => Hj.
-rewrite eqxx mulr1 (_ : Sub _ _ = j); last by apply val_inj.
+rewrite eqxx mulr1 (_ : Sub _ _ = j); last by apply: val_inj.
 rewrite mxE inordK; last by rewrite ltnS (leq_trans (ltn_ord i)).
 rewrite mulrC; apply/eqP.
 rewrite addrC -subr_eq subrr; apply/eqP/esym.
@@ -164,12 +164,12 @@ rewrite syndrome_syndromep inE; apply/idP/idP.
   rewrite (eq_bigr (fun=> 0)) ?big_const ?iter_addr0 // => j _.
   rewrite coefZ; apply/eqP; rewrite mulf_eq0.
   have @j' : 'I_d.+1.
-    by apply (@Ordinal _ j.+1); move: (ltn_ord j); rewrite -ltnS.
+    by apply: (@Ordinal _ j.+1); move: (ltn_ord j); rewrite -ltnS.
   move: (H j'); by rewrite lt0n /= => ->.
 - move/eqP/rowP => H.
   apply/forallP => /= i; apply/implyP => i0.
   have @i' : 'I_d.
-    apply (@Ordinal _ i.-1).
+    apply: (@Ordinal _ i.-1).
     by rewrite prednK // -ltnS.
   move: (H i'); rewrite !mxE.
   rewrite /syndromep /poly_decoding.syndromep.
@@ -191,7 +191,7 @@ move=> i _.
 have [:tmp] @j : 'I_d.+1.
   apply/(Sub i.+1)/(leq_ltn_trans (ltn_ord _)).
   abstract: tmp.
-  exact tr.
+  exact: tr.
 by move: (H j) => /= /eqP ->; rewrite scale0r.
 Qed.
 
@@ -244,7 +244,7 @@ Proof.
 move=> ln id1.
 rewrite /fdcoor /GRS.syndrome_coord horner_poly; apply/eq_bigr => /= j _.
 rewrite insubT // => jn.
-rewrite 2!mxE -mulrA; congr (y ord0 _ * _); first by apply val_inj.
+rewrite 2!mxE -mulrA; congr (y ord0 _ * _); first by apply: val_inj.
 by rewrite -exprS -exprM mulnC exprM inordK.
 Qed.
 
@@ -275,7 +275,7 @@ rewrite /RS_mod /GRS_mod; congr (- _); apply/eq_bigr => /= i iy.
 rewrite !mulrN scalerN; congr (- _).
 rewrite -!scalerAl; congr (_ *: _ ).
 rewrite -mulrA; congr (_ * _).
-  apply eq_big.
+  apply: eq_big.
     by move=> j; rewrite in_setD1 andbC.
   by move=> j; rewrite mxE.
 by rewrite mxE -polyCM -exprSr -exprM mulnC.
@@ -350,7 +350,7 @@ rewrite /fdcoor poly_rV_K // !hornerE.
 rewrite mxE inordK; last first.
   by case/andP : Hn0.
 case Hm : (m.[a ^+ n0] == 0); first by rewrite (eqP Hm) mul0r.
-apply negbT in Hm.
+move/negbT: Hm => Hm.
 rewrite mulrI_eq0; last by move : Hm => /lregP.
 rewrite -rootE.
 pose rs := [seq (a ^+ i) | i <- iota 1 d].
@@ -361,7 +361,7 @@ rewrite root_prod_XsubC /rs.
 apply/mapP; exists (val n0) => //.
 rewrite mem_iota.
 case/andP : Hn0 => -> _.
-rewrite addnC addn1 /=; by apply ltn_ord.
+rewrite addnC addn1 /=; by apply: ltn_ord.
 Qed.
 
 Hypothesis dn : RS.redundancy_ub d n.
@@ -423,7 +423,7 @@ apply: (@BCH_argument_lemma _ _ idfun _ RS_Hchar _ an
   by rewrite -wH_eq0 wH_phase_shift // wH_eq0.
 rewrite (_ : \row_i0 idfun ((phase_shift a c d.+1) ``_ i0) =
   phase_shift a c d.+1); last by apply/rowP => i; rewrite !mxE.
-apply (dft_shifting a_neq0 (prim_expr_order an) dn) => i /andP[ir1 ir2].
+apply: (dft_shifting a_neq0 (prim_expr_order an) dn) => i /andP[ir1 ir2].
 have {Hc} : c \in RS.codebook a n' d by rewrite -(RS.lcode0_codebook a dn) inE.
 rewrite inE => /forallP/(_ (Ordinal ir2)) /=.
 by rewrite ir1 implyTb !mxE => /eqP.
@@ -433,7 +433,7 @@ Lemma RS_min_dist : n.-primitive_root a ->
   min_dist (RS_not_trivial a dn) = d.+1.
 Proof.
 move=> na.
-apply min_distP; split; first by move=> *; apply RS_min_dist1.
+apply: min_distP; split; first by move=> *; apply: RS_min_dist1.
 exists (poly_rV \gen_(a, d)); split; first by rewrite mem_rs_gen_RS.
 apply/andP; rewrite wH_rs_gen andbT.
 apply: contra (gen_neq0 a d).
@@ -452,9 +452,9 @@ Qed.
 Lemma dim_RS_code (a0 : a != 0) (auroot : not_uroot_on a n) :
   \dim (RS.code a n d) = (n - d)%N.
 Proof.
-apply dim_kernel; last by rewrite ltnW.
+apply: dim_kernel; last by rewrite ltnW.
 rewrite -RS_GRS_PCM rank_GRS_PCM //.
-- by apply (@rVexp_inj _ _ _ a0 auroot).
+- by apply: (@rVexp_inj _ _ _ a0 auroot).
 - by rewrite ltnW.
 - move=> i; by rewrite mxE expf_neq0.
 Qed.
@@ -466,7 +466,7 @@ move=> an.
 rewrite /maximum_distance_separable RS_min_dist // addn1 dim_RS_code //.
 - by rewrite subKn // ltnW.
 - exact: primitive_uroot_neq0 an.
-- by apply prim_root_not_uroot_on.
+- by apply: prim_root_not_uroot_on.
 Qed.
 
 End RS_generator_prop1.
@@ -500,7 +500,7 @@ have H2 n0 : 1 <= n0 < d.+1 -> 'X - (a ^+ n0)%:P %| rVpoly c.
   move=> /H1 /eqP /factor_theorem [x ->].
   by rewrite dvdp_mull.
 pose rs := [seq (a ^+ i) | i <- iota 1 d].
-have K1 : all (root (rVpoly c)) rs by apply RS.all_root_codeword.
+have K1 : all (root (rVpoly c)) rs by apply: RS.all_root_codeword.
 have K2 : uniq_roots rs by apply: (@RS.uniq_roots_exp _ _ n').
 case: (uniq_roots_prod_XsubC K1 K2) => m.
 have -> : \prod_(z <- rs) ('X - z%:P) = \gen_(a, d).
@@ -511,10 +511,10 @@ have Hg'' := gen_neq0 a d.
 move => Hm.
 have Hm' : m != 0.
   move : Hm => /eqP.
-  apply contraLR => /negPn/eqP ->; by rewrite mul0r rVpoly0.
+  apply: contraLR => /negPn/eqP ->; by rewrite mul0r rVpoly0.
 have Hm'' : 0 < size m by rewrite size_poly_gt0.
 exists m; split; [| by rewrite Hm].
-have : size (rVpoly c) <= n by apply size_poly.
+have : size (rVpoly c) <= n by apply: size_poly.
 rewrite Hm.
 move : (size_polyMleq m \gen_(a, d)) => Hmg.
 rewrite size_mul // -!subn1 addnC -addnBA // addnC.
@@ -637,8 +637,8 @@ case: ifPn => syndrome0.
   rewrite /RS.errors_ub ltnS => /leq_trans; apply.
   by rewrite -{2}(half_bit_double d true) add1n half_leq // ltnS -addnn leq_addr.
 have H1 : distinct_non_zero (rVexp a n).
-  apply distinct_non_zero_rVexp.
-  by apply (primitive_uroot_neq0 an).
+  apply: distinct_non_zero_rVexp.
+  by apply: (primitive_uroot_neq0 an).
   by move/prim_root_not_uroot_on: an.
 have H2 := rVexp_neq0 _ (primitive_uroot_neq0 an).
 have r1_neq0 : \RSsynp_(rVexp a n, e, d) != 0.
@@ -730,7 +730,7 @@ rewrite -(@rreg_div0 _ _ _ 'X^d).
   rewrite (leq_trans (size_polyD _ _)) // size_polyN geq_max.
   have H : forall x : 'rV[F]_(n - d.+1).+1, size (rVpoly x * 'X^d) <= n.
     move=> x.
-    apply (leq_trans (size_polyMleq _ _)).
+    apply: (leq_trans (size_polyMleq _ _)).
     rewrite size_polyXn addnS /=.
     rewrite (@leq_trans ((n - d.+1).+1 + d)) //.
       by rewrite leq_add2r size_poly.
@@ -754,27 +754,27 @@ Proof.
 apply/subsetP => /= c /imsetP[/= m _] ->{c}.
 rewrite /encoder ffunE.
 have Htmp : size (rVpoly m * 'X^d) <= n.
-  eapply leq_trans; first by apply size_polyMleq.
+  apply: leq_trans; first by apply: size_polyMleq.
   rewrite size_polyXn addnS /=.
   suff : size (rVpoly m) <= (n - d.+1).+1.
     rewrite -(leq_add2r d) => /leq_trans -> //.
     by rewrite subnS prednK ?subn_gt0 // subnK // ltnW.
-  by apply size_poly.
+  by apply: size_poly.
 suff : poly_rV (rVpoly m * 'X^d - (rVpoly m * 'X^d) %% \gen_(a, d))
     \in [set cw in RS.code a n d].
   by rewrite !inE.
-rewrite (@RS.lcode0_codebook _ a n' d); last by exact dn.
+rewrite (@RS.lcode0_codebook _ a n' d); last by exact: dn.
 apply/(rs_genP dn a_neq0 a_not_uroot_on).
 exists ((rVpoly m * 'X^d) %/ \gen_(a, d)).
 split.
   rewrite size_divp; last apply: gen_neq0.
   rewrite -subnS prednK; last by rewrite size_poly_gt0; exact: gen_neq0.
-  apply (@leq_trans (n - size \gen_(a, d))).
-  apply leq_sub => //.
-  apply leq_sub2l => //.
+  apply: (@leq_trans (n - size \gen_(a, d))).
+  apply: leq_sub => //.
+  apply: leq_sub2l => //.
   rewrite size_rs_gen //; exact: d_pos.
 rewrite {1}(divp_eq (rVpoly m * 'X^d) \gen_(a, d)) addrK poly_rV_K //.
-by eapply leq_trans; first by apply leq_divMp.
+by apply: leq_trans; first by apply: leq_divMp.
 Qed.
 
 Lemma RS_repair_output_is_in_the_code (x y : 'rV_n) (an1 : a ^+ n = 1) :
@@ -794,7 +794,7 @@ Lemma RS_repair_img (an1 : a ^+ n = 1) (Hchar : ([pchar F]^').-nat n'.+1) :
 Proof.
 apply/subsetP => /= y.
 rewrite inE => /existsP[/= x /eqP].
-by apply RS_repair_output_is_in_the_code.
+by apply: RS_repair_output_is_in_the_code.
 Qed.
 
 Definition low (c : 'rV[F]_n) : 'rV[F]_d := poly_rV (rVpoly c %% 'X^d).
@@ -840,7 +840,7 @@ rewrite /encoder ffunE linearB /= poly_rV_K; last first.
   rewrite (leq_trans (size_polyD _ _)) // geq_max.
   apply/andP; split.
     rewrite (leq_trans (size_polyMleq _ _)) // size_polyXn addnS /=.
-    apply (@leq_trans ((n - d.+1).+1 + d)).
+    apply: (@leq_trans ((n - d.+1).+1 + d)).
       by rewrite leq_add2r size_poly.
     by rewrite subnS prednK ?subn_gt0 // subnK // ltnW.
   rewrite size_polyN (@leq_trans d) //; last exact/ltnW.
@@ -858,7 +858,7 @@ Qed.
 Lemma RS_enc_discard_is_id : cancel_on (RS.code a n d) encoder RS_discard.
 Proof.
 move=> /= c Hc.
-rewrite /RS_discard -/(high c); apply RS_enc_surjective.
+rewrite /RS_discard -/(high c); apply: RS_enc_surjective.
 by rewrite -RS.lcode0_codebook // ?inE.
 Qed.
 
@@ -892,7 +892,7 @@ apply/forallP => /= i; apply/implyP => i0; apply/eqP.
 move: x_RS => /(_ i); rewrite i0 implyTb => /eqP x_RS.
 move/(congr1 (fun x => a^+i * x)) : x_RS.
 rewrite mulr0 => H.
-apply fdcoor_rcs; first exact: prim_expr_order.
+apply: fdcoor_rcs; first exact: prim_expr_order.
 move/eqP: H.
 by rewrite mulf_eq0 expf_eq0 i0 (negbTE a0) /= => /eqP.
 Qed.
@@ -901,7 +901,7 @@ Local Open Scope cyclic_code_scope.
 
 Lemma rs_gen_is_gen : poly_rV \gen_(a, d) \in 'cgen[Ccode.mk RS_cyclic].
 Proof.
-apply pgen_is_cgen => /=; first exact: RS_not_trivial.
+apply: pgen_is_cgen => /=; first exact: RS_not_trivial.
 apply/forallP => /= p; apply/eqP; apply/idP/idP.
   move=> Hp.
   move: (proj1 (rs_genP dn a0 (prim_root_not_uroot_on an) p)).

@@ -88,20 +88,20 @@ rewrite -(FDist.f1 d).
 transitivity (\sum_(a | a \in A) (t a)%:R / 0 : Rdefinitions.R); first exact/eq_bigr.
 rewrite -big_distrl /= -natr_sum.
 rewrite (_ : (\sum_(a in A) _)%nat = O) ?mul0r //.
-transitivity (\sum_(a in A) 0)%nat; first by apply eq_bigr => a _; rewrite (ord1 (t a)).
+transitivity (\sum_(a in A) 0)%nat; first by apply: eq_bigr => a _; rewrite (ord1 (t a)).
 by rewrite big_const iter_addn.
 Qed.
 
 Definition type_of_tuple (A : finType) n (ta : n.+1.-tuple A) : P_ n.+1 ( A ).
 pose f := [ffun a => N(a | ta)%:R / n.+1%:R : Rdefinitions.R].
 assert (H1 : forall a, 0%R <= f a).
-  move=> a; rewrite ffunE; apply/divr_ge0; by [apply ler0n | apply ltr0n].
+  move=> a; rewrite ffunE; apply/divr_ge0; by [apply: ler0n | apply: ltr0n].
 assert (H2 : \sum_(a in A) f a = 1).
   under eq_bigr do rewrite ffunE /=.
   rewrite -big_distrl /= -natr_sum.
   by rewrite sum_num_occ_alt mulfV // pnatr_eq0.
 assert (H : forall a, (N(a | ta) < n.+2)%nat).
-  move=> a; rewrite ltnS; by apply num_occ_leq_n.
+  move=> a; rewrite ltnS; by apply: num_occ_leq_n.
 refine (@type.mkType _ n.+1 (FDist.make H1 H2)
   [ffun a => @Ordinal n.+2 (N(a | ta)) (H a)] _).
 by move=> a /=; rewrite !ffunE.
@@ -112,7 +112,7 @@ Proof.
 case: t1 t2 => d1 f1 H1 /= [] d2 f2 H2 /= f1f2.
 subst f2.
 suff ? : d1 = d2 by subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
-apply fdist_ext => /= a; by rewrite H1 H2.
+apply: fdist_ext => /= a; by rewrite H1 H2.
 Qed.
 
 Definition type_eq A n (t1 t2 : P_ n ( A )) :=
@@ -126,7 +126,7 @@ case=> d1 f1 H1 [] d2 f2 H2 /=.
 apply: (iffP idP) => [/eqP H|[] _ -> //].
 subst f2.
 suff ? : d1 = d2 by subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
-apply fdist_ext => /= a; by rewrite H1 H2.
+apply: fdist_ext => /= a; by rewrite H1 H2.
 Qed.
 
 HB.instance Definition _ A n := hasDecEq.Build _ (@type_eqP A n).
@@ -167,7 +167,7 @@ forall a : A, (fdist_of_ffun Hf) a = (f a)%:R / n.+1%:R.
 Proof. by move=> a; rewrite ffunE. Qed.
 
 Definition type_choice_f (A : finType) n (f : {ffun A -> 'I_n.+1}) : option (P_ n ( A )).
-destruct n; first by exact None.
+destruct n; first by exact: None.
 refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1)%nat with
           | left H => Some (@type.mkType _ _ (fdist_of_ffun H) f (fdist_of_ffun_prop H))
           | right _ => None
@@ -197,8 +197,8 @@ destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
 congr Some.
 set d1 := fdist_of_ffun _.
-suff ? : d1 = d by subst d; congr type.mkType; apply boolp.Prop_irrelevance.
-apply fdist_ext => /= a; by rewrite ffunE H.
+suff ? : d1 = d by subst d; congr type.mkType; apply: boolp.Prop_irrelevance.
+apply: fdist_ext => /= a; by rewrite ffunE H.
 Qed.
 
 HB.instance Definition _ A n := @PCanIsCountable _ _ _ _ (@type_choice_pcancel A n).
@@ -207,15 +207,15 @@ Definition type_pickle A n (P : P_ n (A)) : nat.
 destruct P as [d f H].
 exact: (pickle f).
 (*destruct (finfun_countMixin A [finType of 'I_n.+1]) as [pi unpi Hcan].
-apply (pi f).*)
+apply: (pi f).*)
 Defined.
 
 Definition type_unpickle A n (m : nat) : option (P_ n ( A )).
 destruct n.
-  exact None.
+  exact: None.
 pose unpi : option {ffun A -> 'I_n.+2} := unpickle m.
 case: unpi; last first.
-  exact None.
+  exact: None.
 move=> f.
 refine (match Sumbool.sumbool_of_bool ((\sum_(a in A) f a)%nat == n.+1) with
           | left H => Some (@type.mkType _ _ (fdist_of_ffun H) f (fdist_of_ffun_prop H))
@@ -234,7 +234,7 @@ destruct Sumbool.sumbool_of_bool as [e|e]; last first.
   by rewrite H' in e.
 congr Some.
 set d1 := fdist_of_ffun _.
-suff ? : d1 = d by subst d; congr type.mkType; apply boolp.Prop_irrelevance.
+suff ? : d1 = d by subst d; congr type.mkType; apply: boolp.Prop_irrelevance.
 apply/fdist_ext => a; by rewrite ffunE H.
 Qed.
 
@@ -242,7 +242,7 @@ HB.instance Definition _ A n := @PCanIsCountable _ _ _ _ (@type_count_pcancel A 
 
 Definition type_enum_f (A : finType) n (f : { f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n} ) : option (P_ n ( A )).
 destruct n.
-  apply None.
+  apply: None.
 refine (Some (@type.mkType _ _ (fdist_of_ffun (proj2_sig f)) (sval f) (fdist_of_ffun_prop (proj2_sig f)))).
 Defined.
 
@@ -256,10 +256,10 @@ destruct n.
 case=> d t H /=.
 move: (ffun_of_fdist H) => H'.
 have : Finite.axiom (enum [the finType of { f : {ffun A -> 'I_n.+2} | (\sum_(a in A) f a)%nat == n.+1}]).
-  rewrite enumT; by apply enumP.
+  rewrite enumT; by apply: enumP.
 move/(_ (@exist {ffun A -> 'I_n.+2} (fun f => \sum_(a in A) f a == n.+1)%nat t H')) => <-.
 rewrite /type_enum /= /type_enum_f /= count_map.
-by apply eq_count.
+by apply: eq_count.
 Qed.
 
 HB.instance Definition _ A n := @isFinite.Build (P_ n (A)) _ (@type_enumP A n).
@@ -272,7 +272,7 @@ Lemma type_counting n : #| P_ n ( A ) | <= expn (n.+1) #|A|.
 Proof.
 rewrite -(card_ord n.+1) -card_ffun /=.
 rewrite cardE /enum_mem.
-apply (@leq_trans (size (map (@ffun_of_type A n) (Finite.enum _)))).
+apply: (@leq_trans (size (map (@ffun_of_type A n) (Finite.enum _)))).
   by rewrite 2!size_map.
 rewrite cardE.
 apply: uniq_leq_size.
@@ -299,13 +299,13 @@ Qed.
 
 Lemma type_empty1 n : #|A| = 0 -> #|P_ n(A)| = 0.
 Proof.
-move=> A0; apply eq_card0; case=> d ? ?.
+move=> A0; apply: eq_card0; case=> d ? ?.
 move: (fdist_card_neq0 d); by rewrite A0.
 Qed.
 
 Lemma type_empty2 : #|P_ 0(A)| = 0.
 Proof.
-apply eq_card0; case=> d f Hf.
+apply: eq_card0; case=> d f Hf.
 exfalso.
 by move/no_0_type in Hf.
 Qed.
@@ -348,8 +348,8 @@ have Hx : size (flatten [seq nseq (type.f P x0) x0 | x0 <- enum A]) == n.
   case: (P) => P' f HP' /=.
   apply/eqP.
   transitivity (\sum_(a in A) f a)%nat; last first.
-     apply/eqP; by apply ffun_of_fdist with P'.
-  apply congr_big => //.
+    exact/eqP/ffun_of_fdist.
+  apply: congr_big => //.
   by rewrite enumT.
   move=> a /= _.
   by rewrite size_nseq.
@@ -374,7 +374,7 @@ Qed.
 
 Lemma typed_tuples_not_empty : { t | t \in T_{P} }.
 Proof.
-apply sigW.
+apply: sigW.
 case: typed_tuples_not_empty' => x [Hx H].
 by exists (Tuple Hx).
 Qed.
@@ -387,7 +387,7 @@ Hypothesis Hn : n != O.
 Variable P : P_ n ( A ).
 
 Lemma typed_tuples_not_empty_alt : {t : n.-tuple A | t \in T_{P}}.
-Proof. destruct n => //. apply typed_tuples_not_empty. Qed.
+Proof. destruct n => //. apply: typed_tuples_not_empty. Qed.
 
 Local Open Scope fdist_scope.
 Local Open Scope tuple_ext_scope.
@@ -400,15 +400,15 @@ move=> Hx.
 rewrite fdist_rVE.
 rewrite (_ : \prod_(i < n) type.d P (t ``_ i) =
   \prod_(a : A) (\prod_(i < n) (if a == t ``_ i then type.d P t ``_ i else 1))); last first.
-  rewrite exchange_big; apply eq_big ; first by [].
+  rewrite exchange_big; apply: eq_big ; first by [].
   move=> i _.
   rewrite (bigID (fun y => y == t ``_ i)) /=.
   rewrite big_pred1_eq eqxx big1 ?mulr1 //.
   by move=> i0 /negbTE ->.
-apply eq_bigr => a _.
+apply: eq_bigr => a _.
 rewrite -big_mkcond /=.
 transitivity (\prod_(i < n | t ``_ i == a) ((type.f P a)%:R / n%:R) : Rdefinitions.R).
-  by apply eq_big => // i /eqP ->; rewrite INR_type_fun.
+  by apply: eq_big => // i /eqP ->; rewrite INR_type_fun.
 rewrite prodr_const/=.
 rewrite INR_type_fun.
 congr (_ ^+ _).
@@ -418,7 +418,7 @@ rewrite -INR_type_fun.
 move=> /(congr1 (fun x => x * n%:R)).
 rewrite -!mulrA mulVf ?pnatr_eq0 ?mulr1// => /eqP; rewrite eqr_nat => /eqP ->.
 rewrite num_occ_alt cardsE /=.
-apply eq_card => /= n0.
+apply: eq_card => /= n0.
 by rewrite /in_mem /= tnth_mktuple.
 Qed.
 
@@ -430,7 +430,7 @@ Proof.
 move/(@tuple_dist_type t) => ->.
 rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
              \prod_(a : A) (2%:R:Rdefinitions.R) `^ (type.d P a * log (type.d P a) * n%:R)); last first.
-  apply eq_bigr => a _.
+  apply: eq_bigr => a _.
   have [H|H] := eqVneq 0 (type.d P a); last first.
     have {}H : 0 < type.d P a.
       have := FDist.ge0 (type.d P) a.
@@ -486,7 +486,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
   transitivity (\sum_(a | (a \in 'rV[A]_n) &&
                           [pred x in (@row_of_tuple A n @: T_{P})] a)
       (2%:R : Rdefinitions.R) `^ (- n%:R * `H P)).
-    apply eq_big => // ta'/= Hta'.
+    apply: eq_big => // ta'/= Hta'.
     rewrite -(@tuple_dist_type_entropy ta') //.
     case/imsetP : Hta' => x Hx ->. by rewrite row_of_tupleK.
   rewrite big_const iter_addr addr0 tuple_dist_type_entropy //.
@@ -497,16 +497,16 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
 - rewrite (_ : (#| T_{P} |%:R = 0)%R); first by rewrite mul0r.
   rewrite (_ : 0%R = 0%:R) //; congr (_%:R); apply/eqP.
   rewrite cards_eq0; apply/negPn.
-  by move: x_T_P; apply contra => /set0Pn/existsP.
+  by move: x_T_P; apply: contra => /set0Pn/existsP.
 Qed.
 
 Lemma card_typed_tuples_alt :
   (#| T_{P} |%:R <= (2%R:Rdefinitions.R) `^ (n%:R * `H P))%R.
 Proof.
-apply (@le_trans _ _ (#| `TS P n 0 |%:R)).
+apply: (@le_trans _ _ (#| `TS P n 0 |%:R)).
   rewrite ler_nat.
   apply: leq_trans; last first.
-    by apply subset_leq_card; exact: typed_tuples_are_typ_seq.
+    by apply: subset_leq_card; exact: typed_tuples_are_typ_seq.
   by rewrite card_imset //; exact: row_of_tuple_inj.
 by apply: (le_trans (TS_sup _ _ _)); rewrite addr0.
 Qed.
@@ -579,7 +579,7 @@ case/boolP : (m' \in enc_pre_img P2) => [|/negbTE] Hcase.
   move: Hcase; rewrite 2!in_set => /forallP/(_ a)/eqP <-.
   move: H2; rewrite 2!in_set => /forallP/(_ a)/eqP <-.
   by rewrite eqxx.
-- apply/negP/negPn; move: Hcase => /negP/negPn; apply contra => Hcase.
+- apply/negP/negPn; move: Hcase => /negP/negPn; apply: contra => Hcase.
   rewrite 2!in_set; apply/forallP => a.
   move: H2; rewrite 2!in_set => /forallP/(_ a)/eqP ->.
   move: Hcase; rewrite 2!in_set => /forallP/(_ a)/eqP <-.
@@ -602,10 +602,10 @@ rewrite (bigID (fun P => [exists m, m \in enc_pre_img c P] )).
 rewrite /=.
 rewrite addrC big1 ; last first.
   move=> P; rewrite negb_exists => HP.
-  apply big_pred0 => m /=.
+  apply: big_pred0 => m /=.
   by apply/negP/negPn; move:HP => /forallP/(_ m) ->.
 rewrite /= add0r big_imset.
-  apply eq_big => [P|P _] //=.
+  apply: eq_big => [P|P _] //=.
   rewrite in_set.
   by case: set0Pn => [/existsP //| ?]; exact/existsP.
 move=> P Q; rewrite 2!in_set => HP HQ HPQ /=.
@@ -614,7 +614,7 @@ case: P HPQ => /= Pd Pf HP HPQ.
 case: Q HPQ => /= Qd Qf HQ HPQ.
 apply/type_eqP => /=.
 apply/eqP.
-apply ffunP => a.
+apply/ffunP => a.
 apply/val_inj.
 move: {HPQ}(HPQ a); rewrite HP HQ.
 move=> /(congr1 (fun x => x * n%:R)).
@@ -660,7 +660,7 @@ Lemma tcode_typed_prop (m : M) :
   tuple_of_row (enc tcode_untyped_code m) \in T_{P}.
 Proof.
 rewrite /= ffunE; case: ifP => [//| _]; rewrite /def row_of_tupleK.
-exact Hdef.
+exact: Hdef.
 Qed.
 
 Definition tcode : typed_code B M P := mkTypedCode tcode_typed_prop.

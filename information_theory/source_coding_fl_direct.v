@@ -64,7 +64,7 @@ Proof.
 move=> iS; rewrite /f iS /phi row_of_tupleK.
 have H : ((index i (enum S)).+1 < expn 2 n)%nat.
   have : ((index i (enum S)).+1 <= #| S |)%nat.
-    by apply seq_index_enum_card => //; exact: enum_uniq.
+    by apply: seq_index_enum_card => //; exact: enum_uniq.
   by move/leq_ltn_trans; exact.
 move Heq1 : (tuple2N _) => eq1.
 case: eq1 Heq1 => [|i0 Heq1].
@@ -123,13 +123,13 @@ Qed.
 
 Lemma lambda2_epsilon : lambda / 2 <= epsilon.
 Proof.
-apply (@le_trans _ _ lambda).
+apply: (@le_trans _ _ lambda).
   by rewrite ler_pdivrMr// ler_peMr ?ler1n// ltW// lambda_gt0.
 by rewrite /lambda ge_min lexx orbT.
 Qed.
 
 Lemma lambda2_gt0 : 0 < lambda / 2.
-Proof. by apply divr_gt0 => //; exact: lambda_gt0. Qed.
+Proof. by apply: divr_gt0 => //; exact: lambda_gt0. Qed.
 
 Lemma lambda2_lt1 : lambda / 2 < 1.
 Proof. apply: (le_lt_trans lambda2_epsilon); by case/andP: epsilon01. Qed.
@@ -168,7 +168,7 @@ exists (mkScode F PHI); split.
 set lhs := esrc(_, _).
 suff -> : lhs = 1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)).
   rewrite lerBlDr addrC -lerBlDr.
-  apply (@le_trans _ _ (1 - lambda / 2)).
+  apply: (@le_trans _ _ (1 - lambda / 2)).
     by rewrite lerD2l lerNr opprK; exact: lambda2_epsilon.
   exact: (Pr_TS_1 lambda2_gt0).
 rewrite /lhs {lhs} /SrcErrRate /Pr /=.
@@ -179,7 +179,7 @@ suff -> : lhs = \sum_(x in 'rV[A]_k | x \notin S) (P `^ k)%fdist x.
   rewrite -[X in _ = X](Pr_cplt (P `^ k)%fdist (`TS P k (lambda / 2))).
   congr +%R.
   by apply: eq_bigl => ta /=; rewrite !inE.
-rewrite {}/lhs; apply eq_bigl => //= i.
+rewrite {}/lhs; apply: eq_bigl => //= i.
 rewrite inE /=; apply/negPn/negPn.
 - suff H : def \in S by move/eqP/phi_f; tauto.
   exact: (TS_0_is_typ_seq lambda2_gt0 lambda2_lt1 Hk).
@@ -193,9 +193,9 @@ rewrite inE /=; apply/negPn/negPn.
   suff card_S_bound : 1 + #| S |%:R <= 2 `^ (k%:R * (`H P + lambda)).
     apply: le_trans; first exact: card_S_bound.
     by rewrite gt1_ler_powRr ?ltr1n// ler_wpM2l// Hlambdar.
-  apply (@le_trans _ _ (2 `^ (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))); last first.
+  apply: (@le_trans _ _ (2 `^ (k%:R * (lambda / 2) + k%:R * (`H P + lambda / 2)))); last first.
     by rewrite -mulrDr addrC -addrA -splitr lexx.
-  apply (@le_trans _ _ (2 `^ (1 + k%:R * (`H P + lambda / 2)))); last first.
+  apply: (@le_trans _ _ (2 `^ (1 + k%:R * (`H P + lambda / 2)))); last first.
     rewrite gt1_ler_powRr ?ltr1n// lerD2r//.
     move: Hdelta; rewrite ge_max => /andP[_ Hlambda].
     rewrite -(@ler_pM2r _ (2 / lambda)); last first.
@@ -207,7 +207,7 @@ rewrite inE /=; apply/negPn/negPn.
     rewrite lerD2l//.
     exact: TS_sup.
     rewrite /S.
-  apply (@le_trans _ _ (2 `^ (k%:R * (`H P + lambda / 2)) +
+  apply: (@le_trans _ _ (2 `^ (k%:R * (`H P + lambda / 2)) +
                         2 `^ (k%:R * (`H P + lambda / 2)))).
   + rewrite lerD2r -[leLHS](powRr0 2).
     rewrite ler_powR ?ler1n// mulr_ge0// addr_ge0//; first exact: entropy_ge0.

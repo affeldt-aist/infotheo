@@ -100,7 +100,7 @@ have : decode cyp_hat = Some (msg *m S).
   apply: (@Syslcode.encode_inj _ _ _ Hdimlen CSM).
   by rewrite ffunE /= /Syslcode.encode ffunE.
 rewrite Hmsg_hat => -[] ->.
-rewrite -mulmxA mulmxV ?mulmx1 //; exact S_inv.
+rewrite -mulmxA mulmxV ?mulmx1 //; exact: S_inv.
 Qed.
 
 End mceliece.
