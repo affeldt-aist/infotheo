@@ -143,7 +143,7 @@ Lemma post_probE (x : 'rV[A]_n) (y : P.-receivable W) :
 Proof.
 rewrite fdist_post_probE /jcPr setX1 2!Pr_set1 fdist_prodE /=.
 congr (_ / _).
-by rewrite fdist_sndE /=; apply eq_bigr => x' _; rewrite fdist_prodE /= mulrC.
+by rewrite fdist_sndE /=; apply: eq_bigr => x' _; rewrite fdist_prodE /= mulrC.
 Qed.
 
 End posterior_probabilityE.
@@ -180,7 +180,7 @@ rewrite (eq_bigr (fun t => 1 / #|C|%:R * W ``(y | t))); last first.
   by rewrite mul1r.
 rewrite /K /post_prob_uniform_cst; congr (_^-1)%R.
 rewrite big_distrl /=.
-apply eq_bigr => i iC.
+apply: eq_bigr => i iC.
 rewrite mul1r.
 by rewrite mulrAC mulVf// mul1r.
 Qed.

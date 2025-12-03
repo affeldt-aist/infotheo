@@ -47,7 +47,7 @@ Proof. by split; case=> x H0 H1; exists x. Qed.
 
 Lemma asboolTE : `[< True >] = true.
 Proof.
-apply (asbool_equiv_eqP (Q:=True)) => //.
+apply: (asbool_equiv_eqP (Q:=True)) => //.
 by constructor.
 Qed.
 
@@ -105,7 +105,7 @@ Proof. by rewrite !onemE => q0; rewrite mulrDl mulNr divff. Qed.
 
 Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
 Proof.
-by move=> /andP[r0 r1]; apply /andP; split; [rewrite onem_ge0|rewrite onem_le1].
+by move=> /andP[r0 r1]; apply/andP; split; [rewrite onem_ge0|rewrite onem_le1].
 Qed.
 
 Lemma onem_eq0 r : (`1-r = 0) <-> (r = 1).
@@ -136,7 +136,7 @@ Lemma x_x2_max {R : realFieldType} (q : R) : q * (1 - q) <= 4^-1.
 Proof.
 rewrite x_x2_eq.
 have : forall a b : R, 0 <= b -> a - b <= a. move=> *; lra.
-apply; apply mulr_ge0; [lra | exact: exprn_even_ge0].
+apply; apply: mulr_ge0; [lra | exact: exprn_even_ge0].
 Qed.
 
 Lemma x_x2_pos {R : realFieldType} (q : R) : 0 < q < 1 -> 0 < q * (1 - q).
@@ -254,10 +254,10 @@ Variable R : realType.
 Implicit Types p q : {prob R}.
 
 Lemma OO1 : ((0 <= 0 :> R) && (0 <= 1 :> R))%R.
-Proof. by apply /andP; split; [rewrite lexx | rewrite ler01]. Qed.
+Proof. by apply/andP; split; [rewrite lexx | rewrite ler01]. Qed.
 
 Lemma O11 : ((0 <= 1 :> R) && (1 <= 1 :> R))%R.
-Proof. by apply /andP; split; [rewrite ler01| rewrite lexx]. Qed.
+Proof. by apply/andP; split; [rewrite ler01| rewrite lexx]. Qed.
 
 Canonical prob0 := Eval hnf in Prob.mk OO1.
 Canonical prob1 := Eval hnf in Prob.mk O11.
@@ -299,7 +299,7 @@ Qed.
 
 (* TODO: rename to prob_onemK and prob_onemKC? *)
 Lemma probK p : p = ((Prob.p p).~).~%:pr.
-Proof. by apply val_inj => /=; rewrite onemK. Qed.
+Proof. by apply: val_inj => /=; rewrite onemK. Qed.
 
 Lemma probKC (p : {prob R}) : Prob.p p + (Prob.p p).~ = 1 :> R.
 Proof. exact: add_onemK. Qed.
@@ -409,7 +409,7 @@ Lemma prob_trichotomy' (p : {prob R}) (P : {prob R} -> Prop) :
 Proof.
 move=> p0 p1 po.
 have [-> //|[->//|p01]] := prob_trichotomy p.
-apply (po (@OProb.mk _ _ p01)).
+apply: (po (@OProb.mk _ _ p01)).
 Qed.
 
 Lemma oprobadd_gt0 p q : 0 < oprob_to_real p + oprob_to_real q.
@@ -547,7 +547,7 @@ Lemma r_of_pqE p q : Prob.p [r_of p, q] = (Prob.p p / Prob.p [s_of p, q])%R :> R
 Proof. by rewrite /r_of_pq; unlock. Qed.
 
 Lemma r_of_p0 p : p != 0%:pr -> [r_of p, 0%:pr] = 1%:pr.
-Proof. by move=> p0; apply val_inj; rewrite /= r_of_pqE s_of_p0 divff. Qed.
+Proof. by move=> p0; apply: val_inj; rewrite /= r_of_pqE s_of_p0 divff. Qed.
 
 Lemma r_of_0q q : [r_of 0%:pr, q] = 0%:pr.
 Proof. by apply/val_inj; rewrite /= r_of_pqE mul0r. Qed.
@@ -618,7 +618,7 @@ Proof.
 apply/idP/idP; last by case/andP => /eqP -> /eqP ->; rewrite p_of_r1.
 move/eqP/(congr1 (@Prob.p _)).
 rewrite /= p_of_rsE => /eqP.
-apply contraLR => /nandP.
+apply: contraLR => /nandP.
 wlog : r s / r != 1%:pr by move=> H [|] ?; [|rewrite mulrC]; rewrite H //; left.
 move=> r1 _.
 have [->|] := eqVneq r 0%:pr.
@@ -668,7 +668,7 @@ Lemma r_of_pq_is_r {R : realType} (p q r s : {prob R}) : r != 0%:pr -> s != 0%:p
   (Prob.p p = Prob.p r * Prob.p s :> R ->
    (Prob.p s).~ = (Prob.p p).~ * (Prob.p q).~ -> [r_of p, q] = r)%R.
 Proof.
-move=> r0 s0 H1 H2; apply val_inj => /=.
+move=> r0 s0 H1 H2; apply: val_inj => /=.
 by rewrite r_of_pqE s_of_pqE -H2 onemK H1 -mulrA divff ?mulr1//.
 Qed.
 
@@ -758,7 +758,7 @@ Lemma s_of_rpos_probA {R : realType} (p q r : {posnum R}%R) :
   [s_of divrposxxy p ((q%:num + r%:num)%:pos)%R, divrposxxy q r] =
   divrposxxy (p%:num + q%:num)%:pos%R r.
 Proof.
-apply val_inj; rewrite /= s_of_pqE.
+apply: val_inj; rewrite /= s_of_pqE.
 rewrite onemM !onemK/=.
 by field; do ?[apply/andP; split].
 Qed.
@@ -795,7 +795,7 @@ Lemma leR_sumR_support (X : {set A}) :
 Proof.
 move=> H; elim/big_rec2 : _ => //.
 move=> a x y /andP[aX Pa] yx.
-by apply lerD => //; apply: H.
+by apply: lerD => //; apply: H.
 Qed.
 
 Lemma leR_sumRl : (forall i, P i -> f i <= g i) ->
@@ -806,7 +806,7 @@ move=> f_g Qg H; elim: (index_enum _) => [| h t IH].
 - rewrite !big_nil.
   by rewrite lexx.
 - rewrite !big_cons /=; case: ifP => [Ph|Ph].
-    by rewrite (H _ Ph); apply lerD => //; exact: f_g.
+    by rewrite (H _ Ph); apply: lerD => //; exact: f_g.
   case: ifP => // Qh; apply: (le_trans IH).
   by rewrite -{1}[X in X <= _](add0r _) lerD2r Qg.
 Qed.
@@ -833,8 +833,8 @@ case: n => [|n] in IH Hn.
   rewrite (_ : X :\ a0 = set0); first by rewrite !big_set0 2!addr0; exact: H.
   move: Hn.
   by rewrite (cardsD1 a0) Ha0 /= add1n => -[] /eqP; rewrite cards_eq0 => /eqP.
-apply ltrD; first exact/H.
-apply IH => //.
+apply: ltrD; first exact/H.
+apply: IH => //.
 - by move: Hn; rewrite (cardsD1 a0) Ha0 /= add1n => -[].
 - by move=> a; rewrite in_setD inE => /andP[_ ?]; exact: H.
 Qed.

@@ -64,7 +64,7 @@ rewrite -(pair_big xpredT xpredT (fun a b => (P `X (BSC.c card_A p_01))
   (a, b) * log ((P `X (BSC.c card_A p_01)) (a, b)))) /=.
 rewrite {1}/entropy .
 set a := \sum_(_ in _) _. set b := \sum_(_ <- _) _.
-apply trans_eq with (- (a + (-1) * b)); first by rewrite mulN1r opprB opprK addrC.
+transitivity (- (a + (-1) * b)); first by rewrite mulN1r opprB opprK addrC.
 rewrite /b {b} big_distrr /= /a {a} -big_split /=.
 rewrite !Set2sumE /= !fdist_prodE /BSC.c !fdist_binaryxx !fdist_binaryE/=.
 rewrite eq_sym !(negbTE (Set2.a_neq_b card_A)) /H2 (* TODO *).
@@ -239,8 +239,8 @@ move=> d; rewrite DMCE.
 transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - Prob.p p)) *
               (\prod_(i < n | (f m) ``_ i != y ``_ i) Prob.p p)).
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
-    by apply eq_bigr => // i /eqP ->; rewrite /BSC.c fdist_binaryxx.
-  apply eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c fdist_binaryE eq_sym Hyi.
+    by apply: eq_bigr => // i /eqP ->; rewrite /BSC.c fdist_binaryxx.
+  apply: eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c fdist_binaryE eq_sym Hyi.
 congr (_ * _).
   by rewrite big_const /= iter_mulr /= card_dHC mulr1.
 by rewrite big_const /= iter_mulr /= card_dH_vec mulr1.
@@ -325,7 +325,7 @@ rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x)
   by move=> i _; rewrite /P !fdist_rVE big_ord_recl big_ord0 !fdist_uniformE mulr1.
 rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1); last first.
   transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a').
-    apply eq_bigr => i _.
+    apply: eq_bigr => i _.
     by rewrite DMCE big_ord_recl big_ord0 mulr1 /BSC.c mxE.
   apply/(@big_rV1_ord0 _ _ _ _ (fdist_binary card_A p_01 ^~ a')).
   by rewrite -sum_fdist_binary_swap // FDist.f1.

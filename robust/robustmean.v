@@ -96,7 +96,7 @@ Section conj_intro_pattern.
 Lemma and_curry (A B C : Prop) : (A /\ B -> C) -> A -> B -> C.
 Proof. move=> + a b; exact. Qed.
 End conj_intro_pattern.
-Notation "[conj]" := (ltac:(apply and_curry)) (only parsing) : ssripat_scope.
+Notation "[conj]" := (ltac:(apply: and_curry)) (only parsing) : ssripat_scope.
 
 Section RV_ring.
 Context {R : realType}.
@@ -125,7 +125,7 @@ Defined.
 (* Proof. reflexivity. Qed. *)
 
 (* Lemma sq_RV_sqrr (X : {RV P -> R}) : X `^2 = (X ^+ 2)%ring. *)
-(* Proof. by rewrite /sq_RV/comp_RV; apply boolp.funext => u /=; rewrite mulR1. Qed. *)
+(* Proof. by rewrite /sq_RV/comp_RV; apply: boolp.funext => u /=; rewrite mulR1. Qed. *)
 
 (* Definition RV_ringE := *)
 (*   (add_RV_addr, sub_RV_subr, trans_sub_RV_subr, mul_RV_mulr, sq_RV_sqrr). *)
@@ -156,7 +156,7 @@ Proof. by []. Qed.
 Lemma Ind_setD (X Y : {set U}) :
   Y \subset X -> Ind (X :\: Y) = Ind X `- Ind Y :> {RV P -> R}.
 Proof.
-move/subsetP=> YsubX; rewrite /Ind /sub_RV. apply boolp.funext => u /=.
+move/subsetP=> YsubX; rewrite /Ind /sub_RV. apply: boolp.funext => u /=.
 case: ifPn; rewrite inE ?negb_and;
   first by case/andP => /negbTE -> ->; rewrite subr0.
 case/orP; first by move => /negbNE /[dup] /YsubX -> ->; rewrite subrr.
@@ -176,7 +176,7 @@ under eq_bigr => i _.
     \sum_(i0 in finset (preim X (pred1 i)) :&: F) (P i0 * i) =
     \sum_(i0 in finset (preim X (pred1 i)) :&: F)
      (P i0 * (X i0 * @Ind _ U F i0)).
-    apply congr_big => // i0.
+    apply: congr_big => // i0.
     rewrite in_setI /Ind inE/= => /andP[/eqP -> ->].
     by rewrite mulr1.
   have H1 :
@@ -214,7 +214,7 @@ suff : `E ((a `cst* X `+ b `cst* Y) `^2) =
        `E ((a * a) `cst* (X `^2) `+
        (b * b) `cst* (Y `^2) `+ (2 * a * b) `cst* (X `* Y)).
   by rewrite !E_add_RV !E_scalel_RV.
-apply eq_bigr => i H.
+apply: eq_bigr => i H.
 unfold ambient_dist, "`cst*", "`+", "`^2", "`o", "^", "`*".
 rewrite !expr2 /= -!mulr_regl.
 lra.
@@ -256,7 +256,7 @@ have [|a0] := eqVneq a 0.
   by rewrite expr0n; exact/mulr_ge0.
 have [|b0] := eqVneq b 0.
   move/eqP; rewrite sqrtr_eq0. move/(conj EXge0)/andP/le_anti/esym=> b0.
-  have HX : forall x, X x = 0 \/ P x = 0 by apply /Ex_square_eq0/b0.
+  have HX : forall x, X x = 0 \/ P x = 0 by apply/Ex_square_eq0/b0.
   have -> : `E (X `* Y) = 0.
     apply/eqP; rewrite psumr_eq0 /mul_RV; last first.
       by move=> u _; case : (HX u) => -> ; rewrite ?mul0r ?scaler0 ?scale0r.
@@ -332,7 +332,8 @@ Proof.
 have [H|] := boolP (0 < Pr P F)%R; last first.
   rewrite -leNgt.
   have:= Pr_ge0 P F => /[conj] /andP /le_anti H.
-  rewrite /cVar /cEx; apply big_ind; [by []|exact: addr_ge0|move=> i _].
+  rewrite /cVar /cEx; apply: (big_ind (fun r => 0 <= r));
+    [by []|exact: addr_ge0|move=> i _].
   by rewrite setIC Pr_domin_setI // !mul0r.
 rewrite /cVar cEx_ExInd mulr_ge0 ?invr_ge0 ?(ltW H) //.
 apply/Ex_ge0=> u /=.
@@ -440,7 +441,7 @@ Lemma cEx_Inv (X : {RV P -> R}) F :
   0 < Pr P F -> Pr P F < 1 ->
   `| `E_[X | F] - `E X| = (1 - Pr P F) / Pr P F * `| `E_[X | (~: F)] - `E X|.
 Proof.
-move=> *; rewrite Ex_cExT -Pr_setC -setTD; apply cEx_Inv' => //.
+move=> *; rewrite Ex_cExT -Pr_setC -setTD; apply: cEx_Inv' => //.
 by rewrite lt_neqAle subset_Pr // andbT Pr_setT -ltPr1.
 Qed.
 
@@ -458,7 +459,7 @@ Proof.
 rewrite !cEx_ExInd -mulrDl.
 congr (_ * _).
 rewrite -E_add_RV.
-apply congr_big => // i HiU.
+apply: congr_big => // i HiU.
 by rewrite /mul_RV mulrDl.
 Qed.
 
@@ -512,7 +513,7 @@ Proof. by move=> PrF0; rewrite cEx_ExInd PrF0 invr0 mulr0. Qed.
 Lemma cVarE (X : {RV (P) -> (R)}) F:
   `V_[X | F] = `E_[X `^2 | F] - `E_[X | F] ^+ 2.
 Proof.
-have: 0 <= Pr P F by apply Pr_ge0.
+have: 0 <= Pr P F by apply: Pr_ge0.
 rewrite le_eqVlt; case/predU1P => [/esym HPr_eq0| HPr_gt0P].
   by rewrite /cVar !cEx_Pr_eq0 // expr0n /= subr0.
 rewrite /cVar cEx_trans_RV_id_rem.
@@ -617,7 +618,7 @@ have/orP[]:= le_total delta (1/2) => delta_12.
 (*Pr P F <= 1/2 , A.3 implies the desired result*)
   apply: (le_trans (cEx_cVar _ _ _)) => //.
   rewrite ler_wsqrtr //.
-  rewrite -!mulrA; apply (ler_wpM2l (cvariance_ge0 _ _)).
+  rewrite -!mulrA; apply: (ler_wpM2l (cvariance_ge0 _ _)).
   apply: (@le_trans _ _ (1 / delta)).
     rewrite ler_pdivlMr //.
     rewrite mulrC -ler_pdivlMr; last exact: divr_gt0.
@@ -630,7 +631,7 @@ rewrite cEx_Inv' //.
 have PrGDF_pos: 0 < Pr P (G :\: F) by rewrite Pr_setD HGnF_F subr_gt0.
 apply: le_trans.
   apply: ler_wpM2l; first by rewrite ltW // divr_gt0.
-  apply cEx_cVar => //; last exact: subsetDl.
+  apply: cEx_cVar => //; last exact: subsetDl.
 apply: (@le_trans _ _ (Num.sqrt (`V_[ X | G] * (delta^-1 - 1) / delta))).
   rewrite -[X in X * Num.sqrt _]gtr0_norm ?divr_gt0 // -sqrtr_sqr.
   rewrite -sqrtrM ?sqr_ge0 // ler_wsqrtr //.
@@ -713,7 +714,7 @@ have Exgood_bound : `| `E_[X | good :\: drop ] - `E_[X | good] | <=
   - suff : `E_[X | (good :\: drop)] = `E_[X | good].
       by move=> ->; rewrite subrr normr0 sqrtr_ge0.
     by apply: cEx_sub_eq => //; exact: subsetDl.
-  - apply cresilience.
+  - apply: cresilience.
     + rewrite -(@ltr_pM2r _ (1 - eps)); last lra.
       by rewrite mul0r mulr_gt0 //; lra.
     + lra.

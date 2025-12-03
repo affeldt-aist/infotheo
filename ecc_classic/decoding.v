@@ -76,7 +76,7 @@ elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
     apply: Hh.
     by rewrite mem_head.
    move=> c0 Hc0.
-   apply Hh.
+   apply: Hh.
    by rewrite in_cons Hc0 orbC.
 Qed.
 
@@ -89,7 +89,7 @@ Lemma bigmaxR_eq {R : realType} (A : finType) (C : {set A}) a (f : A -> R):
 Proof.
 move=> aC f0 Hf.
 rewrite -big_filter.
-apply bigmaxR_seq_eq => //.
+apply: bigmaxR_seq_eq => //.
 - by rewrite mem_filter aC /= mem_index_enum.
 - by move=> a0; rewrite mem_filter mem_index_enum andbT => /Hf.
 Qed.
@@ -111,7 +111,7 @@ Lemma bigmaxR_bigmin_vec_helper {R : realType} (A : finType) n (g : nat -> R) :
   g (d c) = \rmax_(c in C) g (d c).
 Proof.
 move=> Hdecr Hr C c cC d Hd cnot0 H.
-apply (@bigmaxR_eq _ _ C c (fun a => g (d a))) => //.
+apply: (@bigmaxR_eq _ _ C c (fun a => g (d a))) => //.
 move=> /= c0 c0C.
 apply/Hdecr/andP; split; [|exact: Hd].
 rewrite H.
@@ -136,7 +136,7 @@ Lemma bigmaxR_distrl {R : realType} I a (a0 : 0 <= a) r (P : pred I) F :
   (\big[Order.max/GRing.zero]_(i <- r | P i) F i) * a =
   \big[Order.max/GRing.zero]_(i <- r | P i) (F i * a) :> R.
 Proof.
-by rewrite mulrC bigmaxR_distrr //; apply congr_big => // ?; rewrite mulrC.
+by rewrite mulrC bigmaxR_distrr //; apply: congr_big => // ?; rewrite mulrC.
 Qed.
 
 Local Close Scope min_scope.
@@ -265,7 +265,7 @@ rewrite [leLHS](eq_bigr
 rewrite 2!big_split /=; apply: lerD => //.
 rewrite -2!big_morph_oppr lerNr opprK /Pr (exchange_big_dep xpredT) //=.
 rewrite [leRHS](exchange_big_dep xpredT) //=.
-apply ler_sum => /= tb _.
+apply: ler_sum => /= tb _.
 rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.
 rewrite [leRHS](eq_bigl (fun m => dec tb == Some m)); last by move=> m; rewrite inE.
 (* show that phi_ML succeeds more often than phi *)
@@ -279,15 +279,15 @@ have [dectb_None|dectb_Some] := eqVneq (dec tb) None.
     rewrite Htb andbT fdist_uniform_supp_neq0 inE.
     move/subsetP : enc_img; apply; apply/imsetP; by exists m.
   rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite W_tb.
-  by rewrite big1 //; apply sumr_ge0.
+  by rewrite big1 //; apply: sumr_ge0.
 have [->|phi_tb] := eqVneq (phi tb) None.
-  by rewrite big_pred0 //; apply sumr_ge0.
+  by rewrite big_pred0 //; apply: sumr_ge0.
 have [m1 Hm1] : exists m', dec tb = Some m' by destruct (dec tb) => //; exists s.
 have [m2 Hm2] : exists m', phi tb = Some m' by destruct (phi tb) => //; exists s.
 rewrite Hm1 {}Hm2.
 rewrite (eq_bigl [pred m | m == m2]); last by move=> ?; rewrite eq_sym.
 rewrite [leRHS](eq_bigl [pred m | m == m1]); last by move=> ?; rewrite eq_sym.
-rewrite 2!big_pred1_eq; apply ML_err_rate.
+rewrite 2!big_pred1_eq; apply: ML_err_rate.
   move: Hm1; rewrite /dec ffunE /omap /obind /oapp.
   move H : (repair tb) => h.
   case: h H => // a tb_a [<-]; congr Some.
@@ -321,7 +321,7 @@ have codebook_not_empty : {c | c \in [set cw in C] }.
   move: (mem0v C); set x := (X in X \in C) => _.
   exists x; by rewrite inE mem0v.
 have {}MD : MD_decoding_alt f codebook_not_empty.
-  apply MD_decoding_equiv => //.
+  apply/MD_decoding_equiv => //.
   apply/subsetP => y' Hy'.
   move/subsetP : f_img => /(_ _ Hy'); by rewrite inE.
 move Hoc : (f y) => oc.
@@ -338,7 +338,7 @@ have -> : W ``(y | c) = g (dH_y c).
   move/subsetP : f_img; apply.
   by rewrite inE; apply/existsP; exists (receivable_rV y); apply/eqP.
 transitivity (\big[Order.max/0]_(c in C) (g (dH_y c))); last first.
-  apply eq_bigr => /= c' Hc'.
+  apply: eq_bigr => /= c' Hc'.
   move: (DMC_BSC_prop p enc (discard c') y).
   rewrite [X in BSC.c X _](_ : _ = card_F2) //.
   by rewrite -/W compatible.
@@ -347,7 +347,7 @@ transitivity (\big[Order.max/0]_(c in C) (g (dH_y c))); last first.
 rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
 - apply: eq_bigl => i.
   by rewrite inE.
-- by apply bsc_prob_prop.
+- by apply: bsc_prob_prop.
 - by move=> r; rewrite /g mulr_ge0 ?exprn_ge0 ?subr_ge0 ?inE//.
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists (receivable_rV y); apply/eqP.
@@ -400,7 +400,7 @@ under [in X in _ = X / _ -> _]eq_bigr.
   over.
 move=> H.
 rewrite -bigmaxR_distrr in H; last exact/ltW/Hunpos.
-exists m; split; first exact tbm.
+exists m; split; first exact: tbm.
 rewrite ffunE in H.
 set x := (X in _ * _ / X) in H.
 have x0 : x^-1 <> 0 by apply/eqP/invr_neq0; rewrite -receivable_propE receivableP.

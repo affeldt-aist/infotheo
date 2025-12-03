@@ -82,8 +82,8 @@ rewrite 2!fdist_outE big_morph_oppr -big_split /=.
 apply: le_trans; first exact: ler_norm_sum.
 apply: (@le_trans _ _ (d((P `X V), (P `X W)))).
 - rewrite /var_dist /=.
-  apply (@le_trans _ _ (\sum_a \sum_b `| ((P `X V)) (a, b) - ((P `X W)) (a, b) | )); last first.
-    by apply/eqW; rewrite pair_bigA /=; apply eq_bigr => -[].
+  apply: (@le_trans _ _ (\sum_a \sum_b `| ((P `X V)) (a, b) - ((P `X W)) (a, b) | )); last first.
+    by apply/eqW; rewrite pair_bigA /=; apply: eq_bigr => -[].
   apply: ler_sum => a _.
   rewrite (bigD1 b) //= distrC -[X in X <= _]addr0.
   rewrite 2!fdist_prodE /= !(mulrC (P a)).
@@ -130,8 +130,8 @@ rewrite (_ : _ - _ =
   `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last ring.
 apply: le_trans; first exact: ler_normD.
 rewrite -mulrA mulrDl mulrDr lerD//.
-- by rewrite mulrA; apply out_entropy_dist_ub.
-- by rewrite distrC 2!mulrA; apply joint_entropy_dist_ub.
+- by rewrite mulrA; apply: out_entropy_dist_ub.
+- by rewrite distrC 2!mulrA; apply: joint_entropy_dist_ub.
 Qed.
 
 End mutinfo_distance_bound.
@@ -177,26 +177,26 @@ have [Hcase|Hcase] := leP Delta (D(V || W | P)).
   by rewrite ler_wpDr// le_max lexx.
 suff HminRate : (minRate - capacity W) / 2 <= minRate - (`I(P, V)).
   clear -Hcase v_dom_by_w HminRate.
-  apply (@le_trans _ _ +| minRate - `I(P, V) |); last first.
+  apply: (@le_trans _ _ +| minRate - `I(P, V) |); last first.
     by rewrite ler_wpDl// cdiv_ge0.
   rewrite le_max; apply/orP; right.
   by rewrite (le_trans _ HminRate)// ge_min lexx.
 have : `I(P, V) <= capacity W + (ln 2)^-1 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                 (- xlnx (Num.sqrt (2 * D(V || W | P)))).
-  apply (@le_trans _ _ (`I(P, W) + (ln 2)^-1 * (#|B|%:R + #|A|%:R * #|B|%:R) *
+  apply: (@le_trans _ _ (`I(P, W) + (ln 2)^-1 * (#|B|%:R + #|A|%:R * #|B|%:R) *
                                    - xlnx (Num.sqrt (2 * D(V || W | P))))); last first.
     rewrite lerD2r//.
     apply/Rsup_ub; last exists P => //.
     split; first by exists (`I(P, W)), P.
     case: set_of_I_has_ubound => y Hy.
-    by exists y => _ [Q _ <-]; apply Hy; exists Q.
+    by exists y => _ [Q _ <-]; apply: Hy; exists Q.
   rewrite addrC -lerBlDr.
-  apply (@le_trans _ _ `| `I(P, V) + - `I(P, W) |).
+  apply: (@le_trans _ _ `| `I(P, V) + - `I(P, W) |).
     by rewrite ler_norm.
-  suff : D(V || W | P) <= expR (-2) ^+ 2 / 2 by apply mut_info_dist_ub.
+  suff : D(V || W | P) <= expR (-2) ^+ 2 / 2 by apply: mut_info_dist_ub.
   clear -Hcase x_gt0.
   apply/ltW/(lt_le_trans Hcase).
-  apply (@le_trans _ _ (x ^+ 2 / 2)).
+  apply: (@le_trans _ _ (x ^+ 2 / 2)).
     by rewrite ge_min lexx orbT.
   rewrite ler_wpM2r ?invr_ge0// lerXn2r// ?nnegrE ?expR_ge0//.
   - exact: ltW.

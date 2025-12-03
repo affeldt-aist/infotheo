@@ -31,7 +31,7 @@ Qed.
 Lemma maxsetP (P : {set A} -> bool) E :
   reflect ((P E) /\ (forall F, P F -> E \subset F -> E = F)) (maxset P E).
 Proof.
-case H : (maxset P E); [apply ReflectT | apply ReflectF].
+case H : (maxset P E); [apply: ReflectT | apply: ReflectF].
   case/andP : H => -> /forallP H.
   split => // F H1 H2.
   move: (H F).
@@ -57,7 +57,7 @@ Proof. by case/maxsetP. Qed.
 Lemma maxsetinf P E F : maxset P E -> P F -> E \subset F -> E = F.
 Proof.
 case/maxsetP => H1 H2 PF.
-by apply H2.
+by apply: H2.
 Qed.
 
 Lemma ex_maxset (P : pred {set A}): (exists E, P E) -> {E | maxset P E}.
@@ -75,7 +75,7 @@ have {exQ} : exists n, p n.
 case/(@ex_maxnP _ #|A|).
   move=> o pi.
   case/existsP : pi => B /andP [] QB /eqP <-.
-  by apply max_card.
+  by apply: max_card.
 move=> i.
 move/pred0P.
 case: (pickP (pS i)) => // F.
@@ -165,7 +165,7 @@ Lemma maxset_in_Psets E : maxset E \in Psets E.
 Proof.
 rewrite /Psets inE maxset_is_subset /= /maxset.
 suff Hgen : forall F : {set {set A}} , (forall s', s' \in F -> P s') -> P (\bigcup_(s in F) s).
-  apply Hgen => s'.
+  apply: Hgen => s'.
   rewrite inE.
   by case/andP.
 move=> F /= HF.
@@ -184,22 +184,22 @@ rewrite cards_eq0.
 case/set0Pn => f0 Hf0.
 rewrite -(@setD1K _ f0 F) // bigcup_setU PU //.
   rewrite (big_pred1 f0).
-    by apply HF.
+    by apply: HF.
   move=> /= s; by rewrite inE.
-apply IH.
+apply: IH.
   rewrite (cardsD1 f0) in Hk.
   rewrite Hf0 in Hk.
   rewrite add1n in Hk.
   by case: Hk.
 move=> s' Hs'.
-apply HF.
+apply: HF.
 rewrite inE in Hs'.
 by case/andP : Hs'.
 Qed.
 
 Lemma maxset_is_Ppred E : P (maxset E).
 Proof.
-have : maxset E \in Psets E by apply maxset_in_Psets.
+have : maxset E \in Psets E by apply: maxset_in_Psets.
 rewrite inE.
 by case/andP.
 Qed.

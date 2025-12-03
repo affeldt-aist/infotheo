@@ -36,7 +36,7 @@ Definition d : R.-fdist (A * B * C) := fdistX (fdistA (fdistX (fdistA P)))`2.
 Lemma dE abc : d abc = \sum_(x in D) P (abc.1.1, abc.1.2, x, abc.2).
 Proof.
 case: abc => [[a b] c] /=.
-rewrite /d fdistXE fdist_sndE; apply eq_bigr => d _.
+rewrite /d fdistXE fdist_sndE; apply: eq_bigr => d _.
 by rewrite fdistAE /= fdistXE fdistAE.
 Qed.
 Lemma snd : d`2 = P`2.
@@ -110,13 +110,13 @@ Lemma decomposition : P |= X _|_ [% Y, W] | Z -> P |= X _|_ Y | Z.
 Proof.
 move=> H a b c.
 transitivity (\sum_(d <- fin_img W) `Pr[ [% X, [% Y, W]] = (a, (b, d)) | Z = c]).
-  rewrite -cpr_in1 (creasoning_by_cases _ W); apply eq_bigr => /= d _.
+  rewrite -cpr_in1 (creasoning_by_cases _ W); apply: eq_bigr => /= d _.
   by rewrite setX1 cpr_in1 cpr_eq_pairA.
 transitivity (\sum_(d <- fin_img W)
   `Pr[ X = a | Z = c] * `Pr[ [% Y, W] = (b, d) | Z = c]).
-  by apply eq_bigr => d _; rewrite H.
+  by apply: eq_bigr => d _; rewrite H.
 rewrite -big_distrr /=; congr (_ * _).
-rewrite -cpr_in1 (creasoning_by_cases _ W); apply eq_bigr => d _.
+rewrite -cpr_in1 (creasoning_by_cases _ W); apply: eq_bigr => d _.
 by rewrite setX1 cpr_in1.
 Qed.
 
@@ -140,7 +140,7 @@ transitivity (`Pr[ X = a | Z = c] * `Pr[ Y = b | [% Z, W] = (c, d)]).
   - by rewrite (cinde_alt _ H).
 case/boolP : (`Pr[ [% Z, W] = (c, d) ] == 0) => [/eqP|] ?.
 - by rewrite [X in _ * X = _ * X]cpr_eqE (pfwd1_pairC _ Y) (pfwd1_domin_RV2 Y) ?(mul0r,mulr0).
-- have {}H : P |= X _|_ W | Z by move/cinde_drv_2C : H; apply decomposition.
+- have {}H : P |= X _|_ W | Z by move/cinde_drv_2C : H; apply: decomposition.
   by rewrite [in X in _ = X * _]cpr_eq_pairCr (cinde_alt _ H) // pfwd1_pairC.
 Qed.
 
@@ -204,7 +204,7 @@ Lemma intersection :
   P |= X _|_ Y | [% Z, W] -> P |= X _|_ W | [% Z, Y] -> P |= X _|_ [% Y, W] | Z.
 Proof.
 move=> H1 H2.
-suff : P |= X _|_ Y | Z by apply contraction.
+suff : P |= X _|_ Y | Z by apply: contraction.
 move=> a b c; apply/esym.
 rewrite -[in X in X * _ = _]cpr_in1 [in X in X * _ = _](creasoning_by_cases _ W).
 under eq_bigr do rewrite setX1.
@@ -216,7 +216,7 @@ have <- : \sum_(d <- fin_img W)
            `Pr[ [% X, W] = (a, d) | Z = c] * `Pr[ Y = b | Z = c].
   suff H : forall d, `Pr[ [% X, Y] = (a, b) | Z = c] / `Pr[ Y = b | Z = c ] =
                 `Pr[ [% X, W] = (a, d) | Z = c] / `Pr[ W = d | Z = c ].
-    apply eq_bigr => d _.
+    apply: eq_bigr => d _.
     rewrite -eqr_divrMr; last first.
       rewrite cpr_eqE mulf_neq0 //.
       - by move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 W d) ->.

@@ -63,7 +63,7 @@ Hypothesis primep : prime p.
 Let Fq : finFieldType := GF u primep.
 Let q := p ^ u.
 Let p_char : p \in [pchar Fq].
-Proof. apply char_GFqm. Qed.
+Proof. apply: char_GFqm. Qed.
 
 (** declare F_{q^m} *)
 Variable m' : nat.
@@ -95,7 +95,7 @@ Hypothesis primep : prime p.
 Let Fq : finFieldType := GF u primep.
 Let q := p ^ u.
 Let p_char : p \in [pchar Fq].
-Proof. apply char_GFqm. Qed.
+Proof. apply: char_GFqm. Qed.
 
 (** declare F_{q^m} *)
 Variable m' : nat.

@@ -19,7 +19,7 @@ Lemma subset_image (f : T -> U) A (Y : set U) :
 Proof.
 split=> H.
 - by move=> a Xa; apply/H/imageP.
-- by move=> b [] a Xa <-; apply H.
+- by move=> b [] a Xa <-; apply: H.
 Qed.
 
 Lemma bigcup_of_const (P : set U) (X : U -> set T) (i : U) :
@@ -32,8 +32,8 @@ Lemma bigsubsetU (P : set U) (X : U -> set T) (Y : set T) :
   (forall i, P i -> X i `<=` Y) <-> \bigcup_(i in P) X i `<=` Y.
 Proof.
 split.
-- by move=> H a [] i Pi Xia; apply (H i).
-- by move=> H i Pi a Xia; apply H; exists i.
+- by move=> H a [] i Pi Xia; apply: (H i).
+- by move=> H i Pi a Xia; apply: H; exists i.
 Qed.
 
 Lemma bigcup_set0P (P : set U) (F : U -> set T) :

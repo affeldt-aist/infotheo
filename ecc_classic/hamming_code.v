@@ -95,7 +95,7 @@ rewrite /syndrome mulmx_sum_col (bigID (pred1 i)) /= big_pred1_eq /=.
 rewrite  (eq_bigr (fun=> 0)) /=; last first.
   move=> j; rewrite eq_sym => /eqP/Hi'; rewrite mxE => ->; by rewrite scale0r.
 rewrite big_const_seq /= iter_addr0_cV mxE Hi scale1r addr0 col_matrix trmxK.
-apply rV_of_nat_neq0 => //.
+apply: rV_of_nat_neq0 => //.
 by rewrite -(addn1 i) addnC -ltn_subRL subn1 -Hamming.len_dim.
 Qed.
 
@@ -111,8 +111,8 @@ rewrite big_pred1_eq /= (eq_bigr (fun=> 0)) /=; last first.
   rewrite mxE Hk ?scale0r //; (apply/eqP; by rewrite eq_sym).
 rewrite big_const_seq /= iter_addr0_cV /= 2!mxE Hi Hj 2!scale1r addr0.
 rewrite linearD /= 2!col_matrix 2!trmxK.
-apply rV_of_natD_neq0 => //.
-- by apply/eqP; move/eqP : Hij; apply contra => /eqP[]/eqP.
+apply: rV_of_natD_neq0 => //.
+- by apply/eqP; move/eqP : Hij; apply: contra => /eqP[]/eqP.
 - by rewrite -(addn1 i) addnC -ltn_subRL subn1 -Hamming.len_dim.
 - by rewrite -(addn1 j) addnC -ltn_subRL subn1 -Hamming.len_dim.
 Qed.
@@ -337,10 +337,10 @@ Qed.
 Lemma hamming_MD_decoding :
   MD_decoding [set cw in Hamming.code m] hamming_repair.
 Proof.
-apply (@MD_decoding_equiv _ _ _ hamming_repair C_not_empty).
+apply/(@MD_decoding_equiv _ _ _ hamming_repair C_not_empty).
   apply/subsetP => x Hx; rewrite inE.
   by move/subsetP : hamming_repair_img => /(_ _ Hx).
-by apply hamming_MD_alt.
+by apply: hamming_MD_alt.
 Qed.
 
 End hamming_code_minimum_distance_decoding.
@@ -365,13 +365,13 @@ case Hi : (0 < wH i^T)%N.
   apply/trmx_inj.
   rewrite col_matrix /= trmxK -{1}(nat_of_rVK i^T) subn1 prednK // lt0n nat_of_rV_eq0.
   by apply/eqP => abs; rewrite abs lt0n wH0 eqxx in Hi.
-apply/esym/negbTE; move/negbT : Hi; apply contra.
+apply/esym/negbTE; move/negbT : Hi; apply: contra.
 case/imsetP => j Hj ->.
 case HwH : (wH (col j (Hamming.PCM m))^T); last by [].
 exfalso.
 move/eqP: HwH.
 rewrite col_matrix wH_eq0 trmxK => /eqP.
-by apply rV_of_nat_neq0 => //; apply Hamming.len_two_m.
+by apply: rV_of_nat_neq0 => //; apply: Hamming.len_two_m.
 Qed.
 
 Lemma col_PCM_inj : injective (fun i => col i (Hamming.PCM m)).
@@ -385,7 +385,7 @@ rewrite -(Pnat.Nat2Pos.id j.+1) // in Hij Hj.
 rewrite !BinPos_nat_of_P_nat_of_pos in Hij Hi Hj.
 move/trmx_inj in Hij.
 have Hpos := nat_of_pos_inj (rV_of_nat_inj Hi Hj Hij).
-have Hij' : i.+1 = j.+1 by apply Pnat.Nat2Pos.inj.
+have Hij' : i.+1 = j.+1 by apply: Pnat.Nat2Pos.inj.
 apply/eqP.
 rewrite -(addn1 i) -(addn1 j) in Hij'.
 move/eqP: Hij'.
@@ -406,7 +406,7 @@ case HwH : (wH i^T == _).
   move/setP/(_ j): Hx.
   rewrite in_set1 in_set tnth_mktuple mxE => <-.
   by rewrite F2_eq1; case: F2P.
-apply/negbTE; move/negbT: HwH; apply contra.
+apply/negbTE; move/negbT: HwH; apply: contra.
 case/imsetP => x Hx ->.
 by apply/eqP/wH_col_1.
 Qed.
@@ -426,13 +426,13 @@ Lemma card_all_cols : #|non_unit_cols :|: unit_cols| = n.
 Proof.
 rewrite /non_unit_cols /unit_cols.
 transitivity #|[set c : 'cV['F_2]_m | wH c^T >= 1]%N|.
-  apply eq_card=> c; by rewrite !in_set orbC eq_sym -leq_eqVlt.
+  apply: eq_card=> c; by rewrite !in_set orbC eq_sym -leq_eqVlt.
 by rewrite cols_PCM card_imset ?card_ord //; exact: col_PCM_inj.
 Qed.
 
 Lemma card_unit_cols : #|unit_cols| = m.
 Proof.
-by rewrite /unit_cols cols_1 card_imset; [apply card_ord | apply cols_1_inj].
+by rewrite /unit_cols cols_1 card_imset; [apply: card_ord | apply: cols_1_inj].
 Qed.
 
 Lemma card_non_unit : #|non_unit_cols| = (n - m)%nat.
@@ -441,7 +441,7 @@ apply/eqP.
 rewrite -(eqn_add2r #|unit_cols|).
 apply/eqP.
 have: #|non_unit_cols :&: unit_cols| = #|(set0 : {set 'cV['F_2]_m})|.
-  apply eq_card=> c.
+  apply: eq_card=> c.
   rewrite !in_set andbC.
   apply/negP.
   by case/andP => /eqP ->.
@@ -463,7 +463,7 @@ have Hin : col i 1 \in image (fun j => col j (Hamming.PCM m)) 'I_n.
     by rewrite inE => /eqP ->.
   case/imsetP : Hi => j Hj Hj'.
   by exists j => //; rewrite mem_enum.
-by exists (iinv Hin); apply (f_iinv Hin).
+by exists (iinv Hin); apply: (f_iinv Hin).
 Defined.
 
 Definition ord_split (i : 'I_n) : 'I_(n - m + m) :=
@@ -476,7 +476,7 @@ Definition perm_ids (i : 'I_n) :=
   end.
 
 Lemma uniq_idsA : uniq idsA.
-Proof. apply filter_uniq, enum_uniq. Qed.
+Proof. exact/filter_uniq/enum_uniq. Qed.
 
 Lemma size_idsA : size idsA = (n - m)%nat.
 Proof.
@@ -484,10 +484,10 @@ move/card_uniqP: uniq_idsA <-.
 rewrite /idsA.
 suff: #|[set i : 'I_n | col i (Hamming.PCM m) \in non_unit_cols]| = (n - m)%nat.
   move <-.
-  apply eq_card => i.
+  apply: eq_card => i.
   by rewrite inE mem_filter mem_enum inE andbT.
 rewrite -card_non_unit -(card_imset _ col_PCM_inj).
-apply eq_card => c.
+apply: eq_card => c.
 have Hcols x : x \in non_unit_cols -> x \in [set col i (Hamming.PCM m) | i : 'I_n].
   rewrite /non_unit_cols -cols_PCM !inE => ?; exact: ltnW.
 case Hc : (c \in non_unit_cols).
@@ -495,7 +495,7 @@ case Hc : (c \in non_unit_cols).
   case/imsetP: (Hcols _ Hc) => x Hx Hx'.
   by exists x => //; rewrite inE -Hx'.
 apply/negbTE.
-move/negbT: Hc; apply contra.
+move/negbT: Hc; apply: contra.
 case/imsetP => x Hx Hx'.
 by rewrite inE -Hx' in Hx.
 Qed.
@@ -524,10 +524,10 @@ move: (splitP (ord_split i)) => [i' Hi'|i' Hi'].
     move/eqP.
     rewrite nth_uniq.
     - rewrite -Hi' -Hj' => /eqP ij.
-      by apply val_inj.
+      by apply: val_inj.
     - by rewrite size_idsA.
     - by rewrite size_idsA.
-    - by apply uniq_idsA.
+    - by apply: uniq_idsA.
   move=> Hij.
   by move: (idsA_ids1 Hij).
 move: (splitP (ord_split j)) => [j' Hj'|j' Hj'].
@@ -536,7 +536,7 @@ move: (splitP (ord_split j)) => [j' Hj'|j' Hj'].
   by move/eqP/idsA_ids1.
 move=> Htmp.
 have Hij : i' = j'.
-  apply cols_1_inj.
+  apply: cols_1_inj.
   by rewrite -(proj2_sig (ids1 i')) -(proj2_sig (ids1 j')) Htmp.
 rewrite Hij -Hj' /= in Hi'.
 exact: val_inj.
@@ -555,7 +555,7 @@ apply/matrixP => i j.
 rewrite mxE castmxE /=.
 have [Hcond|Hcond] := ltnP j (n - m)%N.
   have -> : cast_ord (esym (subnK (Hamming.dim_len m'))) j =
-           lshift m (Ordinal Hcond) by apply val_inj.
+           lshift m (Ordinal Hcond) by apply: val_inj.
   rewrite row_mxEl [in X in _  = X]mxE.
   rewrite castmxE /=.
   rewrite /PCM 2!cast_ord_id.
@@ -602,7 +602,7 @@ Qed.
 (* NB: proof derived from the module SysLCode_m but longish because of casts *)
 Lemma PCM_GEN'_alt : PCM *m GEN'^T = 0.
 Proof.
-have H1 : (n - m <= n)%nat by apply leq_subr.
+have H1 : (n - m <= n)%nat by apply: leq_subr.
 have H2 : (m = n - (n - m))%nat by rewrite (subnBA _ (Hamming.dim_len m')) addnC addnK.
 move: (Syslcode.H_G_T H1 (castmx (H2, erefl (n - m)%nat) CSM)) => /=.
 rewrite /Syslcode.PCM /= /Syslcode.GEN /= => H0.
@@ -613,7 +613,7 @@ move/matrixP : H0.
 move/(_ (cast_ord H2 a) b).
 rewrite [in X in _ = X -> _]mxE => <-.
 rewrite !mxE.
-apply eq_bigr; case=> i Hi _ /=.
+apply: eq_bigr; case=> i Hi _ /=.
 congr (_ * _).
   rewrite !castmxE /= !cast_ord_id !mxE.
   case: splitP.
@@ -621,7 +621,7 @@ congr (_ * _).
     case: splitP.
     + case=> j Hj_ /= ?; subst j.
       rewrite castmxE /= cast_ord_id.
-      f_equal; by apply val_inj.
+      f_equal; by apply: val_inj.
     + case=> k Hk /= ?; subst i.
       exfalso.
       by rewrite ltnNge leq_addr in Hj.
@@ -754,12 +754,12 @@ rewrite (_ : castmx _ _ *m castmx _ _ =
   rewrite !mxE.
   rewrite castmxE.
   rewrite !mxE.
-  apply eq_bigr => /= i _.
+  apply: eq_bigr => /= i _.
   congr (_ * _); by rewrite castmxE /= cast_ord_id.
 rewrite mul_col_row.
 rewrite 2!mul1mx 2!mul0mx.
 rewrite block_mxEv row_mx0.
-apply trmx_inj.
+apply: trmx_inj.
 rewrite trmx_mul.
 rewrite tr_col_perm.
 rewrite trmx_mul.
@@ -781,10 +781,10 @@ have [Y1 [Y2 HY]] : exists (Y1 : 'cV_ _) Y2, (row_perm systematic y^T) =
   case: splitP.
     move=> j aj.
     rewrite !mxE /=.
-    congr (y _ (systematic _)); by apply val_inj.
+    congr (y _ (systematic _)); by apply: val_inj.
   move=> k ak.
     rewrite mxE /= mxE /=.
-    congr (y _ (systematic _)); by apply val_inj.
+    congr (y _ (systematic _)); by apply: val_inj.
 rewrite HY in Hy.
 rewrite (castmx_cols_mulmx subnK) in Hy.
 rewrite mul_row_col in Hy.
@@ -863,7 +863,7 @@ rewrite /= !ffunE /= /hamming_repair.
 move: (hamming_err_enc m); rewrite !ffunE /= => ->.
 rewrite addr0 /Hamming'.discard -mulmxA.
 suff -> : Hamming'.GEN r' *m (Hamming'.mx_discard r')^T = 1%:M by rewrite mulmx1.
-apply trmx_inj; by rewrite trmx1 trmx_mul trmxK Hamming'.mx_discard_GEN.
+apply: trmx_inj; by rewrite trmx1 trmx_mul trmxK Hamming'.mx_discard_GEN.
 Qed.
 
 Lemma err_codeword c : c \in lcode -> hamming_err c = 0.
@@ -893,7 +893,7 @@ Lemma encode_decode c y : c \in lcode ->
 Proof.
 move=> Hc Hy cy.
 apply: (@mddP _ _ lcode _ decoder (hamming_not_trivial r')) => //.
-by apply hamming_repair_img.
+by apply: hamming_repair_img.
 by rewrite /mdd_err_cor hamming_min_dist.
 Qed.
 
@@ -960,7 +960,7 @@ transitivity (
   \sum_(a | a \in preimC (dec hamming_channel_code) m0)
     let d := dH ((enc hamming_channel_code) m0) a in
     (1 - Prob.p p) ^+ (n - d) * (Prob.p p) ^+ d).
-  apply eq_bigr => t Ht.
+  apply: eq_bigr => /= t Ht.
   rewrite dH_sym.
   rewrite -(DMC_BSC_prop p (enc hamming_channel_code) m0 t).
   by rewrite [X in BSC.c X _](_ : _ = card_F2).
@@ -970,7 +970,7 @@ transitivity (
                            true])
       (let d := dH ((enc hamming_channel_code) m0) a in
        (1 - Prob.p p) ^+ (n - d) * (Prob.p p) ^+ d)).
-  apply eq_bigl => t /=.
+  apply: eq_bigl => t /=.
   rewrite !inE.
   case_eq (dec hamming_channel_code t) => [m1 Hm1|]; last first.
     by move=> ->.
@@ -980,7 +980,7 @@ set f : 'rV__ -> 'rV__ := fun y => (y0 + y).
 transitivity (
   \sum_(y | f y \in [set e1 | (1 < wH e1)%nat])
     (1 - Prob.p p) ^+ (n - wH (f y)) * (Prob.p p) ^+ wH (f y)).
-  apply eq_big.
+  apply: eq_big.
     move=> y.
     simpl in y, f, m0.
     rewrite !inE.
@@ -1021,11 +1021,11 @@ Lemma hamming_error_rate : Prob.p p < 1/2 ->
 Proof.
 move=> p05.
 rewrite /CodeErrRate.
-eapply eq_trans.
-  apply f_equal.
-  apply eq_bigr => i _; exact: e_hamming.
-eapply eq_trans.
-  apply f_equal.
+apply: eq_trans.
+  apply: f_equal.
+  apply: eq_bigr => i _; exact: e_hamming.
+apply: eq_trans.
+  apply: f_equal.
   by rewrite big_const /= iter_addr addr0.
 rewrite /=.
 rewrite -[in X in _ * X = _]mulr_natl.
@@ -1040,7 +1040,7 @@ rewrite mul1r.
 have toleft (A B C D : R) : A + C + D = B -> A = B - C - D.
  move => <-.
  by rewrite addrAC addrK addrK.
-apply toleft.
+apply: toleft.
 rewrite -addrA.
 rewrite -(hamming_01 n (Prob.p p)).
 rewrite -big_union //=.

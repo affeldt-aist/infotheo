@@ -84,7 +84,7 @@ Definition distinct_non_zero (a : 'rV[F]_n) :=
 Lemma distinct_non_zero_rVexp (a : F) (a0 : a != 0) (H : not_uroot_on a n) :
   distinct_non_zero (rVexp a n).
 Proof.
-rewrite /distinct_non_zero; split; first by apply rVexp_inj.
+rewrite /distinct_non_zero; split; first by apply: rVexp_inj.
 move=> ?; by rewrite mxE expf_neq0.
 Qed.
 
@@ -117,12 +117,12 @@ rewrite /errloc (big_setD1 f) //= derivM IH; last first.
 rewrite derivB derivC sub0r linearZ /= derivX.
 rewrite [in RHS](big_setD1 f) //=; congr (_ + _).
   by rewrite alg_polyC -mul_polyC polyCN.
-rewrite big_distrr /=; apply eq_bigr => i Hi.
+rewrite big_distrr /=; apply: eq_bigr => i Hi.
 rewrite mulrC -!mul_polyC -mulrA; congr (_ * _).
 rewrite [in RHS](big_setD1 f) //=; last first.
   rewrite in_setD1; by move: Hi; rewrite in_setD1 eq_sym => /andP [] ->.
 rewrite mulrC mul_polyC; congr (_ * _).
-apply eq_bigl => ?; rewrite !in_setD1; bool_congr.
+apply: eq_bigl => ?; rewrite !in_setD1; bool_congr.
 Qed.
 
 Lemma decomp_errloc (a :'rV[F]_n) E : (forall i, a ``_ i != 0) ->
@@ -143,11 +143,11 @@ Lemma size_errloc a E : size (errloc a E) <= #| E |.+1.
 Proof.
 apply: (leq_trans (size_poly_prod_leq (fun x => x \in E)
   (fun i => 1 - a ``_ i *: 'X))).
-apply (@leq_trans (#|E|.*2.+1 - #|E|)); last first.
+apply: (@leq_trans (#|E|.*2.+1 - #|E|)); last first.
   by rewrite subSn -addnn ?leq_addr // addnK.
 rewrite leq_sub // ltnS.
-apply (@leq_trans (\sum_(i in E) 2)); last by rewrite big_const iter_addn_0 mul2n.
-apply leq_sum => /= i iE.
+apply: (@leq_trans (\sum_(i in E) 2)); last by rewrite big_const iter_addn_0 mul2n.
+apply: leq_sum => /= i iE.
 have [->|ai0] := eqVneq (a ``_ i) 0.
   by rewrite scale0r subr0 size_poly1.
 by rewrite size_one_minus_X.
@@ -201,7 +201,7 @@ Lemma errloc_puncture (F : fieldType) n (f : 'rV[F]_n) (y : 'rV[F]_n) i :
   i \in supp y -> \sigma_(f, y) = (1 - f ``_ i *: 'X ) * \sigma_(f, y, i).
 Proof.
 move=> ?; rewrite {1}/errloc (bigD1 i) //=; congr (_ * _).
-by apply eq_bigl => j; rewrite in_setD1 andbC.
+by apply: eq_bigl => j; rewrite in_setD1 andbC.
 Qed.
 
 Record errvec n (F : fieldType) t := Errvec {
@@ -232,11 +232,11 @@ Variables (f : 'rV[F]_n).
 
 Lemma size_erreval : size \omega_(f, a, e) <= t.
 Proof.
-eapply leq_trans; first by apply size_sum.
+apply: leq_trans; first by apply: size_sum.
 apply/bigmax_leqP => i; rewrite inE => /= iE.
-eapply leq_trans; first by rewrite -mul_polyC; apply size_polyMleq.
+apply: leq_trans; first by rewrite -mul_polyC; apply: size_polyMleq.
 rewrite size_polyC.
-apply (@leq_trans (1 + size \sigma_( a, e, i)).-1).
+apply: (@leq_trans (1 + size \sigma_( a, e, i)).-1).
   rewrite add1n /= addnC; case: (_ != _) => //=.
   by rewrite addn1.
   by rewrite addn0 leq_pred.
@@ -330,7 +330,7 @@ have -> : \omega_(f, a, e).[(a ``_ i)^-1] =
     by rewrite !hornerE /= divrr ?unitfE ?(proj2 Ha) // ?Ht' // subrr mulr0 mul0r.
   rewrite addr0 !hornerE /=; congr (_ * _).
   rewrite (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); last by rewrite hornerE.
-  apply eq_bigr => ? ?; by rewrite !hornerE.
+  apply: eq_bigr => ? ?; by rewrite !hornerE.
 have -> : (\sigma_(a, e)^`()).[(a ``_ i)^-1] = - a ``_ i *
   \prod_(j in supp e :\ i) (1 - a ``_ j * (a ``_ i)^-1).
   rewrite derive_errloc (@big_morph _ _ _ 0 _ _ _ morph_horner_add); last by rewrite horner0.
@@ -345,9 +345,9 @@ have -> : (\sigma_(a, e)^`()).[(a ``_ i)^-1] = - a ``_ i *
     by rewrite !hornerE /= divrr ?unitfE ?(proj2 Ha) // ?Ht' // subrr mulr0 mul0r.
   rewrite addr0 !hornerE /=; congr (_ * _).
   rewrite (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); last by rewrite hornerE.
-  apply eq_bigr => ? ?; by rewrite !hornerE.
+  apply: eq_bigr => ? ?; by rewrite !hornerE.
 rewrite mulrCA mulrK // unitrM unitrN unitfE (proj2 Ha) /=.
-apply big_ind.
+apply: (big_ind (fun r => r \is a GRing.unit)).
 - by rewrite unitr1.
 - by move=> x y; rewrite unitrM => -> ->.
 - move=> j Hj; rewrite GRing.unitfE.
@@ -381,7 +381,7 @@ Proof.
 rewrite /syndromep exchange_big /= poly_def; apply/eq_bigr => i _; rewrite /fdcoor horner_poly.
 rewrite (bigID (fun i => i \in supp y)) /= -[RHS]addr0 scalerDl; congr (_ + _).
   rewrite scaler_suml; apply/eq_bigr => j Hj.
-  rewrite insubT // => H; congr ((y ord0 _ * _) *: _); by apply val_inj.
+  rewrite insubT // => H; congr ((y ord0 _ * _) *: _); by apply: val_inj.
 apply/eqP; rewrite scaler_eq0 (eq_bigr (fun=> 0)) ?big_const ?iter_addr0 ?eqxx //.
 move=> j Hj; rewrite insubT // => H; rewrite (_ : Sub _ _ = j); last by apply/val_inj.
 move: Hj; rewrite inE negbK => /eqP ->; by rewrite mul0r.
@@ -403,7 +403,7 @@ Qed.
 
 Lemma syndromepN x : syndromep u (- x) t = - syndromep u x t.
 Proof.
-rewrite /syndromep !poly_def -[RHS]mulN1r big_distrr; apply eq_bigr => /= i _.
+rewrite /syndromep !poly_def -[RHS]mulN1r big_distrr; apply: eq_bigr => /= i _.
 by rewrite fdcoorN mulN1r scaleNr.
 Qed.
 
@@ -448,9 +448,9 @@ have [->|a0] := eqVneq a 0.
   case: ifPn => // it.
   rewrite insubT !mxE.
   rewrite /fdcoor !horner_poly.
-  apply eq_bigr => j _.
+  apply: eq_bigr => j _.
   rewrite insubT // => jt.
-  rewrite !mxE (_ : Sub _ _ = j); last by apply val_inj.
+  rewrite !mxE (_ : Sub _ _ = j); last by apply: val_inj.
   rewrite (_ : Sub _ _ = Ordinal it) //=.
   rewrite inordK //; last by rewrite (leq_trans it) // ltnW.
   rewrite inordK; last by rewrite ltnS // (leq_trans it).
@@ -463,10 +463,10 @@ have [->|a0] := eqVneq a 0.
 rewrite dftE /syndromep /fdcoor.
 transitivity (\sum_(i in supp v) (\sum_(j < t) (twisted a v) ``_ i * (rVexp a n) ``_ (inord j) ^+ i *: 'X^j)).
   rewrite supp_twisted //.
-  apply eq_bigr => /= i _.
-  rewrite scaler_sumr; apply eq_bigr => j _.
+  apply: eq_bigr => /= i _.
+  rewrite scaler_sumr; apply: eq_bigr => j _.
   by rewrite scalerA.
-rewrite exchange_big /= poly_def; apply eq_bigr => /= i _.
+rewrite exchange_big /= poly_def; apply: eq_bigr => /= i _.
 rewrite horner_poly scaler_suml.
 transitivity (\sum_(i0 in 'I_n) ((twisted a v) ``_ i0 * (rVexp a n) ``_ (inord i) ^+ i0) *: 'X^i).
   apply/esym.
@@ -475,10 +475,10 @@ transitivity (\sum_(i0 in 'I_n) ((twisted a v) ``_ i0 * (rVexp a n) ``_ (inord i
     move=> j.
     rewrite negbK => /eqP ->; by rewrite mul0r scale0r.
   rewrite big_const iter_addr0 addr0.
-  apply eq_bigl => j; by rewrite mxE inE mulf_eq0 negb_or expf_neq0 // andbT.
-apply eq_bigr => /= j _.
+  apply: eq_bigl => j; by rewrite mxE inE mulf_eq0 negb_or expf_neq0 // andbT.
+apply: eq_bigr => /= j _.
 rewrite insubT // => jn.
-rewrite (_ : Sub _ _ = j); last by apply val_inj.
+rewrite (_ : Sub _ _ = j); last by apply: val_inj.
 rewrite !mxE inordK; last by rewrite (leq_trans (ltn_ord i)) // ltnW.
 rewrite inordK //; last by rewrite ltnS // (leq_trans (ltn_ord i)).
 by rewrite -exprM mulnC exprM -mulrA -exprS -exprM mulnC exprM.

@@ -38,12 +38,12 @@ Variable P : R.-fdist A.
 Definition bipart_pmf := [ffun i => \sum_(a in A_ i) P a].
 
 Definition bipart : R.-fdist bool.
-apply (@FDist.make R _ bipart_pmf).
+apply: (@FDist.make R _ bipart_pmf).
 - by move=> a; rewrite ffunE; apply: sumr_ge0.
 - rewrite big_bool /= /bipart_pmf /= !ffunE.
   transitivity (\sum_(a | (a \in A_ 0 :|: A_ 1)) P a).
     by rewrite [X in _ = X](@big_union _ _ _ _ (A_ 0) (A_ 1)) // -setI_eq0 setIC dis eqxx.
-  by rewrite cov -(FDist.f1 P); apply eq_bigl => /= x; rewrite in_setT inE.
+  by rewrite cov -(FDist.f1 P); apply: eq_bigl => /= x; rewrite in_setT inE.
 Defined.
 
 End bipart_sect.
@@ -67,7 +67,7 @@ Proof.
 have -> : D(P || Q) = \sum_(a in A_ 0) P a * log (P a / Q a) +
                       \sum_(a in A_ 1) P a * log (P a / Q a).
   rewrite /div -big_union //; last by rewrite -setI_eq0 setIC dis eqxx.
-  apply eq_big => // a; first by rewrite cov in_set inE.
+  apply: eq_big => // a; first by rewrite cov in_set inE.
 have step2 :
   (\sum_(a in A_ 0) P a) * log ((\sum_(a in A_ 0) P a) / \sum_(a in A_ 0) Q a) +
   (\sum_(a in A_ 1) P a) * log ((\sum_(a in A_ 1) P a) / \sum_(a in A_ 1) Q a) <=
@@ -92,7 +92,7 @@ rewrite le_eqVlt => /predU1P[/esym A0_P_0|A0_P_neq0]; last first.
       have Habs : P_A 0 = 0%R.
         transitivity (\sum_(H|H \in A_ 0) (0:R))%R.
           rewrite ffunE.
-          apply eq_big => // i Hi; by rewrite -A0_Q_0.
+          apply: eq_big => // i Hi; by rewrite -A0_Q_0.
         by rewrite big1.
       by move: A0_P_neq0; rewrite Habs ltxx.
   + have H2 : P_A 1 = 0%R.
@@ -104,13 +104,13 @@ rewrite le_eqVlt => /predU1P[/esym A0_P_0|A0_P_neq0]; last first.
     have H3 : Q_A 0 = 1%R.
       rewrite -[X in X = _]addr0 -[X in _ + X = _]A1_Q_0 -(FDist.f1 Q).
       rewrite !ffunE -big_union //.
-      apply eq_bigl => i; by rewrite cov in_set inE.
+      apply: eq_bigl => i; by rewrite cov in_set inE.
       by rewrite -setI_eq0 -dis setIC.
     by rewrite H3 logM// invr1.
 - have H1 : P_A 1 = 1%R.
     rewrite -[X in X = _]add0r -[X in X + _ = _]A0_P_0 -(FDist.f1 P).
     rewrite !ffunE -big_union //.
-    apply eq_bigl => i; by rewrite cov in_set inE.
+    apply: eq_bigl => i; by rewrite cov in_set inE.
     by rewrite -setI_eq0 -dis setIC.
   have := FDist.ge0 Q_A 1.
   rewrite le_eqVlt => /predU1P[/esym A1_Q_0|A1_Q_neq0]; last first.

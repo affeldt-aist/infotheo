@@ -39,7 +39,7 @@ Lemma sorted_leq_last s : sorted leq s -> forall i, i \in s -> i <= last 0 s.
 Proof.
 move=> H /= i; case/(nthP O) => {}i Hi <-; rewrite -nth_last.
 have [<-//|si] := eqVneq i (size s).-1.
-apply (sorted_ltn_nth leq_trans) => //.
+apply: (sorted_ltn_nth leq_trans) => //.
   by rewrite inE prednK // (leq_trans _ Hi).
 by rewrite ltn_neqAle si /= -ltnS prednK // (leq_trans _ Hi).
 Qed.
@@ -146,10 +146,10 @@ Lemma ary_of_nat_unfold n : ary_of_nat n =
 Proof.
 rewrite {1}/ary_of_nat Fix_eq //.
   destruct n => //=.
-  congr cons; apply val_inj => /=; by rewrite inordK.
+  congr cons; apply: val_inj => /=; by rewrite inordK.
 move=> m f f' H; congr ary_of_nat'.
-apply FunctionalExtensionality.functional_extensionality_dep => k.
-by apply FunctionalExtensionality.functional_extensionality.
+apply: FunctionalExtensionality.functional_extensionality_dep => k.
+by apply: FunctionalExtensionality.functional_extensionality.
 Qed.
 
 Lemma ary_of_nat0 : ary_of_nat 0 = [:: ord0].
@@ -181,7 +181,7 @@ Qed.
 Lemma ary_of_nat_head n def : (head def (ary_of_nat n) == ord0) = (n == O).
 Proof.
 apply/idP/idP => [|/eqP ->]; last by rewrite ary_of_nat0.
-apply: contraTT; destruct n as [|n] => // _; by apply ary_of_nat_head'.
+apply: contraTT; destruct n as [|n] => // _; by apply: ary_of_nat_head'.
 Qed.
 
 Lemma size_ary_of_nat k : k != 0 -> forall n, n < t ^ k -> size (ary_of_nat n) <= k.
@@ -222,27 +222,27 @@ congr addn.
       (fun i => nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i))).
     rewrite -(big_mkord xpredT
       (fun i => nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i))).
-    rewrite -big_filter -[in RHS]big_filter; apply congr_big => //.
+    rewrite -big_filter -[in RHS]big_filter; apply: congr_big => //.
     rewrite /index_iota !subn0 iotaD filter_cat add0n.
     rewrite (@eq_in_filter _ _ predT) ?filter_predT; last first.
       by move=> ?; rewrite mem_iota leq0n /= => ->.
     rewrite (@eq_in_filter _ _ pred0) ?filter_pred0 ?cats0 //.
     by move=> i; rewrite mem_iota leqNgt => /andP[/negbTE].
-  apply eq_bigr => i _.
+  apply: eq_bigr => i _.
   rewrite nth_cat ltn_ord card_ord -mulnA -expnD; congr (_ * _ ^ _).
   by rewrite [in RHS](addnC _ (size s2)) addnC -!subn1 -!subnDA addnBA.
 transitivity (\sum_(size s1 <= i < size s1 + size s2)
     nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i)).
   rewrite -(big_mkord (fun i => ~~ (i < size s1))
     (fun i => nth ord0 (s1 ++ s2) i * t ^ ((size s1 + size s2).-1 - i))).
-  rewrite -big_filter; apply congr_big => //.
+  rewrite -big_filter; apply: congr_big => //.
   rewrite /index_iota subn0 iotaD filter_cat add0n.
   rewrite (@eq_in_filter _ _ pred0) ?filter_pred0 //; last first.
       move=> i; by rewrite mem_iota leq0n /= add0n => ->.
   rewrite cat0s addnC addnK (@eq_in_filter _ _ predT) ?filter_predT //.
   move=> i; by rewrite mem_iota leqNgt => /andP[].
 rewrite -{1}(add0n (size s1)) big_addn addnC addnK big_mkord.
-apply eq_bigr => i _.
+apply: eq_bigr => i _.
 rewrite nth_cat ifF; last by apply/negbTE; rewrite -leqNgt leq_addl.
 rewrite addnK; congr (_ * t ^ _).
 rewrite (addnC i) subnDA; congr (_ - _).
@@ -280,7 +280,7 @@ by rewrite nat_of_ary1 inordK // ?ltn_pmod // -divn_eq.
 Qed.
 
 Lemma injective_ary_of_nat : injective ary_of_nat.
-Proof. apply (@can_inj _ _ _ nat_of_ary) => i; by rewrite ary_of_natK. Qed.
+Proof. apply: (@can_inj _ _ _ nat_of_ary) => i; by rewrite ary_of_natK. Qed.
 
 Lemma nat_of_ary_0' s : nat_of_ary s = 0 -> all (eq_op^~ ord0) s.
 Proof.
@@ -313,7 +313,7 @@ Canonical code_set_predType := Eval hnf in @PredType _ code_set mem_code_set.
 Definition sort_sizes (C : code_set) : seq nat := sort leq (map size C).
 
 Lemma sorted_sort_sizes C : sorted leq (sort_sizes C).
-Proof. apply sort_sorted; exact: leq_total. Qed.
+Proof. apply: sort_sorted; exact: leq_total. Qed.
 
 Lemma size_sort_sizes C : size (sort_sizes C) = size C.
 Proof. by rewrite size_sort size_map. Qed.
@@ -361,7 +361,7 @@ Lemma prefix_codeP C : prefix_code C <-> prefix_code_strong C.
 Proof.
 split.
   move=> H c c' cC c'C cc' _.
-  by apply H.
+  by apply: H.
 move=> H c c' cC c'C cc'.
   have [K|] := leqP (size c) (size c'); first exact: H.
   rewrite ltnNge; apply: contra => /eqP K.
@@ -372,7 +372,7 @@ Lemma nnpp_prefix (C : code_set T) :
   (~ prefix_code C -> False) -> prefix_code C.
 Proof.
 move=> H c c' cC c'C cc'.
-apply/negP => prefix_cc'; apply H => abs.
+apply/negP => prefix_cc'; apply: H => abs.
 move: (abs _ _ cC c'C cc'); by rewrite prefix_cc'.
 Qed.
 
@@ -418,8 +418,8 @@ have [//|ij] := eqVneq i j.
 wlog : i j i0 j0 ij / i < j.
   move=> Hwlog H.
   move: ij; rewrite neq_ltn => /orP[|] ij.
-  - by apply Hwlog => //; move/negbT : (ltn_eqF ij).
-  - by apply/esym; apply Hwlog => //; move/negbT : (ltn_eqF ij).
+  - by apply: Hwlog => //; move/negbT : (ltn_eqF ij).
+  - by apply/esym; apply: Hwlog => //; move/negbT : (ltn_eqF ij).
 move=> {}ij /esym.
 rewrite /w (bigID (fun i1 : 'I__ => i1 < i)) /=.
 set a := (X in X + _ = _ -> _). set b := (X in _ = X -> _).
@@ -468,7 +468,7 @@ Qed.
 Definition acode := [seq sigma i | i in 'I_n].
 
 Lemma uniq_acode : uniq acode.
-Proof. rewrite map_inj_uniq ?enum_uniq //; exact injective_sigma. Qed.
+Proof. rewrite map_inj_uniq ?enum_uniq //; exact: injective_sigma. Qed.
 
 Definition ACode := CodeSet uniq_acode.
 
@@ -500,7 +500,7 @@ Lemma injective_prepend (T : finType) (lmax : nat) (c : seq T) :
   injective (@prepend T lmax c).
 Proof.
 move=> /= a b [] /eqP.
-rewrite eqseq_cat // => /andP[_ /eqP ab]; by apply val_inj.
+rewrite eqseq_cat // => /andP[_ /eqP ab]; by apply: val_inj.
 Qed.
 
 Import Order.TTheory GRing.Theory Num.Def Num.Theory.
@@ -513,7 +513,7 @@ Let lmax := last O l.
 
 Lemma leq_lmax c : c \in C -> size c <= lmax.
 Proof.
-move=> cC; apply sorted_leq_last.
+move=> cC; apply: sorted_leq_last.
   rewrite /l /sort_sizes; exact/sort_sorted/leq_total.
 rewrite mem_sort; apply/mapP; by exists c.
 Qed.
@@ -537,11 +537,11 @@ Lemma card_suffixes (c : seq T) : c \in C ->
 Proof.
 move=> cC.
 rewrite /suffixes cC -card_tuple -(card_imset _ (@injective_prepend T lmax c)).
-apply eq_card => /= t; rewrite !inE.
+apply: eq_card => /= t; rewrite !inE.
 apply/idP/imsetP => /= [ct|/= [x _ ->{t}]].
   have @x : (lmax - size c).-tuple T.
     apply: (@Tuple _ _ (drop (size c) t)); by rewrite size_drop size_tuple.
-  exists x => //; apply val_inj => /=.
+  exists x => //; apply: val_inj => /=.
   move: ct => /eqP {1}->.
   rewrite take_oversize ?cat_take_drop //.
   rewrite size_take size_tuple; by case: ifPn => // /ltnW.
@@ -649,7 +649,7 @@ Proof.
 move/prefix_codeP => notprefix; move: (w_ub H) => w_ub.
 rewrite -(negbK ([exists j, _])) negb_exists.
 apply/negP => /forallP /= H'.
-apply notprefix => c c'.
+apply: notprefix => c c'.
 move/mapP => [/= a _ ->{c}] /mapP[/= b _ ->{c'}] ab size_ab.
 apply/negP => prefix_ab.
 move: (H' a).
@@ -686,7 +686,7 @@ Lemma kraft_implies_prefix : kraft_cond R T l ->
   exists C : code_set T, prefix_code C.
 Proof.
 move=> H; exists (ACode _ l_n sorted_l).
-apply nnpp_prefix.
+apply: nnpp_prefix.
 move=> /(if_not_prefix l_neq0 H) /existsP[j /existsP[ k /andP[jk pre]]].
 (*\color{comment}{\framebox{at this point, the goal is $\forall j, k. i < k \to \neg \prefix{\sigma_j}{\sigma_k$}}} *)
 pose r := ((w k)%:R / #|T|%:R^+(l``_k - l``_j) : R)%R.
@@ -764,14 +764,14 @@ Definition code_set_cw_of_code_set (c : code_set T) :
 Proof.
 set M := foldr maxn O (map size c).
 pose l : seq (M.-bseq T) := map (@insub_bseq M T) (codeset c).
-apply CodeSetCw.
+apply: CodeSetCw.
 exact: [set x | x in l].
 Defined.
 
 Definition code_set_of_code_set_cw M (c : code_set_cw M) : code_set T.
 set x := fintype.enum (codesetcw c).
 pose l : seq (seq T) := map (@bseqval _ _) x.
-apply CodeSet with l.
+apply: (@CodeSet _  l).
 rewrite map_inj_uniq.
   by rewrite enum_uniq.
 exact: bseqval_inj.

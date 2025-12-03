@@ -131,9 +131,9 @@ rewrite in_cons => /orP [/eqP|] Hx.
   - by rewrite in_cons Hi orbT.
   - by subst x; apply: contra Hal => /eqP <-.
 rewrite Hy //=.
-- apply IH => // y Hyl; apply Hy.
+- apply: IH => // y Hyl; apply: Hy.
   by rewrite in_cons Hyl orbT.
-- by apply mem_head.
+- by apply: mem_head.
 - by apply: contra Hal => /eqP ->.
 Qed.
 
@@ -155,7 +155,7 @@ rewrite !in_cons /= cat_uniq => /andP/proj2/andP[Hun1 Hun2] /orP[] Hx /orP[] Hy.
     apply/flattenP.
     by exists (f x) => //; exact/map_f.
   by rewrite -(eqP Hy).
-- by apply IH.
+- by apply: IH.
 Qed.
 
 Lemma subseq_flatten (f' : A -> seq B) l :
@@ -164,8 +164,8 @@ Lemma subseq_flatten (f' : A -> seq B) l :
 Proof.
 elim: l => [|a l IH] //= Hl.
 rewrite cat_subseq //.
-  by apply Hl; rewrite in_cons eqxx.
-by apply IH => x Hx; apply Hl; rewrite in_cons Hx orbT.
+  by apply: Hl; rewrite in_cons eqxx.
+by apply: IH => x Hx; apply: Hl; rewrite in_cons Hx orbT.
 Qed.
 
 End Flatten.
@@ -284,7 +284,7 @@ Section seq_eqType_ext.
 
 Lemma eq_in_map_seqs {A B : eqType} (f1 f2 : A -> B) l1 l2 :
   l1 = l2 -> {in l1, f1 =1 f2} -> map f1 l1 = map f2 l2.
-Proof. by move=> <-; apply eq_in_map. Qed.
+Proof. by move=> <- /eq_in_map. Qed.
 
 Variables A B : eqType.
 
@@ -304,7 +304,7 @@ have H : subseq [:: f a ; f b] s.
   rewrite -(map_nth_iota_id a0 s) (_ : [:: f a; f b] = map f [:: a ; b]) //.
   apply: map_subseq.
   rewrite -(subnK Has) addnC iotaD add0n (_ : [:: a; b] = [::a] ++ [::b]) //.
-  apply cat_subseq; rewrite sub1seq mem_iota.
+  apply: cat_subseq; rewrite sub1seq mem_iota.
   - by rewrite add0n leq0n ltnSn.
   - by rewrite Hab subnKC.
 by case/andP : (subseq_sorted r_trans H r_sorted).
@@ -323,7 +323,7 @@ apply/andP; split => //.
 destruct k => //.
 rewrite /sorted in Hk.
 rewrite /= Hk andbC /=.
-apply H.
+apply: H.
 by rewrite mem_last.
 by rewrite in_cons eqxx.
 Qed.
@@ -355,15 +355,15 @@ have X1 : v = filter (pred1 hd) v ++ filter (predC (pred1 hd)) v.
         have /= := @subseq_path _ _ Htrans a [:: b] tl.
         rewrite andbT.
         by apply => //; rewrite sub1seq.
-  - by rewrite perm_sym; apply permEl, perm_filterC.
+  - by rewrite perm_sym; apply/permEl/perm_filterC.
 rewrite {1}X1 {X1} /=.
 congr (_ ++ _).
 move: lst_uniq => /= /andP[hdtl tl_uniq].
 rewrite (IH tl (filter (predC (pred1 hd)) v) lst_sz tl_uniq).
 - congr flatten.
-  apply eq_in_map => i i_tl.
+  apply/eq_in_map => i i_tl.
   rewrite -filter_predI.
-  apply eq_in_filter => j j_v /=.
+  apply: eq_in_filter => j j_v /=.
   case/boolP: (j == i) => ij //=.
   apply/negP => /eqP ?; subst j.
   move/eqP : ij => ?; subst i.
@@ -417,12 +417,12 @@ split.
   apply/permPl : x.
   rewrite perm_cat2l (@eq_in_filter _ _ [pred x | f x \in t]) //= => x X.
   case/boolP: (f x == h) => [/eqP ->|/negbTE fxh] /=; apply/esym.
-  + by have /andP[/negbTE] : uniq (h :: t) by rewrite -p_t; apply undup_uniq.
+  + by have /andP[/negbTE] : uniq (h :: t) by rewrite -p_t; apply: undup_uniq.
   + have : f x \in h :: t by rewrite -p_t mem_undup; apply/mapP; exists x.
     rewrite in_cons => /orP[|->//]; by rewrite fxh.
 - split.
   + rewrite -filter_map undup_filter p_t /= eqxx; congr cons.
-    rewrite -(filter_pred0 t); apply eq_in_filter => i it /=.
+    rewrite -(filter_pred0 t); apply: eq_in_filter => i it /=.
     apply/negP => /eqP X; subst h.
     have : uniq (i :: t) by rewrite -p_t; exact: undup_uniq.
     rewrite /= => /andP[]; by rewrite it.
@@ -477,7 +477,7 @@ End finfun_ext.
 
 (* TODO: move to MCA *)
 Lemma bij_swap A B : bijective (@swap A B).
-Proof. apply Bijective with swap; by case. Qed.
+Proof. exact/Bijective/swapK/swapK. Qed.
 Arguments bij_swap {A B}.
 
 Section finset_ext.
@@ -531,9 +531,9 @@ Proof.
 elim => [E a _ _ aE| h t IH E a htE uniqht aE /=].
   exact: enum_rank_subproof aE.
 case: ifPn => [_|hi]; first by rewrite card_gt0; apply/set0Pn; exists a.
-apply (@leq_ltn_trans #|E :\ h|); last first.
+apply: (@leq_ltn_trans #|E :\ h|); last first.
   by rewrite (cardsD1 h E) -mem_enum -htE mem_head add1n.
-apply IH.
+apply: IH.
 - move=> j; case/boolP : (j \in enum (E :\ h)).
   + rewrite mem_enum in_setD1 => /andP[/negbTE H].
     by rewrite -mem_enum -htE in_cons H.
@@ -747,7 +747,7 @@ Definition b := enum_val (cast_ord (esym A2) (lift ord0 ord0)).
 
 Lemma enumE : enum A = a :: b :: [::].
 Proof.
-apply (@eq_from_nth _ a); first by rewrite -cardE A2.
+apply: (@eq_from_nth _ a); first by rewrite -cardE A2.
 case=> [_|]; first by rewrite [X in _ = X]/= {2}/a (enum_val_nth a).
 case=> [_ |i]; last by rewrite -cardE A2.
 by rewrite [X in _ = X]/= {1}/b (enum_val_nth a).
@@ -786,7 +786,7 @@ Lemma tcast_take_inj n m k (H : minn n k = m) (nk : n = k) (t v : k.-tuple A) :
 Proof.
 subst m n => /=.
 case => /= tv.
-apply eq_from_tnth => i.
+apply: eq_from_tnth => i.
 rewrite (tnth_nth t!_i) [in X in _ = X](tnth_nth t!_i).
 by rewrite -(@nth_take k) // -[in X in _ = X](@nth_take k) // tv.
 Qed.
@@ -799,7 +799,7 @@ Lemma tnth_zip_1 (B : finType) n (x1 : n.-tuple A) (x2 : n.-tuple B) i:
 Proof.
 rewrite /tnth; set def := tnth_default _ _; case: def => ? ?.
 rewrite nth_zip /=; last by rewrite !size_tuple.
-apply set_nth_default; by rewrite size_tuple.
+apply: set_nth_default; by rewrite size_tuple.
 Qed.
 
 Lemma tnth_zip_2 (B : finType) n (x1 : n.-tuple A) (x2 : n.-tuple B) i:
@@ -807,11 +807,11 @@ Lemma tnth_zip_2 (B : finType) n (x1 : n.-tuple A) (x2 : n.-tuple B) i:
 Proof.
 rewrite /tnth; set def := tnth_default _ _; case: def => ? ?.
 rewrite nth_zip /=; last by rewrite !size_tuple.
-apply set_nth_default; by rewrite size_tuple.
+apply: set_nth_default; by rewrite size_tuple.
 Qed.
 
 Lemma thead_tuple1 : forall (i : 1.-tuple A), [tuple thead i] = i.
-Proof. move=> [ [|h []] H] //. by apply val_inj. Qed.
+Proof. move=> [ [|h []] H] //. by apply: val_inj. Qed.
 
 Definition tbehead n (t : n.+1.-tuple A) : n.-tuple A := [tuple of behead t].
 
@@ -820,7 +820,7 @@ Lemma sorted_of_tnth {C : eqType} (r : rel C) k (t : k.-tuple C) :
 Proof.
 move=> r_trans r_sorted a b ab.
 rewrite (tnth_nth t!_b) {2}(tnth_nth t!_b).
-apply sorted_of_nth => //; by rewrite ab size_tuple /=.
+apply: sorted_of_nth => //; by rewrite ab size_tuple /=.
 Qed.
 
 Lemma sorted_of_tnth_leq (X : finType) (n : nat) (r : rel X) (t : n.-tuple X)
@@ -829,14 +829,16 @@ Lemma sorted_of_tnth_leq (X : finType) (n : nat) (r : rel X) (t : n.-tuple X)
 Proof.
 move=> l p leqlp.
 case/boolP : (l == p) => Hcase.
-- move/eqP in Hcase; rewrite Hcase; apply r_refl.
-- apply sorted_of_tnth => //; by rewrite ltn_neqAle leqlp Hcase.
+- move/eqP in Hcase; rewrite Hcase; apply: r_refl.
+- apply: sorted_of_tnth => //; by rewrite ltn_neqAle leqlp Hcase.
 Qed.
 
-Definition sort_tuple (X : eqType) n (r : rel X) (t : n.-tuple X) : n.-tuple X.
-apply Tuple with (sort r t).
-by rewrite size_sort size_tuple.
-Defined.
+Lemma sort_tuple_subproof (X : eqType) n (r : rel X) (t : n.-tuple X) :
+  size (sort r t) == n.
+Proof. by rewrite size_sort size_tuple. Qed.
+
+Definition sort_tuple (X : eqType) n (r : rel X) (t : n.-tuple X) : n.-tuple X :=
+  Tuple (sort_tuple_subproof r t).
 
 Lemma tnth_uniq (T : eqType) n (t : n.-tuple T) (i j : 'I_n) :
   uniq t -> (t !_ i == t !_ j) = (i == j).
@@ -877,7 +879,7 @@ Definition lt_rank x y := le_rank x y && (x != y).
 
 Lemma lt_rank_alt x y : lt_rank x y = (enum_rank x < enum_rank y).
 Proof.
-rewrite /lt_rank /le_rank ltn_neqAle andbC; apply andb_id2r => _.
+rewrite /lt_rank /le_rank ltn_neqAle andbC; apply: andb_id2r => _.
 case/boolP : (x == y) => [/eqP ->|xy]; first by rewrite eqxx.
 apply/esym => /=; apply: contra xy => /eqP H.
 by apply/eqP/enum_rank_inj/ord_inj.
@@ -890,7 +892,7 @@ Lemma le_rank_refl : reflexive le_rank.
 Proof. by rewrite /le_rank /reflexive => a. Qed.
 
 Lemma le_rank_asym : antisymmetric le_rank.
-Proof. move=> a b H; apply enum_rank_inj; rewrite -eqn_leq in H; exact/eqP. Qed.
+Proof. move=> a b H; apply: enum_rank_inj; rewrite -eqn_leq in H; exact/eqP. Qed.
 
 Lemma le_rank_total : total le_rank.
 Proof. by rewrite /total => a b; rewrite /le_rank leq_total. Qed.
@@ -951,7 +953,7 @@ rewrite /perm_tuple.
 have : perm_eq t (sort_tuple r t) by rewrite perm_sym perm_sort perm_refl.
 case/tuple_permP => u Hu; exists u.
 case: t Hu => t /= Ht Hu.
-apply eq_from_tnth => i /=.
+apply: eq_from_tnth => i /=.
 rewrite /tnth /= -Hu.
 apply: set_nth_default.
 move/eqP : {Hu}Ht => ->; by case: i.
@@ -961,7 +963,7 @@ Variable A : finType.
 
 Lemma perm_tuple_id n (t : n.-tuple A) : perm_tuple 1 t = t.
 Proof.
-apply eq_from_tnth => i.
+apply: eq_from_tnth => i.
 by rewrite /perm_tuple /= tnth_map /= perm1 tnth_ord_tuple.
 Qed.
 
@@ -971,7 +973,7 @@ Definition perm_tuple_set n (s : 'S_n) (E : {set n.-tuple A}) :=
 Lemma perm_tuple_comp n (s1 s2 : 'S_n) (t : n.-tuple A) :
   perm_tuple s1 (perm_tuple s2 t) = perm_tuple (s1 * s2) t.
 Proof.
-apply eq_from_tnth => i.
+apply: eq_from_tnth => i.
 by rewrite /perm_tuple !tnth_map /= tnth_ord_tuple permM.
 Qed.
 
@@ -990,7 +992,7 @@ Qed.
 Lemma zip_perm_tuple (B : finType) n (a : n.-tuple A) (b : n.-tuple B) (s : 'S_n) :
   zip_tuple (perm_tuple s a) (perm_tuple s b) = perm_tuple s (zip_tuple a b).
 Proof.
-apply eq_from_tnth; case.
+apply: eq_from_tnth; case.
 destruct n as [|n] => //.
 case=> [Hi | i Hi].
   rewrite (tnth_nth (thead a, thead b)) (tnth_nth (thead (zip_tuple a b))).
@@ -1015,10 +1017,10 @@ Variable n : nat.
 Lemma perm_eq_perm (pe : 'S_n) :
   perm_eq (enum 'I_n) [seq pe i | i <- enum 'I_n].
 Proof.
-apply uniq_perm.
+apply: uniq_perm.
 + by rewrite enum_uniq.
 + rewrite map_inj_in_uniq ?enum_uniq //.
-  by move=> x1 x2 _ _; apply perm_inj.
+  by move=> x1 x2 _ _; apply: perm_inj.
 move=> i.
 rewrite mem_enum inE.
 symmetry.
@@ -1032,10 +1034,10 @@ Lemma perm_filter_enum_ord j :
   perm_eq [seq i <- enum 'I_n.+1 | i != j]
           [seq lift j i | i <- enum 'I_n].
 Proof.
-apply uniq_perm.
+apply: uniq_perm.
 + by rewrite filter_uniq // enum_uniq.
 + rewrite map_inj_in_uniq ?enum_uniq //.
-  by move=> x1 x2 _ _; apply lift_inj.
+  by move=> x1 x2 _ _; apply: lift_inj.
 move=> k.
 rewrite mem_filter mem_enum andbT.
 symmetry.
@@ -1054,9 +1056,9 @@ Proof. apply/subsetP=> /= x _; by rewrite !in_set mem_enum. Qed.
 
 (*Lemma perm_eq_enum (s : 'S_n) : perm_eq (enum 'I_n) (map (s^-1)%g (enum 'I_n)).
 Proof.
-apply uniq_perm.
-- by apply enum_uniq.
-- rewrite map_inj_uniq; by [apply enum_uniq | apply: perm_inj].
+apply: uniq_perm.
+- by apply: enum_uniq.
+- rewrite map_inj_uniq; by [apply: enum_uniq | apply: perm_inj].
 - move=> /= xi.
   case Hi : (xi \in enum 'I_n).
   + symmetry; apply/mapP; exists (s xi).
@@ -1181,7 +1183,7 @@ Lemma enum_inord (m : nat) : enum 'I_m.+1 = [seq inord i | i <- iota 0 m.+1].
 Proof.
 rewrite -val_enum_ord -map_comp.
 transitivity ([seq i | i <- enum 'I_m.+1]); first by rewrite map_id.
-apply eq_map => i /=; by rewrite inord_val.
+apply: eq_map => i /=; by rewrite inord_val.
 Qed.
 
 Lemma split_lshift n m (i : 'I_n) : fintype.split (lshift m i) = inl i.
@@ -1197,7 +1199,7 @@ Lemma index_enum_cast_ord n m (e : n = m) :
   index_enum 'I_m = [seq cast_ord e i | i <- index_enum 'I_n].
 Proof.
 subst m; rewrite -{1}(map_id (index_enum 'I_n)).
-apply eq_map=> [[x xlt]].
+apply: eq_map=> [[x xlt]].
 by rewrite /cast_ord; congr Ordinal; exact: bool_irrelevance.
 Qed.
 
@@ -1205,7 +1207,7 @@ Lemma perm_map_bij [T : finType] [f : T -> T] (s : seq T) : bijective f ->
   perm_eq (index_enum T) [seq f i | i <- index_enum T].
 Proof.
 rewrite /index_enum; case: index_enum_key => /= fbij.
-rewrite /perm_eq -enumT -forallb_tnth; apply /forallP=>i /=.
+rewrite /perm_eq -enumT -forallb_tnth; apply/forallP=>i /=.
 case: fbij => g fg gf.
 rewrite enumT enumP count_map -size_filter (@eq_in_filter _ _
     (pred1 (g (tnth (cat_tuple (enum_tuple T) (map_tuple [eta f] (enum_tuple T))) i)))).

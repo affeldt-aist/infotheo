@@ -420,7 +420,7 @@ Lemma weight_contrib :
   (\sum_(i in S) C i * P i * tau i) / Pr P S <=
   `V_[X | S] + (`E_[X | S] - `E (WP.-RV X))^+2.
 Proof.
-apply (@le_trans _ _ (`E_[tau | S])); last first.
+apply: (@le_trans _ _ (`E_[tau | S])); last first.
   rewrite le_eqVlt/tau/sq_dev; apply/orP; left; exact/eqP/cVarDist.
 rewrite cExE ler_pM2r ?invr_gt0 //.
 apply: ler_suml=> i HiS //.
@@ -437,14 +437,14 @@ Lemma invariant_impl : invariant -> invariantW.
 Proof.
 rewrite /invariant /invariantW /weightedmean.invariantW => hinv.
 rewrite -!pr_S.
-apply (@le_trans _ _ ((Pr P S / 2 *
+apply: (@le_trans _ _ ((Pr P S / 2 *
                          (1 + Pr P S + (\sum_(i in cplt_S) C i * P i))) /
                         (\sum_i C i * P i))).
   rewrite -(@ler_pM2r _ ((\sum_i C i * P i) * 2)); last exact: mulr_gt0.
   rewrite !mulrA !(mulrC _ 2) -(mulrA _ _^-1) mulVf //.
   rewrite mulr1 !mulrA (mulrC _ (2^-1)) mulrA mulVf //; last by apply/eqP; lra.
   rewrite -addrA mulrDr mulr2n 2!mulrDl mul1r.
-  apply:lerD; first by rewrite ler_pM2l // Weighted.total_le1'.
+  apply: lerD; first by rewrite ler_pM2l // Weighted.total_le1'.
   rewrite ler_pM2l // addrC -bigID2.
   apply: ler_sum=> i HiU.
   case: ifPn => iS; first by [].
@@ -459,7 +459,7 @@ rewrite opprK -mulrN [leLHS]addrC -mulrA mulVf; last by apply/eqP; lra.
 rewrite mulr1 opprD opprK.
 rewrite -!sumrN -!big_split /=.
 have H E : \sum_(i in E) (P i + - (C i * P i)) = \sum_(i in E) (1 - C i) * P i.
-  by apply eq_bigr => i _; rewrite mulrBl mul1r.
+  by apply: eq_bigr => i _; rewrite mulrBl mul1r.
 by rewrite !H pr_S.
 Qed.
 
@@ -493,13 +493,13 @@ Lemma S_mass : invariant ->
 Proof.
 rewrite /is01 => Hinv.
 have eps1_unit: 1 - eps != 0 by apply/eqP; move: low_eps eps0 eps_max01; lra.
-apply (@le_trans _ _ (1 - (1 - eps) / 2 / Pr P S * Pr P cplt_S)).
+apply: (@le_trans _ _ (1 - (1 - eps) / 2 / Pr P S * Pr P cplt_S)).
   by rewrite pr_S [in leRHS]mulrC mulrAC mulfV // div1r.
-apply (@le_trans _ _ (1 - (1 - eps) / 2 / Pr P S *
+apply: (@le_trans _ _ (1 - (1 - eps) / 2 / Pr P S *
                             \sum_(i in cplt_S) P i * (1 - C i))).
   rewrite lerD2l lerNl opprK ler_pM2l; last first.
     rewrite pr_S mulrC mulrA mulVf //; lra.
-  apply ler_sum => i icplt_S.
+  apply: ler_sum => i icplt_S.
   by rewrite mulrBr mulr1 lerBlDr lerDl; exact: mulr_ge0.
 rewrite -pr_S -mulrA mulrCA !mulrA mulVf ?pr_S // mul1r.
 rewrite ler_pdivlMr; last by move: low_eps eps_max01; lra.
@@ -539,7 +539,7 @@ apply: (@le_trans _ _ (`V_[ Split.fst_RV C0 C01 X | S `* [set: bool]] *
       by rewrite big_set1 Split.dE.
     + exact/setXS.
 rewrite Split.cVar -(mulrA _ eps) -(mulrA _ (1 - _)).
-apply: ler_wpM2l; first by apply mulr_ge0; [exact: cvariance_ge0|lra].
+apply: ler_wpM2l; first by apply: mulr_ge0; [exact: cvariance_ge0|lra].
 rewrite opprB addrCA subrr addr0.
 rewrite -mulrA -invfM mulrDr mulr1 mulrN.
 rewrite mulrCA divff ?mulr1 //.
@@ -660,18 +660,18 @@ have Hvar_hat_2_eps : 0 <= `V (WP.-RV X) * 2 * eps
 have Hvar0 : 0 <= `V_[X | S] by exact: cvariance_ge0.
 have ? := pr_S_gt0 eps_max01 low_eps.
 (*a6*)
-apply (@le_trans _ _ ((1 - eps) * (`V_[X | S] + (`E_[X | S] - `E (WP.-RV X))^+2))).
+apply: (@le_trans _ _ ((1 - eps) * (`V_[X | S] + (`E_[X | S] - `E (WP.-RV X))^+2))).
   by rewrite -!pr_S mulrC -ler_pdivrMr // (weight_contrib _ C0 eps_max01).
 (*a6-a7*)
-apply (@le_trans _ _ ((1 - eps) * (`V_[X | S] + (Num.sqrt (`V_[X | S] * 2 * eps / (2 - eps)) +
+apply: (@le_trans _ _ ((1 - eps) * (`V_[X | S] + (Num.sqrt (`V_[X | S] * 2 * eps / (2 - eps)) +
                                             Num.sqrt (`V (WP.-RV X) * 2 * eps / (1 - eps)))^+2))).
-  apply ler_wpM2l.
+  apply: ler_wpM2l.
     by rewrite subr_ge0; exact/Pr_le1.
   rewrite lerD2l -ler_abs_sqr.
   rewrite [x in _ <= x]ger0_norm; first exact: (bound_mean_emean C eps_max).
   exact/addr_ge0/sqrtr_ge0/sqrtr_ge0.
 (*a7-a8*)
-apply (@le_trans _ _ ((1 - eps) * `V (WP.-RV X) *
+apply: (@le_trans _ _ ((1 - eps) * `V (WP.-RV X) *
                         (16^-1 + 2 * eps *
                                  ((4 * Num.sqrt (2 - eps))^-1 + (Num.sqrt (1 - eps))^-1)^+2))).
   rewrite -(mulrA (1 - eps)).
@@ -724,7 +724,7 @@ have ? := pr_S_gt0 eps_max01 low_eps.
 apply: (le_trans bound_evar_ineq_S_intermediate).
 rewrite /bound_intermediate.
 (*a8-a9*)
-apply (@le_trans _ _ ((1 - eps) *
+apply: (@le_trans _ _ ((1 - eps) *
                         (16^-1 + 2 * eps_max *
                                 ((4 * Num.sqrt (2 - eps_max))^-1 +
                                    (Num.sqrt (1 - eps_max))^-1)^+2) * `V (WP.-RV X))).
@@ -802,7 +802,7 @@ apply: (@le_trans _ _ (`V (WP.-RV X) * (1 - 3 / 2 * eps) -
     exact: (S_mass eps_max).
   apply: ler_suml=> // i _ _.
   by rewrite mulr_ge0 // nneg_finfun_ge0.
-apply (@le_trans _ _ ((1 - 3 / 2 * eps - (1 - eps) * bound_intermediate eps) * `V (WP.-RV X))); last first.
+apply: (@le_trans _ _ ((1 - 3 / 2 * eps - (1 - eps) * bound_intermediate eps) * `V (WP.-RV X))); last first.
   rewrite mulrBl (mulrC (`V (WP.-RV X))) lerD // lerN2.
   exact: (bound_evar_ineq_S_intermediate eps_max01 low_eps).
 have ->// :  2 / denom * `V (WP.-RV X) <=
@@ -827,7 +827,7 @@ move => C' tau_max_gt0.
 have <- : \sum_(i in E) (C i - C' i) * P i=
          1 / tau_max * (\sum_(i in E) C i * P i * tau i).
   rewrite /C' big_distrr/= /update_ffun/=.
-  apply eq_bigr => i _ /=.
+  apply: eq_bigr => i _ /=.
   rewrite /update_ffun-/tau_max-/tau ffunE.
   case: ifPn => [/orP[/eqP|/eqP->]|].
   lra.
@@ -836,7 +836,7 @@ have <- : \sum_(i in E) (C i - C' i) * P i=
   rewrite mulrBr mulr1 opprB addrCA subrr addr0.
   rewrite mul1r [in RHS]mulrC.
   by rewrite mulrAC mulrA.
-by rewrite -big_split/=; apply eq_bigr => i HiE; rewrite -mulrDl addrA subrK.
+by rewrite -big_split/=; apply: eq_bigr => i HiE; rewrite -mulrDl addrA subrK.
 Qed.
 
 End bounding_empirical_variance.
@@ -887,7 +887,7 @@ have tau_max_gt0 : 0 < sq_dev_max X PC0 C0.
   by rewrite lt_neqAle eq_sym sq_dev_max_neq0 ?sq_dev_max_ge0 //; move: var16; lra.
 suff H2 : \sum_(i in S) (C i * P i) * tau C0 i <=
     (1 - eps) / 2 * (\sum_(i in ~: S) (C i * P i) * tau C0 i).
-  rewrite /invariant !update_removed_weight// !mulrDr; apply lerD => //.
+  rewrite /invariant !update_removed_weight// !mulrDr; apply: lerD => //.
   by rewrite mulrCA; rewrite ler_pM2l; [exact: H2 | exact: divr_gt0].
 have var16':= ltW var16.
 apply: le_trans; first exact: bound_empirical_variance_S.
@@ -931,7 +931,7 @@ Proof.
 rewrite/Weighted.total.
 under eq_bigr => i _ do rewrite /ffun1_subproof/=/ffun1 ffunE mul1r.
 rewrite FDist.f1.
-apply oner_neq0.
+apply: oner_neq0.
 Qed.
 
 Lemma C1_is01 : is01 ffun1.
@@ -1046,8 +1046,8 @@ have tr' x y : Rleb x y = true -> x <= y by move=> /RlebP/RleP.
 have := base_case P S.
 apply filter1D_rec_ind => //=.
 - move=> C C0 C01 PC0 /tr' evar16 _ Inv.
-  apply: le_trans; first by apply (bound_mean_emean C eps_max) => //; lra.
-  apply lerD; first by rewrite mulrA.
+  apply: le_trans; first by apply: (bound_mean_emean C eps_max) => //; lra.
+  apply: lerD; first by rewrite mulrA.
   rewrite ler_wsqrtr // ler_wpM2r //.
     by rewrite invr_ge0; move: low_eps; lra.
   by rewrite -mulrA ler_wpM2r //; first by move: eps0; lra.

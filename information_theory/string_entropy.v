@@ -108,17 +108,17 @@ Lemma szHs_is_nHs s (H : size s != O) :
 Proof.
 rewrite /entropy /nHs /num_occ_dist /=.
 rewrite (big_morph _ (id1:=0) (@opprD _)) ?oppr0 // big_distrr /=.
-apply eq_bigr => a _ /=; rewrite ffunE.
+apply: eq_bigr => a _ /=; rewrite ffunE.
 case: ifPn => [/eqP -> | Hnum]; first by rewrite !mul0r oppr0 mulr0.
 rewrite (mulrC N(a | s)%:R) mulrN 3![in LHS]mulrA mulrV ?unitfE ?pnatr_eq0 //.
 rewrite mul1r -mulrA -mulrN -logV 1?mulrC ?invf_div //.
-by apply divr_gt0; rewrite ltr0n lt0n.
+by apply: divr_gt0; rewrite ltr0n lt0n.
 Qed.
 
 Definition mulnrdep (x : nat) (y : x != O -> R) : R.
 case/boolP: (x == O) => Hx.
-+ exact 0.
-+ exact (x%:R * y Hx).
++ exact: 0.
++ exact: (x%:R * y Hx).
 Defined.
 Arguments mulnrdep x y : clear implicits.
 
@@ -130,12 +130,12 @@ Proof.
 rewrite /mulnrdep /=.
 destruct boolP.
   by exfalso; rewrite i in Hx.
-by do 2!f_equal; apply eq_irrelevance.
+by do 2!f_equal; apply: eq_irrelevance.
 Qed.
 
 Lemma szHs_is_nHs_full s : mulnrdep (size s) (fun H => Hs0 H) = nHs s.
 Proof.
-rewrite /mulnrdep; destruct boolP; last by apply szHs_is_nHs.
+rewrite /mulnrdep; destruct boolP; last by apply: szHs_is_nHs.
 rewrite /nHs (eq_bigr (fun a => 0)); first by rewrite big1.
 move=> a _; suff -> : N(a|s) == O by [].
 by rewrite /num_occ -leqn0 -(eqP i) count_size.
@@ -153,7 +153,7 @@ Proof.
 rewrite (eq_bigr _ (fun i _ => szHs_is_nHs i)).*)
 rewrite exchange_big /nHs /=.
 (* (2) Move to per-character inequalities *)
-apply ler_sum => a _.
+apply: ler_sum => a _.
 (* Remove strings containing no occurrences *)
 rewrite (bigID (fun s => N(a|s) == O)) /=.
 rewrite big1; last by move=> i ->.
@@ -176,9 +176,9 @@ have Hnum' : (0:R) < N(a|flatten ss')%:R.
   rewrite /num_occ count_cat ltn_addr //.
   by rewrite Hnum // in_cons eqxx.
 have Hsz: (0:R) < (size (flatten ss'))%:R.
-  apply (lt_le_trans Hnum').
-  by rewrite ler_nat; apply /count_size.
-apply (@le_trans _ _ ((\sum_(i <- ss') N(a|i))%:R *
+  apply: (lt_le_trans Hnum').
+  by rewrite ler_nat; apply/count_size.
+apply: (@le_trans _ _ ((\sum_(i <- ss') N(a|i))%:R *
     log (size (flatten ss') /:R
       (\sum_(i <- ss') N(a | i))%N)));
   last first.
@@ -188,16 +188,16 @@ apply (@le_trans _ _ ((\sum_(i <- ss') N(a|i))%:R *
   (* (3) Compensate for removed strings *)
   case: ifP => Hsum.
     by rewrite (eqP Hsum) mul0r.
-  apply ler_wpM2l => //.
-  apply Log_increasing_le => //.
+  apply: ler_wpM2l => //.
+  apply: Log_increasing_le => //.
     apply/mulr_gt0 => //.
     by rewrite invr_gt0 ltr0n lt0n Hsum.
-  apply ler_wpM2r.
+  apply: ler_wpM2r.
     by rewrite invr_ge0 ler0n.
   rewrite ler_nat !size_flatten !sumn_big_addn.
   rewrite !big_map big_filter.
   rewrite [leqRHS](bigID (fun s => N(a|s) == O)) /=.
-  by apply leq_addl.
+  by apply: leq_addl.
 (* (4) Prepare to use jensen_dist_concave *)
 have Htotal := esym (num_occ_flatten a ss').
 rewrite big_tnth in Htotal.
@@ -211,10 +211,10 @@ set r := fun i =>
 have Hr: forall i, r i \in Rpos_interval.
   rewrite /r /= => i.
   rewrite classical_sets.in_setE; apply/divr_gt0; rewrite ltr0n.
-    apply (@leq_trans N(a|tnth (in_tuple ss') i)).
+    apply: (@leq_trans N(a|tnth (in_tuple ss') i)).
       by rewrite Hnum // mem_tnth.
-    by apply count_size.
-  by apply /Hnum /mem_tnth.
+    by apply: count_size.
+  by apply/Hnum /mem_tnth.
 (* (5) Apply Jensen *)
 move: (jensen_dist_concave (@log_concave R) d Hr).
 rewrite /d /r /=.
@@ -255,7 +255,7 @@ Section higher_order_empirical_entropy.
 Variables (R : realType) (A : finType) (l : seq A).
 Hypothesis A0 : (O < #|A|)%N.
 Let n := size l.
-Let def : A. Proof. move/card_gt0P : A0 => /sigW[def _]; exact def. Defined.
+Let def : A. Proof. move/card_gt0P : A0 => /sigW[def _]; exact: def. Defined.
 Hypothesis l0 : n != O.
 
 (* the string consisting of the concatenation of the symbols following w in s *)

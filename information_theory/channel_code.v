@@ -93,8 +93,8 @@ Lemma schaE (W : `Ch(A, B)) (c : code) :
 Proof.
 set rhs := (\sum_(m | _ ) _)%R.
 have {rhs}-> : rhs = (\sum_(m in M) (1 - e(W, c) m))%R.
-  apply eq_bigr => i Hi; rewrite -Pr_to_cplt.
-  by apply eq_bigl => t /=; rewrite inE.
+  apply: eq_bigr => i Hi; rewrite -Pr_to_cplt.
+  by apply: eq_bigl => t /=; rewrite inE.
 set rhs := (\sum_(m | _ ) _)%R.
 have {rhs}-> : rhs = (#|M|%:R - \sum_(m in M) e(W, c) m)%R.
   rewrite /rhs {rhs} big_split /= big_morph_oppr; congr +%R.

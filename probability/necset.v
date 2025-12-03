@@ -135,7 +135,7 @@ Proof. by apply/set0P; exists a. Qed.
 
 Definition neset_repr A (X : neset A) : A.
 Proof.
-case: X => X [[]] /set0P /boolp.constructive_indefinite_description [x _]; exact x.
+case: X => X [[]] /set0P /boolp.constructive_indefinite_description [x _]; exact: x.
 Defined.
 
 Lemma repr_in_neset A (X : neset A) : (X : set A) (neset_repr X).
@@ -249,9 +249,9 @@ Lemma convA_pt_set p q x (Y Z : set A) :
 Proof.
 rewrite eqEsubset; split=> u; rewrite conv_pt_setE.
 - case=> yz [] y Yy; rewrite conv_pt_setE=> -[] z Zz <- <-.
-  by rewrite convA; apply conv_in_conv_set=> //; apply conv_in_conv_pt_set.
+  by rewrite convA; apply: conv_in_conv_set=> //; apply: conv_in_conv_pt_set.
 - case=> xy [] y Yy <-; rewrite conv_pt_setE; case=> z Zz <-.
-  by rewrite -convA; apply conv_in_conv_pt_set=> //; apply conv_in_conv_set.
+  by rewrite -convA; apply: conv_in_conv_pt_set=> //; apply: conv_in_conv_set.
 Qed.
 
 Lemma convA_set p q (X Y Z : set A) :
@@ -286,13 +286,13 @@ Qed.
 Lemma conv1_set X (Y : neset A) : X :<| 1%:pr |>: Y = X.
 Proof.
 transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_imset1 image_id.
-by apply :eq_bigcupr => x; rewrite conv1_pt_set.
+by apply: eq_bigcupr => x; rewrite conv1_pt_set.
 Qed.
 
 Lemma conv0_set (X : neset A) Y : X :<| 0%:pr |>: Y = Y.
 Proof.
 rewrite convC_set /= (_ : 0.~%:pr = 1%:pr) ?conv1_set //.
-by apply val_inj; rewrite /= onem0.
+by apply: val_inj; rewrite /= onem0.
 Qed.
 
 Definition probset := @setT {prob R}.
@@ -389,20 +389,20 @@ Proof.
 apply/asboolP=> u v p.
 case=> q _ [] xu Xxu; rewrite conv_pt_setE=> -[] yu Yyu <-.
 case=> r _ [] xv Xxv; rewrite conv_pt_setE=> -[] yv Yyv <-.
-apply (prob_trichotomy' p); rewrite ?conv0 ?conv1;
+pattern p; apply: (prob_trichotomy' p); rewrite ?conv0 ?conv1;
   [exact: conv_in_oplus_conv_set | exact: conv_in_oplus_conv_set | move=> op].
-apply (prob_trichotomy' q) => [| |oq].
-- rewrite conv0 (convC r) convA convC; apply conv_in_oplus_conv_set=> //.
+pattern q; apply: (prob_trichotomy' q) => [| |oq].
+- rewrite conv0 (convC r) convA convC; apply: conv_in_oplus_conv_set=> //.
   by move/asboolP: (convex_setP Y); apply.
-- rewrite conv1 convA; apply conv_in_oplus_conv_set=> //.
+- rewrite conv1 convA; apply: conv_in_oplus_conv_set=> //.
   by move/asboolP: (convex_setP X); apply.
-- apply (prob_trichotomy' r) => [| |or].
-  + rewrite conv0 -convA' ?oprob_neq1 //; apply conv_in_oplus_conv_set=> //.
+- pattern r; apply: (prob_trichotomy' r) => [| |or].
+  + rewrite conv0 -convA' ?oprob_neq1 //; apply: conv_in_oplus_conv_set=> //.
     by move/asboolP: (convex_setP Y); apply.
-  + rewrite conv1 convC convA; apply conv_in_oplus_conv_set=> //.
+  + rewrite conv1 convC convA; apply: conv_in_oplus_conv_set=> //.
     by move/asboolP: (convex_setP X); apply.
   + case: (convACA' xu yu xv yv (OProb.p oq) (OProb.p op) (OProb.p or)(*TODO: oprob coercions broken*))=> q' [] p' [] r' ->.
-    by apply conv_in_oplus_conv_set; [move/asboolP: (convex_setP X); apply |
+    by apply: conv_in_oplus_conv_set; [move/asboolP: (convex_setP X); apply |
                                       move/asboolP: (convex_setP Y); apply].
 Qed.
 
@@ -473,7 +473,7 @@ have [d01|d0n1] := eqVneq (d ord0) 1%R.
 - rewrite ConvnIE //; exists (probfdist d ord0) => //; exists (g ord0) => //.
   rewrite conv_pt_setE.
   exists (<|>_(fdist_del d0n1) (fun x : 'I_n => g (fdist_del_idx ord0 x))) => //.
-  by apply IHn => u [] i _ <-; exact/gX/imageP.
+  by apply: IHn => u [] i _ <-; exact/gX/imageP.
 Qed.
 
 Lemma oplus_convC_set (X Y : set A) : oplus_conv_set X Y = oplus_conv_set Y X.
@@ -487,7 +487,7 @@ Lemma convmm_cset (p : {prob R}) (X : {convex_set A}) : X :<| p |>: X = X.
 Proof.
 rewrite eqEsubset; split=> [x /conv_in_conv_set'[] | x ?].
 - by move=> x0 [] x1 [] ? [] ? ->; move/asboolP : (convex_setP X); apply.
-- by rewrite -(convmm p x); apply conv_in_conv_set.
+- by rewrite -(convmm p x); apply: conv_in_conv_set.
 Qed.
 
 Lemma oplus_convmm_cset (X : {convex_set A}) : oplus_conv_set X X = X.
@@ -505,12 +505,12 @@ Lemma hull_iter_conv_set (X : set A) :
   hull X = \bigcup_(i in natset) iter_conv_set X i.
 Proof.
 rewrite eqEsubset; split.
-  by move=> x [] n [] g [] d [] gX ->; exists n => //; apply Convn_iter_conv_set.
-apply bigsubsetU.
+  by move=> x [] n [] g [] d [] gX ->; exists n => //; apply: Convn_iter_conv_set.
+apply/bigsubsetU.
 elim => [_|n IHn _]; first exact/subset_hull.
 have H : iter_conv_set X n.+1 `<=` oplus_conv_set X (hull X).
   exact/oplus_conv_set_monotone/IHn.
-apply (subset_trans H); rewrite oplus_convC_set.
+apply: (subset_trans H); rewrite oplus_convC_set.
 have : oplus_conv_set (hull X) X `<=` oplus_conv_set (hull X) (hull X).
   exact/oplus_conv_set_monotone/subset_hull.
 by move/subset_trans; apply; rewrite oplus_convmm_set_hull.
@@ -536,7 +536,7 @@ Lemma affine_image_conv_set {R : realType} (A B : convType R)
 Proof.
 rewrite eqEsubset; split=> [u [v]|u].
 - move=> /conv_in_conv_set' [] x [] y [] Xx [] Yy ->; rewrite affine_conv=> <-.
-  by apply conv_in_conv_set; apply imageP.
+  by apply: conv_in_conv_set; apply: imageP.
 - case/conv_in_conv_set'=> x [] y [] [] x0 Xx0 <- [] [] y0 Yy0 <- ->.
   by rewrite -affine_conv; apply/imageP/conv_in_conv_set.
 Qed.
@@ -772,7 +772,7 @@ Variables (R' : realType) (R S T : semiCompSemiLattConvType R')
 
 Let biglubmorph_idfun : biglubmorph (@idfun R).
 Proof.
-by move=> x; congr (|_| _); apply neset_ext; rewrite /= image_id.
+by move=> x; congr (|_| _); apply: neset_ext; rewrite /= image_id.
 Qed.
 
 HB.instance Definition _ := isBiglubMorph.Build _ _ _ biglubmorph_idfun.
@@ -780,7 +780,7 @@ HB.instance Definition _ := isBiglubMorph.Build _ _ _ biglubmorph_idfun.
 Let biglubmorph_comp : biglubmorph (f \o g).
 Proof.
 move=> x; cbn; rewrite !biglub_morph.
-by congr (|_| _); apply neset_ext => /=; rewrite image_comp.
+by congr (|_| _); apply: neset_ext => /=; rewrite image_comp.
 Qed.
 
 HB.instance Definition _ := isBiglubMorph.Build _ _ _ biglubmorph_comp.
@@ -816,9 +816,9 @@ Lemma biglub_conv_setE p (X Y : neset L) :
   |_| (X :<| p |>: Y)%:ne = |_| ((fun x => x <|p|> |_| Y) @` X)%:ne.
 Proof.
 transitivity (|_| (\bigcup_(x in X) (x <| p |>: Y))%:ne).
-  by congr (|_| _%:ne); apply neset_ext.
-rewrite biglub_bigcup //; congr (|_| _%:ne); apply neset_ext => /=.
-rewrite image_comp; congr image; apply funext => x /=.
+  by congr (|_| _%:ne); apply: neset_ext.
+rewrite biglub_bigcup //; congr (|_| _%:ne); apply: neset_ext => /=.
+rewrite image_comp; congr image; apply: funext => x /=.
 by rewrite biglub_conv_pt_setD.
 Qed.
 
@@ -833,7 +833,7 @@ Proof.
 transitivity (|_| (\bigcup_(p in probset) (X :<| p |>: Y))%:ne).
   by congr (|_| _%:ne); apply/neset_ext.
 rewrite biglub_bigcup //; congr (|_| _%:ne); apply/neset_ext => /=.
-rewrite image_comp; congr image; apply funext => p /=.
+rewrite image_comp; congr image; apply: funext => p /=.
 by rewrite biglub_conv_setD.
 Qed.
 
@@ -845,18 +845,18 @@ rewrite (biglub_oplus_conv_setE _ (iter_conv_set X n)%:ne).
 transitivity (|_| [set |_| X]%:ne); last by rewrite biglub1.
 congr (|_| _%:ne); apply/neset_ext => /=.
 transitivity ((fun _ => |_| X) @` @probset R); last by rewrite image_const.
-by congr image; apply funext=> p; rewrite IHn convmm.
+by congr image; apply: funext=> p; rewrite IHn convmm.
 Qed.
 
 Lemma biglub_hull (X : neset L) : |_| (hull X)%:ne = |_| X.
 Proof.
 transitivity (|_| (\bigcup_(i in natset) iter_conv_set X i)%:ne);
-  first by congr (|_| _); apply neset_ext; rewrite /= hull_iter_conv_set.
+  first by congr (|_| _); apply: neset_ext; rewrite /= hull_iter_conv_set.
 rewrite biglub_bignesetU /= -[in RHS](biglub1 (|_| X)).
 transitivity (|_| ((fun _ => |_| X) @` natset)%:ne); last first.
   by congr (|_| _); apply/neset_ext/image_const.
 congr (|_| _%:ne); apply/neset_ext => /=.
-rewrite image_comp; congr image; apply funext => n /=.
+rewrite image_comp; congr image; apply: funext => n /=.
 by rewrite biglub_iter_conv_set.
 Qed.
 
@@ -936,13 +936,13 @@ Lemma convE p (X Y : necset A) : conv p X Y = conv_set p X Y :> set A.
 Proof. by rewrite /conv; unlock. Qed.
 
 Lemma conv1 X Y : conv 1%R%:pr X Y = X.
-Proof. by apply necset_ext; rewrite convE conv1_set. Qed.
+Proof. by apply: necset_ext; rewrite convE conv1_set. Qed.
 
 Lemma convmm p X : conv p X X = X.
-Proof. by apply necset_ext; rewrite convE convmm_cset. Qed.
+Proof. by apply: necset_ext; rewrite convE convmm_cset. Qed.
 
 Lemma convC p X Y : conv p X Y = conv (Prob.p p).~%:pr Y X.
-Proof. by apply necset_ext; rewrite !convE convC_set. Qed.
+Proof. by apply: necset_ext; rewrite !convE convC_set. Qed.
 
 Lemma convA p q X Y Z :
   conv p X (conv q Y Z) = conv [s_of p, q] (conv [r_of p, q] X Y) Z.
@@ -996,13 +996,13 @@ Proof. by apply: necset_ext => /=; rewrite bigcup_set1 hull_cset. Qed.
 Lemma biglub_necset_bigsetU (I : Type) (S : neset I) (F : I -> neset (necset A)) :
   biglub_necset (\bigcup_(i in S) F i) = biglub_necset (biglub_necset @` (F @` S))%:ne.
 Proof.
-apply necset_ext => /=.
+apply: necset_ext => /=.
 apply: hull_eqEsubset => a.
 - case => x [] i Si Fix xa.
   exists 1, (fun _ => a), (fdist1 ord0).
   split; last by rewrite ConvnI1E.
   move=> a0 [] zero _ <-.
-  exists (biglub_necset (F i)); first by do 2 apply imageP.
+  exists (biglub_necset (F i)); first by do 2 apply: imageP.
   by apply/subset_hull; exists x.
 - case => x [] u [] i Si Fiu <-.
   case => n [] g [] d [] /= gx ag.
@@ -1016,21 +1016,21 @@ Qed.
 Let lub_ (x y : necset A) : necset A := biglub_necset [set x; y]%:ne.
 
 Let lub_E (x y : necset A) : lub_ x y = hull (x `|` y)%:ne.
-Proof. by apply necset_ext; rewrite /= bigcup_setU !bigcup_set1. Qed.
+Proof. by apply: necset_ext; rewrite /= bigcup_setU !bigcup_set1. Qed.
 
 Let lub_C : commutative lub_.
 Proof.
-by move=> x y; congr biglub_necset; apply neset_ext; rewrite /= setUC.
+by move=> x y; congr biglub_necset; apply: neset_ext; rewrite /= setUC.
 Qed.
 
 Let lub_A : associative lub_.
 Proof.
-by move=> x y z; rewrite !lub_E; apply necset_ext => /=; exact: hullUA.
+by move=> x y z; rewrite !lub_E; apply: necset_ext => /=; exact: hullUA.
 Qed.
 
 Let lub_xx : idempotent_op lub_.
 Proof.
-by move=> x; rewrite lub_E; apply necset_ext => /=; rewrite setUid hull_cset.
+by move=> x; rewrite lub_E; apply: necset_ext => /=; rewrite setUid hull_cset.
 Qed.
 
 #[export]
@@ -1059,7 +1059,7 @@ Let L := necset A.
 Let biglubDr' (p : {prob R}) (X : L) (I : neset L) :
   necset_convType.conv p X (|_| I) = |_| ((necset_convType.conv p X) @` I)%:ne.
 Proof.
-apply necset_ext => /=.
+apply: necset_ext => /=.
 rewrite -[LHS]hull_cset/=.
 rewrite [X in hull X = _]necset_convType.conv_conv_set /=.
 rewrite hull_conv_set_strr.
@@ -1204,13 +1204,13 @@ Corollary Varacca_Winskel_Lemma_5_6 (Y Z : neset L) :
   hull Y = hull Z -> |_| Y = |_| Z.
 Proof.
 move=> H; rewrite -[in LHS]biglub_hull -[in RHS]biglub_hull.
-by congr (|_| _); apply neset_ext.
+by congr (|_| _); apply: neset_ext.
 Qed.
 
 Corollary Beaulieu_technical_equality (x y : L):
   x [+] y = |_| ((fun p => x <| p |> y) @` probset)%:ne.
 Proof.
-rewrite lubE -[in LHS]biglub_hull; congr (|_| _); apply neset_ext => /=.
+rewrite lubE -[in LHS]biglub_hull; congr (|_| _); apply: neset_ext => /=.
 rewrite eqEsubset; split=> i /=.
 - have /set0P x0 := set1_neq0 x.
   have /set0P y0 := set1_neq0 y.

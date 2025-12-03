@@ -28,12 +28,12 @@ move=> q d r mon sz; apply/eqP/eqP => [sz0 | ->]; apply/eqP.
     rewrite mulrC size_monicM //.
     have Htmp : 0 < size q by rewrite lt0n size_poly_eq0.
     rewrite -subn1 -addnBA //.
-    apply leq_trans with (size d) => //.
+    apply: (@leq_trans (size d)) => //.
     by rewrite leq_addr.
   rewrite mulrC size_monicM // prednK; last first.
     rewrite addn_gt0.
     apply/orP; left.
-    by apply leq_ltn_trans with (size r).
+    exact: (@leq_ltn_trans (size r)).
   move/eqP.
   rewrite addnC -addnBA // subnn addn0 size_poly_eq0; by apply/negP.
 - by rewrite mul0r add0r subn_eq0.
@@ -55,8 +55,8 @@ elim=> [|n IHn] p sz_p.
 - rewrite (size1_polyC sz_p) lead_coefC size_polyC.
   set t := (_ != _); have -> : t.-1 = O by case: t.
   by rewrite expr0 alg_polyC subrr size_poly0.
-- rewrite {1}(poly_def_lead_coef p) -addrA subrr addr0; eapply leq_trans.
-  + by rewrite -poly_def; apply size_poly.
+- rewrite {1}(poly_def_lead_coef p) -addrA subrr addr0; apply/leq_trans.
+  + by rewrite -poly_def; apply: size_poly.
   + by move: sz_p; case: (size _).
 Qed.
 
@@ -71,7 +71,7 @@ rewrite (@leq_ltn_trans (size q).-1) //; last first.
 rewrite (poly_def_lead_coef p) {1}(poly_def_lead_coef q) lc_pq pq.
 rewrite opprD addrCA addrK addrC.
 rewrite (_ : _ - _ = \poly_(i < (size q).-1) (p`_i - q`_i)) ?size_poly //.
-rewrite -sumrB poly_def; apply eq_bigr => i _; by rewrite scalerBl.
+rewrite -sumrB poly_def; apply: eq_bigr => i _; by rewrite scalerBl.
 Qed.
 
 Lemma rVpoly0 n (p : 'rV[R]_n) : (rVpoly p == 0) = (p == 0).

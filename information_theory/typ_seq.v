@@ -65,13 +65,13 @@ apply/subsetP => /= x.
 rewrite !inE /typ_seq => /andP[H2 H3] [:e3e].
 apply/andP; split.
 - apply/(le_trans _ H2).
-  rewrite ler_powR ?ler1n// !mulNr lerNr opprK; apply ler_wpM2l => //.
+  rewrite ler_powR ?ler1n// !mulNr lerNr opprK; apply: ler_wpM2l => //.
   rewrite lerD2l//.
   abstract: e3e.
   by rewrite ler_pdivrMr// ler_peMr//; lra.
 - apply/(le_trans H3); rewrite ler_powR// ?ler1n//.
-  rewrite !mulNr lerNr opprK; apply ler_wpM2l => //.
-  by rewrite lerD2l lerNr opprK; exact e3e.
+  rewrite !mulNr lerNr opprK; apply: ler_wpM2l => //.
+  by rewrite lerD2l lerNr opprK; exact: e3e.
 Qed.
 
 Section typ_seq_prop.
@@ -204,12 +204,12 @@ by rewrite -ltNge subr_gt0.
 Qed.
 
 Definition TS_0 (H : aep_bound P epsilon <= n.+1%:R) : 'rV[A]_n.+1.
-apply (@enum_val _ (pred_of_set (`TS P n.+1 epsilon))).
+apply: (@enum_val _ (pred_of_set (`TS P n.+1 epsilon))).
 have -> : #| `TS P n.+1 epsilon| = #| `TS P n.+1 epsilon|.-1.+1.
   rewrite prednK //.
   move/set_typ_seq_not0 in H.
   by rewrite lt0n.
-exact ord0.
+exact: ord0.
 Defined.
 
 Lemma TS_0_is_typ_seq (k_k0 : aep_bound P epsilon <= n.+1%:R) :

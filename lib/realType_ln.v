@@ -108,7 +108,7 @@ Proof. by move=> x0 y0; rewrite LogM ?invr_gt0// LogV. Qed.
 Lemma Log_increasing_le n x y : (1 < n)%N -> 0 < x -> x <= y -> Log n x <= Log n y.
 Proof.
 move=> n1 x0 xy.
-apply ler_wpM2r.
+apply: ler_wpM2r.
   rewrite invr_ge0// ltW// ln_gt0//.
   by case: n n1 => //= n; rewrite ltr1n.
 by rewrite ler_ln// posrE (lt_le_trans x0).
@@ -265,8 +265,7 @@ Proof.
 case=> n Pn num den Hden HP.
 exists (n * den)%N.
 split.
-  apply H with n => //.
-  by rewrite -{1}(muln1 n) leq_mul2l HP orbC.
+  by move: Pn; exact/H/leq_pmulr.
 rewrite natrM -mulrA (mulrCA den%:R) mulrV // ?mulr1; last first.
   by rewrite unitfE lt0r_neq0 // (ltr_nat R 0).
 rewrite /frac_part mulrC powRrM.
@@ -359,7 +358,7 @@ case: ltgtP ltxy => // xlty _.
 have itvW : {subset `[x, y]%R <= `[a, b]%R}.
   by apply/subitvP; rewrite /<=%O /= /<=%O /= leyb leax.
 have itvWlt : {subset `]x, y[%R <= `]a, b[%R}.
-  by apply subitvP; rewrite /<=%O /= /<=%O /= leyb leax.
+  by apply: subitvP; rewrite /<=%O /= /<=%O /= leyb leax.
 have fdrv z : z \in `]x, y[%R -> is_derive z 1 f (f^`() z)%classic.
   rewrite in_itv/= => /andP[xz zy]; apply: DeriveDef; last by rewrite derive1E.
   by apply: fdrvbl; rewrite in_itv/= (le_lt_trans _ xz)// (lt_le_trans zy).
@@ -477,7 +476,7 @@ Lemma xlnx_total_neg (x : R) : 0 < x < 1 -> xlnx_total x < 0.
 Proof.
 case/andP => lt0x ltx1.
 rewrite -(opprK 0) ltrNr oppr0 -mulrN.
-apply mulr_gt0 => //.
+apply: mulr_gt0 => //.
 by rewrite ltrNr oppr0 ln_lt0// lt0x.
 Qed.
 
@@ -507,7 +506,7 @@ have [r_gt0|r_lt0|<-{r}] := ltgtP 0 r.
   rewrite /xlnx r_gt0.
   have -> : 0 < x.
     rewrite -(addr0 x) -[in ltRHS](subrr r) addrA addrAC.
-    apply (@le_lt_trans _ _ ((x + - r) + `| x + - r |)).
+    apply: (@le_lt_trans _ _ ((x + - r) + `| x + - r |)).
       by rewrite addrC -lerBlDr sub0r -normrN ler_norm.
     by rewrite ltrD2l distrC.
   exact: Hk.
@@ -519,7 +518,7 @@ have [r_gt0|r_lt0|<-{r}] := ltgtP 0 r.
     apply/negbTE.
     rewrite -leNgt.
     rewrite -(addr0 x) -{1}(subrr r) addrA addrAC.
-    apply (@le_trans _ _ ((x + - r) - `| x + - r |)).
+    apply: (@le_trans _ _ ((x + - r) - `| x + - r |)).
       by rewrite lerD2l lerNr distrC ltW.
     by rewrite subr_le0 ler_norm.
   have -> : (0 < r) = false.
@@ -533,7 +532,7 @@ have [r_gt0|r_lt0|<-{r}] := ltgtP 0 r.
   rewrite -{1}(lnK Hcase).
   set X := ln x.
   have X_neg : X < 0.
-    apply (@lt_trans _ _ (-2 / eps)).
+    apply: (@lt_trans _ _ (-2 / eps)).
       by rewrite -ltr_expR lnK.
     by rewrite mulNr ltrNl oppr0 divr_gt0//.
   apply/ltW.
@@ -597,9 +596,9 @@ Unshelve. all: by end_near. Qed.
 Lemma pderivable_Ropp_xlnx : pderivable (fun y => - xlnx y) (fun x => 0 < x <= exp (- 1)).
 Proof.
 move=> x /= Hx.
-apply derivable_pt_opp.
-apply derivable_pt_xlnx.
-apply Hx.
+apply: derivable_pt_opp.
+apply: derivable_pt_xlnx.
+apply: Hx.
 Defined.
 
 Lemma xlnx_sdecreasing_0_Rinv_e_helper : forall (t : R) (Ht : 0 < t <= exp (-1)),
@@ -608,7 +607,7 @@ Proof.
 move=> t [t0 te]; case: ifPn => [//|] /eqP Hcase.
 rewrite derive_pt_opp derive_pt_xlnx //.
 rewrite ltR_oppr oppR0 addRC -ltR_subRL sub0R.
-apply exp_lt_inv; by rewrite exp_ln // ltR_neqAle.
+apply: exp_lt_inv; by rewrite exp_ln // ltR_neqAle.
 Qed.
 *)
 
@@ -618,7 +617,7 @@ Lemma xlnx_sdecreasing_0_Rinv_e x y :
 Proof.
 move=> /andP[x1 x2] /andP[y1 y2] xy.
 have [->|x0] := eqVneq x 0.
-- rewrite xlnx_0; apply xlnx_neg.
+- rewrite xlnx_0; apply: xlnx_neg.
   rewrite (le_lt_trans x1 xy)/=.
   by rewrite (le_lt_trans y2).
 - rewrite -[X in _ < X]opprK ltrNr.
@@ -914,18 +913,18 @@ have [Hcase|Hcase|Hcase] := ltgtP x y.
 - have Haux : y = x + `| x - y |.
     by rewrite distrC gtr0_norm ?subr_gt0 // addrC subrK.
   rewrite Haux -normrN opprD opprK addrC.
-  apply (@le_trans _ _ (- xlnx `| x - y |)).
-    apply xlnx_delta_bound.
+  apply: (@le_trans _ _ (- xlnx `| x - y |)).
+    apply: xlnx_delta_bound.
     + apply/andP; split.
       * by rewrite distrC gtr0_norm ?subr_gt0.
-      * apply (@le_trans _ _ a) => //.
+      * apply: (@le_trans _ _ a) => //.
         by case/andP: Ha.
     + by rewrite Hx1/= lerBrDr -Haux.
   rewrite lerNr opprK.
-  apply xlnx_decreasing_0_Rinv_e => //.
+  apply: xlnx_decreasing_0_Rinv_e => //.
   + apply/andP; split; first exact: normr_ge0.
-    apply (@le_trans _ _ a) => //.
-    apply (@le_trans _ _ (expR (- 2))).
+    apply: (@le_trans _ _ a) => //.
+    apply: (@le_trans _ _ (expR (- 2))).
       by case/andP: Ha.
     by rewrite ler_expR// lerN2 ler1n.
   + apply/andP; split.
@@ -936,15 +935,15 @@ have [Hcase|Hcase|Hcase] := ltgtP x y.
     by rewrite gtr0_norm ?subr_gt0// addrCA subrr addr0.
   rewrite distrC in H Haux.
   rewrite Haux.
-  apply (@le_trans _ _ (- xlnx `| y - x |)).
-    apply xlnx_delta_bound.
+  apply: (@le_trans _ _ (- xlnx `| y - x |)).
+    apply: xlnx_delta_bound.
     + apply/andP; split.
       * by rewrite distrC gtr0_norm ?subr_gt0.
       * rewrite (le_trans H)//.
         by case/andP : Ha.
     + by rewrite Hy1/= lerBrDr -Haux.
   rewrite lerNr opprK.
-  apply xlnx_decreasing_0_Rinv_e => //.
+  apply: xlnx_decreasing_0_Rinv_e => //.
     + apply/andP; split.
       * by rewrite ltr0_norm ?subr_lt0// opprB subr_ge0 ltW.
       * rewrite (le_trans H)//.

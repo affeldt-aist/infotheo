@@ -195,7 +195,7 @@ Lemma bigcup_Fgraph_set0 m0 n0 :
   [set \bigcup_(m1 in 'F n1 :\ m0) 'F(m1, n1) | n1 in 'V m0 :\ n0] == set0 ->
   'V m0 :\ n0 == set0.
 Proof.
-move/set0Pn => abs; apply/set0Pn => -[n1 Hn1 /=]; apply abs => {abs}.
+move/set0Pn => abs; apply/set0Pn => -[n1 Hn1 /=]; apply: abs.
 exists (\bigcup_(m1 in 'F n1 :\ m0) 'F(m1, n1)).
 by apply/imsetP; exists n1.
 Qed.
@@ -207,7 +207,7 @@ set goal := (X in _ -> X).
 case/boolP : ('F n1 :\ m0 == set0) => //.
 rewrite /goal.
 case/set0Pn => m1 Hm1.
-apply (@bigcup_set0 _ _ _ _ (fun x => 'F x :\ m0) _ m1); first by rewrite Hm1.
+apply: (@bigcup_set0 _ _ _ _ (fun x => 'F x :\ m0) _ m1); first by rewrite Hm1.
 apply/set0Pn; exists m1.
 rewrite Fgraph_m0 // -FnextE.
 by move: Hm1; rewrite !inE => /andP[].
@@ -233,7 +233,7 @@ rewrite mxE => <-.
 rewrite [in RHS](bigID (fun j => H m0 j == 0)) /=.
 rewrite [in RHS](eq_bigr (fun=> 0)); last by move=> ? /eqP ->; rewrite mul0r.
 rewrite [in RHS]big1 // add0r.
-apply congr_big => //.
+apply: congr_big => //.
   move=> x.
   by rewrite -F2_eq1 VnextE //= sym_tanner_rel // /tanner_rel /=; unlock.
 move=> n1 n1m0; rewrite (_ : H _ _ = 1) ?mul1r ?mxE //.

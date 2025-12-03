@@ -3,6 +3,11 @@ from 0.9.5 to 0.9.6
 -------------------
 
 * added
+- in proba.v
+  + Ind, Ind_ge0, Ind_le1, Ind_set0, Ind_setT, Ind_inP, Ind_notinP,
+    Ind_setI, Ind_setU, Ind_bigcap, Ind_bigcup, E_Ind
+
+* added
 
 - in proba.v
   + inde_RVP, inde_RV_comp, RV_op,

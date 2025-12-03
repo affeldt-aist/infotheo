@@ -237,7 +237,7 @@ case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
     by move=> _; rewrite (eqP j0).
   by move/eqP; rewrite eq_sym oner_eq0.
 rewrite (_ : probfdist _ _ = 0%:pr) ?conv0; last first.
-  apply val_inj => /=; move: b01; rewrite !fdist1E => j0.
+  apply: val_inj => /=; move: b01; rewrite !fdist1E => j0.
   by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
 have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
 have j0' : 0 < j by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
@@ -254,7 +254,7 @@ rewrite (_ : fdist_del b01 = fdist1 j'); last first.
     move/(congr1 val) => /=; rewrite /bump leq0n add1n => kj.
     by apply/eqP/val_inj; rewrite /= -kj.
 rewrite -/(Convn _ _) -convnE IH /fdist_del_idx ltn0; congr g.
-by apply val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
+by apply: val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
 Qed.
 
 Let ConvnIE n (g : 'I_n.+1 -> A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%R) :
@@ -279,7 +279,7 @@ Proof.
 have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
   rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
-  by apply val_inj; rewrite /= fdist1xx.
+  by apply: val_inj; rewrite /= fdist1xx.
 rewrite ConvnIE; congr (conv _ _ _).
 by rewrite ConvnI1E /fdist_del_idx ltnn.
 Qed.
@@ -546,10 +546,10 @@ Lemma ssum_fdist_convn :
   \ssum_(j <- enum B) scalept (fdist_convn p q j) (h j).
 Proof.
 transitivity (\ssum_i \ssum_(i0 <- enum B) scalept (p i) (scalept (q i i0) (h i0))).
-  by apply eq_bigr => i _; rewrite big_morph_scalept// scalept0.
-rewrite exchange_big /=; apply eq_bigr => j _; rewrite fdist_convnE.
+  by apply: eq_bigr => i _; rewrite big_morph_scalept// scalept0.
+rewrite exchange_big /=; apply: eq_bigr => j _; rewrite fdist_convnE.
 have HF i : (0 <= p i * q i j)%R by exact/mulr_ge0.
-rewrite scalept_sum//; apply eq_bigr => i _.
+rewrite scalept_sum//; apply: eq_bigr => i _.
 by rewrite scaleptA.
 Qed.
 
@@ -582,7 +582,7 @@ Qed.
 Let addptA' : associative addpt.
 Proof.
 move=> [p x|] [q y|] [r z|] //=; congr (_ *: _).
-  by apply val_inj; rewrite /= addrA.
+  by apply: val_inj; rewrite /= addrA.
 rewrite convA; congr (_<| _ |> _).
   by rewrite s_of_rpos_probA.
 congr (_ <| _ |> _).
@@ -625,8 +625,8 @@ Proof.
 rewrite /scalept; case: pselect => // r_gt0 x y.
 case: x => [p x|]; last by rewrite !add0pt.
 case: y => [q y|]; last by rewrite !addpt0.
-congr (_ *: _); first by apply val_inj => /=; rewrite mulrDr.
-congr (_ <| _ |> _); apply val_inj; rewrite /= -mulrDr invfM//.
+congr (_ *: _); first by apply: val_inj => /=; rewrite mulrDr.
+congr (_ <| _ |> _); apply: val_inj; rewrite /= -mulrDr invfM//.
 by rewrite mulrACA divff ?gt_eqF// mul1r.
 Qed.
 
@@ -646,7 +646,7 @@ rewrite le_eqVlt => /predU1P[<-|p0].
 rewrite le_eqVlt => /predU1P[<-|q0].
   by rewrite mulr0 scale0pt scalept0.
 case: x => [r x|]; rewrite ?scalept0 // !scalept_gt0; first exact: mulr_gt0.
-by move=> Hpq; congr (_ *: _); apply val_inj => /=; rewrite mulrA.
+by move=> Hpq; congr (_ *: _); apply: val_inj => /=; rewrite mulrA.
 Qed.
 
 HB.instance Definition _ :=
@@ -660,8 +660,8 @@ rewrite le_eqVlt => /predU1P[<-|p0].
 rewrite le_eqVlt => /predU1P[<-|q0].
   by rewrite scale0pt addr0 addpt0.
 case: x => [r c|]; last by rewrite !scalept0.
-rewrite !scalept_gt0 => [|pq0 /=]; first by apply addr_gt0.
-by rewrite convmm; congr (_ *: _); apply val_inj; rewrite /= mulrDl.
+rewrite !scalept_gt0 => [|pq0 /=]; first by apply: addr_gt0.
+by rewrite convmm; congr (_ *: _); apply: val_inj; rewrite /= mulrDl.
 Qed.
 
 HB.instance Definition _ := @isRealCone.Build R (scaled A) scaleptDl.
@@ -716,7 +716,7 @@ Lemma scalept_Scaled (p : R) (q : {posnum R}%R) (x : A) :
 Proof.
 rewrite /scalept /=.
 case: pselect => p0; case: pselect => q0//.
-- congr (_ *: _); apply val_inj; by rewrite /= mulr1.
+- congr (_ *: _); apply: val_inj; by rewrite /= mulr1.
 - exfalso.
   apply: q0.
   by rewrite mulr_gt0.
@@ -729,7 +729,7 @@ Lemma scalept_gt0 (p : R) (q : {posnum R}%R) (x : A) (H : (0 < p)%R) :
   scalept p (q *: x) = ((PosNum H)%:num * q%:num)%:pos%R *: x.
 Proof.
 rewrite /scalept /= ; case: pselect => // Hr.
-by congr (_ *: _); apply val_inj.
+by congr (_ *: _); apply: val_inj.
 Qed.
 
 Lemma addptE a b (a0 : a != @Zero R A) (b0 : b != Zero) :
@@ -773,7 +773,7 @@ rewrite convptE (scalept_gt0 _ _ p0) (@scalept_gt0 (Prob.p p).~).
   exact/onem_gt0.
 move=> mp0; congr (_ *: _) => /=.
   by apply/val_inj => /=; rewrite !mulr1 add_onemK.
-by congr (_ <| _ |> _); apply val_inj; rewrite /= !mulr1 addrC subrK divr1.
+by congr (_ <| _ |> _); apply: val_inj; rewrite /= !mulr1 addrC subrK divr1.
 Qed.
 
 HB.instance Definition _ := isAffine.Build _ _ _ (@S1 R A) affine_S1.
@@ -806,7 +806,7 @@ have [s0|s0] := eqVneq s 0%:pr.
   move: H2; rewrite p0 onem0 mul1r => /(congr1 (@onem R)); rewrite !onemK => sq.
   by rewrite -s0; exact/val_inj.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
-  apply val_inj; rewrite /= s_of_pqE.
+  apply: val_inj; rewrite /= s_of_pqE.
   move/(congr1 (@onem R)) : H2.
   by rewrite onemK => ->.
 exact: (@r_of_pq_is_r _ _ _ _ s).
@@ -890,7 +890,7 @@ elim: n g d => [|n IH] g d.
 rewrite /=; case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb]Hd.
   rewrite (bigD1 ord0) //= Hd big1 /=.
     rewrite addpt0 (@scalept_gt0 _ _ 1).
-    by congr (_ *: _); apply val_inj; rewrite /= mulr1.
+    by congr (_ *: _); apply: val_inj; rewrite /= mulr1.
   move=> i Hi; have := FDist.f1 d.
   rewrite (bigD1 ord0) ?inE // Hd /= addrC => /(f_equal (fun x => x - 1)%R).
   rewrite addrK subrr => /eqP.
@@ -904,7 +904,7 @@ rewrite -big_filter (perm_big (map (lift ord0) (enum 'I_n))); last first.
 rewrite 2!affine_conv/=; congr addpt.
 rewrite IH -barycenter_map scalept_barycenter //.
 rewrite /barycenter 2!big_map [in RHS]big_map.
-apply eq_bigr => i _.
+apply: eq_bigr => i _.
 rewrite scaleptA // fdist_delE fdistD1E /=.
 rewrite (mulrC (fun_of_fin (FDist.f d) (lift ord0 i))).
 rewrite mulrA mulrV ?mul1r //.
@@ -928,7 +928,7 @@ apply: (S1_inj R).
 rewrite [RHS]affine_conv/=.
 rewrite !S1_Convn convptE big_split_ord/=.
 do 2 rewrite [in RHS]big_morph_scalept ?scalept0//.
-congr addpt; apply eq_bigr => i _;
+congr addpt; apply: eq_bigr => i _;
   rewrite  (scaleptA _ _ (S1 _)) //;
   by rewrite fdist_addE (split_lshift, split_rshift).
 Qed.
@@ -942,13 +942,13 @@ Implicit Types a b : T.
 
 Lemma Convn_comp (f : {affine T -> U}) n (g : 'I_n -> T) (d : {fdist 'I_n}) :
   f (<|>_d g) = <|>_d (f \o g).
-Proof. by apply (S1_inj R); rewrite S1_Convn S1_Convn_proj. Qed.
+Proof. by apply: (S1_inj R); rewrite S1_Convn S1_Convn_proj. Qed.
 
 Lemma eq_Convn n (g1 g2 : 'I_n -> T) (d1 d2 : {fdist 'I_n}) :
   g1 =1 g2 -> d1 =1 d2 -> <|>_d1 g1 = <|>_d2 g2.
 Proof.
-move=> Hg Hd; apply (S1_inj R); rewrite !S1_Convn.
-by apply congr_big => // i _; rewrite Hg Hd.
+move=> Hg Hd; apply: (S1_inj R); rewrite !S1_Convn.
+by apply: congr_big => // i _; rewrite Hg Hd.
 Qed.
 
 Lemma eq_dep_Convn n (g : 'I_n -> T) (d : {fdist 'I_n})
@@ -975,7 +975,7 @@ Qed.
 
 Lemma Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> T) :
   <|>_(fdist1 j) g = g j.
-Proof. by apply Convn_proj; rewrite fdist1xx. Qed.
+Proof. by apply: Convn_proj; rewrite fdist1xx. Qed.
 
 Lemma ConvnI1E
   (g : 'I_1 -> T) (e : {fdist 'I_1}) : <|>_ e g = g ord0.
@@ -991,7 +991,7 @@ Proof.
 set d' := eq_rect n (fun n0 => {fdist 'I_n0}) d 1 Hn1.
 set g' := eq_rect n (fun n0 => 'I_n0 -> T) g 1 Hn1.
 suff -> : <|>_d g = <|>_d' g' by rewrite ConvnI1E.
-by eapply eq_dep_Convn.
+by apply/eq_dep_Convn.
 Qed.
 
 Lemma ConvnI1_eq n (g : 'I_n -> T) (d : {fdist 'I_n})
@@ -1022,7 +1022,7 @@ Proof.
 have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
   rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
-  by apply val_inj; rewrite /= fdist1xx.
+  by apply: val_inj; rewrite /= fdist1xx.
 rewrite ConvnIE; congr (_ <| _ |> _).
 by rewrite ConvnI1E /fdist_del_idx ltnn.
 Qed.
@@ -1033,7 +1033,7 @@ Proof.
 have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite fdist1E1 convnE => /eqP ->; rewrite Convn_fdist1.
   rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
-  by apply val_inj; rewrite /= fdist1xx.
+  by apply: val_inj; rewrite /= fdist1xx.
 rewrite convnE ConvnIE; congr (conv _ _ _).
 by rewrite ConvnI1E /fdist_del_idx ltnn.
 Qed.
@@ -1066,7 +1066,7 @@ case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
     by move=> _; rewrite (eqP j0).
   by move/eqP; rewrite eq_sym oner_eq0.
 rewrite (_ : probfdist _ _ = 0%:pr) ?conv0; last first.
-  apply val_inj => /=; move: b01; rewrite !fdist1E => j0.
+  apply: val_inj => /=; move: b01; rewrite !fdist1E => j0.
   by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
 have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
 have j0' : 0 < j by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
@@ -1085,7 +1085,7 @@ rewrite (_ : fdist_del b01 = fdist1 j'); last first.
 rewrite -/Convn.
 rewrite -/convn.
 rewrite IH /fdist_del_idx ltn0; congr g.
-by apply val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
+by apply: val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
 Qed.
 
 Let ConvnIE n (g : 'I_n.+1 -> T) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1%R) :
@@ -1112,7 +1112,7 @@ have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite fdist1E1 => /eqP ->.
   rewrite Convn_fdist1.
   rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
-  by apply val_inj; rewrite /= fdist1xx.
+  by apply: val_inj; rewrite /= fdist1xx.
 rewrite ConvnIE; congr conv.
 by rewrite ConvnI1E /fdist_del_idx ltnn.
 Qed.
@@ -1131,8 +1131,8 @@ Implicit Types a b : T.
 Lemma Convn_perm (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) (s : 'S_n) :
   <|>_d g = <|>_(fdistI_perm d s) (g \o s).
 Proof.
-apply (S1_inj R); rewrite !S1_Convn (ssum_perm _ s).
-by apply eq_bigr => i _; rewrite fdistI_permE.
+apply: (S1_inj R); rewrite !S1_Convn (ssum_perm _ s).
+by apply: eq_bigr => i _; rewrite fdistI_permE.
 Qed.
 
 (* ref: M.H.Stone, postulates for the barycentric calculus, lemma 4 *)
@@ -1140,8 +1140,8 @@ Theorem Convn_fdist_convn (n m : nat) (d : {fdist 'I_n})
         (e : 'I_n -> {fdist 'I_m}) (x : 'I_m -> T) :
   <|>_d (fun i => <|>_(e i) x) = <|>_(fdist_convn d e) x.
 Proof.
-apply (S1_inj R); rewrite !S1_Convn -[in RHS]big_enum -ssum_fdist_convn.
-by apply eq_bigr => i _; rewrite big_enum S1_Convn.
+apply: (S1_inj R); rewrite !S1_Convn -[in RHS]big_enum -ssum_fdist_convn.
+by apply: eq_bigr => i _; rewrite big_enum S1_Convn.
 Qed.
 
 Lemma Convn_cst (a : T) (n : nat) (d : {fdist 'I_n}) : <|>_d (fun=> a) = a.
@@ -1165,13 +1165,13 @@ Qed.
 Lemma Convn_weak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
   <|>_d (g \o u) = <|>_(fdistmap u d) g.
 Proof.
-apply (S1_inj R).
+apply: (S1_inj R).
 rewrite !S1_Convn (partition_big u (fun _=> true)) //=.
-apply eq_bigr => i _.
+apply: eq_bigr => i _.
 rewrite fdistmapE /=.
 have HF (a : 'I_m) : (0 <= d a)%R. by [].
 rewrite (@scalept_sum _ _ _ _ d) //=.
-by apply eq_bigr => a /eqP ->.
+by apply: eq_bigr => a /eqP ->.
 Qed.
 
 Lemma ConvnDr n (p : {prob R}) (x : T) (g : 'I_n -> T) (d : {fdist 'I_n}) :
@@ -1180,12 +1180,12 @@ Proof.
 elim: n p x g d => [? ? ? d|n IHn p x g d]; first by move/fdistI0_False: (d).
 have [d01|d0n1] := eqVneq (d ord0) 1%R.
   by rewrite (Convn_proj g d01) (Convn_proj (fun i => x <|p|> g i) d01).
-by rewrite !ConvnIE !IHn; congr (<|>_ _ _); apply funext=> i; rewrite convDr.
+by rewrite !ConvnIE !IHn; congr (<|>_ _ _); apply: funext=> i; rewrite convDr.
 Qed.
 
 Lemma ConvnDl n (p : {prob R}) (x : T) (g : 'I_n -> T) (d : {fdist 'I_n}) :
   <|>_d g <|p|> x = <|>_d (fun i => g i <|p|> x).
-Proof. by rewrite convC ConvnDr; apply eq_Convn =>// i; rewrite -convC. Qed.
+Proof. by rewrite convC ConvnDr; apply: eq_Convn =>// i; rewrite -convC. Qed.
 
 Local Open Scope ring_scope.
 
@@ -1238,7 +1238,7 @@ Lemma hull_eq0 X : (hull X == set0) = (X == set0).
 Proof.
 apply/idP/idP=> [/eqP abs|]; last by move=> /eqP ->; rewrite hull0.
 apply/negPn/negP => /set0P[/= d] => dX.
-move: abs; rewrite funeqE => /(_ d); rewrite propeqE /set0 => -[H _]; apply H.
+move: abs; rewrite funeqE => /(_ d); rewrite propeqE /set0 => -[H _]; apply: H.
 exact/subset_hull.
 Qed.
 
@@ -1251,7 +1251,7 @@ exists 2, (fun i => if i == ord0 then a0 else a1), (fdistI2 p); split => /=.
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb H].
   rewrite fdistI2E eqxx /= => p1.
   by rewrite (_ : p = 1%:pr) ?conv1 //; exact/val_inj.
-congr (_ <| _ |> _); first by apply val_inj; rewrite /= fdistI2E eqxx.
+congr (_ <| _ |> _); first by apply: val_inj; rewrite /= fdistI2E eqxx.
 case: Bool.bool_dec => // H'.
 exfalso.
 move: H'; rewrite fdist_delE fdistD1E (eq_sym (lift _ _)) (negbTE (neq_lift _ _)).
@@ -1263,7 +1263,7 @@ Qed.
 Lemma hull_monotone X Y : X `<=` Y -> hull X `<=` hull Y.
 Proof.
 move=> H a [n [g [d [H0 H1]]]]; exists n, g, d; split => //.
-by eapply subset_trans; first exact: H0.
+by apply: subset_trans; first exact: H0.
 Qed.
 
 End hull_prop.
@@ -1307,11 +1307,11 @@ Let conv_ereal_convA (p q: {prob R}) a b c :
   conv_ereal [s_of p, q] (conv_ereal [r_of p, q] a b) c.
 Proof.
 rewrite /conv_ereal.
-apply (prob_trichotomy' p);
+pattern p; apply: (prob_trichotomy' p);
   [ by rewrite s_of_0q r_of_0q !mul0e !add0e !onem0 !mul1e
   | by rewrite s_of_1q r_of_1q !mul1e !onem1 !mul0e !adde0
   | rewrite {p}=> p].
-apply (prob_trichotomy' q);
+pattern q; apply: (prob_trichotomy' q);
   [ by rewrite s_of_p0 r_of_p0_oprob onem1 onem0 mul0e !mul1e add0e adde0
   | by rewrite s_of_p1 r_of_p1 onem1 !mul1e mul0e !adde0
   | rewrite {q}=> q].
@@ -1379,12 +1379,12 @@ apply/idP/idP => H; apply/asboolP.
       exact/gX/classical_sets.imageP.
     by apply/eqP; rewrite fdist1E1 (fdist1I1 d).
   have [d01|d01] := eqVneq (d ord0) 1%R.
-    suff -> : <|>_d g = g ord0 by apply gX; exists ord0.
+    suff -> : <|>_d g = g ord0 by apply: gX; exists ord0.
     by rewrite (@Convn_proj _ _ _ _ _ ord0).
   set D : {fdist 'I_n.+1} := fdist_del d01.
   pose G (i : 'I_n.+1) : T := g (fdist_del_idx (@ord0 _) i).
   have /(IH _ D) {}IH : range G `<=` X.
-    move=> x -[i _ <-{x}]; rewrite /G /fdist_del_idx ltn0; apply gX.
+    move=> x -[i _ <-{x}]; rewrite /G /fdist_del_idx ltn0; apply: gX.
     by exists (lift ord0 i).
   rewrite ConvnIE //.
   by move/asboolP : H; apply => //; exact/gX/classical_sets.imageP.
@@ -1396,7 +1396,7 @@ move/asboolP : H => /(_ _ g (fdistI2 p) gX).
 rewrite ConvnIE; first by rewrite fdistI2E eqxx.
 move=> p1'.
 rewrite {1}/g eqxx (_ : probfdist _ _ = p); last first.
-  by apply val_inj; rewrite /= fdistI2E eqxx.
+  by apply: val_inj; rewrite /= fdistI2E eqxx.
 by rewrite (_ : <|>_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?ConvnI1E.
 Qed.
 
@@ -1540,8 +1540,8 @@ exists [ffun i => match fintype.split i with inl a => g a | inr a => h a end].
 exists (fdist_add d e p).
 split.
   move=> a -[i _]; rewrite ffunE.
-  by case: splitP => j _ <-; [apply gX; exists j | apply hX; exists j].
-by rewrite fdist_convn_add; congr (_ <| _ |> _); apply eq_Convn => i //=;
+  by case: splitP => j _ <-; [apply: gX; exists j | apply: hX; exists j].
+by rewrite fdist_convn_add; congr (_ <| _ |> _); apply: eq_Convn => i //=;
   rewrite ffunE (split_lshift,split_rshift).
 Qed.
 
@@ -1551,7 +1551,7 @@ Lemma segment_hull (x y : A) : segment x y = hull [set x; y].
 Proof.
 rewrite eqEsubset; split.
   by have := hull_is_convex [set x; y] => /is_convex_segmentP/(_ x y); apply;
-    apply subset_hull; [left | right].
+    apply: subset_hull; [left | right].
 (* BUG in HB: HB.pack only accepts types as subjects
    pose h : {convex_set A} := HB.pack _ (isConvexSet.Build _ _ (segment_is_convex x y)).*)
 pose h : {convex_set A} := @ConvexSet.Pack R _ _ (@ConvexSet.Class R _ _ (isConvexSet.Build R _ _ (segment_is_convex x y))).
@@ -1591,7 +1591,7 @@ Proof.
 apply/hull_eqEsubset => a.
 - case; first by move=> ?; apply/subset_hull; left.
   case=> n [d [g [H0 H1]]]; exists n, d, g; split => //.
-  apply (subset_trans H0) => ? ?; by right.
+  apply: (subset_trans H0) => ? ?; by right.
 - case => [?|?]; first by apply/subset_hull; left.
   apply/subset_hull; right. exact/subset_hull.
 Qed.
@@ -1648,7 +1648,7 @@ Lemma ssum_scaled_set n (P : pred 'I_n) (X : {convex_set T}) (d : {fdist 'I_n})
   (g : 'I_n -> T) : (forall j, P j -> g j \in X) ->
   \ssum_(i | P i) scalept (d i) (S1 (g i)) \in scaled_set X.
 Proof.
-move=> PX; apply big_ind.
+move=> PX; apply: (big_ind (fun S => S \in scaled_set X)).
 - by rewrite in_setE.
 - exact: addpt_scaled_set.
 - by move=> i /PX => giX; exact: scalept_scaled_set.
@@ -1717,17 +1717,17 @@ Lemma big_prod_ord [R' : Type] [idx : R'] (op : Monoid.com_law idx) [m n : nat]
 Proof.
 elim: m =>[|m IHm] in P F *; first by rewrite 2!big_ord0.
 rewrite big_ord_recl big_split_ord; congr (op _ _).
-- apply congr_big => //=.
+- apply: congr_big => //=.
     by move=> i/=; congr P; exact: val_inj.
   by move=> i/= _; congr F; exact: val_inj.
-- rewrite IHm; apply eq_bigr => i _.
+- rewrite IHm; apply: eq_bigr => i _.
   have e j : rshift n (unsplit_prod (i, j)) = Ordinal (unsplit_prodp (lift ord0 i) j).
-    by apply val_inj => /=; rewrite /bump leq0n addnA.
+    by apply: val_inj => /=; rewrite /bump leq0n addnA.
   by apply: eq_big => // j; rewrite e.
 Qed.
 
 Lemma split_prodK n m : cancel (@split_prod n m) (@unsplit_prod n m).
-Proof. by move=> i; apply val_inj => /=; rewrite -divn_eq. Qed.
+Proof. by move=> i; apply: val_inj => /=; rewrite -divn_eq. Qed.
 
 Lemma unsplit_prodK n m : cancel (@unsplit_prod n m) (@split_prod n m).
 Proof.
@@ -1840,7 +1840,7 @@ Definition avgnr n (g : 'I_n -> E) (e : {fdist 'I_n}) := \sum_(i < n) e i *: g i
 Lemma avgnrE n (g : 'I_n -> E) e : <|>_e g = avgnr g e.
 Proof.
 rewrite -[LHS]Scaled1rK S1_Convn big_scaler.
-by apply eq_bigr => i _; rewrite scaler_scalept // Scaled1rK.
+by apply: eq_bigr => i _; rewrite scaler_scalept // Scaled1rK.
 Qed.
 
 (* TODO: Lemma preim_cancel: ... *)
@@ -1851,10 +1851,10 @@ Lemma avgnr_add n m (f : 'I_n -> E) (d : {fdist 'I_n}) (g : 'I_m -> E)
                            (fun i => let (i, j) := split_prod i in f i + g j).
 Proof.
 rewrite -[<|>_e g]scale1r !avgnrE !/avgnr big_prod_ord.
-rewrite -(FDist.f1 d) scaler_suml -big_split; apply congr_big=>// i _.
+rewrite -(FDist.f1 d) scaler_suml -big_split; apply: congr_big=>// i _.
 transitivity (d i *: (1%R *: f i + \sum_(i0 < m) e i0 *: g i0)).
    by rewrite scale1r scalerDr.
-rewrite -(FDist.f1 e) scaler_suml -big_split scaler_sumr; apply congr_big=>// j _.
+rewrite -(FDist.f1 e) scaler_suml -big_split scaler_sumr; apply: congr_big=>// j _.
 rewrite scalerDr -!scalerDr scalerA unsplit_prodK; congr (_ *: _).
 rewrite fdistmapE (big_pred1 (i, j)) /= ?fdist_prodE//.
 move=>[i' j'] /=; rewrite xpair_eqE inE /=.
@@ -1898,7 +1898,7 @@ rewrite {1}/k /=; case: splitP => /=; last first.
 case=> j/= ji ij; rewrite [in j == i]ij eqxx scale1r.
 apply/eqP; rewrite addrC addr_eq0 sin -sumrN; apply/eqP.
 have {}ne : (i.+1 + (n - i.+1) - i.+1 = n - i.+1)%nat by rewrite -addnBAC// subnn.
-rewrite (index_enum_cast_ord ne) big_map; apply congr_big=>// [[x xlt]] _.
+rewrite (index_enum_cast_ord ne) big_map; apply: congr_big=>// [[x xlt]] _.
 rewrite nth_drop -scaleNr; congr (_ *: _).
 rewrite /k; case: splitP.
   by case=> m + /= ixm; rewrite -ixm -ltn_subRL subnn.
@@ -1945,7 +1945,7 @@ have [mu [muR muE [i mui]]] : exists mu : 'I_n.+1 -> R,
 wlog: mu muR muE mui / mu i > 0.
    move=> H.
    have [mui0|mui0] := ltP 0%R (mu i); first exact: (H mu).
-   apply (H (fun i => - mu i)).
+   apply: (H (fun i => - mu i)).
    - by rewrite sumrN muR oppr0.
    - by under eq_bigr do rewrite scaleNr; rewrite sumrN muE oppr0.
    + by rewrite oppr_eq0.
@@ -1965,15 +1965,15 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
    have fbij : bijective f' by exists f'; move=> [j jlt]; exact/fcan'.
    move=>/(_ (fun i => g (f' i)) (fdistmap f' d)).
    have gA' : [set g (f' i) | i in [set: 'I_n.+1]] `<=` A.
-     by move=>y [i _ <-]; apply gA; eexists.
+     by move=>y [i _ <-]; apply: gA; eexists.
    move=>/(_ gA' (fun i => mu (f' i))).
    have mu'R : \sum_(i0 < n.+1) mu (f' i0) = 0.
-     rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [| exact nil ].
-     by rewrite big_map -[in RHS]muR; apply congr_big=>// [[j jlt]] _; congr mu; apply fcan'.
+     rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [| exact: nil ].
+     by rewrite big_map -[in RHS]muR; apply: congr_big=>// [[j jlt]] _; congr mu; apply: fcan'.
    move=>/(_ mu'R).
    have mu'E: \sum_(i0 < n.+1) mu (f' i0) *: g (f' i0) = 0.
-      rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [| exact nil ].
-      rewrite big_map -[in RHS]muE; apply congr_big=>// j _.
+      rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [| exact: nil ].
+      rewrite big_map -[in RHS]muE; apply: congr_big=>// j _.
       by congr (mu _ *: g _); exact/fcan'.
    move=>/(_ mu'E (f' im)).
    have muip' : 0 < mu (f' (f' im)) by rewrite fcan'.
@@ -1993,12 +1993,12 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
    move=>/(_ im0) [n' [g' [d' [n'le g'A e]]]].
    exists n', g', d'; split=>//; rewrite -e.
    rewrite 2!avgnrE /avgnr.
-   rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact nil ].
-   rewrite big_map; apply congr_big=>// j _.
+   rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact: nil ].
+   rewrite big_map; apply: congr_big=>// j _.
    rewrite fdistmapE (big_pred1 (f' j))=>// k /=.
-   by rewrite unfold_in=>/=; apply/eqP/eqP=>e'; apply (bij_inj fbij); rewrite fcan'.
+   by rewrite unfold_in=>/=; apply/eqP/eqP=>e'; apply: (bij_inj fbij); rewrite fcan'.
 move=>/eqP ime; move: muip muim; rewrite {im}ime => muip muim.
-have mu0 : mu ord0 != 0 by apply /eqP=>mu0; move: muip; rewrite mu0 lt0r eq_refl.
+have mu0 : mu ord0 != 0 by apply/eqP=>mu0; move: muip; rewrite mu0 lt0r eq_refl.
 have k0mu0 : d ord0 / mu ord0 * mu ord0 = d ord0.
   by rewrite -{2}[mu ord0]divr1 mulf_div [_*1]mulrC -mulf_div divr1 mulfV // mulr1.
 set ef : 'I_n -> R := finfun (fun i => d (lift ord0 i) - d ord0 / mu ord0 * mu (lift ord0 i)).
@@ -2011,7 +2011,7 @@ have ef0 i : (0 <= ef i).
 have ef1 : (\sum_(a in 'I_n) ef a = 1).
   rewrite -[1]subr0 -[in RHS](mulr0 (d ord0 / mu ord0)) -(FDist.f1 d) -[in _ * 0]muR mulr_sumr.
   rewrite -sumrB big_ord_recl k0mu0 subrr add0r.
-  by apply eq_bigr => i _; rewrite /ef ffunE.
+  by apply: eq_bigr => i _; rewrite /ef ffunE.
 pose e := FDist.make ef0 ef1.
 have /IHn - /(_ e): [set g (lift ord0 i) | i in [set: 'I_n]] `<=` A.
   by move=>y [i _ <-]; exact/gA.
@@ -2019,7 +2019,7 @@ move=> -[n' [g' [d' [n'le g'A' gde]]]].
 exists n', g', d'; split=> //.
 rewrite -gde 2!avgnrE /avgnr big_ord_recl -k0mu0 -scalerA.
 move/eqP: muE; rewrite big_ord_recl addr_eq0 => /eqP ->.
-rewrite scalerN -scaleNr scaler_sumr -big_split; apply congr_big=>// i _.
+rewrite scalerN -scaleNr scaler_sumr -big_split; apply: congr_big=>// i _.
 by rewrite scalerA /= -scalerDl; congr (_ *: _); rewrite addrC mulNr ffunE.
 Qed.
 
@@ -2112,7 +2112,7 @@ Definition avgnR n (g : 'I_n -> R) (e : {fdist 'I_n}) :=
 Lemma avgnRE n (g : 'I_n -> R^o) e : <|>_e g = avgnR g e.
 Proof.
 rewrite -[LHS]Scaled1RK (@S1_Convn R R^o) big_scaleR.
-by apply eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
+by apply: eq_bigr => i _; rewrite scaleR_scalept // Scaled1RK.
 Qed.
 
 Lemma onem_affine : affine (fun (x : R^o) => (x.~ : R^o)).
@@ -2154,24 +2154,24 @@ Implicit Types p q : {prob R}.
 Let avg p (x y : T) := fun a : A => (x a <| p |> y a).
 Let avg1 (x y : T) : avg 1%:pr x y = x.
 Proof.
-apply boolp.functional_extensionality_dep => a.
+apply: boolp.functional_extensionality_dep => a.
 exact/conv1.
 Qed.
 Let avgI p (x : T) : avg p x x = x.
 Proof.
-apply boolp.functional_extensionality_dep => a.
+apply: boolp.functional_extensionality_dep => a.
 exact/convmm.
 Qed.
 Let avgC p (x y : T) : avg p x y = avg (Prob.p p).~%:pr y x.
 Proof.
-apply boolp.functional_extensionality_dep => a.
+apply: boolp.functional_extensionality_dep => a.
 exact/convC.
 Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof.
 move => *.
-apply boolp.functional_extensionality_dep => a.
+apply: boolp.functional_extensionality_dep => a.
 exact/convA.
 Qed.
 
@@ -2194,10 +2194,10 @@ Proof. rewrite /avg (conv1 x.1) (conv1 x.2); by case x. Qed.
 Let avgI p (x : T) : avg p x x = x.
 Proof. rewrite /avg (convmm _ x.1) (convmm _ x.2); by case x. Qed.
 Let avgC p (x y : T) : avg p x y = avg (Prob.p p).~%:pr y x.
-Proof. by congr (pair _ _); apply convC. Qed.
+Proof. by congr (pair _ _); apply: convC. Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
-Proof. move => *; congr (pair _ _); by apply convA. Qed.
+Proof. move => *; congr (pair _ _); by apply: convA. Qed.
 
 #[export] HB.instance Definition _ :=
   isConvexSpace.Build R (A * B)%type avg1 avgI avgC avgA.
@@ -2291,7 +2291,7 @@ transitivity (\ssum_(i <- r | P i) (fun r0 : {nonneg R}%R => scalept r0%:num x) 
 rewrite -big_scaleptl ?scalept0 //.
 congr scalept.
 transitivity (\sum_(i <- r | P i) (NngNum (H' i))%:num)%R; first reflexivity.
-apply (big_ind2 (fun x (y : {nonneg R}%R) => x = (y)%:num%R)) => //.
+apply: (big_ind2 (fun x (y : {nonneg R}%R) => x = (y)%:num%R)) => //.
 by move=> x1 [v Hv] y1 y2 -> ->.
 Qed.
 
@@ -2307,7 +2307,7 @@ Let n := #| T |.
 
 Definition t0 : T.
 Proof.
-move/card_gt0P/xchoose: (fdist_card_neq0 d') => t0; exact t0.
+move/card_gt0P/xchoose: (fdist_card_neq0 d') => t0; exact: t0.
 Defined.
 
 Let enum : 'I_n -> T := enum_val.
@@ -2321,7 +2321,7 @@ Proof.
 rewrite -(@FDist.f1 R T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
 rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
   by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
-apply eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
+apply: eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
 Qed.
 
 Definition d : {fdist 'I_n} := FDist.make d_enum0 d_enum1.
@@ -2343,7 +2343,7 @@ Lemma S1_Convn_finType : S1 (<$>_d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
 rewrite /Convn_finType.Convn_finType S1_Convn /=.
 rewrite (reindex_onto enum_rank enum_val) /=; last by move=> i _; rewrite enum_valK.
-apply eq_big => /=; first by move=> i; rewrite enum_rankK eqxx.
+apply: eq_big => /=; first by move=> i; rewrite enum_rankK eqxx.
 move=> i _; rewrite /Convn_finType.d_enum ffunE.
 by rewrite enum_rankK.
 Qed.
@@ -2584,7 +2584,7 @@ Qed.
 Lemma convex_function_comp' (f : {convex T -> U}) (g : {convex U -> V})
     (g_monotone : forall x y, (x <= y)%O -> (g x <= g y)%O) :
   convex_function (g \o f).
-Proof. by apply convex_function_comp => // *; exact: g_monotone. Qed.
+Proof. by apply: convex_function_comp => // *; exact: g_monotone. Qed.
 
 End convex_function_prop'.
 
@@ -2626,7 +2626,7 @@ change ((forall (a : A) (a0 b : B) (t : prob),
    f (a <|t|> b) a0 <= f a a0 <|t|> f b a0) /\
   (forall (a b : B) (t : prob) (a0 : A),
    f a0 (a <|t|> b) <= f a0 a <|t|> f a0 b)).
-by split; case => [H0 H1]; split => *; try apply H0; try apply H1.
+by split; case => [H0 H1]; split => *; try apply: H0; try apply: H1.
 Qed.
  *)
 End definition.
@@ -2804,7 +2804,7 @@ rewrite predeqE => b; split.
   case=> a [n [g [e [Hg]]]] ->{a} <-{b}.
   exists n, (f \o g), e; split.
     move=> b /= [i _] <-{b} /=.
-    by exists (g i) => //; apply Hg; exists i.
+    by exists (g i) => //; apply: Hg; exists i.
   by rewrite Convn_comp.
 case=> n [g [e [Hg]]] ->{b}.
 suff [h Hh] : exists h : 'I_n -> T, forall i, Z (h i) /\ f (h i) = g i.
@@ -2812,9 +2812,9 @@ suff [h Hh] : exists h : 'I_n -> T, forall i, Z (h i) /\ f (h i) = g i.
     exists n; exists h; exists e; split => //.
     move=> a [i _] <-.
     by case: (Hh i).
-  rewrite Convn_comp; apply eq_Convn => // i /=.
+  rewrite Convn_comp; apply: eq_Convn => // i /=.
   by case: (Hh i).
-apply (@fin_all_exists _ _ (fun i hi => Z hi /\ f hi = g i)) => i.
+apply: (@fin_all_exists _ _ (fun i hi => Z hi /\ f hi = g i)) => i.
 case: (Hg (g i)); first by exists i.
 move=> a // HZa Hfa; by exists a.
 Qed.
@@ -2833,7 +2833,7 @@ Proof.
 move=>x [n [g [d [gZ ->]]]] /=.
 rewrite Convn_comp.
 exists n, (f \o g), d; split=>//.
-by move=>y [i _ <-]; apply gZ; exists i.
+by move=>y [i _ <-]; apply: gZ; exists i.
 Qed.
 
 End affine_function_image.
@@ -2845,7 +2845,7 @@ Lemma factorize_range (A B C : Type) (f : B -> C) (g : A -> C) :
 Proof.
 move=> gf; have [h gfh] : {h & forall a, g a = f (h a)}.
   apply: (@choice _ _ (fun a b => g a = f b)) => a.
-  have /cid2[b _ <-] : range f (g a) by apply gf; exists a.
+  have /cid2[b _ <-] : range f (g a) by apply: gf; exists a.
   by exists b.
 by exists h; apply/funext => a; rewrite gfh.
 Qed.
@@ -2855,8 +2855,8 @@ Lemma image2_subset {aT bT rT : Type} [f : aT -> bT -> rT] [A B: set aT] [C D : 
   (A `<=` B)%classic -> (C `<=` D)%classic ->
   ([set f x y | x in A & y in C] `<=` [set f x y | x in B & y in D])%classic.
 Proof.
-move=> AB CD x [a aA [c cC xe]]; subst x; exists a; (try by apply AB).
-by exists c; (try by apply CD).
+move=> AB CD x [a aA [c cC xe]]; subst x; exists a; (try by apply: AB).
+by exists c; (try by apply: CD).
 Qed.
 
 Section linear_function_image0.
@@ -2898,28 +2898,28 @@ set xx := [set a + b | a in hull A & b in hull B].
     by move: (hull_is_convex B)=>/asboolP; apply.
   pose xx' : {convex_set T} := @ConvexSet.Pack R T xx (@ConvexSet.Class R _ _ (isConvexSet.Build R _ _ conv)).
   apply: (@hull_sub_convex R _ _ xx').
-  by apply/image2_subset; exact (@subset_hull R _ _).
+  by apply/image2_subset; exact: (@subset_hull R _ _).
 move=>x [a [na [ga [da [gaA ->]]]]] [b [nb [gb [db [gbB ->]]]]] <-.
 rewrite avgnr_add.
 exists (na * nb)%nat,
   (fun i => let (i, j) := split_prod i in ga i + gb j),
   (fdistmap (unsplit_prod (n:=nb)) da `x db); split=>// y [i _ <-].
-by case: split_prod => ia ib; exists (ga ia); [by apply gaA; exists ia |];
-  exists (gb ib)=>//; apply gbB; exists ib.
+by case: split_prod => ia ib; exists (ga ia); [by apply: gaA; exists ia |];
+  exists (gb ib)=>//; apply: gbB; exists ib.
 Qed.
 
 Import LinearAffine.
 Proposition preimage_preserves_convex_hull (f : {linear T -> U}) (Z : set U) :
   Z `<=` range f -> f @^-1` (hull Z) = hull (f @^-1` Z).
 Proof.
-rewrite eqEsubset=>Zf; split; last by apply preimage_subset_convex_hull.
+rewrite eqEsubset=>Zf; split; last by apply: preimage_subset_convex_hull.
 move=>x [n [g [d [gZ fx]]]].
 move: Zf=>/(subset_trans gZ)/factorize_range [h ge]; subst g.
 rewrite -preimage_add_ker hull_add.
 exists (<|>_d h).
-   by exists n, h, d; split=>// y [z _ <-] /=; apply gZ; exists z.
+   by exists n, h, d; split=>// y [z _ <-] /=; apply: gZ; exists z.
 exists (x - <|>_d h).
-   by apply subset_hull=>/=; rewrite linearB Convn_comp fx subrr.
+   by apply: subset_hull=>/=; rewrite linearB Convn_comp fx subrr.
 by rewrite addrC -addrA [-_+_]addrC subrr addr0.
 Qed.
 
@@ -2957,7 +2957,7 @@ Lemma DistBindConv (A : finType) (B : finType)(p : prob) (dx dy : dist A) (f : A
   DistBind.d dx f <|p|> DistBind.d dy f = DistBind.d (dx <|p|> dy) f.
 Proof.
 apply/dist_ext => b0.
-rewrite !(Conv2Dist.dE,DistBind.dE) !big_distrr -big_split; apply eq_bigr => a0 _ /=.
+rewrite !(Conv2Dist.dE,DistBind.dE) !big_distrr -big_split; apply: eq_bigr => a0 _ /=.
 by rewrite Conv2Dist.dE mulRDl 2!mulRA.
 Qed.
 
@@ -2992,7 +2992,7 @@ HB.instance Definition _ := isConvexSet.Build _ R^o Rpos_interval Rpos_convex.
 Definition Rnonneg_interval : set R^o := (fun x => 0 <= x)%R.
 
 Lemma Rnonneg_convex : is_convex_set Rnonneg_interval.
-Proof. apply/asboolP=> x y t Hx Hy; apply addr_ge0; exact/mulr_ge0. Qed.
+Proof. apply/asboolP=> x y t Hx Hy; apply: addr_ge0; exact/mulr_ge0. Qed.
 
 (*#[local]*)
 HB.instance Definition _ := isConvexSet.Build R R^o Rnonneg_interval Rnonneg_convex.
@@ -3115,12 +3115,12 @@ move=> H t; rewrite /convex_function_at.
 set x := (Prob.p t * a + (Prob.p t).~ * b)%R.
 have : (a <= x <= b)%R.
   rewrite /x; apply/andP; split.
-  - apply (@le_trans _ _ (Prob.p t * a + (Prob.p t).~ * a)).
+  - apply: (@le_trans _ _ (Prob.p t * a + (Prob.p t).~ * a)).
       by rewrite -mulrDl addrCA subrr addr0 mul1r lexx.
     have [->|t1] := eqVneq t 1%:pr.
       by rewrite mul1r onem1 2!mul0r.
-    rewrite lerD2l; apply ler_wpM2l => //; exact/ltW.
-  - apply (@le_trans _ _ (Prob.p t * b + (Prob.p t).~ * b)); last first.
+    rewrite lerD2l; apply: ler_wpM2l => //; exact/ltW.
+  - apply: (@le_trans _ _ (Prob.p t * b + (Prob.p t).~ * b)); last first.
       by rewrite -mulrDl addrCA subrr addr0 mul1r lexx.
     by rewrite lerD2r; apply: ler_wpM2l => //; exact/ltW.
 move/H; rewrite subr_ge0 => /le_trans; apply.
@@ -3143,7 +3143,7 @@ have note1 : forall x, 1%R = ((x - a) / (b - a) + (b - x) / (b - a))%R.
   by move=> x; rewrite -mulrDl addrC addrA subrK mulfV // subr_eq0 gt_eqF.
 have step1 : forall x, f x = ((x - a) / (b - a) * f x + (b - x) / (b - a) * f x)%R.
   by move=> x; rewrite -mulrDl -note1 mul1r.
-apply convexf_ptP => // x axb.
+apply: convexf_ptP => // x axb.
 rewrite /L.
 case/andP: axb.
   rewrite le_eqVlt => /predU1P[-> _|].
@@ -3161,7 +3161,7 @@ have {step1}step2 : (L x - f x =
 have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R.
   have H : forall x0, (x <= x0 <= b)%R -> derivable f x0 1.
     move=> z /andP[z1 z2]; apply: HDf; apply/andP; split => //.
-    by apply (@le_trans _ _ x) => //; exact: ltW.
+    by apply: (@le_trans _ _ x) => //; exact: ltW.
   have {}H : forall x0 : R^o, x0 \in `]x, b[%R -> is_derive x0 1 f (Df x0).
     move=> x0; rewrite in_itv/= => /andP[xx0 x0b].
     apply: DeriveDef => //.
@@ -3180,8 +3180,8 @@ have [c2 [Ic2 Hc2]] : exists c2, (x < c2 < b /\ (f b - f x) / (b - x) = Df c2)%R
   by rewrite subr_eq0 gt_eqF.
 have [c1 [Ic1 Hc1]] : exists c1, (a < c1 < x /\ (f x - f a) / (x - a) = Df c1)%R.
   have H : forall x0, (a <= x0 <= x)%R -> derivable f x0 1.
-    move=> z /andP[z1 z2]; apply HDf; apply/andP; split => //.
-    by apply (@le_trans _ _ x) => //; exact: ltW.
+    move=> z /andP[z1 z2]; apply: HDf; apply/andP; split => //.
+    by apply: (@le_trans _ _ x) => //; exact: ltW.
   have {}H : forall x0 : R^o, x0 \in `]a, x[%R -> is_derive x0 1 f (Df x0).
     move=> x0; rewrite in_itv/= => /andP[xx0 x0b].
     apply: DeriveDef => //.
@@ -3195,7 +3195,7 @@ have [c1 [Ic1 Hc1]] : exists c1, (a < c1 < x /\ (f x - f a) / (x - a) = Df c1)%R
   exists c1; split => //.
   rewrite H1 -mulrA mulfV ?mulr1//.
   by rewrite subr_eq0 gt_eqF.
-have c1c2 : (c1 < c2)%R by apply (@lt_trans _ _ x); [case/andP: Ic1 | case/andP: Ic2].
+have c1c2 : (c1 < c2)%R by apply: (@lt_trans _ _ x); [case/andP: Ic1 | case/andP: Ic2].
 have {step2 Hc1 Hc2}step3 : (L x - f x =
   (b - x) * (x - a) * (c2 - c1) / (b - a) * ((Df c2 - Df c1) / (c2 - c1)))%R.
   rewrite {}step2 Hc2 Hc1 (mulrC (x - a)%R) -mulrBr -!mulrA.
@@ -3204,8 +3204,8 @@ have {step2 Hc1 Hc2}step3 : (L x - f x =
 have [d [Id H]] : exists d, (c1 < d < c2 /\ (Df c2 - Df c1) / (c2 - c1) = DDf d)%R.
   have H : forall x0, (c1 <= x0 <= c2)%R -> derivable Df x0 1.
     move=> z /andP[z1 z2]; apply: HDDf; apply/andP; split => //.
-    - by apply (@le_trans _ _ c1) => //; by case/andP: Ic1 => /ltW.
-    - by apply (@le_trans _ _ c2) => //; by case/andP: Ic2 => _ /ltW.
+    - by apply: (@le_trans _ _ c1) => //; by case/andP: Ic1 => /ltW.
+    - by apply: (@le_trans _ _ c2) => //; by case/andP: Ic2 => _ /ltW.
   case/andP : Ic1 => ac1 c1x.
   case/andP : Ic2 => xc2 c2bx.
   have {}H : forall x0 : R^o, x0 \in `]c1, c2[%R -> is_derive x0 1 Df (DDf x0).
@@ -3231,13 +3231,13 @@ apply/mulr_ge0; last first.
     apply: (@lt_trans _ _ c1).
       by case/andP: Ic1.
     by case/andP: Id.
-  apply (@lt_trans _ _ c2).
+  apply: (@lt_trans _ _ c2).
     by case/andP: Id.
   by case/andP: Ic2.
 apply/mulr_ge0; last first.
   by rewrite invr_ge0// subr_ge0 ltW.
 apply/mulr_ge0; last first.
-  by rewrite subr_ge0; case/andP: Id => Id1 Id2; apply (@le_trans _ _ d); exact/ltW.
+  by rewrite subr_ge0; case/andP: Id => Id1 Id2; apply: (@le_trans _ _ d); exact/ltW.
 by apply/mulr_ge0; rewrite subr_ge0; exact/ltW.
 Qed.
 

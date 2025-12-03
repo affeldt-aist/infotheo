@@ -68,10 +68,10 @@ rewrite (eq_bigr (fun i : 'I_(size(enum A)) =>
 rewrite -(big_mkord xpredT (fun i => #|T|%:R ^- size (f (nth a (enum A) i)))).
 rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
 rewrite enumT.
-apply ler_sum => i _.
+apply: ler_sum => i _.
 rewrite H.
 have Pi0 : 0 < P i by rewrite lt0r Pr0/=.
-apply (@le_trans _ _ (#|T|%:R `^ (- Log #|T|%:R (P i)^-1))%R); last first.
+apply: (@le_trans _ _ (#|T|%:R `^ (- Log #|T|%:R (P i)^-1))%R); last first.
   by rewrite LogV// opprK natn LogK// card_ord.
 rewrite -powR_mulrn; last by rewrite card_ord.
 rewrite powRN card_ord lef_pV2// ?posrE ?powR_gt0//.
@@ -103,7 +103,7 @@ Lemma shannon_fano_average_entropy : is_shannon_fano P f ->
   average P f < `H P  + 1.
 Proof.
 move=> H; rewrite /average.
-apply (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
+apply: (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
   apply: ltR_sumR.
     apply: fdist_card_neq0.
     exact: P.
@@ -124,7 +124,7 @@ apply (@lt_le_trans _ _ (\sum_(x in A) P x * (- Log #|T|%:R (P x) + 1))).
 under eq_bigr do rewrite mulrDr mulr1 mulrN.
 rewrite big_split /= FDist.f1 lerD2r.
 apply/eqW.
-rewrite /entropy big_morph_oppr; apply eq_bigr => i _.
+rewrite /entropy big_morph_oppr; apply: eq_bigr => i _.
 by rewrite card_ord.
 Qed.
 

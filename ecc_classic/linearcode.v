@@ -221,7 +221,7 @@ Variables (F : finFieldType) (n : nat) (C : Lcode0.t F n).
 Hypothesis C_not_trivial : not_trivial C.
 
 Lemma not_trivial_dim : 0 < \dim C.
-Proof. rewrite lt0n dimv_eq0; by apply not_trivialP. Qed.
+Proof. rewrite lt0n dimv_eq0; by apply/not_trivialP. Qed.
 
 Definition codeword_lowest_deg c :=
   [forall y, [&& y \in C, y != c & y != 0] ==>
@@ -240,7 +240,7 @@ case/andP=> g'C g'0 g_min _.
 exists g'.
 rewrite /non0_codeword_lowest_deg g'C g'0 /= /codeword_lowest_deg.
 apply/forallP => y; apply/implyP => /and3P[yC yg' y0].
-apply g_min; by rewrite yC.
+apply: g_min; by rewrite yC.
 Qed.
 
 Definition lowest_size := size (rVpoly (val exists_non0_codeword_lowest_deg)).
@@ -333,15 +333,15 @@ case: arg_minnP => /=.
 move=> x /andP[xC x0] H.
 apply/eqP.
 rewrite eqn_leq; apply/andP; split; last first.
-  apply H1 => //; by rewrite -wH_eq0.
+  apply: H1 => //; by rewrite -wH_eq0.
 by rewrite (leq_trans _ yd) // H // yC wH_eq0.
 Qed.
 
 Lemma min_dist_prop m m' :
   m \in C -> m' \in C -> m != m' -> min_dist <= dH m m'.
 Proof.
-move=> /= mm' mC m'C; apply min_dist_is_min.
-by apply Lcode0.aclosed => //; rewrite Lcode0.oclosed.
+move=> /= mm' mC m'C; apply: min_dist_is_min.
+  by apply: ((@Lcode0.aclosed n F C).2) => //; rewrite Lcode0.oclosed.
 by rewrite subr_eq0.
 Qed.
 
@@ -493,11 +493,11 @@ have gk : size (rVpoly g) <= size (rVpoly k).
   - by rewrite /k (proj2 (Lcode0.aclosed C)) // Lcode0.oclosed.
   - apply: contra j0.
     by rewrite /k subr_eq addrC -subr_eq subrr eq_sym.
-  - rewrite /k; move: abs; apply contra; by rewrite subr_eq0.
+  - rewrite /k; move: abs; apply: contra; by rewrite subr_eq0.
 suff kg : size (rVpoly k) < size (rVpoly g).
   by move: (leq_ltn_trans gk kg); rewrite ltnn.
 rewrite /k linearB /=; have [size_1g|size_1g] := ltnP 1 (size (rVpoly g)).
-- apply: size_sub => //=; last by apply lead_coef_F2.
+- apply: size_sub => //=; last by apply: lead_coef_F2.
   by apply/eqP; apply: contra g0; rewrite rVpoly0.
 - (* this means that g is constant *)
   have sz_g1 : size (rVpoly g) = 1%N.
@@ -584,9 +584,9 @@ Lemma wH_vproj n (F : nzRingType) (x : 'rV[F]_n) (s : {set 'I_n}) :
   wH (vproj x s) <= #| s |.
 Proof.
 rewrite /wH count_map (_ : #| s | = count (mem s) (enum 'I_n)); last first.
-  rewrite cardE -count_predT !count_filter; apply eq_in_count => /= i _.
+  rewrite cardE -count_predT !count_filter; apply: eq_in_count => /= i _.
   by rewrite !inE andbT.
-apply sub_count => /= i /=.
+apply: sub_count => /= i /=.
 rewrite mxE; case: ifPn => //; by rewrite eqxx.
 Qed.
 
@@ -599,7 +599,7 @@ have -> : x - vproj x s = vproj x (~: s).
   apply/rowP => i; rewrite !mxE !inE; case: ifPn => /=;
     [by rewrite subrr | by rewrite subr0].
 rewrite /vproj /wH count_map /= cardE size_filter -enumT /=.
-apply eq_in_count => /= i _; rewrite !mxE !inE.
+apply: eq_in_count => /= i _; rewrite !mxE !inE.
 by case: ifPn => //; rewrite eqxx.
 Qed.
 
@@ -608,7 +608,7 @@ Lemma wH_vproj_take n (F : nzRingType) (x : 'rV[F]_n) t :
 Proof.
 set s := take t (enum (wH_supp x)).
 rewrite (leq_trans (wH_vproj x [set i in s])) //.
-apply (@leq_trans (size s)); last first.
+apply: (@leq_trans (size s)); last first.
   rewrite size_take -cardE card_wH_supp; case: ifPn => //; by rewrite -leqNgt.
 rewrite cardsE; apply/eq_leq/card_uniqP.
 have : subseq s (enum (wH_supp x)).
@@ -634,7 +634,7 @@ rewrite cardE -{1}(cat_take_drop t (enum (wH_supp x))).
 rewrite size_cat -addnn size_take -{1}cardE card_wH_supp.
 case/andP : xt => -> /= _.
 rewrite leq_add2l; apply/leq_trans/eq_leq/card_uniqP.
-have : uniq (enum (wH_supp x)) by apply enum_uniq.
+have : uniq (enum (wH_supp x)) by apply: enum_uniq.
 by rewrite -{1}(cat_take_drop t (enum (wH_supp x))) cat_uniq => /and3P[].
 Qed.
 
@@ -719,9 +719,9 @@ transitivity (\sum_(i < r.+1) #| [set y | dH x y == i] |)%N.
       apply/eqP; rewrite eq_sym; apply/sphere_not_empty.
       by rewrite (leq_trans _ rn) //; move: (ltn_ord i); rewrite ltnS.
   rewrite (card_partition partD) /= big_imset /=.
-  - apply eq_bigl => i; by rewrite mem_enum.
-  - move=> i j _ _;by apply H2.
-apply eq_bigr => i _.
+  - apply: eq_bigl => i; by rewrite mem_enum.
+  - move=> i j _ _;by apply: H2.
+apply: eq_bigr => i _.
 rewrite card_sphere // (leq_trans _ rn) //; move: (ltn_ord i); by rewrite ltnS.
 Qed.
 
@@ -755,7 +755,7 @@ rewrite big_imset /=; last first.
   move: (H _ _ c1C c2C c1c2).
   rewrite abs setIid => /setP/(_ c2).
   by rewrite !inE dHE subrr wH0 leq0n.
-by move=> <-; apply subset_leq_card; apply/subsetP => x; rewrite inE.
+by move=> <-; apply: subset_leq_card; apply/subsetP => x; rewrite inE.
 Qed.
 
 Definition perfect n q (C : Lcode0.t 'F_q n)
@@ -857,16 +857,16 @@ Lemma min_dist_prop_old (M : finType) (C : t A B n M) (C_not_trivial : not_trivi
 Proof.
 move=> /= mm'.
 have H : Encoder.enc (enc C) m - Encoder.enc (enc C) m' \in C.
-  apply Lcode0.aclosed.
+  apply: (@Lcode0.aclosed n _ C).2.
   - move/subsetP: (Encoder.enc_img (enc C)) => /(_ (Encoder.enc (enc C) m)).
     apply; apply/imsetP => /=; by exists m.
   - rewrite Lcode0.oclosed //.
     move/subsetP: (Encoder.enc_img (enc C)) => /(_ (Encoder.enc (enc C) m')).
     apply; apply/imsetP => /=; by exists m'.
 have H' : Encoder.enc (enc C) m - Encoder.enc (enc C) m' != 0.
-  move: mm'; apply contra. rewrite subr_eq0. move/eqP.
+  move: mm'; apply: contra. rewrite subr_eq0. move/eqP.
   move/Encoder.enc_inj/eqP. by rewrite eqtype.eq_sym.
-by apply min_dist_is_min.
+by apply: min_dist_is_min.
 Qed.
 
 End lcode_prop.
@@ -930,7 +930,7 @@ Proof.
 move=> f P HPf k n HP rows X cols Y; apply/matrixP => i j.
 rewrite !mxE /=.
 move: (HPf _ _ HP) X Y; rewrite (HPf _ _ HP) => e M Y.
-apply eq_bigr => l _ /=.
+apply: eq_bigr => l _ /=.
 by rewrite (eq_irrelevance e (refl_equal n)).
 Qed.
 
@@ -944,9 +944,9 @@ move=> f P HPf k n_ HP X cols Y; apply/matrixP => i j.
 rewrite !mxE /=.
 move: (HPf _ _ HP) X Y; rewrite (HPf _ _ HP) => e M Y.
 rewrite castmxE !mxE /=.
-apply eq_bigr => l _ /=.
+apply: eq_bigr => l _ /=.
 rewrite !castmxE /=.
-congr (M _ _ * Y _ _); by apply val_inj.
+congr (M _ _ * Y _ _); by apply: val_inj.
 Qed.
 
 End AboutCasts.
@@ -990,7 +990,7 @@ Local Notation "'G" := GEN.
 Local Notation "'H" := PCM.
 
 Lemma rank_GEN : \rank 'G = k.
-Proof. rewrite /GEN mxrank_castmx; by apply rank_row_mx, rank_I. Qed.
+Proof. by rewrite /GEN mxrank_castmx; exact/rank_row_mx/rank_I. Qed.
 
 (* H^T is the right kernel of G *)
 Lemma G_H_T : 'G *m 'H ^T = 0.

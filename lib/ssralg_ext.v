@@ -150,7 +150,7 @@ Local Open Scope tuple_ext_scope.
 Definition row_of_tuple n (t : n.-tuple A) := \row_(i < n) (t !_ i).
 
 Lemma row_of_tupleK n (t : n.-tuple A) : tuple_of_row (row_of_tuple t) = t.
-Proof. apply eq_from_tnth => n0; by rewrite tnth_mktuple mxE. Qed.
+Proof. apply: eq_from_tnth => n0; by rewrite tnth_mktuple mxE. Qed.
 
 Lemma row_of_tuple_inj n : injective (@row_of_tuple n).
 Proof. by move=> a b ab; rewrite -(row_of_tupleK b) -ab row_of_tupleK. Qed.
@@ -166,12 +166,12 @@ Qed.
 Local Close Scope tuple_ext_scope.
 
 Lemma tuple_of_rowK n (v : 'rV[A]_n) : row_of_tuple (tuple_of_row v) = v.
-Proof. apply tuple_of_row_inj; by rewrite row_of_tupleK. Qed.
+Proof. apply: tuple_of_row_inj; by rewrite row_of_tupleK. Qed.
 
 Definition row_of_seq
   (f : B -> A) (b : B) (l : seq B) n (H : size l == n) : 'rV[A]_n.
 Proof.
-exact (matrix_of_fun matrix_key (fun i j => f (nth b l j))).
+exact: (matrix_of_fun matrix_key (fun i j => f (nth b l j))).
 Defined.
 
 Lemma row_of_seqK n l H f b :
@@ -184,13 +184,13 @@ rewrite (nth_map b) //.
 rewrite (eqP H) in Hi.
 transitivity (tnth (tuple_of_row (row_of_seq f b H)) (Ordinal Hi)).
   by rewrite tnth_mktuple mxE.
-apply set_nth_default; by rewrite size_tuple.
+apply: set_nth_default; by rewrite size_tuple.
 Qed.
 
 Definition col_of_seq
   (f : B -> A) (b : B) (l : seq B) n (H : size l == n) : 'cV[A]_n.
 Proof.
-exact (matrix_of_fun matrix_key (fun i j => f (nth b l i))).
+exact: (matrix_of_fun matrix_key (fun i j => f (nth b l i))).
 Defined.
 
 End AboutRowTuple.
@@ -199,31 +199,31 @@ Arguments row_of_seq {A} {B} _ _ l n.
 Arguments col_of_seq {A} {B} _ _ l n.
 
 Lemma tuple_of_row_ord0 (F : Type) (y : 'rV[F]_0) : tuple_of_row y = [tuple of [::]].
-Proof. apply eq_from_tnth; by case. Qed.
+Proof. apply: eq_from_tnth; by case. Qed.
 
 Local Open Scope tuple_ext_scope.
 
 Lemma tuple_of_row_row_mx (C : finType) n1 n2 (v1 : 'rV[C]_n1) (B : 'rV[C]_n2) :
   tuple_of_row (row_mx v1 B) = [tuple of tuple_of_row v1 ++ tuple_of_row B].
 Proof.
-apply eq_from_tnth => n0.
+apply: eq_from_tnth => n0.
 rewrite tnth_mktuple mxE.
 case: splitP => [n3 n0n3|n3 n0n1n3].
   rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = true)%nat); last by rewrite n0n3 ltn_ord.
   transitivity ((tuple_of_row v1) !_ n3); first by rewrite tnth_mktuple.
-  rewrite /tnth n0n3; apply set_nth_default; by rewrite size_tuple.
+  rewrite /tnth n0n3; apply: set_nth_default; by rewrite size_tuple.
 rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = false)%nat); last first.
   rewrite n0n1n3; apply/negbTE; by rewrite -leqNgt leq_addr.
   transitivity ((tuple_of_row B) !_ n3); first by rewrite tnth_mktuple.
   rewrite /tnth (_ : (n0 - n1 = n3)%nat); last by rewrite n0n1n3 addnC addnK.
-  apply set_nth_default; by rewrite size_tuple.
+  apply: set_nth_default; by rewrite size_tuple.
 Qed.
 
 Local Close Scope tuple_ext_scope.
 
 Lemma row_to_seq_0 n : tuple_of_row 0 = [tuple of nseq n ( 0 : 'F_2)].
 Proof.
-apply eq_from_tnth => i.
+apply: eq_from_tnth => i.
 by rewrite {2}/tnth nth_nseq (ltn_ord i) tnth_mktuple mxE.
 Qed.
 
@@ -312,7 +312,7 @@ rewrite leq_eqVlt => /orP[/eqP|]ij.
   rewrite (_ : cast_ord _ _ = lshift (n - i) j0); last exact/val_inj.
   rewrite row_mxEl.
   rewrite (_ : j0 = rshift i ord0); last first.
-    by apply val_inj => /=; rewrite ij addn0.
+    by apply: val_inj => /=; rewrite ij addn0.
   rewrite row_mxEr mxE.
   move=> [:Hj1].
   have @j1 : 'I_(n.+1 - i).
@@ -332,14 +332,14 @@ rewrite (_ : cast_ord _ _ = rshift (i + 1) j0); last first.
 rewrite row_mxEr.
 have @j1 : 'I_(n.+1 - i) by apply: (@Ordinal _ (j - i)); rewrite ltn_sub2r.
 rewrite (_ : cast_ord _ _ = rshift i j1); last first.
-  by apply val_inj => /=; rewrite subnKC // ltnW.
+  by apply: val_inj => /=; rewrite subnKC // ltnW.
 rewrite row_mxEr castmxE /= cast_ord_id.
 have @j2 : 'I_(n - i).
   apply: (@Ordinal _ (j1 - 1)).
   by rewrite /= subn1 prednK ?subn_gt0 // leq_sub2r // -ltnS.
 rewrite (_ : cast_ord _ _ = rshift 1 j2); last first.
   apply/val_inj => /=; by rewrite subnKC // subn_gt0.
-rewrite (@row_mxEr _ _ 1%nat); congr (_ _ _); apply val_inj => /=; by rewrite subnS subn1.
+rewrite (@row_mxEr _ _ 1%nat); congr (_ _ _); apply: val_inj => /=; by rewrite subnS subn1.
 Qed.
 End row_mxA'.
 
@@ -537,17 +537,17 @@ have gg' : {in [set x in 'F_p | x != 0], cancel g g'}.
     move: (ltn_ord x) => /=; rewrite ltnS => /leq_trans; apply.
     by rewrite -(ltn_add2r 1) 2!addn1 Zp_cast // ?pdiv_leq // pdiv_id.
   rewrite (enum_rank_ord x) //= prednK ?lt0n //= enum_val_ord /=.
-  apply val_inj => /=; rewrite inordK //.
+  apply: val_inj => /=; rewrite inordK //.
   move: (ltn_ord x) => /leq_trans; apply; by rewrite Zp_cast ?pdiv_id.
 have g'g : cancel g' g.
-  move=> x; rewrite /g /g' /= enum_valK; apply val_inj => /=.
+  move=> x; rewrite /g /g' /= enum_valK; apply: val_inj => /=.
   by rewrite (@inordK _ x.+1) /= ?inordK // ltnS.
 set f : 'rV['F_p]_n -> n.-tuple 'I_p.-1 := fun x => tuple_of_row (map_mx g x).
 set f' : n.-tuple 'I_p.-1 -> 'rV['F_p]_n := fun x => map_mx g' (row_of_tuple x).
 rewrite (reindex_onto f' f); last first.
   rewrite /= => x /forallP /= H; apply/rowP => j.
   by rewrite /f' /f mxE tuple_of_rowK mxE gg' // !inE /= H.
-apply eq_bigl => x; apply/andP; split.
+apply: eq_bigl => x; apply/andP; split.
   by apply/forallP => j; rewrite !mxE Hg'.
 apply/eqP/eq_from_tnth => i; by rewrite tnth_mktuple !mxE g'g.
 Qed.
@@ -572,7 +572,7 @@ Hypothesis primeq : prime q.
 Definition GF : finFieldType := sval (@pPrimePowerField q m primeq isT).
 
 Lemma char_GFqm : q \in [pchar GF].
-Proof. exact (proj1 (proj2_sig (@pPrimePowerField q m primeq isT))). Qed.
+Proof. exact: (proj1 (proj2_sig (@pPrimePowerField q m primeq isT))). Qed.
 
 Lemma card_GFqm : #| GF | = (q ^ m)%N.
 Proof. rewrite /GF; by case: (@pPrimePowerField q m primeq isT). Qed.

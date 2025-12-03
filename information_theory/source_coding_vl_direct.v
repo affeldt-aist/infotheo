@@ -45,7 +45,7 @@ Lemma rsum_split:
   \sum_(x| x \in X) f0 x = \sum_(x| x \in S) f0 x + \sum_(x| x \in ~: S) f0 x.
 Proof.
 rewrite (bigID (fun x => x \in S)) /=; congr (_ + _).
-by apply eq_bigl => x /=; rewrite inE.
+by apply: eq_bigl => x /=; rewrite inE.
 Qed.
 
 Lemma log_pow_INR m k : (m > 0)%nat -> log (expn m k)%:R = k%:R * log m%:R :> R.
@@ -177,7 +177,7 @@ move=> mainCase.
 case: ifP=>?; case: ifP=>? //; case=> H; last by apply/tuple_of_row_inj/inj_enc_not_typ/val_inj.
 -  have {}H : index t1 (enum (`TS P n epsilon)) =
               index t2 (enum (`TS P n epsilon))
-     by apply (@bitseq_of_nat_inj (`|L_typ|%N)) => //;  apply: (leq_trans _ card_TS_Lt);
+     by apply: (@bitseq_of_nat_inj (`|L_typ|%N)) => //;  apply: (leq_trans _ card_TS_Lt);
      apply: seq_index_enum_card => //;  apply: enum_uniq.
  rewrite -(@nth_index _ t1 t1 (enum (`TS P n epsilon))); last by rewrite mem_enum.
  rewrite -(@nth_index _ t1 t2 (enum (`TS P n epsilon))); last by rewrite mem_enum.
@@ -279,7 +279,7 @@ rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
     * by apply: addr_ge0 => //; exact/ltW/Lt_pos.
     * by rewrite -(FDist.f1 (P `^ n)%fdist); apply: leR_sumRl => // *.
   + apply: ler_wpM2r => //.
-    * by apply addr_ge0 => //; exact (Lnt_nonneg _ P).
+    * by apply: addr_ge0 => //; exact: (Lnt_nonneg _ P).
     * by rewrite lerBlDr addrC -lerBlDr; exact: Pr_TS_1.
 Qed.
 

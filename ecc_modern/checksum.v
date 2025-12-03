@@ -45,7 +45,7 @@ Lemma checksubsum_D1 i x : i \in A ->
 Proof.
 move=> iA; rewrite /checksubsum (bigD1 i) //=.
 rewrite (_ : \sum_(i0 in A | i0 != i) x ``_ i0 = \sum_(n0 in A :\ i) x ``_ n0); last first.
-  apply eq_bigl => j; by rewrite in_setD1 andbC.
+  apply: eq_bigl => j; by rewrite in_setD1 andbC.
 rewrite addr_eq0 eq_sym oppr_pchar2 //.
 case/F2P : (x ``_ i) => //=.
   apply/idP/idP; [by move=> ->|].
@@ -70,7 +70,7 @@ Proof.
 move=> x_in_C.
 rewrite {1}(_ : (1 = (\prod_(m0 < m) 1)%:R)%R); [congr _%:R |
   by rewrite big_const iter_muln_1 exp1n].
-apply eq_bigr => m0 _.
+apply: eq_bigr => m0 _.
 rewrite mem_kernel_syndrome0 /syndrome in x_in_C.
 move/eqP in x_in_C.
 have {}x_in_C : forall m0, \sum_i (H m0 i) * (x ``_ i) = 0.
@@ -78,7 +78,7 @@ have {}x_in_C : forall m0, \sum_i (H m0 i) * (x ``_ i) = 0.
   move/rowP : x_in_C => /(_ m1).
   rewrite !mxE.
   move=> t_in_C; rewrite -[in X in _ = X]t_in_C.
-  apply eq_bigr => // i _; congr (_ * _).
+  apply: eq_bigr => // i _; congr (_ * _).
   by rewrite /row_of_tuple !mxE.
 have {}x_in_C : forall m0, \sum_(i in 'V m0) ((H m0 i) * x ``_ i) = 0.
   move=> m1.
@@ -88,12 +88,12 @@ have {}x_in_C : forall m0, \sum_(i in 'V m0) ((H m0 i) * x ``_ i) = 0.
   rewrite -[in X in _ = X](addr0 tmp); congr (_ + _).
   rewrite [in X in _ = X](_ : 0 = \sum_(i | i \notin 'V m1) 0); last first.
     by rewrite big_const /= iter_addr0.
-  apply eq_big => // n0.
+  apply: eq_big => // n0.
   rewrite VnextE tanner_relE -F2_eq0 => /eqP ->; by rewrite mul0r.
 have {}x_in_C : forall m0, \sum_(i in 'V m0) x ``_ i = 0.
   move=> m1.
   rewrite -[in X in _ = X](x_in_C m1).
-  apply eq_bigr => // i.
+  apply: eq_bigr => // i.
   rewrite VnextE tanner_relE => /eqP ->; by rewrite mul1r.
 have {}x_in_C : forall m0, \sum_(i in 'V m0) x ``_ i = 0.
   move=> m1.
@@ -109,7 +109,7 @@ rewrite mem_kernel_syndrome0 /syndrome in x_notin_C.
 have {}x_notin_C : [exists m0, \sum_i (H m0 i) * (x ``_ i) != 0].
   rewrite -negb_forall; apply: contra x_notin_C => /forallP x_notin_C.
   apply/eqP/rowP => a; rewrite !mxE /= -[RHS](eqP (x_notin_C a)).
-  by apply eq_bigr => // i _; rewrite /row_of_tuple !mxE.
+  by apply: eq_bigr => // i _; rewrite /row_of_tuple !mxE.
 have {}x_notin_C : [exists m0, \sum_(i in 'V m0) ((H m0 i) * x ``_ i) != 0].
   case/existsP : x_notin_C => m0 Hm0.
   apply/existsP; exists m0.
@@ -118,12 +118,12 @@ have {}x_notin_C : [exists m0, \sum_(i in 'V m0) ((H m0 i) * x ``_ i) != 0].
   rewrite (bigID [pred i | i \in 'V m0]) /= Hm0 add0r.
   rewrite [in X in _ = X](_ : 0 = \sum_(i | i \notin 'V m0) 0); last first.
     by rewrite big_const /= iter_addr0.
-  apply eq_big => n0 //.
+  apply: eq_big => n0 //.
   rewrite VnextE tanner_relE -F2_eq0 => /eqP ->; by rewrite mul0r.
 have {}x_notin_C : [exists m0, \sum_(i in 'V m0) x ``_ i != 0].
   case/existsP : x_notin_C => /= m0 x_notin_C.
   apply/existsP; exists m0; apply: contra x_notin_C => /eqP H0.
-  apply/eqP; rewrite -[RHS]H0; apply eq_bigr => n0.
+  apply/eqP; rewrite -[RHS]H0; apply: eq_bigr => n0.
   rewrite VnextE tanner_relE => /eqP ->; by rewrite mul1r.
 have {}x_notin_C : [exists m0, \sum_(i in 'V m0) x ``_ i != 0].
   case/existsP : x_notin_C => /= m0 x_notin_C.
