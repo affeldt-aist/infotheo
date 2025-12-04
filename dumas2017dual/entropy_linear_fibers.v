@@ -1,6 +1,8 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
+From mathcomp Require Import mathcomp_extra.
+From robot Require Import euclidean.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
 Require Import entropy_fibers.
@@ -83,7 +85,7 @@ Variable n : nat.
 (* Linear functional: represented as dot product with a fixed vector *)
 (* TODO: reuse the coq-robot package when it is published *)
 Definition linear_functional (u : 'rV[msg]_n) (v : 'rV[msg]_n) : msg :=
-  (u *m v^T) 0 0.
+  u *d v.
 
 (* Fiber of the linear functional: generate the set of solutions *)
 Definition linear_fiber (u : 'rV[msg]_n) (s : msg) : {set 'rV[msg]_n} :=
@@ -123,76 +125,32 @@ apply/card_gt0P.
 have [i ui_neq0]: exists i, u 0 i != 0.
   by exact: row_neq0_exists.
 (* Construct a solution v where v_i is chosen to satisfy the equation *)
-exists (\row_j if j == i then s / u 0 i else 0).
-rewrite inE /linear_functional !mxE.
-apply/eqP.
-rewrite (bigD1 i) //= !mxE eqxx.
-rewrite big1 ?addr0.
-  field.
-  exact: ui_neq0.
-move=> j j_neq_i.
-by rewrite mxE mxE (negbTE j_neq_i) mulr0.
+exists (s / u 0 i *: 'e_i).  
+by rewrite inE /linear_functional dotmulvZ dotmul_delta_mx divfK.
 Qed.
 
 (* Helper: fiber cardinality equals kernel cardinality *)
 Lemma linear_fiber_eq_kernel_card (u : 'rV[msg]_n) (s : msg) (x0 : 'rV[msg]_n) :
-  (u *m x0^T) ord0 ord0 = s ->
-  #|linear_fiber u s| = #|[set v : 'rV[msg]_n | (u *m v^T) ord0 ord0 == 0]|.
+  u *d x0 = s ->
+  #|linear_fiber u s| = #|[set v : 'rV[msg]_n | u *d v == 0]|.
 Proof.
 move=> Hx0.
-pose kernel := [set v : 'rV[msg]_n | (u *m v^T) ord0 ord0 == 0].
+pose kernel := [set v : 'rV[msg]_n | u *d v == 0].
 rewrite -(card_translate kernel x0).
 apply: eq_card => v.
 rewrite !inE /linear_functional.
 apply/eqP.
-case: (boolP (v \in [set x0 + s0 | s0 in kernel])) => [Hin | Hnotin].
-  rewrite mxE.
-  move: Hin => /imsetP [k Hk ->].
-  move: Hk; rewrite inE => /eqP Hk.
-  under eq_bigr do rewrite mxE.
-  under eq_bigr do rewrite mxE mulrDr.
-  rewrite big_split /=.
-  (* First sum: \sum u 0 i * x0 0 i = (u *m x0^T) ord0 ord0 = s *)
-  have ->: \sum_(i < n) u 0 i * x0 0 i = (u *m x0^T) ord0 ord0.
-    rewrite !mxE.
-    apply: eq_bigr => i _.
-    by rewrite !mxE.
-  rewrite Hx0.
-  (* Second sum: \sum u 0 i * k 0 i = (u *m k^T) ord0 ord0 = 0 *)
-  have ->: \sum_(i < n) u 0 i * k 0 i = (u *m k^T) ord0 ord0.
-    rewrite !mxE.
-    apply: eq_bigr => i _.
-    by rewrite !mxE.
-  by rewrite Hk addr0.
-move=> Heq.
-(* Assume (u *m v^T) 0 0 = s *)
-(* Then v - x0 is in the kernel *)
-have Hk: (v - x0) \in kernel.
-  rewrite inE; apply/eqP.
-  rewrite !mxE.
-  under eq_bigr do rewrite mxE.
-  under eq_bigr do rewrite mxE mulrDr.
-  rewrite big_split /=.
-  have ->: \sum_(i < n) u ord0 i * (- x0) ord0 i = 
-           \sum_(i < n) u ord0 i * (- (x0 ord0 i)).
-    apply: eq_bigr => i _.
-    by congr (_ * _); rewrite mxE.  
-  have ->: \sum_(i < n) u ord0 i * (- (x0 ord0 i)) = 
-           - \sum_(i < n) u ord0 i * x0 ord0 i.
-    rewrite -sumrN; apply: eq_bigr => i _.
-    by rewrite mulrN.
-  have ->: \sum_(i < n) u ord0 i * v ord0 i = (u *m v^T) ord0 ord0.
-    rewrite mxE; apply: eq_bigr => i _.
-    by rewrite !mxE.
-  have ->: \sum_(i < n) u ord0 i * x0 ord0 i = (u *m x0^T) ord0 ord0.
-    rewrite mxE; apply: eq_bigr => i _.
-    by rewrite !mxE.
-  by rewrite Heq Hx0 subrr.
-have Hin: v \in [set x0 + s0 | s0 in kernel].
-  apply/imsetP.
-  exists (v - x0) => //.
-  by rewrite addrC subrK.
-by move: Hnotin; rewrite Hin.
+case: ifPn.
+  case /imsetP => k + ->.
+  rewrite inE => /eqP Hk.
+  by rewrite dotmulDr Hk addr0.
+apply: contraNnot.
+move => uvs.
+apply/imsetP.
+rewrite /=.
+exists (v - x0) => //.
+  by rewrite inE dotmulBr uvs Hx0 subrr.
+by rewrite subrKC.
 Qed.
 
 (* Key result: all fibers of a non-zero linear functional have the same size *)
@@ -223,39 +181,32 @@ Qed.
 
 (* Helper: row vector kernel equals column vector kernel (via transpose) *)
 Local Lemma row_kernel_eq_col_kernel (u : 'rV[msg]_n) :
-  #|[set v : 'rV[msg]_n | (u *m v^T) ord0 ord0 == 0]| = 
+  #|[set v : 'rV[msg]_n | u *d v == 0]| = 
   #|[set w : 'cV[msg]_n | u *m w == 0]|.
 Proof.
+(* Goal: #|[set v | u *d v == 0]| = #|[set w | u *m w == 0]| *)
 (* Bijection: v : 'rV_n <-> v^T : 'cV_n *)
 rewrite -(card_in_imset (f := fun (v : 'rV[msg]_n) => v^T)); last first.
-  (* Injectivity of transpose *)
   by move=> v1 v2 _ _; exact: trmx_inj.
-
-(* Show: [set v^T | v in row_kernel] = col_kernel *)
+(* Goal: #|[set v^T | v in [set v | u *d v == 0]]| = #|[set w | u *m w == 0]| *)
 apply: eq_card => w.
 apply/imsetP/idP.
-
-(* Forward: if w = v^T and v in row kernel, then w in col kernel *)
+(* Forward: v in row kernel => v^T in col kernel *)
 - case=> v; rewrite !inE => /eqP Hv ->.
   (* Goal: u *m v^T == 0 *)
-  apply/eqP.
-  (* Use that (u *m v^T) ord0 ord0 = 0 implies u *m v^T = 0 *)
-  apply/matrixP => i j.
-  (* Both indices are ord0 since it's 1x1 matrix *)
-  have ->: i = ord0 by apply: ord1.
-  have ->: j = ord0 by apply: ord1.
-  (* Now: (u *m v^T) ord0 ord0 = 0 ord0 ord0 *)
-  by rewrite Hv mxE.
-
-(* Backward: if w in col kernel, then w = (w^T)^T with w^T in row kernel *)
+  (* By dotmulP: u *m v^T = (u *d v)%:M, and Hv: u *d v = 0 *)
+  rewrite dotmulP Hv.
+  (* Goal: 0%:M == 0 *)
+  by apply/eqP/matrixP => i j; rewrite !mxE mul0rn.
+(* Backward: w in col kernel => w^T in row kernel *)
 - rewrite inE => /eqP Hw.
   exists w^T; last by rewrite trmxK.
   rewrite inE; apply/eqP.
-  (* Goal: (u *m (w^T)^T) ord0 ord0 = 0 *)
-  rewrite trmxK.
-  (* Now: (u *m w) ord0 ord0 = 0 *)
-  move: Hw => /matrixP /(_ ord0 ord0) ->.
-  by rewrite mxE.
+  (* Goal: u *d w^T = 0 *)
+  (* From dotmulP: u *m w = (u *d w^T)%:M, Hw: u *m w = 0 *)
+  have H: u *m w = (u *d w^T)%:M by rewrite -dotmulP trmxK.
+  move: Hw; rewrite H => /matrixP /(_ ord0 ord0).
+  by rewrite !mxE eqxx mulr1n.
 Qed.
 
 (* Cardinality of linear fiber: |K|^(n-1) *)
@@ -319,29 +270,23 @@ Local Notation m := m_minus_2.+2.
 Hypothesis prime_m : prime m.
 Local Notation msg := 'F_m.
 
-Definition dotp (n : nat) (u v : 'rV[msg]_n) : msg :=
-  \sum_(i < n) u 0 i * v 0 i.
+(* dotp is a local alias for dotmul from coq-robot *)
+Definition dotp (n : nat) (u v : 'rV[msg]_n) : msg := u *d v.
 
-(* Alternative matrix formulation *)
+(* Alternative sum formulation (for reference) *)
 Lemma dotpE (n : nat) (u v : 'rV[msg]_n) :
-  dotp u v = (u *m v^T) 0 0.
-Proof.
-rewrite /dotp !mxE.
-by apply: eq_bigr => i _; rewrite !mxE.
-Qed.
+  dotp u v = \sum_(i < n) u 0 i * v 0 i.
+Proof. by rewrite /dotp dotmulE. Qed.
 
 (* Solution set for bilinear constraint *)
 Definition bilinear_solutions (n : nat) (u : 'rV[msg]_n) (s : msg) :
   {set 'rV[msg]_n} :=
   [set v | dotp u v == s].
 
-(* Connection to linear_fiber *)
+(* Connection to linear_fiber: dotp = linear_functional = dotmul *)
 Lemma bilinear_solutions_eq_fiber (n : nat) (u : 'rV[msg]_n) (s : msg) :
   bilinear_solutions u s = linear_fiber u s.
-Proof.
-apply/setP => v.
-by rewrite !inE /linear_functional dotpE.
-Qed.
+Proof. by []. Qed.
 
 (* Inherit cardinality result *)
 (* For general n, the fiber has |msg|^(n-1) elements *)
@@ -379,18 +324,13 @@ Definition dotp2_solutions (u : msg * msg) (s : msg) : {set msg * msg} :=
 Definition tuple2_to_row (xy : msg * msg) : 'rV[msg]_2 :=
   \row_(i < 2) [:: xy.1; xy.2]`_i.
 
-(* dotp2 matches matrix dot product *)
+(* dotp2 matches dotmul of row vectors *)
 Lemma dotp2_eq_matrix (x y : msg * msg) :
-  dotp2 x y = (tuple2_to_row x *m (tuple2_to_row y)^T) 0 0.
+  dotp2 x y = tuple2_to_row x *d tuple2_to_row y.
 Proof.
-rewrite /dotp2 !mxE.
-rewrite (bigD1 ord0) //=.
-rewrite (bigD1 (lift ord0 ord0)) //=.
-rewrite big_pred0 ?addr0; last first.
-  move => i.
-  rewrite andbC /=.
-  by case: i => [[|[|k]]] //= Hn.
-by rewrite !mxE.  
+rewrite /dotp2 dotmulE (bigD1 ord0) //= (bigD1 (lift ord0 ord0)) //=.
+rewrite big_pred0 ?addr0; last by case => [[|[|k]]] //=.
+by rewrite !mxE.
 Qed.
 
 (* Cardinality for 2D case *)
@@ -453,7 +393,7 @@ Variable n : nat.
 Variable U V : {RV P -> 'rV[msg]_n}.
 
 (* S is the dot product of U and V *)
-Let S : {RV P -> msg} := (fun t => (U t *m (V t)^T) 0 0).
+Let S : {RV P -> msg} := (fun t => U t *d V t).
 
 (* Non-degeneracy: U is not zero *)
 Hypothesis U_nonzero : forall t, U t != 0.
@@ -466,7 +406,7 @@ Hypothesis uniform_over_solutions : forall t u s,
     `Pr[V = v | [% U, S] = (u, s)] = #|linear_fiber u s|%:R ^-1.
 
 (* Main result: conditional entropy equals log(m) *)
-Theorem bilinear_centropy_uniform :
+Theorem centropy_bilinear_uniform :
   (n > 0)%N ->
   `H(V | [% U, S]) = log ((m ^ n.-1)%:R : R).
 Proof.
@@ -478,15 +418,15 @@ have fiber_size: forall (u : 'rV[msg]_n) (s : msg),
   move=> u_vec s_val u_vec_neq0.
   rewrite (@linear_fiber_card m_minus_2 n u_vec s_val u_vec_neq0 n_pos).
   by rewrite card_m.
-apply: (@centropy_with_functional_constraint 
+apply: (@centropy_jcond_determined_fibers 
          T P 'rV[msg]_n 'rV[msg]_n msg 
          V U S 
-         (fun v u => (u *m v^T) 0 0)).
+         (fun v u => u *d v)).
   - by [].
   - move=> u s v Hus_neq0 v_in_fiber.
     rewrite inE in v_in_fiber.
     have ->: #|[set x' | (fun (v0 : 'rV[msg]_n) (u0 : 'rV[msg]_n) => 
-                         (u0 *m v0^T) 0 0) x' u == s]| = 
+                         u0 *d v0) x' u == s]| = 
              #|linear_fiber u s|.
       by apply: eq_card => v0; rewrite !inE /linear_functional.
     have [t [Ut_eq Us_eq]]: exists t, U t = u /\ S t = s.
@@ -564,7 +504,27 @@ Definition triple_coeff_matrix (u1 u2 u3 : msg) : 'M[msg]_(1, 3) :=
      else if j == lift ord0 ord0 then u2 
      else u3).
 
-(* TODO: backport dsdp_solution_set_card_full which is the specific version. *)
+(* 
+   constrained_triples_card: |{(v1,v2,v3) : u1*v1 + u2*v2 + u3*v3 = s}| = m^2
+   
+   STATUS: Aborted - not needed for DSDP protocol analysis
+   
+   REASON: In DSDP, only Alice (result-computing party) knows the constraint
+   result s. Alice's view already includes v1, reducing the problem from 3D to 2D:
+   
+     Alice knows: v1, u1, u2, u3, s
+     Alice infers: (v2, v3) from u2*v2 + u3*v3 = s - u1*v1
+     Use: constrained_pairs_card gives |{(v2,v3)}| = m
+   
+   WHEN NEEDED: This 3D lemma would be required for protocols where:
+   - Adversary sees only (u1,u2,u3,s) but NO variable values
+     Example: External eavesdropper on constraint announcement
+   - Multi-round leakage analysis: H(V1,V2,V3|U,S) before revelation
+     then H(V2,V3|V1,U,S) after, measuring Δ = log(m^2) - log(m) = log(m)
+   - Protocol composition: Multiple DSDP instances before any vi revealed
+   
+   For DSDP-specific version, see dsdp_solution_set_card_full in dsdp_algebra.v
+*)
 Lemma constrained_triples_card (u1 u2 u3 target : msg) :
   (u1 != 0) || (u2 != 0) || (u3 != 0) ->
   #|constrained_triples u1 u2 u3 target| = (m ^ 2)%N.
