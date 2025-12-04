@@ -36,6 +36,61 @@ Local Definition R := Rdefinitions.R.
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
+Section crt_reconstruct.
+
+Variable F : finFieldType.
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'I_m.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+Variables (V1 V2 V3 U1 U2 U3 S : {RV P -> msg}).
+Let CondRV : {RV P -> (msg * msg * msg * msg * msg)} :=
+  [% V1, U1, U2, U3, S].
+Let VarRV : {RV P -> (msg * msg)} := [%V2, V3].
+
+Definition satisfies_constraint (cond : msg * msg * msg * msg * msg)
+  (var : msg * msg) : Prop :=
+  let '(v1, u1, u2, u3, s) := cond in
+  let '(v2, v3) := var in
+  s - u1 * v1 = u2 * v2 + u3 * v3.
+
+Hypothesis constraint_holds :
+  forall t, satisfies_constraint (CondRV t) (VarRV t).
+
+Hypothesis U3_nonzero : forall t, U3 t != 0.
+
+(* U3_lt_min(p, q) *)
+
+Let minpq_lt_pmulq : (minn p q < p * q)%N.
+Admitted.
+
+Hypothesis U3_lt_min_p_q : forall t, (U3 t < Ordinal minpq_lt_pmulq)%N.
+
+(* Parties should not know p and q so (minn p q) should not be used
+   but something smaller than it.
+
+   TODO: Replace dsdp_fiber for this new setting.
+*)
+
+
+Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
+  U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
+  V1 t = v1 -> S t = s ->
+  forall v2 v3,
+    (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
+    `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
+    (#|dsdp_fiber u1 u2 u3 v1 s|)%:R^-1.
+
+End crt_reconstruct.
+
+
 Section dsdp_entropy_connection.
 
 Variable F : finFieldType.
@@ -213,10 +268,6 @@ Section dsdp_var_entropy.
   
 Let card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
 Proof. by rewrite card_prod /= !card_Fp. Qed.
-
-Check fdist_uniformE card_msg_pair.
-
-Search fdist_uniform.
 
 (* Assume all (v2, v3) are distributed uniformly since they are
    private inputs from parties, we get the unconditional entropy of them.

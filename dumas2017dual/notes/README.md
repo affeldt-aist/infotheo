@@ -8,6 +8,19 @@ This directory contains mathematical documentation for the DSDP security formali
 - **`Makefile`**: Build script for compiling the LaTeX document
 - **`README.md`**: This file
 
+## Subdirectories
+
+### Core Theory
+
+- **`rouche_capelli/`**: Documentation for `rouche_capelli.v` - Rouché-Capelli theorems and solution counting over finite fields
+- **`entropy_fibers/`**: Documentation for `entropy_fibers.v` - General theory of entropy over fibers and solution sets
+- **`entropy_linear_fibers/`**: Documentation for `entropy_linear_fibers.v` - Specialization of fiber entropy to linear algebra structures
+
+### Extensions and Applications
+
+- **`fiber_cardinality_zpq/`**: Extension to composite modulus ℤ/pqℤ via Chinese Remainder Theorem
+- **`crt_decomposition/`**: CRT-based solution counting techniques
+
 ## Building the PDF
 
 To compile the documentation:
@@ -58,5 +71,7 @@ This justifies using field-based tools in the Coq formalization while maintainin
 - `dsdp_security.v`: Main security theorems connecting algebra and entropy
 - `dsdp_algebra.v`: Algebraic structure of solution spaces
 - `dsdp_entropy.v`: Information-theoretic security bounds
+
+
 
 

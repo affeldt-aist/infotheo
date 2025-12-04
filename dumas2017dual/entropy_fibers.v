@@ -19,7 +19,7 @@ Import Num.Theory.
 (*  - Uniform distribution over fibers leads to predictable entropy           *)
 (*                                                                            *)
 (*  Main results:                                                             *)
-(*  - entropy_uniform_fiber_size: H(X | Y=c) = log(|fiber(c)|)               *)
+(*  - centropy1_uniform_fiber: H(X | Y=c) = log(|fiber(c)|)                    *)
 (*    when X is uniformly distributed over fiber(c)                           *)
 (*  - functional_determinacy: H([X,Z] | Cond) = H(X | Cond)                   *)
 (*    when Z is functionally determined by X and Cond                         *)
@@ -93,7 +93,7 @@ Variable Y : {RV P -> CodomainT}.
 Hypothesis Y_eq_fX : Y = f `o X.
 
 (* Helper: values outside the fiber have zero conditional probability *)
-Lemma fiber_complement_zero_prob (c : CodomainT) (x : DomainT) :
+Lemma fiberC_cond_Pr0 (c : CodomainT) (x : DomainT) :
   `Pr[Y = c] != 0 ->
   x \notin fiber f c ->
   `Pr[X = x | Y = c] = 0.
@@ -138,7 +138,7 @@ Qed.
 (** Entropy version: fdist uniform on S with H(P) = log |S|. *)
 (*  Note: although this is the same as the lemma above,
     it is difficult to use this version in the following
-    `entropy_uniform_fiber_size` proof. So both versions are kept. *)
+    `centropy1_uniform_fiber` proof. So both versions are kept. *)
 Lemma entropy_fdist_uniform_set (S : {set DomainT}) (n : nat) :
   #|S| = n ->
   (0 < n)%N ->
@@ -163,7 +163,7 @@ field.
 by rewrite pnatr_eq0 -lt0n.
 Qed.
 
-Lemma entropy_uniform_fiber_size (c : CodomainT) :
+Lemma centropy1_uniform_fiber (c : CodomainT) :
   `Pr[Y = c] != 0 ->
   let fiber_c := fiber f c in
   (forall x, x \in fiber_c -> 
@@ -228,11 +228,11 @@ transitivity (\sum_(c : CodomainT) `Pr[Y = c] * log (fiber_card%:R : R)).
     by rewrite -Yt_eq_c mem_fiber.
   rewrite -(Hcard _ c_in_image).
   congr (_ * _).
-  apply: entropy_uniform_fiber_size => //.
+  apply: centropy1_uniform_fiber => //.
   - move=> x x_in_fiber.
     by apply: uniform_on_fibers.
   - move=> x x_notin_fiber.
-    by apply: (fiber_complement_zero_prob Y_eq_fX Pc_neq0 x_notin_fiber).
+    by apply: (fiberC_cond_Pr0 Y_eq_fX Pc_neq0 x_notin_fiber).
   - by rewrite Hcard.
 (* Factor out log(fiber_card) *)
 under eq_bigr do rewrite mulrC.
@@ -259,7 +259,7 @@ Variable g : XT -> CondT -> YT.
 Hypothesis Y_determined : Y = (fun t => g (X t) (Cond t)).
 
 (* Main result: auxiliary variable adds no entropy *)
-Lemma functional_determinacy_entropy :
+Lemma centropy_determined_contract :
   `H([% X, Y] | Cond) = `H(X | Cond).
 Proof.
 (* Use chain rule *)
@@ -316,7 +316,7 @@ Hypothesis constant_fiber_size_per_y : forall y z1 z2,
   #|[set x' | g x' y == z1]| = #|[set x' | g x' y == z2]|.
 
 (* Helper: values outside the fiber have zero conditional probability *)
-Lemma fiber_functional_zero_prob (y : YT) (z : ZT) (x : XT) :
+Lemma fiberC_jcond_Pr0 (y : YT) (z : ZT) (x : XT) :
   `Pr[[% Y, Z] = (y, z)] != 0 ->
   g x y != z ->
   `Pr[X = x | [% Y, Z] = (y, z)] = 0.
@@ -335,7 +335,7 @@ field.
 exact: Hyz_neq0.
 Qed.
 
-Lemma centropy_with_functional_constraint (fiber_card : nat) :
+Lemma centropy_jcond_determined_fibers (fiber_card : nat) :
   (forall y z, 
     `Pr[[% Y, Z] = (y, z)] != 0 ->
     #|[set x' | g x' y == z]| = fiber_card) ->
@@ -366,7 +366,7 @@ transitivity (\sum_(yz : YT * ZT) `Pr[[% Y, Z] = yz] * log (fiber_card%:R : R)).
     move=> x x_notin.
     rewrite jPr_Pr cpr_in1.
     have ->: `Pr[X = x | [% Y, Z] = (y, z)] = 0.
-      apply: fiber_functional_zero_prob => //.
+      apply: fiberC_jcond_Pr0 => //.
       by rewrite inE in x_notin.
     by rewrite mul0r.
     
