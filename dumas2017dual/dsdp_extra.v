@@ -890,3 +890,66 @@ Qed.
 End zero_centropy_eq_point_mass.
 
 End entropy_extra.
+
+Section Zp_unit_extra.
+
+(* 
+   Helper lemmas for unit characterization in Z/mZ rings.
+   
+   In 'Z_m (integers mod m), an element x is a unit (invertible)
+   if and only if gcd(x, m) = 1, i.e., coprime x m.
+   
+   This is fundamental for CRT-based analysis where we work with
+   composite moduli m = p*q and need to establish invertibility
+   from coprimality conditions.
+   
+   Mathematical proof:
+   - Forward (coprime -> unit): By Bezout's identity, coprime x m means
+     exists s,t: s*x + t*m = 1. In Z/m, this gives s*x ≡ 1, so s is inverse.
+   - Backward (unit -> coprime): If x*y = 1 in Z/m, then x*y ≡ 1 (mod m),
+     so m | (x*y - 1). Any common divisor d of x and m must divide 1.
+     
+   Technical note: These proofs require careful handling of:
+   - egcdn/egcdnP for Bezout coefficients
+   - Modular arithmetic (modnMml, modnDml)
+   - Conversion between 'Z_m and nat (nat_of_ord, inZp)
+*)
+
+(* coprime x m implies x is a unit in 'Z_m (when m > 1) *)
+(* 
+   Key lemma from MathComp: unitZpE
+   (x%:R : 'Z_m) \is a GRing.unit = coprime m x  (when 1 < m)
+   
+   For x : 'Z_m, we have x = (nat_of_ord x)%:R, so we can apply unitZpE directly.
+*)
+Lemma coprime_Zp_unit (m : nat) (x : 'Z_m) :
+  (1 < m)%N -> coprime x m -> x \is a GRing.unit.
+Proof.
+move=> Hm_gt1 Hcoprime.
+set xn := nat_of_ord x.
+have Hx_eq: x = xn%:R :> 'Z_m by rewrite Zp_nat valZpK.
+by rewrite Hx_eq unitZpE // coprime_sym.
+Qed.
+
+(* The converse: unit in 'Z_m implies coprime (when m > 1) *)
+(* 
+   Uses unitZpE in reverse: (x%:R) \is a GRing.unit = coprime m x
+*)
+Lemma Zp_unit_coprime (m : nat) (x : 'Z_m) :
+  (1 < m)%N -> x \is a GRing.unit -> coprime x m.
+Proof.
+move=> Hm_gt1 Hunit.
+set xn := nat_of_ord x.
+have Hx_eq: x = xn%:R :> 'Z_m by rewrite Zp_nat valZpK.
+by move: Hunit; rewrite Hx_eq unitZpE // coprime_sym.
+Qed.
+
+(* Equivalence form: unit status iff coprime (when m > 1) *)
+Lemma Zp_unitP (m : nat) (x : 'Z_m) :
+  (1 < m)%N -> (x \is a GRing.unit) = coprime x m.
+Proof.
+move=> Hm_gt1.
+apply/idP/idP; [exact: (Zp_unit_coprime Hm_gt1) | exact: (coprime_Zp_unit Hm_gt1)].
+Qed.
+
+End Zp_unit_extra.

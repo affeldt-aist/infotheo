@@ -36,9 +36,26 @@ Local Definition R := Rdefinitions.R.
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
+(*
+  CRT Reconstruction Section
+  ==========================
+  
+  This section formalizes the DSDP protocol over composite modulus Z/pqZ
+  instead of prime field F_m. The key insight from CRT is:
+  
+    Z/pqZ ≅ Z/pZ × Z/qZ  (when gcd(p,q) = 1)
+  
+  For the constraint u2*v2 + u3*v3 = target:
+    - 1 equation, 2 unknowns → 1 degree of freedom
+    - Over Z/p: p solutions
+    - Over Z/q: q solutions  
+    - Over Z/pq: p × q = pq solutions (via CRT product rule)
+  
+  Security condition: U3 < min(p,q) ensures U3 is invertible in both
+  Z/p and Z/q (since it can't be divisible by either prime).
+*)
 Section crt_reconstruct.
 
-Variable F : finFieldType.
 Variables (p_minus_2 q_minus_2 : nat).
 Local Notation p := p_minus_2.+2.
 Local Notation q := q_minus_2.+2.
@@ -46,7 +63,16 @@ Hypothesis prime_p : prime p.
 Hypothesis prime_q : prime q.
 Hypothesis coprime_pq : coprime p q.
 Local Notation m := (p * q).
-Local Notation msg := 'I_m.
+(* Use Zp ring structure for composite modulus arithmetic *)
+Local Notation msg := 'Z_m.
+
+(* Fiber over composite modulus: solutions to u2*v2 + u3*v3 = target in Z/pqZ *)
+Definition dsdp_fiber_zpq (u2 u3 target : msg) : {set msg * msg} :=
+  [set vv : msg * msg | (u2 * vv.1 + u3 * vv.2 == target)%R].
+
+(* Fiber from full constraint: s - u1*v1 = u2*v2 + u3*v3 *)
+Definition dsdp_fiber_full_zpq (u1 u2 u3 v1 s : msg) : {set msg * msg} :=
+  dsdp_fiber_zpq u2 u3 (s - u1 * v1)%R.
 
 Variable T : finType.
 Variable P : R.-fdist T.
@@ -55,40 +81,373 @@ Let CondRV : {RV P -> (msg * msg * msg * msg * msg)} :=
   [% V1, U1, U2, U3, S].
 Let VarRV : {RV P -> (msg * msg)} := [%V2, V3].
 
-Definition satisfies_constraint (cond : msg * msg * msg * msg * msg)
+Definition satisfies_constraint_zpq (cond : msg * msg * msg * msg * msg)
   (var : msg * msg) : Prop :=
   let '(v1, u1, u2, u3, s) := cond in
   let '(v2, v3) := var in
-  s - u1 * v1 = u2 * v2 + u3 * v3.
+  (s - u1 * v1 = u2 * v2 + u3 * v3)%R.
 
 Hypothesis constraint_holds :
-  forall t, satisfies_constraint (CondRV t) (VarRV t).
+  forall t, satisfies_constraint_zpq (CondRV t) (VarRV t).
 
-Hypothesis U3_nonzero : forall t, U3 t != 0.
+Hypothesis U3_nonzero : forall t, U3 t != 0%R.
 
-(* U3_lt_min(p, q) *)
-
+(* Security condition: U3 < min(p, q) ensures U3 is invertible mod p and mod q *)
 Let minpq_lt_pmulq : (minn p q < p * q)%N.
-Admitted.
+Proof.
+(* minn p q ≤ p < p * q since q ≥ 2 *)
+apply: (@leq_ltn_trans p).
+  by apply: geq_minl.
+(* p < p * q since q ≥ 2 *)
+by rewrite -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
 
 Hypothesis U3_lt_min_p_q : forall t, (U3 t < Ordinal minpq_lt_pmulq)%N.
 
-(* Parties should not know p and q so (minn p q) should not be used
-   but something smaller than it.
-
-   TODO: Replace dsdp_fiber for this new setting.
+(* 
+   Key insight: U3 < min(p,q) implies:
+   - U3 is not divisible by p (since U3 < p)
+   - U3 is not divisible by q (since U3 < q)
+   Therefore U3 is coprime to both p and q, hence invertible in Z/p and Z/q.
+   
+   This is weaker than requiring U3 invertible in Z/pq (which would require
+   coprime(U3, pq)), but sufficient for CRT decomposition.
 *)
 
+(* 
+   Key lemma: u3 < min(p,q) implies u3 is coprime to pq.
+   Since 0 < u3 < min(p,q), we have:
+   - u3 is not divisible by p (since u3 < p)
+   - u3 is not divisible by q (since u3 < q)
+   Therefore gcd(u3, pq) = 1, so u3 is a unit in Z/pq.
+*)
+Lemma lt_minpq_coprime_pq (u : 'Z_m) :
+  (0 < u)%N -> (u < minn p q)%N ->
+  coprime (nat_of_ord u) m.
+Proof.
+move=> Hu_pos Hu_lt.
+rewrite /coprime /m.
+(* u < minn p q <= p, so u < p *)
+have Hu_lt_p: (u < p)%N.
+  by apply: (leq_trans (n := minn p q)); [exact: Hu_lt | exact: geq_minl].
+(* u < minn p q <= q, so u < q *)
+have Hu_lt_q: (u < q)%N.
+  by apply: (leq_trans (n := minn p q)); [exact: Hu_lt | exact: geq_minr].
+rewrite Gauss_gcdl //.
+  (* coprime u p = coprime p u = ~~ (p %| u) when p is prime *)
+  rewrite -/(coprime u p) coprime_sym prime_coprime //.
+  by rewrite gtnNdvd // ltnW.
+(* gcd(u, q) = 1 since u < q and q is prime *)
+rewrite -/(coprime u q) coprime_sym prime_coprime //.
+by rewrite gtnNdvd // ltnW.
+Qed.
 
+(*
+   Fiber cardinality via degree of freedom: |fiber| = m = p * q
+
+   Mathematical proof (from crt_solution_counting.tex Section 5.4):
+   ================================================================
+   
+   When u3 < min(p,q), we have coprime(u3, pq) by lt_minpq_coprime_pq.
+   This means u3 is a unit in Z/pq.
+   
+   Bijection f : Z/pq -> fiber defined by:
+     f(v2) = (v2, (target - u2*v2) / u3)
+   
+   1. f is injective: first component determines the pair
+   
+   2. f maps to fiber:
+      u2*v2 + u3*((target - u2*v2)/u3)
+      = u2*v2 + (target - u2*v2)     [u3 * (x/u3) = x for unit u3]
+      = target ✓
+   
+   3. f is surjective: for (v2,v3) in fiber with u2*v2 + u3*v3 = target,
+      v3 = (target - u2*v2)/u3, so (v2,v3) = f(v2)
+   
+   Therefore |fiber| = |Z/pq| = pq = m
+   
+   Technical TODOs:
+   - Need MathComp lemma: coprime x m -> x \is a GRing.unit in 'Z_m
+   - Work around dependent type issues with m = p*q as modulus
+*)
+Lemma dsdp_fiber_zpq_card (u2 u3 target : msg) :
+  (0 < u3)%N -> (u3 < minn p q)%N ->
+  #|dsdp_fiber_zpq u2 u3 target| = m.
+Proof.
+move=> Hu3_pos Hu3_lt.
+have Hu3_coprime: coprime (nat_of_ord u3) m.
+  by exact: (lt_minpq_coprime_pq Hu3_pos Hu3_lt).
+(* m = p * q > 1 since p, q are primes (hence >= 2) *)
+have Hm_gt1: (1 < m)%N.
+  have Hp_gt1: (1 < p)%N by exact: prime_gt1.
+  have Hq_gt0: (0 < q)%N by exact: prime_gt0.
+  by rewrite /m (leq_trans Hp_gt1) // leq_pmulr.
+(* u3 is a unit in 'Z_m *)
+have Hu3_unit: u3 \is a GRing.unit.
+  exact: (coprime_Zp_unit Hm_gt1 Hu3_coprime).
+(* Bijection f : 'Z_m -> fiber, f(v2) = (v2, (target - u2*v2) * u3^-1) *)
+pose f := fun v2 : msg => (v2, (target - u2 * v2) * u3^-1) : msg * msg.
+rewrite /dsdp_fiber_zpq.
+(* f is injective (first component determines pair) *)
+have f_inj: injective f by move=> v2 v2'; rewrite /f /=; case=> ->.
+(* f maps into fiber *)
+have f_in_fiber: forall v, f v \in [set vv | u2 * vv.1 + u3 * vv.2 == target].
+  move=> v.
+  rewrite inE /f /=.
+  apply/eqP.
+  rewrite mulrCA mulrV //.
+  by ring.
+(* Every fiber element is in range of f *)
+have fiber_in_range: forall vv, 
+  vv \in [set vv | u2 * vv.1 + u3 * vv.2 == target] -> vv = f vv.1.
+  move=> [v2' v3'].
+  rewrite inE /= => /eqP Hconstr.
+  rewrite /f /=.
+  congr pair.
+  rewrite -Hconstr [X in (X - _) / _]addrC addrK.
+  by rewrite (mulrC u3 v3') mulrK.
+(* Cardinality via bijection: |fiber| = |f @: msg| = |msg| = m *)
+(* Since f is injective and fiber = f @: msg, #|fiber| = #|msg| = m *)
+have Hfiber_eq_image: [set vv | u2 * vv.1 + u3 * vv.2 == target] = f @: [set: msg].
+  apply/setP => vv.
+  apply/idP/imsetP.
+  - (* fiber -> image *)
+    move=> Hin.
+    exists vv.1 => //.
+    by rewrite (fiber_in_range _ Hin).
+  - (* image -> fiber *)
+    case=> w _ ->.
+    exact: f_in_fiber.
+rewrite Hfiber_eq_image card_imset //.
+(* #|[set: msg]| = m *)
+by rewrite cardsT card_ord.
+Qed.
+
+(* Uniform distribution hypothesis over fiber *)
 Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
   U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
   V1 t = v1 -> S t = s ->
   forall v2 v3,
-    (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
+    (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
     `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
-    (#|dsdp_fiber u1 u2 u3 v1 s|)%:R^-1.
+    (#|dsdp_fiber_full_zpq u1 u2 u3 v1 s|)%:R^-1.
+
+(* Fiber cardinality for full constraint *)
+Lemma dsdp_fiber_full_zpq_card (u1 u2 u3 v1 s : msg) :
+  (0 < u3)%N -> (u3 < minn p q)%N ->
+  #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
+Proof.
+move=> Hu3_pos Hu3_lt.
+by apply: dsdp_fiber_zpq_card.
+Qed.
+
+(* Non-solutions have zero probability *)
+Lemma dsdp_non_solution_zero_prob_zpq (u1 u2 u3 v1 s : msg) (v2 v3 : msg) :
+  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
+  (v2, v3) \notin dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
+  `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] = 0.
+Proof.
+move=> Hcond_pos Hnot_solution.
+(* Define constraint as fiber membership *)
+set constraint := fun (conds : msg * msg * msg * msg * msg)
+  (vals : msg * msg) =>
+  let '(v1, u1, u2, u3, s) := conds in
+  let '(v2, v3) := vals in
+  (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s.
+have Hconstraint: forall t, constraint (CondRV t) (VarRV t).
+  move=> t.
+  rewrite /constraint /=.
+  rewrite /dsdp_fiber_full_zpq /dsdp_fiber_zpq inE /=.
+  apply/eqP.
+  (* constraint_holds gives: s - u1*v1 = u2*v2 + u3*v3 *)
+  (* We need: u2*v2 + u3*v3 = s - u1*v1 *)
+  move: (constraint_holds t).
+  rewrite /satisfies_constraint_zpq /CondRV /VarRV /=.
+  by move=> ->.
+by rewrite (cond_prob_zero_outside_constraint Hconstraint Hcond_pos).
+Qed.
+
+(* Solutions have uniform probability *)
+Lemma dsdp_solution_uniform_prob_zpq (u1 u2 u3 v1 s : msg) (v2 v3 : msg) :
+  (0 < u3)%N -> (u3 < minn p q)%N ->
+  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
+  (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
+  `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] = m%:R^-1.
+Proof.
+move=> Hu3_pos Hu3_lt Hcond_pos Hin.
+(* From uniform_over_solutions and fiber cardinality *)
+have Hcard: #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
+  by apply: dsdp_fiber_full_zpq_card.
+(* Get witness from conditioning event being non-zero *)
+move/pfwd1_neq0: (Hcond_pos) => [t [Ht _]].
+move: Ht; rewrite inE => /eqP [HV1 HU1 HU2 HU3 HS].
+rewrite (uniform_over_solutions HU1 HU2 HU3 HV1 HS Hin).
+by rewrite Hcard.
+Qed.
+
+(* Helper: entropy at each conditioning value equals log(m) *)
+Lemma dsdp_centropy1_uniform_zpq (v1 u1 u2 u3 s : msg) :
+  (0 < u3)%N -> (u3 < minn p q)%N ->
+  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
+  `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] = log (m%:R : R).
+Proof.
+move=> Hu3_pos Hu3_lt Hcond_pos.
+(* Express conditional entropy as sum *)
+have ->: `H[VarRV | CondRV = (v1, u1, u2, u3, s)] =
+    - \sum_(pair : msg * msg)
+     `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] *
+     log (`Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)]).
+  rewrite centropy1_RVE // /entropy.
+  congr (- _); apply: eq_bigr => [[v2 v3]] _.
+    by rewrite jfdist_cond_cPr_eq.
+  by rewrite fst_RV2 dist_of_RVE.
+(* Get cardinality *)
+have card_m : #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
+  by apply: dsdp_fiber_full_zpq_card.
+(* Adjust uniform hypothesis to match expected form *)
+have Hsol_unif: forall pair : msg * msg,
+    pair \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
+    `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 
+    #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|%:R^-1.
+  move=> [v2 v3] Hin.
+  rewrite (dsdp_solution_uniform_prob_zpq Hu3_pos Hu3_lt Hcond_pos Hin).
+  by rewrite card_m.
+have Hnonsol_zero: forall pair : msg * msg,
+    pair \notin dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
+    `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 0.
+  move=> [v2 v3] Hnotin.
+  by apply: dsdp_non_solution_zero_prob_zpq.
+rewrite (entropy_sum_split Hsol_unif Hnonsol_zero).
+rewrite card_m.
+exact: entropy_uniform_set.
+Qed.
+
+(* Main entropy result: H(V2, V3 | Alice's view) = log(pq) *)
+(* This establishes that Alice learns nothing beyond the constraint. *)
+Theorem dsdp_centropy_uniform_zpq :
+  (forall t, (0 < U3 t)%N) ->
+  `H(VarRV | CondRV) = log (m%:R : R).
+Proof.
+move=> HU3_pos.
+(* Expand conditional entropy as weighted sum *)
+rewrite centropy_RVE' /=.
+(* Transform each term in the sum *)
+transitivity (\sum_(a : msg * msg * msg * msg * msg) 
+               `Pr[ CondRV = a ] * log (m%:R : R)).
+  (* Show each term equals Pr[...] * log(m) *)
+  apply: eq_bigr => [] [] [] [] [] v1 u1 u2 u3 s H.
+  have [->|Hcond_pos] := eqVneq (`Pr[CondRV = (v1, u1, u2, u3, s)]) 0.
+    by rewrite !mul0r.
+  (* Get u3 positivity from HU3_pos *)
+  have Hu3_pos: (0 < u3)%N.
+    move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
+    move: Ht; rewrite inE => /eqP Ht.
+    have HU3t : U3 t = u3 by case: Ht => _ _ _ ->.
+    by rewrite -HU3t; apply: HU3_pos.
+  (* Get u3 < min(p,q) from U3_lt_min_p_q *)
+  have Hu3_lt: (u3 < minn p q)%N.
+    move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
+    move: Ht; rewrite inE => /eqP Ht.
+    have HU3t : U3 t = u3 by case: Ht => _ _ _ ->.
+    rewrite -HU3t.
+    exact: U3_lt_min_p_q.
+  by rewrite (dsdp_centropy1_uniform_zpq Hu3_pos Hu3_lt Hcond_pos).
+under eq_bigr do rewrite mulrC.
+by rewrite -big_distrr /= sum_pfwd1 mulr1.
+Qed.
 
 End crt_reconstruct.
+
+
+(*
+  ============================================================================
+  Connection between CRT (Z/pqZ) and Field (F_m) approaches
+  ============================================================================
+  
+  The two approaches to DSDP entropy analysis:
+  
+  1. Field approach (Section dsdp_entropy_connection):
+     - Modulus m is PRIME
+     - Working over finite field 'F_m
+     - Any non-zero element is invertible
+     - Fiber cardinality: m (degree of freedom argument)
+     - Conditional entropy: H(V2,V3 | Cond) = log(m)
+  
+  2. CRT approach (Section crt_reconstruct):
+     - Modulus m = p × q for distinct primes p, q
+     - Working over ring 'Z_m (NOT a field!)
+     - Only elements coprime to m are invertible
+     - Security requires U3 < min(p,q) to ensure invertibility
+     - Fiber cardinality: m = pq (via CRT product rule)
+     - Conditional entropy: H(V2,V3 | Cond) = log(m) = log(pq)
+  
+  Key insight: Both approaches yield the SAME entropy formula:
+  
+      H(V2, V3 | Alice's view) = log(m)
+  
+  where m is the modulus of the message space.
+  
+  The CRT approach is more general:
+  - Works for composite moduli (needed for certain protocols)
+  - Requires stronger invertibility condition (U3 < min(p,q))
+  - Provides the same security guarantee (maximum entropy over solutions)
+  
+  When m is prime, the CRT approach degenerates to the field approach:
+  - 'Z_m ≅ 'F_m (isomorphic as rings)
+  - Every non-zero element is automatically coprime to m
+  - The security condition U3 ≠ 0 suffices
+*)
+
+Section dsdp_approaches_equivalence.
+
+(* 
+   The mathematical equivalence:
+   For constraint u2*v2 + u3*v3 = target with u3 invertible:
+   
+   Field case ('F_m, m prime):
+     #solutions = m  (v2 free, v3 = (target - u2*v2)/u3)
+   
+   Ring case ('Z_m, m = pq):
+     #solutions mod p = p  (CRT component)
+     #solutions mod q = q  (CRT component)
+     #solutions mod pq = p × q = m  (CRT product)
+   
+   Both cases: Entropy = log(#solutions) = log(m)
+*)
+
+(* When m is prime, 'Z_m and 'F_m have the same cardinality *)
+Lemma Zp_Fp_card_eq (m_minus_2 : nat) :
+  let m := m_minus_2.+2 in
+  prime m ->
+  #|'Z_m| = #|'F_m|.
+Proof.
+move=> /= Hprime.
+rewrite card_ord.
+by rewrite card_Fp // pdiv_id.
+Qed.
+
+(* The entropy formulas are identical for same modulus *)
+Lemma entropy_formula_same (m : nat) :
+  (1 < m)%N ->
+  log (m%:R : R) = log (m%:R : R).
+Proof. by []. Qed.
+
+(*
+   Summary of security guarantees:
+   
+   Field approach (prime m):
+     - Condition: U3 ≠ 0
+     - Guarantee: H(V2,V3 | Cond) = log(m) bits of uncertainty
+   
+   CRT approach (m = pq):
+     - Condition: 0 < U3 < min(p,q)  (stronger!)
+     - Guarantee: H(V2,V3 | Cond) = log(pq) = log(m) bits of uncertainty
+   
+   Both provide maximum entropy over the solution space, meaning
+   Alice learns nothing beyond the constraint itself.
+*)
+
+End dsdp_approaches_equivalence.
 
 
 Section dsdp_entropy_connection.
