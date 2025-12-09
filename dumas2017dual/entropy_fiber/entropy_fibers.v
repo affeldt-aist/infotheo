@@ -59,6 +59,7 @@ Lemma mem_image_set c :
   (c \in image_set) = [exists x, f x == c].
 Proof. by rewrite inE. Qed.
 
+(* c is in the image of f iff its fiber (preimage) is non-empty *)
 Lemma fiber_non_empty_image c :
   (c \in image_set) = (fiber c != set0).
 Proof.
@@ -109,6 +110,7 @@ have Hconstraint: forall t, constraint (Y t) (X t).
 by rewrite (cond_prob_zero_outside_constraint Hconstraint Hcond_pos).
 Qed.
 
+(* Conditional entropy expanded as negative sum of p*log(p) over domain. *)
 Lemma centropy1_as_sum (c : CodomainT) :
   `Pr[Y = c] != 0 ->
   `H[X | Y = c] = 
@@ -163,6 +165,8 @@ field.
 by rewrite pnatr_eq0 -lt0n.
 Qed.
 
+(* If X is uniform over fiber(c) given Y=c, then H(X|Y=c) = log|fiber(c)|.
+   Key lemma for computing conditional entropy via fiber cardinality. *)
 Lemma centropy1_uniform_fiber (c : CodomainT) :
   `Pr[Y = c] != 0 ->
   let fiber_c := fiber f c in
@@ -335,6 +339,8 @@ field.
 exact: Hyz_neq0.
 Qed.
 
+(* When fibers have constant cardinality and X is uniform over each fiber,
+   the conditional entropy is log(fiber_card). Joint conditioning version. *)
 Lemma centropy_jcond_determined_fibers (fiber_card : nat) :
   (forall y z, 
     `Pr[[% Y, Z] = (y, z)] != 0 ->

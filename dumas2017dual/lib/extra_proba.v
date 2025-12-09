@@ -38,6 +38,8 @@ Local Definition R := Rdefinitions.R.
 
 Section proba_extra.
 
+(* If a is not in the image of X, then (a, b) cannot be in the joint image.
+   This is used to show that pairs outside the support have zero probability. *)
 Lemma pair_notin_fin_img_fst (T A B : finType) (P : R.-fdist T)
   (X : {RV P -> A}) (Y : {RV P -> B}) (a : A) (b : B) :
   a \notin fin_img X -> (a, b) \notin fin_img [% X, Y].
@@ -59,6 +61,9 @@ symmetry.
 exact: Xt_eq_a.
 Qed.
 
+(* Conditional probabilities sum to 1: Σ_a Pr[X = a | Y = y] = 1.
+   This is the law of total probability for conditional distributions,
+   essential for showing that conditional distributions are valid fdists. *)
 Lemma sum_cPr_eq 
   (T A B : finType) (P : R.-fdist T)
   (X : {RV P -> A}) (Y : {RV P -> B}) (y : B) :
@@ -177,6 +182,8 @@ have ->: `Pr[[%Y, X] = (y, x)] = 0.
 by rewrite mul0r.
 Qed.
 
+(* Marginalization: summing joint probabilities over Y yields marginal of X.
+   Σ_y Pr[(X,Y) = (x,y)] = Pr[X = x]. Fundamental for deriving marginals. *)
 Lemma PrX_fstRV  (A B T : finType) (P : R.-fdist T)
   (X : {RV P -> A}) (Y : {RV P -> B}) (x : A) :
   \sum_(y : B) `Pr[[% X, Y] = (x, y)] = `Pr[X = x].
@@ -198,6 +205,9 @@ have ->: Pr (`p_[% X, Y]) [set (x, y)] = (`p_[% X, Y]) (x, y).
 by rewrite dist_of_RVE.
 Qed.
 
+(* Joint probability product rule: Pr[(X,Y) = (x,y)] = Pr[Y=y] * Pr[X=x|Y=y].
+   This is Bayes' theorem in product form, fundamental for decomposing
+   joint distributions into marginal × conditional. *)
 Lemma jproduct_ruleRV (A B T : finType) (P : R.-fdist T)
   (X : {RV P -> A}) (Y : {RV P -> B}) (x : A) (y : B) :
   `Pr[[% X, Y] = (x, y)] = `Pr[Y = y] * `Pr[X = x | Y = y].
@@ -222,6 +232,8 @@ Section perm_extra.
 
 Variables (T : finType) (P : R.-fdist T).
 
+(* Projection of triple (X,Y,Z) onto (Y,Z) gives the joint distribution of (Y,Z).
+   This connects fdist_proj23 with the random variable notation. *)
 Lemma fdist_proj23_RV3 (TA TB TC : finType) 
     (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC})
  : fdist_proj23 `p_[% X, Y, Z] = `p_[% Y, Z].
@@ -229,6 +241,9 @@ Proof.
 by rewrite /fdist_proj23 /fdist_snd /fdistA /dist_of_RV /fdistC12 !fdistmap_comp.
 Qed.
 
+(* Swap 3rd and 4th components in 4-tuple probability: 
+   Pr[(X,Y,Z,W)=(a,b,c,d)] = Pr[(X,Y,W,Z)=(a,b,d,c)].
+   Used for reordering conditioning variables. *)
 Lemma pfwd1_pair4_swap34 (TA TB TC TD : finType) 
     (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD})
     a b c d :
@@ -239,6 +254,8 @@ rewrite !pfwd1E; apply eq_bigl => u.
 by rewrite !inE /= !xpair_eqE; do ! case: (_ == _) => //=.
 Qed.
 
+(* Swap components in nested triple: (a,(b,c,d)) ↔ (a,(b,d,c)).
+   Relates different nestings of tuple probabilities. *)
 Lemma pfwd1_nested3_AC (TA TB TC TD : finType)
     (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD})
     a b c d :
@@ -251,6 +268,8 @@ apply/setP => u.
 by rewrite !inE /= !xpair_eqE [in LHS]andbA [in RHS]andbA andbAC.
 Qed.
 
+(* Associativity for 4-tuple: (a,b,c,d) ↔ (a,(b,c),d).
+   Shows that flat 4-tuples equal nested representations. *)
 Lemma pfwd1_pair4_mid_A (TA TB TC TD : finType)
     (X : {RV P -> TA}) (Y : {RV P -> TB}) (Z : {RV P -> TC}) (W : {RV P -> TD})
     a b c d :
@@ -262,6 +281,8 @@ congr Pr; apply/setP => u.
 by rewrite !inE /= !xpair_eqE andbA.
 Qed.
 
+(* Conditional entropy is invariant under swapping last two conditioning vars:
+   H(X | Y,Z,W) = H(X | Y,W,Z). Commutativity for conditioning tuple tail. *)
 Lemma centropyAC
     (A B C D : finType) (X : {RV P -> A}) (Y : {RV P -> B}) 
     (Z : {RV P -> C}) (W : {RV P -> D}) :
@@ -279,6 +300,8 @@ rewrite (reindex (fun '(a, b, c) => (a, c, b)))/=.
 - exists (fun '(a, b, c) => (a, c, b)) => -[[? ?] ?] //=.
 Qed.
 
+(* Associativity for conditional entropy: H(X | (Y,(Z,W))) = H(X | Y,Z,W).
+   Flattens nested conditioning tuples. *)
 Lemma centropyA
     (A B C D : finType) (X : {RV P -> A}) (Y : {RV P -> B}) 
     (Z : {RV P -> C}) (W : {RV P -> D}) :
@@ -306,6 +329,8 @@ by move => [b [c d]].
 by move => [[b c] d].
 Qed.
 
+(* Flatten nested pair in middle position: H(X | W,(V,Z),Y) = H(X | W,V,Z,Y).
+   Associativity when the nested pair is in the middle of the conditioning. *)
 Lemma centropyA_middle
     {A B C D E : finType} 
     (X : {RV P -> A}) (W : {RV P -> B}) 
@@ -336,6 +361,8 @@ by move => [[] b [] c d e].
 by move => [[] [] b] c d e.
 Qed.
 
+(* Swap 2nd and 4th positions in 4-variable conditioning:
+   H(X | W,Y,Z,V) = H(X | W,V,Z,Y). Used for reordering Alice's view components. *)
 Lemma centropy4_swap_2_4
     (A B C D E : finType)
     (X : {RV P -> A}) (W : {RV P -> B}) (Y : {RV P -> C}) 
@@ -354,6 +381,8 @@ rewrite centropyA.
 by rewrite centropyA_middle.
 Qed.
 
+(* Marginal equivalence under swap: the 2nd marginal of (Z,Y) equals
+   the 1st marginal of (Y,Z). Both give the distribution of Y. *)
 Lemma marginal_swap_YZ
   (V W : finType)
   (Y : {RV P -> V}) (Z : {RV P -> W}) :

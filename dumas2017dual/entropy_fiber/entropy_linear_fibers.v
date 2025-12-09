@@ -23,7 +23,7 @@ Import Num.Theory.
 (*  Many results in this file are specialized versions of general theorems    *)
 (*  from rouche_capelli.v (Rouché-Capelli theorem and affine solution sets):  *)
 (*                                                                            *)
-(*  1. linear_fiber_constant_size                                             *)
+(*  1. linear_fiber_card_eq                                             *)
 (*     = Special case of: all affine solution sets for Ax = b with fixed A    *)
 (*       have the same cardinality (translates of the kernel)                 *)
 (*     [General: affine_eq_translate_kernel + card_translate]                 *)
@@ -130,7 +130,7 @@ by rewrite inE /linear_functional dotmulvZ dotmul_delta_mx divfK.
 Qed.
 
 (* Helper: fiber cardinality equals kernel cardinality *)
-Lemma linear_fiber_eq_kernel_card (u : 'rV[msg]_n) (s : msg) (x0 : 'rV[msg]_n) :
+Lemma linear_fiber_kernel_card (u : 'rV[msg]_n) (s : msg) (x0 : 'rV[msg]_n) :
   u *d x0 = s ->
   #|linear_fiber u s| = #|[set v : 'rV[msg]_n | u *d v == 0]|.
 Proof.
@@ -154,16 +154,18 @@ by rewrite subrKC.
 Qed.
 
 (* Key result: all fibers of a non-zero linear functional have the same size *)
-(* 
-   Thin wrapper around Rouché-Capelli Theory:
-   ------------------------------------------
-   This is a direct consequence of the general result that all affine solution 
-   sets {x | Ax = b_i} for fixed A have equal cardinality (they are translates 
-   of the kernel). See: affine_eq_translate_kernel + card_translate in 
-   rouche_capelli.v. The usage of these two lemmas are in the major helper
-   linear_fiber_eq_kernel_card.
+(* All fibers of a linear functional have equal cardinality.
+   
+   WHY THIS WRAPPER: The general Rouché-Capelli theory works with matrices Ax=b,
+   but entropy applications use dot products u·v = s. This wrapper:
+   1. Hides matrix notation - takes row vector u directly
+   2. Provides the natural "for all targets s1, s2" interface
+   3. Enables direct application in entropy_fibers.v's constant-fiber framework
+   
+   Mathematical content: fiber(s) = x₀ + ker(u) for any solution x₀,
+   so |fiber(s₁)| = |ker(u)| = |fiber(s₂)|.
 *)
-Lemma linear_fiber_constant_size (u : 'rV[msg]_n) :
+Lemma linear_fiber_card_eq (u : 'rV[msg]_n) :
   u != 0 ->
   forall s1 s2, #|linear_fiber u s1| = #|linear_fiber u s2|.
 Proof.
@@ -176,7 +178,7 @@ have [x2 Hx2]: exists x, x \in linear_fiber u s2.
   by apply/card_gt0P; exact: (linear_fiber_nonzero u_neq0 s2).
 (* Extract the equations from fiber membership *)
 move: Hx1 Hx2; rewrite !inE /linear_functional => /eqP Hx1 /eqP Hx2.
-by rewrite (linear_fiber_eq_kernel_card Hx1) (linear_fiber_eq_kernel_card Hx2).
+by rewrite (linear_fiber_kernel_card Hx1) (linear_fiber_kernel_card Hx2).
 Qed.
 
 (* Helper: row vector kernel equals column vector kernel (via transpose) *)
@@ -210,16 +212,19 @@ apply/imsetP/idP.
 Qed.
 
 (* Cardinality of linear fiber: |K|^(n-1) *)
-(*
-   Thin wrapper around count_affine_solutions_explicit from rouche_capelli.v:
-   --------------------------------------------------------------------------
-   For a single linear equation u·x = s where u is a non-zero row vector,
-   the solution set has cardinality |K|^(n-1) since rank(u) = 1.
+(* Fiber cardinality for linear functional: |{v | u·v = s}| = |F|^(n-1).
    
-   This follows directly from the general Rouché-Capelli formula:
-   #|{x | Ax = b}| = |K|^(n - rank(A))
+   WHY THIS WRAPPER: The general count_affine_solutions_explicit requires:
+   - A matrix A and target b
+   - A particular solution x₀ with Ax₀ = b
+   - Explicit rank computation
    
-   In our case: A = u (1×n matrix), rank(u) = 1 (u ≠ 0), so we get |K|^(n-1).
+   This wrapper provides the cleaner entropy-focused API:
+   - Takes coefficient vector u and target s directly  
+   - Handles the rank(u) = 1 case (single equation) automatically
+   - Returns |field|^(n-1) directly for use in log calculations
+   
+   Example: For 2D with |F| = m, fiber has m^1 = m elements ⟹ entropy = log(m).
 *)
 Lemma linear_fiber_card (u : 'rV[msg]_n) (s : msg) :
   u != 0 ->
@@ -234,7 +239,7 @@ have [x0 Hx0]: exists x, x \in linear_fiber u s.
 move: Hx0; rewrite inE /linear_functional => /eqP Hx0.
 
 (* Fiber cardinality equals kernel cardinality *)
-rewrite (linear_fiber_eq_kernel_card Hx0).
+rewrite (linear_fiber_kernel_card Hx0).
 
 (* Apply row_kernel_eq_col_kernel *)
 rewrite row_kernel_eq_col_kernel.
@@ -284,7 +289,7 @@ Definition bilinear_solutions (n : nat) (u : 'rV[msg]_n) (s : msg) :
   [set v | dotp u v == s].
 
 (* Connection to linear_fiber: dotp = linear_functional = dotmul *)
-Lemma bilinear_solutions_eq_fiber (n : nat) (u : 'rV[msg]_n) (s : msg) :
+Lemma bilinear_solutions_fiberE (n : nat) (u : 'rV[msg]_n) (s : msg) :
   bilinear_solutions u s = linear_fiber u s.
 Proof. by []. Qed.
 
@@ -296,7 +301,7 @@ Lemma bilinear_solutions_card (n : nat) (u : 'rV[msg]_n) (s : msg) :
   #|bilinear_solutions u s| = (#|msg| ^ n.-1)%N.
 Proof.
 move=> u_neq0 n_pos.
-rewrite bilinear_solutions_eq_fiber.
+rewrite bilinear_solutions_fiberE.
 by rewrite linear_fiber_card.
 Qed.
 
@@ -504,6 +509,27 @@ Definition triple_coeff_matrix (u1 u2 u3 : msg) : 'M[msg]_(1, 3) :=
      else if j == lift ord0 ord0 then u2 
      else u3).
 
+(* 
+   constrained_triples_card: |{(v1,v2,v3) : u1*v1 + u2*v2 + u3*v3 = s}| = m^2
+   
+   STATUS: Aborted - not needed for DSDP protocol analysis
+   
+   REASON: In DSDP, only Alice (result-computing party) knows the constraint
+   result s. Alice's view already includes v1, reducing the problem from 3D to 2D:
+   
+     Alice knows: v1, u1, u2, u3, s
+     Alice infers: (v2, v3) from u2*v2 + u3*v3 = s - u1*v1
+     Use: constrained_pairs_card gives |{(v2,v3)}| = m
+   
+   WHEN NEEDED: This 3D lemma would be required for protocols where:
+   - Adversary sees only (u1,u2,u3,s) but NO variable values
+     Example: External eavesdropper on constraint announcement
+   - Multi-round leakage analysis: H(V1,V2,V3|U,S) before revelation
+     then H(V2,V3|V1,U,S) after, measuring Δ = log(m^2) - log(m) = log(m)
+   - Protocol composition: Multiple DSDP instances before any vi revealed
+   
+   For DSDP-specific version, see dsdp_solution_set_card_full in dsdp_algebra.v
+*)
 (* 
    constrained_triples_card: |{(v1,v2,v3) : u1*v1 + u2*v2 + u3*v3 = s}| = m^2
    

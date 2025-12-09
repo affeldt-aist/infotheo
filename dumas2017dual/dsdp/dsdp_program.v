@@ -140,6 +140,8 @@ rewrite -lock (lock (1 : nat)) /=.
 rewrite -lock (lock (0 : nat)) /=.
 Abort.
 
+(* Protocol execution result: running dsdp for 15 steps produces the expected
+   final state with all parties finished and their respective traces. *)
 Lemma dsdp_ok :
   dsdp 15 = 
   ([:: Finish; Finish; Finish],
@@ -178,6 +180,10 @@ Definition is_dsdp (trs : dsdp_tracesT) :=
     then (v3) else (0) in
   s = v3 * u3 + v2 * u2 + v1 * u1.
 
+(* Trace structure: each party's trace contains their view of the protocol.
+   Alice sees: final sum S, encrypted values, randoms r2/r3, coefficients u_i, her input v1.
+   Bob sees: encrypted partial sums, his input v2.
+   Charlie sees: encrypted partial sum, his input v3. *)
 Lemma dsdp_traces_ok :
   dsdp_traces =
     [tuple
@@ -191,6 +197,8 @@ Lemma dsdp_traces_ok :
        [bseq e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2))); d v3; k dk_c]].
 Proof. by apply/val_inj/(inj_map val_inj); rewrite interp_traces_ok. Qed.
 
+(* Protocol correctness: the final result S satisfies S = u1*v1 + u2*v2 + u3*v3.
+   This verifies the DSDP protocol computes the intended dot product. *)
 Lemma dsdp_is_correct:
   is_dsdp dsdp_traces.
 Proof. rewrite dsdp_traces_ok /is_dsdp /=.

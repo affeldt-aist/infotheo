@@ -5,7 +5,7 @@ Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption entropy_fibers.
 Require Import dsdp_program dsdp_extra dsdp_algebra.
-Require Import entropy_zpq.
+Require Import fiber_zpq.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -115,113 +115,17 @@ Hypothesis U3_lt_min_p_q : forall t, (U3 t < Ordinal minpq_lt_pmulq)%N.
    coprime(U3, pq)), but sufficient for CRT decomposition.
 *)
 
-(* 
-   Key lemma: u3 < min(p,q) implies u3 is coprime to pq.
-   Since 0 < u3 < min(p,q), we have:
-   - u3 is not divisible by p (since u3 < p)
-   - u3 is not divisible by q (since u3 < q)
-   Therefore gcd(u3, pq) = 1, so u3 is a unit in Z/pq.
-*)
-Lemma lt_minpq_coprime_pq (u : 'Z_m) :
-  (0 < u)%N -> (u < minn p q)%N ->
-  coprime (nat_of_ord u) m.
-Proof.
-move=> Hu_pos Hu_lt.
-rewrite /coprime /m.
-(* u < minn p q <= p, so u < p *)
-have Hu_lt_p: (u < p)%N.
-  by apply: (leq_trans (n := minn p q)); [exact: Hu_lt | exact: geq_minl].
-(* u < minn p q <= q, so u < q *)
-have Hu_lt_q: (u < q)%N.
-  by apply: (leq_trans (n := minn p q)); [exact: Hu_lt | exact: geq_minr].
-rewrite Gauss_gcdl //.
-  (* coprime u p = coprime p u = ~~ (p %| u) when p is prime *)
-  rewrite -/(coprime u p) coprime_sym prime_coprime //.
-  by rewrite gtnNdvd // ltnW.
-(* gcd(u, q) = 1 since u < q and q is prime *)
-rewrite -/(coprime u q) coprime_sym prime_coprime //.
-by rewrite gtnNdvd // ltnW.
-Qed.
-
-(*
-   Fiber cardinality via degree of freedom: |fiber| = m = p * q
-
-   Mathematical proof (from crt_solution_counting.tex Section 5.4):
-   ================================================================
+(* Fiber cardinality: |fiber| = m = p * q
    
-   When u3 < min(p,q), we have coprime(u3, pq) by lt_minpq_coprime_pq.
-   This means u3 is a unit in Z/pq.
-   
-   Bijection f : Z/pq -> fiber defined by:
-     f(v2) = (v2, (target - u2*v2) / u3)
-   
-   1. f is injective: first component determines the pair
-   
-   2. f maps to fiber:
-      u2*v2 + u3*((target - u2*v2)/u3)
-      = u2*v2 + (target - u2*v2)     [u3 * (x/u3) = x for unit u3]
-      = target ✓
-   
-   3. f is surjective: for (v2,v3) in fiber with u2*v2 + u3*v3 = target,
-      v3 = (target - u2*v2)/u3, so (v2,v3) = f(v2)
-   
-   Therefore |fiber| = |Z/pq| = pq = m
-   
-   Technical TODOs:
-   - Need MathComp lemma: coprime x m -> x \is a GRing.unit in 'Z_m
-   - Work around dependent type issues with m = p*q as modulus
+   Follows from the generalized fiber_zpq_pair_card in fiber_zpq.v
+   which proves the bijection f(v2) = (v2, (target - u2*v2) / u3) gives |fiber| = m.
 *)
 Lemma dsdp_fiber_zpq_card (u2 u3 target : msg) :
   (0 < u3)%N -> (u3 < minn p q)%N ->
   #|dsdp_fiber_zpq u2 u3 target| = m.
 Proof.
-move=> Hu3_pos Hu3_lt.
-have Hu3_coprime: coprime (nat_of_ord u3) m.
-  by exact: (lt_minpq_coprime_pq Hu3_pos Hu3_lt).
-(* m = p * q > 1 since p, q are primes (hence >= 2) *)
-have Hm_gt1: (1 < m)%N.
-  have Hp_gt1: (1 < p)%N by exact: prime_gt1.
-  have Hq_gt0: (0 < q)%N by exact: prime_gt0.
-  by rewrite /m (leq_trans Hp_gt1) // leq_pmulr.
-(* u3 is a unit in 'Z_m *)
-have Hu3_unit: u3 \is a GRing.unit.
-  exact: (coprime_Zp_unit Hm_gt1 Hu3_coprime).
-(* Bijection f : 'Z_m -> fiber, f(v2) = (v2, (target - u2*v2) * u3^-1) *)
-pose f := fun v2 : msg => (v2, (target - u2 * v2) * u3^-1) : msg * msg.
 rewrite /dsdp_fiber_zpq.
-(* f is injective (first component determines pair) *)
-have f_inj: injective f by move=> v2 v2'; rewrite /f /=; case=> ->.
-(* f maps into fiber *)
-have f_in_fiber: forall v, f v \in [set vv | u2 * vv.1 + u3 * vv.2 == target].
-  move=> v.
-  rewrite inE /f /=.
-  apply/eqP.
-  rewrite mulrCA mulrV //.
-  by ring.
-(* Every fiber element is in range of f *)
-have fiber_in_range: forall vv, 
-  vv \in [set vv | u2 * vv.1 + u3 * vv.2 == target] -> vv = f vv.1.
-  move=> [v2' v3'].
-  rewrite inE /= => /eqP Hconstr.
-  rewrite /f /=.
-  congr pair.
-  rewrite -Hconstr [X in (X - _) / _]addrC addrK.
-  by rewrite (mulrC u3 v3') mulrK.
-(* Cardinality via bijection: |fiber| = |f @: msg| = |msg| = m *)
-(* Since f is injective and fiber = f @: msg, #|fiber| = #|msg| = m *)
-have Hfiber_eq_image: [set vv | u2 * vv.1 + u3 * vv.2 == target] = f @: [set: msg].
-  apply/setP => vv.
-  apply/idP/imsetP.
-  - (* fiber -> image *)
-    move=> Hin.
-    exists vv.1 => //.
-    by rewrite (fiber_in_range _ Hin).
-  - (* image -> fiber *)
-    case=> w _ ->.
-    exact: f_in_fiber.
-rewrite Hfiber_eq_image card_imset //.
-(* #|[set: msg]| = m *)
-by rewrite cardsT card_ord.
+exact: (fiber_zpq_pair_card prime_p prime_q).
 Qed.
 
 (* Uniform distribution hypothesis over fiber *)
@@ -399,41 +303,8 @@ End crt_reconstruct.
   - The security condition U3 ≠ 0 suffices
 *)
 
-Section dsdp_approaches_equivalence.
-
-(* 
-   The mathematical equivalence:
-   For constraint u2*v2 + u3*v3 = target with u3 invertible:
+(* See extra_algebra.v for Zp_Fp_card_eq and entropy_formula_same.
    
-   Field case ('F_m, m prime):
-     #solutions = m  (v2 free, v3 = (target - u2*v2)/u3)
-   
-   Ring case ('Z_m, m = pq):
-     #solutions mod p = p  (CRT component)
-     #solutions mod q = q  (CRT component)
-     #solutions mod pq = p × q = m  (CRT product)
-   
-   Both cases: Entropy = log(#solutions) = log(m)
-*)
-
-(* When m is prime, 'Z_m and 'F_m have the same cardinality *)
-Lemma Zp_Fp_card_eq (m_minus_2 : nat) :
-  let m := m_minus_2.+2 in
-  prime m ->
-  #|'Z_m| = #|'F_m|.
-Proof.
-move=> /= Hprime.
-rewrite card_ord.
-by rewrite card_Fp // pdiv_id.
-Qed.
-
-(* The entropy formulas are identical for same modulus *)
-Lemma entropy_formula_same (m : nat) :
-  (1 < m)%N ->
-  log (m%:R : R) = log (m%:R : R).
-Proof. by []. Qed.
-
-(*
    Summary of security guarantees:
    
    Field approach (prime m):
@@ -447,8 +318,6 @@ Proof. by []. Qed.
    Both provide maximum entropy over the solution space, meaning
    Alice learns nothing beyond the constraint itself.
 *)
-
-End dsdp_approaches_equivalence.
 
 
 Section dsdp_entropy_connection.
@@ -530,7 +399,7 @@ move=> Hcond_pos Hu3_neq0 Hinsol.
 (* Need to extract witnesses for the equalities from the conditioning event *)
 (* Then apply uniform_over_solutions hypothesis *)
 have card_m : #|dsdp_fiber u1 u2 u3 v1 s| = m.
-  by apply: dsdp_fiber_cardinality.
+  by apply: dsdp_fiber_card.
 move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
 move: Ht; rewrite inE => /eqP Ht.
 case: Ht => HV1 HU1 HU2 HU3 HS.
@@ -538,8 +407,11 @@ by rewrite (@uniform_over_solutions
   t v1 u1 u2 u3 s HU1 HU2 HU3 HV1 HS v2 v3 Hinsol) card_m.
 Qed.
 
-(* Helper: Main entropy calculation *)
-(* Uses general framework from entropy_fibers.v *)
+(* Single-point conditional entropy: H[VarRV | CondRV = (v1,u1,u2,u3,s)] = log(m).
+   Shows that for each fixed conditioning value, the conditional entropy
+   equals log(m). This applies the general fiber entropy framework to DSDP:
+   - Fiber = {(v2,v3) | u2*v2 + u3*v3 = s - u1*v1} has cardinality m
+   - Uniform distribution over fiber ⟹ entropy = log(m) *)
 Lemma dsdp_entropy_uniform_subset (u1 u2 u3 v1 s : msg) :
   `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
   u3 != 0 ->
@@ -566,7 +438,7 @@ have ->: `H[VarRV | CondRV = (v1, u1, u2, u3, s)] =
   by rewrite fst_RV2 dist_of_RVE.
 (* Get cardinality *)
 have card_m : #|dsdp_fiber u1 u2 u3 v1 s| = m.
-  by apply: dsdp_fiber_cardinality.
+  by apply: dsdp_fiber_card.
 (* Adjust uniform hypothesis to match expected form *)
 have Hsol_unif': forall pair : msg * msg,
     pair \in dsdp_fiber u1 u2 u3 v1 s ->
@@ -596,7 +468,10 @@ move=> [v2 v3] Hpair.
 exact: dsdp_non_solution_zero_prob.
 Qed.
 
-(* Main lemma *)
+(* Main privacy lemma: H((V2,V3) | (V1,U1,U2,U3,S)) = log(m).
+   This shows that given Alice's view of the constraint, the entropy of
+   Bob and Charlie's private inputs (V2,V3) equals log(m), not log(m²).
+   The "missing" log(m) bits represent V3's determination by the constraint. *)
 Lemma dsdp_centropy_uniform_solutions :
   `H(VarRV | CondRV) = log (m%:R : R).
 Proof.
@@ -629,20 +504,17 @@ Section dsdp_var_entropy.
 Let card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
 Proof. by rewrite card_prod /= !card_Fp. Qed.
 
-(* Assume all (v2, v3) are distributed uniformly since they are
-   private inputs from parties, we get the unconditional entropy of them.
-
-   So we get:
-
-     `H(VarRV | CondRV) = log m < `H `p_VarRV
-
-   Shows that the DSDP protocol indeed leaks information, but still secure by:
-
-    Lemma privacy_by_bonded_leakage :
-      `H([% V2, V3] | AliceView ) = `H(V2 | AliceView).
-
-   At the end of this file.
-*)
+(* Unconditional entropy of private inputs (V2, V3) when uniformly distributed.
+   
+   Since V2, V3 are private inputs from Bob and Charlie respectively,
+   assuming uniform distribution gives H(V2,V3) = log(m²) = 2*log(m).
+   
+   Combined with the conditional entropy result H(V2,V3 | view) = log(m),
+   this shows DSDP leaks log(m) bits but preserves log(m) bits of entropy.
+   
+   The security argument (privacy_by_bonded_leakage at end of file) shows
+   that H(V2,V3 | AliceView) = H(V2 | AliceView), i.e., knowing V3 given
+   the constraint adds no information beyond knowing V2. *)
 Lemma dsdp_var_entropy :
   `p_VarRV = fdist_uniform card_msg_pair ->
   `H `p_VarRV = log (m%:R * m%:R : R).
@@ -793,6 +665,8 @@ Let AliceTraces_values_from_view
             e (E_bob_v2 : enc);
             d r3; d r2; d u3; d u2; d u1; d v1; k (dk_a : pkey)].
 
+(* AliceTraces is a function of AliceView: the protocol trace can be 
+   reconstructed from Alice's view (her inputs and received messages). *)
 Lemma AliceTraces_from_viewP :
   AliceTraces = AliceTraces_values_from_view `o AliceView.
 Proof.
@@ -823,6 +697,8 @@ Local Definition AliceView_values_from_trace (xs : dsdp_traceT) :
          else failtrace
     else failtrace.
 
+(* AliceView_values_from_trace is left-inverse of AliceTraces_values_from_view.
+   This establishes a bijection: AliceView ↔ AliceTraces (no information loss). *)
 Lemma AliceView_values_from_traceP:
    cancel AliceTraces_values_from_view AliceView_values_from_trace.
 Proof.
@@ -835,7 +711,9 @@ case: dk => -[dk mdk] /=.
 by [].
 Qed.
 
-Lemma ce_AliceTraces_AliceView (w : finType) (v : {RV P -> w}) :
+(* Conditional entropy equivalence: conditioning on AliceTraces equals 
+   conditioning on AliceView. They carry the same information. *)
+Lemma centropy_AliceTraces_AliceView (w : finType) (v : {RV P -> w}) :
   `H(v | AliceTraces ) = `H(v | AliceView ).
 Proof.
 simpl in *.
@@ -901,7 +779,9 @@ Definition VS := [% V2, V3].
 Definition ConstUS := [% (fun _ => 1):{RV P -> msg}, (fun _ => 0):{RV P -> msg}].
 Definition VU1 : {RV P -> msg} := V1 \* U1.
 
-Lemma S_alt :
+(* S expressed as dot product: S = (V2,V3)·(U2,U3) + V1*U1.
+   This is the DSDP constraint s = u2*v2 + u3*v3 + u1*v1 in RV form. *)
+Lemma S_E :
   S = Dotp2_rv VS US \+ VU1.
 Proof.
 rewrite /S /VS /US /D3 /VU3R /D2 /VU3 /VU2 /VU1 /Dotp2_rv /dotp2 /add_RV.
@@ -909,7 +789,9 @@ apply: boolp.funext => i //=.
 ring.
 Qed.
 
-Lemma S_alt2 :
+(* S as function composition: S = f ∘ (U2,U3,V2,V3,V1,U1) where f computes the sum.
+   Used for applying composition lemmas in entropy analysis. *)
+Lemma S_compE :
   let f := (fun o => let '(u2, u3, v2, v3, v1, u1) := o
               in u2 * v2 + u3 * v3 + v1 * u1) in
   S = f `o [% U2, U3, V2, V3, V1, U1].
@@ -942,7 +824,7 @@ Section malicious_adversary_case_analysis.
 
       `us != (1, 0) ->  v2 _|_ dotp2_rv us vs`.
 *)
-Lemma ConstUS_is_V2_discloser :
+Lemma ConstUS_discloses_V2 :
   US = ConstUS -> Dotp2_rv VS US = V2.
 Proof.
 move->; rewrite /ConstUS /VS /Dotp2_rv /dotp2 /fst /snd /comp_RV.
@@ -955,7 +837,7 @@ Qed.
    which allows revealing `V2` from the result that Alice receives.
    \cite[\S5.2]{dumas2017dual}.
 *)
-Theorem if_US_are_compromised_V2_is_leaked :
+Theorem US_compromised_leaks_V2 :
   US = ConstUS -> ~ `H(V2 | AliceView ) = `H `p_V2.
 Proof.
 move => H.
@@ -983,7 +865,7 @@ have: `I(V2;[% AliceInputsView, S]) = 0.
 move/mutual_info_RV0_indep.
 (* Show the independence is impossible if Alice has been compromised
    and cheat with the specific `us`*)
-rewrite S_alt /add_RV //= (ConstUS_is_V2_discloser H).
+rewrite S_E /add_RV //= (ConstUS_discloses_V2 H).
 pose z := (fun o : (alice_inputsT * msg) =>
   let '(_, v1, u1, _, _, _, _, v2_r) := o in v2_r - v1 * u1).
 move/(inde_RV_comp idfun z).
@@ -1064,16 +946,19 @@ move: Hval; rewrite H.
 by [].
 Qed.
 
+(* V3 is functionally determined by the other variables via the constraint.
+   Given V1, U1, U2, U3, S, V2, we can compute: V3 = (S - U2*V2 - U1*V1) / U3.
+   This is key for showing H(V2,V3|constraint) = H(V2|constraint). *)
 Lemma V3_determined : V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
 Proof.
-rewrite S_alt2 /compute_v3 /comp_RV /=.  
+rewrite S_compE /compute_v3 /comp_RV /=.  
 apply/boolp.funext => i /=.
 field.
 exact: (U3_nonzero i).
 Qed.
 
 (* TODO: put an assumption so the lemma
-   determined_auxiliary_adds_no_information_v2 can be applied
+   V3_determined_centropy_v2 can be applied
    when the assumption is true.
 *)
 
@@ -1090,7 +975,7 @@ Qed.
     - [S, U2, U3] form a constraint linking them
     - Given constraint, [v3] is determined by [V2] (or vice versa)
 *)
-Lemma determined_auxiliary_adds_no_information_v2 :
+Lemma V3_determined_centropy_v2 :
   `H([% V2, V3] | [% V1, U1, U2, U3, S]) = `H(V2 | [% V1, U1, U2, U3, S]).
 Proof.
 have ->: `H([% V2, V3] | [% V1, U1, U2, U3, S]) =
@@ -1131,7 +1016,9 @@ Hypothesis cinde_V2 :
 Hypothesis V3_determined : 
   V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
 
-(* Entropy: set, and views to project to where we need orders. *)
+(* Privacy via bounded leakage: knowing (V2,V3) given Alice's view is equivalent
+   to knowing just V2. V3 adds no additional information because it's determined
+   by V2 and the constraint. This is the core privacy guarantee for Bob's input V2. *)
 Lemma privacy_by_bonded_leakage :
   `H([% V2, V3] | AliceView ) = `H(V2 | AliceView).
 Proof.
@@ -1216,7 +1103,7 @@ have H_assoc: forall V, `H(V | [% OtherAlice, V1, U1, U2, U3, S] ) =
 rewrite (H_assoc msg V2) (H_assoc (msg * msg)%type [% V2, V3]).
 rewrite (cinde_centropy_eq cinde_V2V3).
 rewrite (cinde_centropy_eq cinde_V2).
-apply: determined_auxiliary_adds_no_information_v2.
+apply: V3_determined_centropy_v2.
 exact: U3_coprime_m.
 Qed. (* TODO: opaque check takes very long. *)
 

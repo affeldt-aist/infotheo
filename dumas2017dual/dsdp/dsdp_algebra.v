@@ -103,6 +103,8 @@ Definition dsdp_constraint (u1 u2 u3 v1 v2 v3 s : msg) : Prop :=
   (secret_vector v1 v2 v3) *m (dsdp_matrix u1 u2 u3)^T =
     \matrix_(i < 1, j < 1) s.
 
+(* The DSDP coefficient matrix has rank 1 when at least one coefficient is nonzero.
+   This establishes the linear system has exactly 1 constraint, giving 2 degrees of freedom. *)
 Lemma dsdp_matrix_rank1 u1 u2 u3 :
   (u1 != 0) || (u2 != 0) || (u3 != 0) ->
   \rank (dsdp_matrix u1 u2 u3) = 1.
@@ -143,7 +145,9 @@ Definition dsdp_solution_set (u1 u2 u3 v1 s : msg) : {set 'rV[msg]_3} :=
 Definition dsdp_fiber (u1 u2 u3 v1 s : msg) : {set msg * msg} :=
   constrained_pairs u2 u3 (s - u1 * v1).
 
-Lemma dsdp_kernel_cardinality u1 u2 u3 :
+(* Kernel cardinality: |ker(A)| = m^(n-r) = m^(3-1) = m^2 for rank-1 system.
+   The kernel represents homogeneous solutions u1*v1 + u2*v2 + u3*v3 = 0. *)
+Lemma dsdp_kernel_card u1 u2 u3 :
   (u1 != 0) || (u2 != 0) || (u3 != 0) ->
   #|dsdp_kernel u1 u2 u3| = (m ^ (3 - 1))%N.
 Proof.
@@ -155,7 +159,9 @@ rewrite mxrank_tr (dsdp_matrix_rank1 H).
 by rewrite card_Fp // pdiv_id.
 Qed.
 
-Lemma dsdp_fiber_cardinality u1 u2 u3 v1 s :
+(* Fiber cardinality for pairs (v2, v3): |{(v2,v3) | u2*v2 + u3*v3 = s - u1*v1}| = m.
+   With v1 fixed, the remaining 2-variable equation has m solutions (1 degree of freedom). *)
+Lemma dsdp_fiber_card u1 u2 u3 v1 s :
   u3 != 0 ->
   #|dsdp_fiber u1 u2 u3 v1 s| = m.
 Proof.
@@ -163,6 +169,8 @@ move=> Hu3neg0.
 by apply: constrained_pairs_card.
 Qed.
 
+(* Full solution set cardinality: |{(v1,v2,v3) | u1*v1 + u2*v2 + u3*v3 = s}| = m^2.
+   One constraint in 3 variables gives 2 degrees of freedom, hence m^2 solutions. *)
 Lemma dsdp_solution_set_card_full u1 u2 u3 v1 s :
   u3 != 0 ->
   #|dsdp_solution_set u1 u2 u3 v1 s| = (m ^ 2)%N.

@@ -98,17 +98,17 @@ smc/smc_tactics.v
 smc/scalar_product_program.v
 smc/scalar_product_proof.v
 homomorphic_encryption/homomorphic_encryption.v
-dumas2017dual/extra_algebra.v
-dumas2017dual/extra_proba.v
-dumas2017dual/extra_entropy.v
-dumas2017dual/dsdp_program.v
-dumas2017dual/dsdp_extra.v
-dumas2017dual/dsdp_algebra.v
-dumas2017dual/entropy_fibers.v
-dumas2017dual/entropy_linear_fibers.v
-dumas2017dual/entropy_zpq.v
-dumas2017dual/dsdp_entropy.v
-dumas2017dual/dsdp_security.v
-dumas2017dual/rouche_capelli.v
+dumas2017dual/lib/extra_algebra.v
+dumas2017dual/lib/extra_proba.v
+dumas2017dual/lib/extra_entropy.v
+dumas2017dual/lib/rouche_capelli.v
+dumas2017dual/entropy_fiber/entropy_fibers.v
+dumas2017dual/entropy_fiber/entropy_linear_fibers.v
+dumas2017dual/zpq/fiber_zpq.v
+dumas2017dual/dsdp/dsdp_extra.v
+dumas2017dual/dsdp/dsdp_program.v
+dumas2017dual/dsdp/dsdp_algebra.v
+dumas2017dual/dsdp/dsdp_entropy.v
+dumas2017dual/dsdp/dsdp_security.v
 
 -R . infotheo
