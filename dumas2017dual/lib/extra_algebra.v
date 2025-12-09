@@ -31,6 +31,9 @@ Local Definition R := Rdefinitions.R.
 
 Section log_extra.
 
+(* log x = 0 iff x = 1 (for positive x).
+   This is fundamental for entropy calculations where log(prob) = 0 
+   implies the probability is 1 (certainty). *)
 Lemma logr_eq1 (x : R) : 0 < x -> (log x = 0) <-> (x = 1).
 Proof.
 move=> Hpos; split.
@@ -51,6 +54,9 @@ End log_extra.
 
 Section bigop_extra.
 
+(* Extract a term from a filtered big operation: if j is in r and satisfies P,
+   we can factor out F(j) from the sum/product over filtered elements.
+   Useful for manipulating sums over constrained index sets. *)
 Lemma bigD1_filter {R : Type} {op : SemiGroup.com_law R} {idx : R}
   {I : eqType} (r : seq I) (j : I) (P : pred I) (F : I -> R) :
   j \in r -> P j -> uniq r ->
@@ -63,6 +69,9 @@ apply: bigD1_seq; last by apply: filter_uniq.
 by rewrite mem_filter Pj j_in.
 Qed.
 
+(* Extract a term from a conditional big operation over a sequence.
+   Similar to bigD1 but for conditional sums: factors out F(j) when j
+   satisfies P, leaving the rest with an additional (i != j) condition. *)
 Lemma bigD1_seq_cond {R : Type} {op : SemiGroup.com_law R} {idx : R}
   {I : eqType} (r : seq I) (j : I) (P : pred I) (F : I -> R) :
   j \in r -> P j -> uniq r ->
@@ -147,4 +156,32 @@ apply/idP/idP; [exact: (Zp_unit_coprime Hm_gt1) | exact: (coprime_Zp_unit Hm_gt1
 Qed.
 
 End Zp_unit_extra.
+
+(* ========================================================================== *)
+(*              Z/mZ and F_m cardinality / field equivalence                   *)
+(* ========================================================================== *)
+
+Section Zp_Fp_equivalence.
+
+(* When m is prime, 'Z_m and 'F_m have the same cardinality *)
+Lemma Zp_Fp_card_eq (m_minus_2 : nat) :
+  let m := m_minus_2.+2 in
+  prime m ->
+  #|'Z_m| = #|'F_m|.
+Proof.
+move=> /= Hprime.
+rewrite card_ord.
+by rewrite card_Fp // pdiv_id.
+Qed.
+
+(* Reflexivity lemma for entropy formulas over Z_m.
+   This trivial lemma serves as a proof obligation discharge when
+   showing that entropy calculations over different representations
+   (e.g., 'Z_m vs 'F_m when m is prime) yield identical results. *)
+Lemma entropy_formula_same (m : nat) :
+  (1 < m)%N ->
+  log (m%:R : R) = log (m%:R : R).
+Proof. by []. Qed.
+
+End Zp_Fp_equivalence.
 

@@ -60,6 +60,9 @@ rewrite !inE -/(is_true _).
 by rewrite -(r2vK r) mem_imset; last exact: v2r_inj.
 Qed.
 
+(* Cardinality of a vector subspace: |U| = |K|^dim(U).
+   Fundamental result: a d-dimensional subspace over finite field K has |K|^d elements.
+   This is the key formula for counting solutions to linear systems. *)
 Lemma card_vspace
   (K : finFieldType) (fvT : finVectType K) (U : {vspace fvT}) :
   #|U| = (#| {:K} | ^ (\dim U))%N.
@@ -73,6 +76,8 @@ Local Corollary card_vspace_rV {K : finFieldType} n (U : {vspace 'rV[K]_n}) :
   #|U| = (#| {:K} | ^ (\dim U))%N.
 Proof. exact: card_vspace. Qed.
 
+(* Kernel cardinality equals the set of zeros: |ker(f)| = |{x | f(x) = 0}|.
+   Connects the linear algebra kernel with the set-theoretic preimage of 0. *)
 Lemma card_lker_lfun
   (K : fieldType) (aT : finVectType K) (rT : vectType K) (f : {linear aT -> rT}) :
   #|lker (linfun f)| = #|[set x : aT | f x == 0]|.
@@ -81,14 +86,18 @@ Proof. by apply: eq_card=> /= x; rewrite !inE memv_ker lfunE. Qed.
 End finvect_lemmas.
 
 Section vector_ext.
+
+(* Self-difference is zero: U \ U = 0. Trivial but useful for simplification. *)
 Lemma diffvv {K : fieldType} {vT : vectType K} (U : {vspace vT}) :
   (U :\: U = 0)%VS.
 Proof. by apply/eqP; rewrite diffv_eq0 subvv. Qed.
 
+(* Image of kernel is zero: f(ker(f)) = 0. By definition of kernel. *)
 Lemma limg_lker {K : fieldType} {aT rT : vectType K} (f : 'Hom(aT, rT)) :
     (f @: lker f = 0)%VS.
 Proof. by apply/eqP; rewrite -lkerE. Qed.
 
+(* Matrix representation of Hom: f2mx(Hom(A)) = A. Coercion identity. *)
 Lemma HomK {R : nzRingType} {vT wT : vectType R} (A : 'M_(dim vT, dim wT)) :
   f2mx (Hom A) = A.
 Proof. by []. Qed.
@@ -98,12 +107,16 @@ Section RoucheCapelliTheorems.
 
 Variable R : fieldType.
 
+(* Equal rank + submx implies equivalence: if rank(A) = rank(B) and A ≤ B, then A ≡ B.
+   Key lemma for establishing row space equality. *)
 Lemma mxrank_sub_eqmx m n p (A : 'M[R]_(m,n)) (B : 'M[R]_(p,n)) :
   \rank A = \rank B -> (A <= B)%MS -> (A == B)%MS.
 Proof.
 by move/eqP => Hr /mxrank_leqif_eq/leqifP; rewrite ltn_neqAle Hr; case: ifPn.
 Qed.
 
+(* Rouché-Capelli Theorem (Part 1): System xA = B has a solution iff
+   rank(A) = rank([A; B]). The augmented matrix has same rank as coefficient matrix. *)
 Lemma rouche1 m n (A : 'M[R]_(m,n)) (B : 'rV_n) :
   (exists x, x *m A = B) <-> (\rank A = \rank (col_mx A B)).
 Proof.
@@ -115,6 +128,8 @@ case/eqmxP/eqmx_sym/addsmx_idPl/submxP => x ->.
 by exists x.
 Qed.
 
+(* Rouché-Capelli Theorem (Part 2): If system is consistent and rank = #rows,
+   then the solution is unique. Full rank means trivial kernel. *)
 Lemma rouche2 m n (A : 'M[R]_(m,n)) (B : 'rV_n) :
   \rank A = \rank (col_mx A B) -> \rank A = m ->
   exists! x, x *m A = B.
@@ -129,6 +144,8 @@ rewrite  mxrank_ker Am subnn mxrank0 andbC => /(_ erefl) /eqmx0P Hker.
 by move: Hx'; rewrite Hker mulmx0 => /GRing.subr0_eq /esym.
 Qed.
 
+(* Rank-deficient matrices have nontrivial kernels: if rank(A) < m,
+   there exists nonzero y with yA = 0. Foundation for solution counting. *)
 Lemma exists_nonzero_kernel m n (A : 'M[R]_(m, n)) :
   (\rank A < m)%N -> exists y : 'rV_m, y *m A = 0 /\ y != 0.
 Proof.
@@ -138,12 +155,16 @@ exists (row i (kermx A)); split.
 by apply/rV0Pn; exists j; rewrite mxE.
 Qed.
 
+(* Solutions to AX = 0 lie in the kernel: if AX = 0, then X^T ≤ ker(A^T).
+   Transposes relate left/right multiplication to kernel membership. *)
 Lemma kernel_membership m n p (A : 'M[R]_(m, n)) (X : 'M[R]_(n, p)) :
   A *m X = 0 -> (X^T <= kermx A^T)%MS.
 Proof.
 move=> HX; apply/sub_kermxP.
 by rewrite -(trmx_mul A X) HX trmx0.
 Qed.
+(* Kernel coefficient existence: if AX = 0, then X^T can be written as
+   P * ker(A^T) for some P. Explicit decomposition in kernel basis. *)
 Lemma kernel_coeff_exists m n p (A : 'M[R]_(m, n)) (X : 'M[R]_(n, p)) :
   A *m X = 0 -> exists P : 'M[R]_(p, n),
     X^T = P *m kermx A^T.
@@ -173,6 +194,8 @@ Definition colspan m n (B : 'M[K]_(m, n)) : {set 'cV[K]_m} :=
 Definition rowspan m n (B : 'M[K]_(m, n)) : {set 'rV[K]_n} :=
   [set x | [exists y : 'rV[K]_m, y *m B == x]].
 
+(* Vectors in cokernel column span are in kernel: if x ∈ colspan(coker A),
+   then Ax = 0. Connects cokernel with null space. *)
 Lemma sub_coker_colspan m n (A : 'M[K]_(m, n)) :
   forall x : 'cV[K]_n, x \in colspan (cokermx A) -> A *m x == 0.
 Proof.
@@ -184,6 +207,8 @@ apply/eqP.
 by rewrite mulmxA mulmx_coker mul0mx.
 Qed.
 
+(* Submatrix relation preserved under dimension cast: A ≤ B implies A ≤ cast(B).
+   Technical lemma for handling dimension changes in matrix row spaces. *)
 Lemma submx_castmx m1 m2 n (A : 'M[K]_(m1, n)) (B : 'M[K]_(m2, n)) e :
   (A <= B)%MS -> @submx.body K m1 m2 n A (castmx e B).
 Proof.
@@ -213,6 +238,9 @@ Hypothesis be : basis_of {:aT} e.
 Variable e' : (\dim {:rT}).-tuple rT.
 Hypothesis be' : basis_of {:rT} e'.
 
+(* Kernel cardinality via matrix representation: |ker(f)| = |{x | x·M = 0}|
+   where M is the matrix of f w.r.t. bases e, e'. Bridges abstract linear
+   maps to concrete matrix equations for counting. *)
 Lemma card_lker_mxof : #|(lker f)| =
                       #|[set x : 'rV[K]_(\dim {:aT}) | x *m (mxof e e' f) == 0]|.
 Proof.
@@ -231,9 +259,12 @@ Variables (m n : nat) (A : 'M[K]_(m, n)).
 
 Definition stdbasis {n} := [tuple 'e_i : 'rV[K]_(\dim {:'rV[K]_n}) | i < \dim {:'rV[K]_n}].
 
+(* Dimension of row vector space: dim('rV_p) = p. Standard identity. *)
 Lemma dim_rV p : \dim {:'rV[K]_p} = p.
 Proof. by rewrite dimvf /dim /= mul1n. Qed.
 
+(* Kernel cardinality for Hom functor: |ker(Hom(A))| = |{x | xA = 0}|.
+   Specializes card_lker_mxof to the standard matrix-to-linear-map coercion. *)
 Lemma card_lker_Hom : #|lker (Hom A)| = #|[set x : 'rV[K]_m | x *m A == 0]|.
 Proof.
 have/card_imset<-/= := (can_inj (@r2vK K {poly_m K})).
@@ -244,6 +275,8 @@ rewrite -[RHS](inj_eq (@r2v_inj _ _)) linear0.
 by rewrite [in LHS]unlock.
 Qed.
 
+(* Cancellation implies row freedom: if g has a left inverse h, then the
+   matrix representation of g has full row rank (row_free). *)
 Lemma cancel_row_free p q (g : {linear 'rV[K]_p -> 'rV[K]_q})
                           (h : {linear 'rV[K]_q -> 'rV[K]_p}) :
   cancel g h -> row_free (lin1_mx g).
@@ -256,9 +289,14 @@ apply/row_matrixP => i.
 by rewrite !row_mul !mul_rV_lin1 /= gh.
 Qed.
 
+(* Row freedom is transpose-invariant for square matrices:
+   row_free(M^T) = row_free(M) when p = q. *)
 Lemma row_free_tr p q (M : 'M[K]_(p,q)) : p = q -> row_free M^T = row_free M.
 Proof. by move=> pq; rewrite -row_leq_rank mxrank_tr -{1}pq row_leq_rank. Qed.
 
+(* Kernel cardinality formula: |ker(A)| = |K|^(m - rank(A)).
+   The kernel is a subspace of dimension (m - rank(A)), hence has this
+   many elements. This is the core counting result for linear systems. *)
 Lemma count_kernel_vectors :
   #| [set x : 'rV[K]_m | x *m A == 0] | = (#| {:K} | ^ (m - \rank A))%N.
 Proof.
@@ -296,6 +334,8 @@ apply/idP/imsetP.
   by rewrite mulmxDl Hk addr0.
 Qed.
 
+(* Translation preserves cardinality: |v + S| = |S|.
+   Adding a constant vector v to all elements is a bijection. *)
 Lemma card_translate (S : {set 'rV[K]_m}) (v : 'rV[K]_m) :
   #|[set v + s | s in S]| = #|S|.
 Proof.
@@ -304,6 +344,8 @@ move=> x y _ _.
 exact: addrI.
 Qed.
 
+(* Affine solutions = kernel cardinality: |{x | xA = b}| = |ker(A)|.
+   Since affine_solutions = x₀ + ker(A), cardinality equals kernel size. *)
 Lemma count_affine_solutions (x0 : 'rV[K]_m) :
   x0 *m A = b ->
   #|affine_solutions| = #|kernel_solutions|.
@@ -313,6 +355,9 @@ rewrite (affine_eq_translate_kernel Hx0).
 exact: card_translate.
 Qed.
 
+(* Explicit affine solution count: |{x | xA = b}| = |K|^(m - rank(A)).
+   Combines count_affine_solutions with count_kernel_vectors.
+   This is the main Rouché-Capelli counting formula for row systems. *)
 Lemma count_affine_solutions_explicit (x0 : 'rV[K]_m) :
   x0 *m A = b ->
   #|affine_solutions| = (#|{:K}| ^ (m - \rank A))%N.
@@ -357,6 +402,8 @@ apply/idP/imsetP.
   by rewrite mulmxDr Hk addr0.
 Qed.
 
+(* Translation preserves cardinality (column version): |v + S| = |S|.
+   Same as card_translate but for column vectors. *)
 Lemma card_translate_col (S : {set 'cV[K]_n}) (v : 'cV[K]_n) :
   #|[set v + s | s in S]| = #|S|.
 Proof.
@@ -365,6 +412,8 @@ move=> x y _ _.
 exact: addrI.
 Qed.
 
+(* Affine = kernel cardinality (column version): |{v | Av = b}| = |ker(A)|.
+   Column version of count_affine_solutions for Av = b systems. *)
 Lemma count_affine_solutions_col (v0 : 'cV[K]_n) :
   A *m v0 = b ->
   #|affine_solutions_col| = #|kernel_solutions_col|.
@@ -374,7 +423,9 @@ rewrite (affine_eq_translate_kernel_col Hv0).
 exact: card_translate_col.
 Qed.
 
-(* Kernel cardinality for column vectors *)
+(* Kernel cardinality (column version): |{v | Av = 0}| = |K|^(n - rank(A)).
+   Proved by transposing to row form and applying count_kernel_vectors.
+   Needed because Coq treats 'cV and 'rV as distinct types. *)
 Lemma count_kernel_vectors_col :
   #|[set v : 'cV[K]_n | A *m v == 0]| = (#|{:K}| ^ (n - \rank A))%N.
 Proof.
@@ -394,6 +445,9 @@ transitivity #|[set v : 'rV[K]_n | v *m A^T == 0]|.
   by rewrite count_kernel_vectors mxrank_tr.  
 Qed.
 
+(* Explicit affine count (column version): |{v | Av = b}| = |K|^(n - rank(A)).
+   Main Rouché-Capelli formula for Av = b systems. Used in DSDP fiber counting
+   where constraints are expressed as column multiplication. *)
 Lemma count_affine_solutions_explicit_col (v0 : 'cV[K]_n) :
   A *m v0 = b ->
   #|affine_solutions_col| = (#|{:K}| ^ (n - \rank A))%N.
@@ -406,6 +460,10 @@ Qed.
 
 End affine_solultion_counting_col.
 
+(* 2D linear constraint cardinality: |{(a,b) | x*a + y*b = z}| = |K| when y ≠ 0.
+   Special case for rank-1 systems: one equation in two unknowns has |K|
+   solutions. Used directly in DSDP's constrained_pairs_card and dotp2_solutions.
+   Proof converts the pair constraint to column form and applies the general theory. *)
 Lemma count_affine_solutions_rank1 (x y z : K) :
   y != 0 ->
   #|[set p : K * K | x * p.1 + y * p.2 == z]| = #|K|.

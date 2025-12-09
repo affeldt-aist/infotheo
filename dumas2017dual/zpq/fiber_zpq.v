@@ -47,7 +47,7 @@ Local Open Scope entropy_scope.
 Local Definition R := Rdefinitions.R.
 
 (* ========================================================================== *)
-(*              Generalized linear fiber over Z/pqZ (dimension n)              *)
+(*              Generalized linear fiber over Z/pqZ (dimension n)             *)
 (* ========================================================================== *)
 
 (*
@@ -106,7 +106,8 @@ Definition linear_functional_zpq (u : 'rV[msg]_n) (v : 'rV[msg]_n) : msg :=
   u *d v.
 
 (* Generalized fiber: solutions to u · v = target over Z/m *)
-Definition linear_fiber_zpq (u : 'rV[msg]_n) (target : msg) : {set 'rV[msg]_n} :=
+Definition linear_fiber_zpq (u : 'rV[msg]_n) (target : msg) :
+  {set 'rV[msg]_n} :=
   [set v : 'rV[msg]_n | u *d v == target].
 
 (* Condition: some component of u is a unit (invertible in Z/m) *)
@@ -148,7 +149,7 @@ Qed.
   such that u · v = target. This v_i = (target - Σ_{j≠i} u_j*v_j) / u_i.
   
   We construct the bijection in two steps:
-  1. fiber_zpq ≅ msg (via projection to non-pivot coordinates + solving for pivot)
+  1. fiber_zpq ≅ msg via projection to non-pivot coordinates + solving for pivot
   2. Actually, simpler: show |fiber| = m^(n-1) directly via injection/surjection
   
   Alternative approach (simpler for Coq):
@@ -167,7 +168,8 @@ Lemma dotmul_bigD1 (u v : 'rV[msg]_n) (i : 'I_n) :
   u *d v = u ord0 i * v ord0 i + \sum_(j < n | j != i) u ord0 j * v ord0 j.
 Proof.
 (* Expand dot product and isolate term at index i *)
-by rewrite dotmulE (bigD1 i) //=; congr (_ + _); apply: eq_bigl => j; rewrite andbC.
+by rewrite dotmulE (bigD1 i) //=;
+   congr (_ + _);apply: eq_bigl => j; rewrite andbC.
 Qed.
 
 (* Helper: unit cancellation - x * y / x = y when x is a unit *)
@@ -189,14 +191,16 @@ Qed.
 Lemma pivot_solveE (u v : 'rV[msg]_n) (target : msg) (i : 'I_n) :
   u ord0 i \is a GRing.unit ->
   u *d v = target ->
-  v ord0 i = (target - \sum_(j < n | j != i) u ord0 j * v ord0 j) * (u ord0 i)^-1.
+  v ord0 i = (target - \sum_(j < n | j != i) u ord0 j * v ord0 j) *
+               (u ord0 i)^-1.
 Proof.
 move=> Hui_unit Hdot.
 (* Expand dot product isolating index i *)
 rewrite (dotmul_bigD1 u v i) in Hdot.
 (* Hdot: u ord0 i * v ord0 i + sum = target *)
 (* Goal: v ord0 i = (target - sum) * (u ord0 i)^-1 *)
-have Heq: u ord0 i * v ord0 i = target - \sum_(j < n | j != i) u ord0 j * v ord0 j.
+have Heq: u ord0 i * v ord0 i = target - \sum_(j < n | j != i) u ord0 j *
+                                           v ord0 j.
   by rewrite -Hdot addrK.
 rewrite -Heq.
 (* Goal: v ord0 i = u ord0 i * v ord0 i / u ord0 i *)
@@ -231,7 +235,8 @@ rewrite mxE /= eqxx.
 set S := \sum_(j < n | j != i) u ord0 j * free j.
 set pivot := (target - S) / u ord0 i.
 (* Simplify the sum: for j != i, row element is free j *)
-have Hsum_eq: \sum_(j < n | j != i) u ord0 j * (\row_k (if k == i then pivot else free k)) ord0 j = S.
+have Hsum_eq: \sum_(j < n | j != i) u ord0 j *
+                (\row_k (if k == i then pivot else free k)) ord0 j = S.
   rewrite /S; apply: eq_bigr => j Hji.
   by rewrite mxE /= (negbTE Hji).
 rewrite Hsum_eq.
@@ -273,15 +278,17 @@ Qed.
 
 (* Helper: cardinality of ffuns with one coordinate fixed to 0 *)
 (* ========================================================================== *)
-(*  Bijection between {f : 'I_n → Z_m | f(i) = 0} and {g : 'I_n.-1 → Z_m}    *)
+(*  Bijection between {f : 'I_n → Z_m | f(i) = 0} and {g : 'I_n.-1 → Z_m}     *)
 (* ========================================================================== *)
 
 (* restrict : ('I_n → Z_m) → ('I_n.-1 → Z_m), drops coordinate i *)
-Definition ffun_restrict (i : 'I_n) (ff : {ffun 'I_n -> msg}) : {ffun 'I_n.-1 -> msg} :=
+Definition ffun_restrict (i : 'I_n) (ff : {ffun 'I_n -> msg}) :
+  {ffun 'I_n.-1 -> msg} :=
   [ffun j => ff (lift i j)].
 
 (* extend : ('I_n.-1 → Z_m) → ('I_n → Z_m), inserts 0 at coordinate i *)
-Definition ffun_extend (i : 'I_n) (g : {ffun 'I_n.-1 -> msg}) : {ffun 'I_n -> msg} :=
+Definition ffun_extend (i : 'I_n) (g : {ffun 'I_n.-1 -> msg}) :
+  {ffun 'I_n -> msg} :=
   [ffun j => if unlift i j is Some k then g k else 0].
 
 (* extend maps into {f | f(i) = 0} *)
@@ -380,7 +387,8 @@ apply/idP/imsetP.
     have Hv': v \in linear_fiber_zpq u target by rewrite inE.
     have Hsame: forall j, j != i -> v ord0 j = (mk_fiber u target i f) ord0 j.
       move=> j Hji.
-      by rewrite /mk_fiber /make_fiber_elem mxE (negbTE Hji) /ffun_to_fun ffunE (negbTE Hji).
+      by rewrite /mk_fiber /make_fiber_elem mxE (negbTE Hji)
+           /ffun_to_fun ffunE (negbTE Hji).
     exact: (fiber_elem_inj Hui_unit Hv' Hmk_in Hsame).
 - (* v = mk_fiber f for f in ker_eval -> v in fiber *)
   move=> [f Hf ->].
@@ -398,9 +406,12 @@ move=> Hui_unit f1 f2 Hf1 Hf2 Heq.
 apply/ffunP => j.
 case: (altP (j =P i)) => [->|Hji].
 + by move: Hf1 Hf2; rewrite !inE => /eqP -> /eqP ->.
-+ have Hv1: mk_fiber u target i f1 \in linear_fiber_zpq u target by exact: make_fiber_elemP.
-  have Hv2: mk_fiber u target i f2 \in linear_fiber_zpq u target by exact: make_fiber_elemP.
-  have Hfree: forall k, k != i -> (mk_fiber u target i f1) ord0 k = (mk_fiber u target i f2) ord0 k.
++ have Hv1: mk_fiber u target i f1 \in linear_fiber_zpq u target
+    by exact: make_fiber_elemP.
+  have Hv2: mk_fiber u target i f2 \in linear_fiber_zpq u target
+    by exact: make_fiber_elemP.
+  have Hfree: forall k, k != i -> (mk_fiber u target i f1) ord0 k =
+                                    (mk_fiber u target i f2) ord0 k.
     by move: Heq => ->.
   move: (Hfree j Hji).
   by rewrite /mk_fiber /make_fiber_elem !mxE (negbTE Hji).
@@ -422,37 +433,19 @@ rewrite (card_in_imset (@mk_fiber_inj u target i Hui_unit)).
 exact: ffun_fix_coord_card.
 Qed.
 
-End linear_fiber_zpq.
-
-(* ========================================================================== *)
-(*                   Original Z/pqZ fiber (dimension 2 special case)           *)
-(* ========================================================================== *)
-
-Section zpq_fiber_framework.
-
-Variables (p_minus_2 q_minus_2 : nat).
-Local Notation p := p_minus_2.+2.
-Local Notation q := q_minus_2.+2.
-Hypothesis prime_p : prime p.
-Hypothesis prime_q : prime q.
-Hypothesis coprime_pq : coprime p q.
-Local Notation m := (p * q).
-(* Use Zp ring structure for composite modulus arithmetic *)
-Local Notation msg := 'Z_m.
-
-(* 
+(*
    Key lemma: u < min(p,q) implies u is coprime to pq.
    Since 0 < u < min(p,q), we have:
    - u is not divisible by p (since u < p)
    - u is not divisible by q (since u < q)
    Therefore gcd(u, pq) = 1, so u is a unit in Z/pq.
 *)
-Lemma lt_minpq_coprime_pq (u : 'Z_m) :
+Lemma lt_minpq_coprime (u : msg) :
   (0 < u)%N -> (u < minn p q)%N ->
   coprime (nat_of_ord u) m.
 Proof.
 move=> Hu_pos Hu_lt.
-rewrite /coprime /m.
+rewrite /coprime.
 (* u < minn p q <= p, so u < p *)
 have Hu_lt_p: (u < p)%N.
   by apply: (leq_trans (n := minn p q)); [exact: Hu_lt | exact: geq_minl].
@@ -468,52 +461,57 @@ rewrite -/(coprime u q) coprime_sym prime_coprime //.
 by rewrite gtnNdvd // ltnW.
 Qed.
 
-(* Fiber over composite modulus: solutions to u2*v2 + u3*v3 = target in Z/pqZ *)
-Definition fiber_zpq (u2 u3 target : msg) : {set msg * msg} :=
-  [set vv : msg * msg | (u2 * vv.1 + u3 * vv.2 == target)%R].
+End linear_fiber_zpq.
+
+(* ========================================================================== *)
+(*       2D specialization: fiber over pairs (v2, v3) : msg × msg             *)
+(* ========================================================================== *)
 
 (*
-   Fiber cardinality via degree of freedom: |fiber| = m = p * q
-
-   Mathematical proof:
-   ================================================================
-   
-   When u3 < min(p,q), we have coprime(u3, pq) by lt_minpq_coprime_pq.
-   This means u3 is a unit in Z/pq.
-   
-   Bijection f : Z/pq -> fiber defined by:
-     f(v2) = (v2, (target - u2*v2) / u3)
-   
-   1. f is injective: first component determines the pair
-   
-   2. f maps to fiber:
-      u2*v2 + u3*((target - u2*v2)/u3)
-      = u2*v2 + (target - u2*v2)     [u3 * (x/u3) = x for unit u3]
-      = target ✓
-   
-   3. f is surjective: for (v2,v3) in fiber with u2*v2 + u3*v3 = target,
-      v3 = (target - u2*v2)/u3, so (v2,v3) = f(v2)
-   
-   Therefore |fiber| = |Z/pq| = pq = m
+  This section provides the interface for dsdp_entropy.v which uses pairs
+  (v2, v3) : msg × msg rather than row vectors 'rV[msg]_2.
+  
+  The 2D fiber cardinality is proven directly using the same bijection
+  technique as the n-dimensional case.
 *)
-Lemma fiber_zpq_card (u2 u3 target : msg) :
+
+Section fiber_zpq_2d.
+
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp_gt1: (1 < p)%N by exact: prime_gt1.
+have Hq_gt0: (0 < q)%N by exact: prime_gt0.
+by rewrite (leq_trans Hp_gt1) // leq_pmulr.
+Qed.
+
+(* Fiber over pairs: solutions to u2*v2 + u3*v3 = target *)
+Definition fiber_zpq_pair (u2 u3 target : msg) : {set msg * msg} :=
+  [set vv : msg * msg | (u2 * vv.1 + u3 * vv.2 == target)%R].
+
+(* Main result: 2D fiber cardinality = m 
+   Direct proof using bijection f(v2) = (v2, (target - u2*v2) / u3) *)
+Lemma fiber_zpq_pair_card (u2 u3 target : msg) :
   (0 < u3)%N -> (u3 < minn p q)%N ->
-  #|fiber_zpq u2 u3 target| = m.
+  #|fiber_zpq_pair u2 u3 target| = m.
 Proof.
 move=> Hu3_pos Hu3_lt.
+(* u3 is coprime to m, hence a unit *)
 have Hu3_coprime: coprime (nat_of_ord u3) m.
-  by exact: (lt_minpq_coprime_pq Hu3_pos Hu3_lt).
-(* m = p * q > 1 since p, q are primes (hence >= 2) *)
-have Hm_gt1: (1 < m)%N.
-  have Hp_gt1: (1 < p)%N by exact: prime_gt1.
-  have Hq_gt0: (0 < q)%N by exact: prime_gt0.
-  by rewrite /m (leq_trans Hp_gt1) // leq_pmulr.
-(* u3 is a unit in 'Z_m *)
+  exact: (lt_minpq_coprime prime_p prime_q Hu3_pos Hu3_lt).
 have Hu3_unit: u3 \is a GRing.unit.
-  exact: (coprime_Zp_unit Hm_gt1 Hu3_coprime).
-(* Bijection f : 'Z_m -> fiber, f(v2) = (v2, (target - u2*v2) * u3^-1) *)
+  exact: (coprime_Zp_unit m_gt1 Hu3_coprime).
+(* Bijection f : msg -> fiber, f(v2) = (v2, (target - u2*v2) / u3) *)
 pose f := fun v2 : msg => (v2, (target - u2 * v2) * u3^-1) : msg * msg.
-rewrite /fiber_zpq.
+rewrite /fiber_zpq_pair.
 (* f is injective (first component determines pair) *)
 have f_inj: injective f by move=> v2 v2'; rewrite /f /=; case=> ->.
 (* f maps into fiber *)
@@ -532,37 +530,23 @@ have fiber_in_range: forall vv,
   congr pair.
   rewrite -Hconstr [X in (X - _) / _]addrC addrK.
   by rewrite (mulrC u3 v3') mulrK.
-(* Cardinality via bijection: |fiber| = |f @: msg| = |msg| = m *)
-(* Since f is injective and fiber = f @: msg, #|fiber| = #|msg| = m *)
+(* Cardinality via bijection *)
 have Hfiber_eq_image: [set vv | u2 * vv.1 + u3 * vv.2 == target] = f @: [set: msg].
   apply/setP => vv.
   apply/idP/imsetP.
-  - (* fiber -> image *)
-    move=> Hin.
+  - move=> Hin.
     exists vv.1 => //.
     by rewrite (fiber_in_range _ Hin).
-  - (* image -> fiber *)
-    case=> w _ ->.
+  - case=> w _ ->.
     exact: f_in_fiber.
 rewrite Hfiber_eq_image card_imset //.
-(* #|[set: msg]| = m *)
 by rewrite cardsT card_ord.
 Qed.
 
-(* Helper: minn p q < p * q *)
-Let minpq_lt_pmulq : (minn p q < p * q)%N.
-Proof.
-(* minn p q ≤ p < p * q since q ≥ 2 *)
-apply: (@leq_ltn_trans p).
-  by apply: geq_minl.
-(* p < p * q since q ≥ 2 *)
-by rewrite -{1}(muln1 p) ltn_pmul2l // ltnS.
-Qed.
-
-End zpq_fiber_framework.
+End fiber_zpq_2d.
 
 (* ========================================================================== *)
-(*            Connection between CRT (Z/pqZ) and Field (F_m) approaches        *)
+(*            Connection between CRT (Z/pqZ) and Field (F_m) approaches       *)
 (* ========================================================================== *)
 
 (*
@@ -598,26 +582,8 @@ End zpq_fiber_framework.
   - The security condition U3 ≠ 0 suffices
 *)
 
-Section zpq_field_equivalence.
-
-(* When m is prime, 'Z_m and 'F_m have the same cardinality *)
-Lemma Zp_Fp_card_eq (m_minus_2 : nat) :
-  let m := m_minus_2.+2 in
-  prime m ->
-  #|'Z_m| = #|'F_m|.
-Proof.
-move=> /= Hprime.
-rewrite card_ord.
-by rewrite card_Fp // pdiv_id.
-Qed.
-
-(* The entropy formulas are identical for same modulus *)
-Lemma entropy_formula_same (m : nat) :
-  (1 < m)%N ->
-  log (m%:R : R) = log (m%:R : R).
-Proof. by []. Qed.
-
-(*
+(* See extra_algebra.v for Zp_Fp_card_eq and entropy_formula_same.
+   
    Summary of security guarantees:
    
    Field approach (prime m):
@@ -631,6 +597,4 @@ Proof. by []. Qed.
    Both provide maximum entropy over the solution space, meaning
    the observer learns nothing beyond the constraint itself.
 *)
-
-End zpq_field_equivalence.
 

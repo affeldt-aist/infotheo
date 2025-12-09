@@ -66,6 +66,9 @@ Variables (T TX TY TZ : finType).
 Variable (P : R.-fdist T).
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
 
+(* Conditional independence implies zero conditional mutual information:
+   If X ⊥ Y | Z, then I(X;Y|Z) = 0. This is the information-theoretic
+   characterization of conditional independence. *)
 Lemma cinde_cond_mutual_info0 :
   P |= X _|_ Y | Z -> cond_mutual_info `p_[% X, Y, Z] = 0.
 Proof.
@@ -144,6 +147,9 @@ Section zero_entropy_eq_point_mass.
 
 Variables (T : finType) (P : R.-fdist T).
 
+(* Zero entropy characterizes point mass distributions:
+   H(Z) = 0 iff there exists z with Pr[Z = z] = 1.
+   This is the deterministic case - no uncertainty means one certain outcome. *)
 Lemma zero_entropy_eq_point_mass1
   (V: finType)
   (Z : {RV P -> V}) :
@@ -223,6 +229,8 @@ rewrite pmulr_rge0; first by rewrite oppr_ge0.
 exact: Hpos.
 Qed.
 
+(* Unique point mass characterization: H(Z) = 0 iff there exists UNIQUE z
+   with Pr[Z = z] = 1. Strengthens zero_entropy_eq_point_mass1 with uniqueness. *)
 Lemma zero_entropy_eq_point_mass
   (V: finType)
   (Z : {RV P -> V}) :

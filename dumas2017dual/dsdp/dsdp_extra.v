@@ -55,5 +55,5 @@ Reserved Notation "u ^h w" (at level 40).
    - extra_entropy.v
    
    For Z/pqZ specific fiber entropy, see:
-   - entropy_zpq.v
+   - fiber_zpq.v
 *)
