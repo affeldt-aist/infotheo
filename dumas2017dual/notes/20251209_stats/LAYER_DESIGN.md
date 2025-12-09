@@ -1,0 +1,200 @@
+# DSDP Formalization Layer Design
+
+This document describes the layered architecture of the `dumas2017dual` Coq formalization for the DSDP (Dual protocols for private multi-party matrix multiplication) protocol.
+
+## Directory Structure
+
+```
+dumas2017dual/
+├── lib/                           # Layer 1: General infrastructure
+│   ├── extra_algebra.v           # Log, bigop, Z/mZ unit lemmas
+│   ├── extra_proba.v             # Conditional probability, RV permutations
+│   ├── extra_entropy.v           # Entropy sum, cond. independence, zero entropy
+│   └── rouche_capelli.v          # Linear system solution counting (Rouché-Capelli)
+│
+├── entropy_fiber/                 # Layers 2-3: Abstract + linear fiber entropy
+│   ├── entropy_fibers.v          # Abstract fiber entropy framework
+│   └── entropy_linear_fibers.v   # Linear algebra specialization
+│
+├── zpq/                           # Layer 4: Z/pqZ specialization
+│   └── fiber_zpq.v               # Fiber cardinality over composite moduli
+│
+└── dsdp/                          # Layer 5: DSDP protocol-specific
+    ├── dsdp_extra.v              # DSDP auxiliary definitions
+    ├── dsdp_program.v            # Protocol execution model
+    ├── dsdp_algebra.v            # DSDP linear system cardinality
+    ├── dsdp_entropy.v            # DSDP entropy analysis
+    └── dsdp_security.v           # Main security theorems
+```
+
+## Dependency Hierarchy
+
+```
+                    ┌─────────────────────────────────┐
+                    │         Layer 5: DSDP           │
+                    │  dsdp_security.v                │
+                    │  dsdp_entropy.v                 │
+                    │  dsdp_algebra.v                 │
+                    │  dsdp_program.v, dsdp_extra.v   │
+                    └──────────────┬──────────────────┘
+                                   │
+                    ┌──────────────▼──────────────────┐
+                    │      Layer 4: Z/pqZ             │
+                    │      fiber_zpq.v                │
+                    └──────────────┬──────────────────┘
+                                   │
+                    ┌──────────────▼──────────────────┐
+                    │   Layer 3: Linear Fibers        │
+                    │   entropy_linear_fibers.v       │
+                    └──────────────┬──────────────────┘
+                                   │
+                    ┌──────────────▼──────────────────┐
+                    │   Layer 2: Abstract Fibers      │
+                    │   entropy_fibers.v              │
+                    └──────────────┬──────────────────┘
+                                   │
+        ┌──────────────────────────┼──────────────────────────┐
+        │                          │                          │
+┌───────▼───────┐    ┌─────────────▼────────────┐    ┌────────▼────────┐
+│ extra_algebra │    │     extra_entropy        │    │ rouche_capelli  │
+│    (.v)       │    │        (.v)              │    │     (.v)        │
+└───────┬───────┘    └─────────────┬────────────┘    └────────┬────────┘
+        │                          │                          │
+        └──────────────────────────┼──────────────────────────┘
+                                   │
+                    ┌──────────────▼──────────────────┐
+                    │      Layer 1: Infrastructure    │
+                    │      (infotheo core libraries)  │
+                    └─────────────────────────────────┘
+```
+
+## Layer Descriptions
+
+### Layer 1: General Infrastructure (`lib/`)
+
+**Purpose:** Provide general-purpose lemmas extending MathComp and infotheo that are not specific to DSDP or even to secure computation.
+
+| File | Content | Key Lemmas |
+|------|---------|------------|
+| `extra_algebra.v` | Log properties, bigop manipulation, Z/mZ units | `logr_eq1`, `Zp_unitP`, `Zp_Fp_card_eq` |
+| `extra_proba.v` | Conditional probability, RV permutation lemmas | `sum_cPr_eq`, `jproduct_ruleRV`, `centropyA` |
+| `extra_entropy.v` | Entropy characterization, conditional independence | `cinde_centropy_eq`, `zero_centropy_eq_deterministic` |
+| `rouche_capelli.v` | Linear system solution counting | `count_affine_solutions_explicit`, `count_affine_solutions_rank1` |
+
+**Design Principle:** These lemmas could potentially be contributed upstream to infotheo or mathcomp-analysis.
+
+### Layer 2: Abstract Fiber Entropy (`entropy_fiber/entropy_fibers.v`)
+
+**Purpose:** Establish the connection between fiber (preimage) structure and entropy calculations in a type-generic way.
+
+**Key Concepts:**
+- **Fiber:** The preimage `{x | f(x) = c}` of a value c under function f
+- **Constant fiber entropy:** When all fibers have equal cardinality k, conditional entropy = log(k)
+
+**Key Lemmas:**
+
+| Lemma | Statement |
+|-------|-----------|
+| `centropy1_uniform_fiber` | H(X\|Y=c) = log\|fiber(c)\| when X is uniform over fiber |
+| `centropy_constant_fibers` | H(X\|Y) = log(k) when all fibers have size k |
+| `centropy_determined_contract` | H((X,Y)\|Cond) = H(X\|Cond) when Y is determined by X |
+
+### Layer 3: Linear Fiber Entropy (`entropy_fiber/entropy_linear_fibers.v`)
+
+**Purpose:** Specialize the abstract fiber framework to linear algebra structures over finite fields.
+
+**Key Concepts:**
+- **Linear fiber:** Solution set `{v | u·v = s}` of a dot product equation
+- **Bilinear form:** Fiber of a bilinear map
+
+**Key Lemmas:**
+
+| Lemma | Statement |
+|-------|-----------|
+| `linear_fiber_card` | \|{v \| u·v = s}\| = \|F\|^(n-1) for n-dimensional v |
+| `linear_fiber_card_eq` | All fibers of same u have equal cardinality |
+| `centropy_bilinear_uniform` | H(V \| U,S) = log(\|F\|^(n-1)) for bilinear constraint |
+
+**Wrapper Design:** These lemmas wrap the general Rouché-Capelli theory from `rouche_capelli.v` with an entropy-focused API that hides matrix notation.
+
+### Layer 4: Z/pqZ Specialization (`zpq/fiber_zpq.v`)
+
+**Purpose:** Handle fiber cardinality over composite moduli Z/(pq)Z where p, q are primes.
+
+**Key Challenge:** In Z/pqZ, not all elements are units, so the standard field-based fiber counting doesn't directly apply.
+
+**Key Concepts:**
+- **Small component:** An element u < min(p,q) is coprime to pq, hence a unit
+- **Pivot solve:** Given u·v = target with u a unit, solve for one coordinate
+
+**Key Lemmas:**
+
+| Lemma | Statement |
+|-------|-----------|
+| `lt_minpq_coprime` | u < min(p,q) ⟹ gcd(u, pq) = 1 |
+| `linear_fiber_zpq_card` | \|{v \| u·v = s}\| = m^(n-1) when u has a unit component |
+| `fiber_zpq_pair_card` | 2D fiber cardinality = m for small coefficients |
+
+### Layer 5: DSDP Protocol (`dsdp/`)
+
+**Purpose:** Formalize the specific DSDP protocol and prove its security properties.
+
+| File | Content |
+|------|---------|
+| `dsdp_extra.v` | Auxiliary definitions for DSDP |
+| `dsdp_program.v` | Protocol execution model, trace structure |
+| `dsdp_algebra.v` | DSDP constraint matrix rank and kernel cardinality |
+| `dsdp_entropy.v` | Main entropy analysis: H(V2,V3 \| AliceView) |
+| `dsdp_security.v` | Top-level security theorem |
+
+**Key Results:**
+
+| Theorem | Statement |
+|---------|-----------|
+| `dsdp_centropy_uniform_solutions` | H((V2,V3) \| constraint) = log(m) |
+| `privacy_by_bonded_leakage` | H((V2,V3) \| AliceView) = H(V2 \| AliceView) |
+| `dsdp_security_bounded_leakage` | H(V2 \| AliceView) = log(m) > 0 |
+
+## Design Principles
+
+### 1. Abstraction Before Specialization
+Each layer provides abstract results that are then specialized by the layer above. This enables:
+- Reuse of proofs across different instantiations
+- Clear separation of mathematical concerns
+- Potential generalization to other protocols
+
+### 2. Wrapper Lemmas
+When general results (e.g., Rouché-Capelli) use different notation than entropy applications need (matrices vs. dot products), we provide thin wrappers that:
+- Hide irrelevant complexity
+- Provide the natural API for the domain
+- Document WHY the wrapper exists
+
+### 3. Naming Conventions (MathComp Style)
+- `_card`: Cardinality lemmas (e.g., `fiber_card`)
+- `_E` or `_eq`: Equality/characterization (e.g., `S_E`)
+- `_neq0`: Non-zero conditions
+- `centropy_`: Conditional entropy lemmas
+- `dsdp_`: Protocol-specific lemmas
+
+### 4. Comment Documentation
+Each lemma should have a comment explaining:
+- What it states (in plain mathematical terms)
+- Why it's needed (its role in the overall proof)
+- How it relates to other lemmas (wrappers, specializations)
+
+## File Statistics
+
+| Layer | Files | Lemmas | Lines |
+|-------|-------|--------|-------|
+| 1 (lib) | 4 | 52 | ~2000 |
+| 2-3 (entropy_fiber) | 2 | 25 | ~800 |
+| 4 (zpq) | 1 | 17 | ~600 |
+| 5 (dsdp) | 5 | 47 | ~2500 |
+| **Total** | **12** | **141** | **~5900** |
+
+## Related Documents
+
+- `20251209_v2_stats.md`: Complete lemma listing with signatures and meanings
+- `DOCUMENTATION_STRUCTURE.md`: Overview of documentation organization
+- Individual subdirectories contain detailed mathematical notes for each component
+
