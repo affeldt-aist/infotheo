@@ -495,7 +495,7 @@ by rewrite (leq_trans Hp_gt1) // leq_pmulr.
 Qed.
 
 (* ========================================================================== *)
-(*  Bijection between msg × msg and 'rV[msg]_2                                 *)
+(*  Bijection between msg × msg and 'rV[msg]_2                                *)
 (* ========================================================================== *)
 
 (*
@@ -542,7 +542,9 @@ Qed.
 
 (* row_to_pair ∘ pair_to_row = id *)
 Lemma row_to_pairK : cancel pair_to_row row_to_pair.
-Proof. by move=> [v1 v2]; rewrite /row_to_pair /pair_to_row; congr pair; rewrite mxE. Qed.
+Proof.
+by move=> [v1 v2]; rewrite /row_to_pair /pair_to_row; congr pair; rewrite mxE.
+Qed.
 
 (* pair_to_row is a bijection *)
 Lemma pair_to_row_bij : bijective pair_to_row.
@@ -604,7 +606,8 @@ Proof.
 apply/setP => vv.
 rewrite inE.
 apply/idP/imsetP.
-- (* vv in fiber_zpq_pair → exists v in linear_fiber_zpq with vv = row_to_pair v *)
+- (* vv in fiber_zpq_pair →
+     exists v in linear_fiber_zpq with vv = row_to_pair v *)
   move=> /eqP Hconstr.
   exists (pair_to_row vv).
   + (* pair_to_row vv in linear_fiber_zpq *)
@@ -613,7 +616,8 @@ apply/idP/imsetP.
     by apply/eqP.
   + (* vv = row_to_pair (pair_to_row vv) *)
     by rewrite row_to_pairK.
-- (* exists v in linear_fiber_zpq with vv = row_to_pair v → vv in fiber_zpq_pair *)
+- (* exists v in linear_fiber_zpq with vv = row_to_pair v →
+     vv in fiber_zpq_pair *)
   move=> [v Hv ->].
   move: Hv; rewrite inE => /eqP Hdot.
   apply/eqP.
@@ -634,7 +638,6 @@ Lemma linear_fiber_zpq_card_2d (u : 'rV[msg]_2) (target : msg) (i : 'I_2) :
   #|linear_fiber_zpq u target| = m.
 Proof.
 move=> Hui_unit.
-(* Use the general lemma: prime_p prime_q target, then unit proof (i is inferred) *)
 pose proof (linear_fiber_zpq_card prime_p prime_q target Hui_unit) as Hcard.
 by rewrite /= expn1 in Hcard.
 Qed.
