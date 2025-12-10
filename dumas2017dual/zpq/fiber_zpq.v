@@ -591,7 +591,7 @@ by rewrite !pair_to_row_ord0 !pair_to_row_ord_max addrC.
 Qed.
 
 (* ========================================================================== *)
-(*  Fiber correspondence via bijection                                         *)
+(*  Fiber correspondence via bijection                                        *)
 (* ========================================================================== *)
 
 (* Fiber over pairs: solutions to u2*v2 + u3*v3 = target *)
