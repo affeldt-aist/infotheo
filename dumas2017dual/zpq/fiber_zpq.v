@@ -624,7 +624,7 @@ apply/idP/imsetP.
 Qed.
 
 (* ========================================================================== *)
-(*  Main result: fiber cardinality via general theorem                         *)
+(*  Main result: fiber cardinality via general theorem                        *)
 (* ========================================================================== *)
 
 (* Specialized wrapper for linear_fiber_zpq_card at dimension 2 *)
