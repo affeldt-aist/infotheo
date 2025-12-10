@@ -562,7 +562,7 @@ Lemma row_to_pair_inj : injective row_to_pair.
 Proof. exact: (bij_inj row_to_pair_bij). Qed.
 
 (* ========================================================================== *)
-(*  Correspondence of constraint equations                                     *)
+(*  Correspondence of constraint equations                                    *)
 (* ========================================================================== *)
 
 (* Convert coefficient pair (u2, u3) to row vector for linear_fiber_zpq *)
