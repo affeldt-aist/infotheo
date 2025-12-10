@@ -463,6 +463,7 @@ Qed.
 
 End linear_fiber_zpq.
 
+
 (* ========================================================================== *)
 (*       2D specialization: fiber over pairs (v2, v3) : msg × msg             *)
 (* ========================================================================== *)
@@ -471,8 +472,8 @@ End linear_fiber_zpq.
   This section provides the interface for dsdp_entropy.v which uses pairs
   (v2, v3) : msg × msg rather than row vectors 'rV[msg]_2.
   
-  The 2D fiber cardinality is proven directly using the same bijection
-  technique as the n-dimensional case.
+  The 2D fiber cardinality is derived from the general linear_fiber_zpq_card
+  theorem by establishing a bijection between 'rV[msg]_2 and msg × msg.
 *)
 
 Section fiber_zpq_2d.
@@ -493,12 +494,159 @@ have Hq_gt0: (0 < q)%N by exact: prime_gt0.
 by rewrite (leq_trans Hp_gt1) // leq_pmulr.
 Qed.
 
+(* ========================================================================== *)
+(*  Bijection between msg × msg and 'rV[msg]_2                                 *)
+(* ========================================================================== *)
+
+(*
+=== MATHEMATICAL PROOF STRATEGY ===
+
+Goal: Derive fiber_zpq_pair_card from linear_fiber_zpq_card
+
+Step 1: Establish bijection between msg × msg and 'rV[msg]_2
+  - pair_to_row : msg × msg → 'rV[msg]_2
+  - row_to_pair : 'rV[msg]_2 → msg × msg
+  - These are mutual inverses
+
+Step 2: Show constraint equations correspond
+  - For u = (u2, u3) as row vector, v = (v2, v3) as row vector:
+    u *d v = u2 * v2 + u3 * v3
+  - This matches the fiber_zpq_pair constraint
+
+Step 3: Show fiber_zpq_pair = image of linear_fiber_zpq under row_to_pair
+  - The bijection preserves the constraint
+
+Step 4: Use bijection to transfer cardinality
+  - #|fiber_zpq_pair| = #|linear_fiber_zpq| = m^(2-1) = m
+
+===================================
+*)
+
+(* Convert pair to row vector *)
+Definition pair_to_row (vv : msg * msg) : 'rV[msg]_2 :=
+  \row_(j < 2) if j == ord0 then vv.1 else vv.2.
+
+(* Convert row vector to pair *)
+Definition row_to_pair (v : 'rV[msg]_2) : msg * msg :=
+  (v ord0 ord0, v ord0 ord_max).
+
+(* pair_to_row ∘ row_to_pair = id *)
+Lemma pair_to_rowK : cancel row_to_pair pair_to_row.
+Proof.
+move=> v; apply/rowP => j; rewrite mxE /row_to_pair.
+case: (unliftP ord0 j) => [j'|] ->.
+- have -> : lift ord0 j' = ord_max :> 'I_2 by apply/val_inj; case: j' => [] [].
+  by [].
+- by rewrite eqxx.
+Qed.
+
+(* row_to_pair ∘ pair_to_row = id *)
+Lemma row_to_pairK : cancel pair_to_row row_to_pair.
+Proof. by move=> [v1 v2]; rewrite /row_to_pair /pair_to_row; congr pair; rewrite mxE. Qed.
+
+(* pair_to_row is a bijection *)
+Lemma pair_to_row_bij : bijective pair_to_row.
+Proof. exists row_to_pair; [exact: row_to_pairK | exact: pair_to_rowK]. Qed.
+
+(* row_to_pair is a bijection *)
+Lemma row_to_pair_bij : bijective row_to_pair.
+Proof. exists pair_to_row; [exact: pair_to_rowK | exact: row_to_pairK]. Qed.
+
+(* Injectivity lemmas for set cardinality *)
+Lemma pair_to_row_inj : injective pair_to_row.
+Proof. exact: (bij_inj pair_to_row_bij). Qed.
+
+Lemma row_to_pair_inj : injective row_to_pair.
+Proof. exact: (bij_inj row_to_pair_bij). Qed.
+
+(* ========================================================================== *)
+(*  Correspondence of constraint equations                                     *)
+(* ========================================================================== *)
+
+(* Convert coefficient pair (u2, u3) to row vector for linear_fiber_zpq *)
+Definition coef_to_row (u2 u3 : msg) : 'rV[msg]_2 := pair_to_row (u2, u3).
+
+
+(* Helper: accessing pair_to_row at ord0 *)
+Lemma pair_to_row_ord0 (vv : msg * msg) : (pair_to_row vv) ord0 ord0 = vv.1.
+Proof. by rewrite /pair_to_row mxE eqxx. Qed.
+
+(* Helper: accessing pair_to_row at ord_max *)
+Lemma pair_to_row_ord_max (vv : msg * msg) : (pair_to_row vv) ord0 ord_max = vv.2.
+Proof. by rewrite /pair_to_row mxE. Qed.
+
+(* The dot product u *d v equals u2*v2 + u3*v3 *)
+Lemma dotmul_pair_eq (u2 u3 : msg) (vv : msg * msg) :
+  (coef_to_row u2 u3) *d (pair_to_row vv) = u2 * vv.1 + u3 * vv.2.
+Proof.
+rewrite /coef_to_row dotmulE (bigD1 ord0) //= (bigD1 ord_max) //=.
+rewrite big1 ?addr0; last first.
+  move=> i /andP [Hi_neq0 Hi_neq_max].
+  case: (unliftP ord0 i) Hi_neq0 Hi_neq_max => [j|] -> //.
+  have -> : lift ord0 j = ord_max :> 'I_2 by apply/val_inj; case: j => [] [].
+  by rewrite eqxx.
+by rewrite !pair_to_row_ord0 !pair_to_row_ord_max addrC.
+Qed.
+
+(* ========================================================================== *)
+(*  Fiber correspondence via bijection                                         *)
+(* ========================================================================== *)
+
 (* Fiber over pairs: solutions to u2*v2 + u3*v3 = target *)
 Definition fiber_zpq_pair (u2 u3 target : msg) : {set msg * msg} :=
   [set vv : msg * msg | (u2 * vv.1 + u3 * vv.2 == target)%R].
 
-(* Main result: 2D fiber cardinality = m 
-   Direct proof using bijection f(v2) = (v2, (target - u2*v2) / u3) *)
+(* fiber_zpq_pair is the image of linear_fiber_zpq under row_to_pair *)
+Lemma fiber_zpq_pair_eq (u2 u3 target : msg) :
+  fiber_zpq_pair u2 u3 target = 
+    row_to_pair @: linear_fiber_zpq (coef_to_row u2 u3) target.
+Proof.
+apply/setP => vv.
+rewrite inE.
+apply/idP/imsetP.
+- (* vv in fiber_zpq_pair → exists v in linear_fiber_zpq with vv = row_to_pair v *)
+  move=> /eqP Hconstr.
+  exists (pair_to_row vv).
+  + (* pair_to_row vv in linear_fiber_zpq *)
+    rewrite inE.
+    rewrite dotmul_pair_eq.
+    by apply/eqP.
+  + (* vv = row_to_pair (pair_to_row vv) *)
+    by rewrite row_to_pairK.
+- (* exists v in linear_fiber_zpq with vv = row_to_pair v → vv in fiber_zpq_pair *)
+  move=> [v Hv ->].
+  move: Hv; rewrite inE => /eqP Hdot.
+  apply/eqP.
+  (* Goal: u2 * (row_to_pair v).1 + u3 * (row_to_pair v).2 = target *)
+  rewrite -Hdot.
+  rewrite -dotmul_pair_eq.
+  by rewrite pair_to_rowK.
+Qed.
+
+(* ========================================================================== *)
+(*  Main result: fiber cardinality via general theorem                         *)
+(* ========================================================================== *)
+
+(* Specialized wrapper for linear_fiber_zpq_card at dimension 2 *)
+(* Note: The general lemma's section variables match this section's variables *)
+Lemma linear_fiber_zpq_card_2d (u : 'rV[msg]_2) (target : msg) (i : 'I_2) :
+  u ord0 i \is a GRing.unit ->
+  #|linear_fiber_zpq u target| = m.
+Proof.
+move=> Hui_unit.
+(* Use the general lemma: prime_p prime_q target, then unit proof (i is inferred) *)
+pose proof (linear_fiber_zpq_card prime_p prime_q target Hui_unit) as Hcard.
+by rewrite /= expn1 in Hcard.
+Qed.
+
+(*
+  Main result: 2D fiber cardinality = m
+  
+  Derived from linear_fiber_zpq_card by:
+  1. u3 < min(p,q) implies u3 is a unit (at index ord_max)
+  2. linear_fiber_zpq_card gives |linear_fiber_zpq| = m^(2-1) = m
+  3. Bijection preserves cardinality: |fiber_zpq_pair| = |linear_fiber_zpq|
+*)
 Lemma fiber_zpq_pair_card (u2 u3 target : msg) :
   (0 < u3)%N -> (u3 < minn p q)%N ->
   #|fiber_zpq_pair u2 u3 target| = m.
@@ -509,38 +657,18 @@ have Hu3_coprime: coprime (nat_of_ord u3) m.
   exact: (lt_minpq_coprime prime_p prime_q Hu3_pos Hu3_lt).
 have Hu3_unit: u3 \is a GRing.unit.
   exact: (coprime_Zp_unit m_gt1 Hu3_coprime).
-(* Bijection f : msg -> fiber, f(v2) = (v2, (target - u2*v2) / u3) *)
-pose f := fun v2 : msg => (v2, (target - u2 * v2) * u3^-1) : msg * msg.
-rewrite /fiber_zpq_pair.
-(* f is injective (first component determines pair) *)
-have f_inj: injective f by move=> v2 v2'; rewrite /f /=; case=> ->.
-(* f maps into fiber *)
-have f_in_fiber: forall v, f v \in [set vv | u2 * vv.1 + u3 * vv.2 == target].
-  move=> v.
-  rewrite inE /f /=.
-  apply/eqP.
-  rewrite mulrCA mulrV //.
-  by ring.
-(* Every fiber element is in range of f *)
-have fiber_in_range: forall vv, 
-  vv \in [set vv | u2 * vv.1 + u3 * vv.2 == target] -> vv = f vv.1.
-  move=> [v2' v3'].
-  rewrite inE /= => /eqP Hconstr.
-  rewrite /f /=.
-  congr pair.
-  rewrite -Hconstr [X in (X - _) / _]addrC addrK.
-  by rewrite (mulrC u3 v3') mulrK.
-(* Cardinality via bijection *)
-have Hfiber_eq_image: [set vv | u2 * vv.1 + u3 * vv.2 == target] = f @: [set: msg].
-  apply/setP => vv.
-  apply/idP/imsetP.
-  - move=> Hin.
-    exists vv.1 => //.
-    by rewrite (fiber_in_range _ Hin).
-  - case=> w _ ->.
-    exact: f_in_fiber.
-rewrite Hfiber_eq_image card_imset //.
-by rewrite cardsT card_ord.
+(* coef_to_row u2 u3 has u3 at position ord_max *)
+have Hcoef_ord_max: (coef_to_row u2 u3) ord0 ord_max = u3.
+  by rewrite /coef_to_row pair_to_row_ord_max.
+(* Apply linear_fiber_zpq_card with pivot index ord_max *)
+have Hcoef_unit: (coef_to_row u2 u3) ord0 ord_max \is a GRing.unit.
+  by rewrite Hcoef_ord_max.
+have Hlinear_card: #|linear_fiber_zpq (coef_to_row u2 u3) target| = m.
+  by apply: linear_fiber_zpq_card_2d Hcoef_unit.
+(* Use bijection to transfer cardinality *)
+rewrite fiber_zpq_pair_eq.
+rewrite card_imset; last exact: row_to_pair_inj.
+by rewrite Hlinear_card.
 Qed.
 
 End fiber_zpq_2d.
