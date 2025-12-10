@@ -595,11 +595,13 @@ Qed.
 (* ========================================================================== *)
 
 (* Fiber over pairs: solutions to u2*v2 + u3*v3 = target *)
-Definition fiber_zpq_pair (u2 u3 target : msg) : {set msg * msg} :=
+(* Local definition - only used to derive fiber_zpq_pair_card *)
+Let fiber_zpq_pair (u2 u3 target : msg) : {set msg * msg} :=
   [set vv : msg * msg | (u2 * vv.1 + u3 * vv.2 == target)%R].
 
 (* fiber_zpq_pair is the image of linear_fiber_zpq under row_to_pair *)
-Lemma fiber_zpq_pair_eq (u2 u3 target : msg) :
+(* Local lemma - only used to derive fiber_zpq_pair_card *)
+Let fiber_zpq_pair_eq (u2 u3 target : msg) :
   fiber_zpq_pair u2 u3 target = 
     row_to_pair @: linear_fiber_zpq (coef_to_row u2 u3) target.
 Proof.
@@ -632,8 +634,8 @@ Qed.
 (* ========================================================================== *)
 
 (* Specialized wrapper for linear_fiber_zpq_card at dimension 2 *)
-(* Note: The general lemma's section variables match this section's variables *)
-Lemma linear_fiber_zpq_card_2d (u : 'rV[msg]_2) (target : msg) (i : 'I_2) :
+(* Local lemma - instantiates the general theorem for n=2 *)
+Let linear_fiber_zpq_card_2d (u : 'rV[msg]_2) (target : msg) (i : 'I_2) :
   u ord0 i \is a GRing.unit ->
   #|linear_fiber_zpq u target| = m.
 Proof.
