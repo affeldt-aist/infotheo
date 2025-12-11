@@ -3,7 +3,7 @@
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup lra.
-From mathcomp Require boolp classical_sets.
+From mathcomp Require boolp.
 From mathcomp Require Import unstable mathcomp_extra functions reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
@@ -728,28 +728,6 @@ End pzRing_random_variables.
 
 Notation "X `* Y" := (X * Y) (only parsing) : proba_scope.
 
-Module PointedFinite_def.
-Import classical_sets.
-#[short(type=pointedFinType)]
-HB.structure Definition PointedFinite := {T of Pointed T & Finite T}.
-End PointedFinite_def.
-Import PointedFinite_def.
-
-(* copied from mca master *)
-Section nzRing_random_variables.
-Context {R : realType} {U : pointedFinType} {P : R.-fdist U} {V : nzRingType}.
-Local Open Scope ring_scope.
-
-Let oner_neq0 : cst 1 != 0 :> {RV P -> V}.
-Proof.
-by apply/eqP; rewrite boolp.funeqE => /(_ classical_sets.point) /eqP; rewrite oner_eq0.
-Qed.
-
-HB.instance Definition _ :=
-  @GRing.PzSemiRing_isNonZero.Build {RV P -> V} oner_neq0.
-
-End nzRing_random_variables.
-
 (* copied from mca master *)
 Section comPzRing_random_variables.
 Context {R : realType} {U : finType} {P : R.-fdist U} {V : comPzRingType}.
@@ -762,10 +740,6 @@ HB.instance Definition _ :=
   GRing.PzRing_hasCommutativeMul.Build {RV P -> V} mulrC.
 
 End comPzRing_random_variables.
-
-HB.instance Definition _
-  {R : realType} {U : pointedFinType} {P : R.-fdist U} {V : comNzRingType} :=
-  GRing.ComPzRing.on {RV P -> V}.
 
 (* copied from mca master *)
 Section lmodule_random_variables.
