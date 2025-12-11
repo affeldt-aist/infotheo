@@ -55,7 +55,7 @@ Reserved Notation "u ^h w" (at level 40).
   Security condition: U3 < min(p,q) ensures U3 is invertible in both
   Z/p and Z/q (since it can't be divisible by either prime).
 *)
-Section crt_reconstruct.
+Section dsdp_entropy_zpq.
 
 Variables (p_minus_2 q_minus_2 : nat).
 Local Notation p := p_minus_2.+2.
@@ -68,7 +68,9 @@ Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
 
 (* Fiber over composite modulus: solutions to u2*v2 + u3*v3 = target in Z/pqZ *)
-Definition dsdp_fiber_zpq (u2 u3 target : msg) : {set msg * msg} :=
+(* Note: This is the same as fiber_zpq_pair in fiber_zpq.v,
+   kept local for clarity *)
+Let dsdp_fiber_zpq (u2 u3 target : msg) : {set msg * msg} :=
   [set vv : msg * msg | (u2 * vv.1 + u3 * vv.2 == target)%R].
 
 (* Fiber from full constraint: s - u1*v1 = u2*v2 + u3*v3 *)
@@ -91,42 +93,19 @@ Definition satisfies_constraint_zpq (cond : msg * msg * msg * msg * msg)
 Hypothesis constraint_holds :
   forall t, satisfies_constraint_zpq (CondRV t) (VarRV t).
 
-Hypothesis U3_nonzero : forall t, U3 t != 0%R.
-
-(* Security condition: U3 < min(p, q) ensures U3 is invertible mod p and mod q *)
-Let minpq_lt_pmulq : (minn p q < p * q)%N.
-Proof.
-(* minn p q ≤ p < p * q since q ≥ 2 *)
-apply: (@leq_ltn_trans p).
-  by apply: geq_minl.
-(* p < p * q since q ≥ 2 *)
-by rewrite -{1}(muln1 p) ltn_pmul2l // ltnS.
-Qed.
-
-Hypothesis U3_lt_min_p_q : forall t, (U3 t < Ordinal minpq_lt_pmulq)%N.
-
 (* 
-   Key insight: U3 < min(p,q) implies:
-   - U3 is not divisible by p (since U3 < p)
-   - U3 is not divisible by q (since U3 < q)
-   Therefore U3 is coprime to both p and q, hence invertible in Z/p and Z/q.
+   Security condition for fiber_zpq_pair_card:
+   - (0 < u3)%N: u3 is positive
+   - (u3 < minn p q)%N: u3 < min(p,q)
    
-   This is weaker than requiring U3 invertible in Z/pq (which would require
-   coprime(U3, pq)), but sufficient for CRT decomposition.
+   These conditions ensure u3 is coprime to both p and q, hence invertible
+   in Z/p and Z/q. This is sufficient for CRT decomposition.
+   
+   The conditions are passed as explicit parameters to lemmas rather than
+   section hypotheses to make dependencies clear.
 *)
 
-(* Fiber cardinality: |fiber| = m = p * q
-   
-   Follows from the generalized fiber_zpq_pair_card in fiber_zpq.v
-   which proves the bijection f(v2) = (v2, (target - u2*v2) / u3) gives |fiber| = m.
-*)
-Lemma dsdp_fiber_zpq_card (u2 u3 target : msg) :
-  (0 < u3)%N -> (u3 < minn p q)%N ->
-  #|dsdp_fiber_zpq u2 u3 target| = m.
-Proof.
-rewrite /dsdp_fiber_zpq.
-exact: (fiber_zpq_pair_card prime_p prime_q).
-Qed.
+(* Fiber cardinality follows from fiber_zpq_pair_card in fiber_zpq.v *)
 
 (* Uniform distribution hypothesis over fiber *)
 Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
@@ -143,7 +122,8 @@ Lemma dsdp_fiber_full_zpq_card (u1 u2 u3 v1 s : msg) :
   #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
 Proof.
 move=> Hu3_pos Hu3_lt.
-by apply: dsdp_fiber_zpq_card.
+rewrite /dsdp_fiber_full_zpq /dsdp_fiber_zpq.
+exact: (fiber_zpq_pair_card prime_p prime_q).
 Qed.
 
 (* Non-solutions have zero probability *)
@@ -190,13 +170,23 @@ rewrite (uniform_over_solutions HU1 HU2 HU3 HV1 HS Hin).
 by rewrite Hcard.
 Qed.
 
-(* Helper: entropy at each conditioning value equals log(m) *)
-Lemma dsdp_centropy1_uniform_zpq (v1 u1 u2 u3 s : msg) :
+(* Single-point conditional entropy: H[VarRV | CondRV = (v1,u1,u2,u3,s)] = log(m).
+   Shows that for each fixed conditioning value, the conditional entropy
+   equals log(m). This applies the general fiber entropy framework to DSDP:
+   - Fiber = {(v2,v3) | u2*v2 + u3*v3 = s - u1*v1} has cardinality m
+   - Uniform distribution over fiber ⟹ entropy = log(m) *)
+Lemma dsdp_entropy_uniform_subset_zpq (u1 u2 u3 v1 s : msg) :
+  `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
   (0 < u3)%N -> (u3 < minn p q)%N ->
-  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
+  (forall pair : msg * msg,
+    pair \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
+    `Pr[ VarRV = pair | CondRV = (v1, u1, u2, u3, s) ] = m%:R^-1) ->
+  (forall pair : msg * msg,
+    pair \notin dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
+    `Pr[ VarRV = pair | CondRV = (v1, u1, u2, u3, s) ] = 0) ->
   `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] = log (m%:R : R).
 Proof.
-move=> Hu3_pos Hu3_lt Hcond_pos.
+move=> Hcond_pos Hu3_pos Hu3_lt Hsol_unif Hnonsol_zero.
 (* Express conditional entropy as sum *)
 have ->: `H[VarRV | CondRV = (v1, u1, u2, u3, s)] =
     - \sum_(pair : msg * msg)
@@ -210,30 +200,40 @@ have ->: `H[VarRV | CondRV = (v1, u1, u2, u3, s)] =
 have card_m : #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
   by apply: dsdp_fiber_full_zpq_card.
 (* Adjust uniform hypothesis to match expected form *)
-have Hsol_unif: forall pair : msg * msg,
+have Hsol_unif': forall pair : msg * msg,
     pair \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
     `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 
     #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|%:R^-1.
-  move=> [v2 v3] Hin.
-  rewrite (dsdp_solution_uniform_prob_zpq Hu3_pos Hu3_lt Hcond_pos Hin).
+  move=> pair Hin.
+  rewrite (Hsol_unif pair Hin).
   by rewrite card_m.
-have Hnonsol_zero: forall pair : msg * msg,
-    pair \notin dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
-    `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 0.
-  move=> [v2 v3] Hnotin.
-  by apply: dsdp_non_solution_zero_prob_zpq.
-rewrite (entropy_sum_split Hsol_unif Hnonsol_zero).
+rewrite (entropy_sum_split Hsol_unif' Hnonsol_zero).
 rewrite card_m.
 exact: entropy_uniform_set.
+Qed.
+
+(* Helper: Each conditioning value gives entropy log(m) *)
+Lemma dsdp_centropy1_uniform_zpq (v1 u1 u2 u3 s : msg) :
+  (0 < u3)%N -> (u3 < minn p q)%N ->
+  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
+  `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] = log (m%:R : R).
+Proof.
+move=> Hu3_pos Hu3_lt Hcond_pos.
+apply: dsdp_entropy_uniform_subset_zpq => //.
+  move=> [v2 v3] Hpair.
+  exact: dsdp_solution_uniform_prob_zpq.
+move=> [v2 v3] Hpair.
+exact: dsdp_non_solution_zero_prob_zpq.
 Qed.
 
 (* Main entropy result: H(V2, V3 | Alice's view) = log(pq) *)
 (* This establishes that Alice learns nothing beyond the constraint. *)
 Theorem dsdp_centropy_uniform_zpq :
   (forall t, (0 < U3 t)%N) ->
+  (forall t, (U3 t < minn p q)%N) ->
   `H(VarRV | CondRV) = log (m%:R : R).
 Proof.
-move=> HU3_pos.
+move=> HU3_pos HU3_lt.
 (* Expand conditional entropy as weighted sum *)
 rewrite centropy_RVE' /=.
 (* Transform each term in the sum *)
@@ -249,260 +249,33 @@ transitivity (\sum_(a : msg * msg * msg * msg * msg)
     move: Ht; rewrite inE => /eqP Ht.
     have HU3t : U3 t = u3 by case: Ht => _ _ _ ->.
     by rewrite -HU3t; apply: HU3_pos.
-  (* Get u3 < min(p,q) from U3_lt_min_p_q *)
+  (* Get u3 < min(p,q) from HU3_lt *)
   have Hu3_lt: (u3 < minn p q)%N.
     move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
     move: Ht; rewrite inE => /eqP Ht.
     have HU3t : U3 t = u3 by case: Ht => _ _ _ ->.
-    rewrite -HU3t.
-    exact: U3_lt_min_p_q.
+    by rewrite -HU3t; apply: HU3_lt.
   by rewrite (dsdp_centropy1_uniform_zpq Hu3_pos Hu3_lt Hcond_pos).
 under eq_bigr do rewrite mulrC.
 by rewrite -big_distrr /= sum_pfwd1 mulr1.
 Qed.
 
-End crt_reconstruct.
+Section dsdp_var_entropy_zpq.
 
-
-(*
-  ============================================================================
-  Connection between CRT (Z/pqZ) and Field (F_m) approaches
-  ============================================================================
-  
-  The two approaches to DSDP entropy analysis:
-  
-  1. Field approach (Section dsdp_entropy_connection):
-     - Modulus m is PRIME
-     - Working over finite field 'F_m
-     - Any non-zero element is invertible
-     - Fiber cardinality: m (degree of freedom argument)
-     - Conditional entropy: H(V2,V3 | Cond) = log(m)
-  
-  2. CRT approach (Section crt_reconstruct):
-     - Modulus m = p × q for distinct primes p, q
-     - Working over ring 'Z_m (NOT a field!)
-     - Only elements coprime to m are invertible
-     - Security requires U3 < min(p,q) to ensure invertibility
-     - Fiber cardinality: m = pq (via CRT product rule)
-     - Conditional entropy: H(V2,V3 | Cond) = log(m) = log(pq)
-  
-  Key insight: Both approaches yield the SAME entropy formula:
-  
-      H(V2, V3 | Alice's view) = log(m)
-  
-  where m is the modulus of the message space.
-  
-  The CRT approach is more general:
-  - Works for composite moduli (needed for certain protocols)
-  - Requires stronger invertibility condition (U3 < min(p,q))
-  - Provides the same security guarantee (maximum entropy over solutions)
-  
-  When m is prime, the CRT approach degenerates to the field approach:
-  - 'Z_m ≅ 'F_m (isomorphic as rings)
-  - Every non-zero element is automatically coprime to m
-  - The security condition U3 ≠ 0 suffices
-*)
-
-(* See extra_algebra.v for Zp_Fp_card_eq and entropy_formula_same.
-   
-   Summary of security guarantees:
-   
-   Field approach (prime m):
-     - Condition: U3 ≠ 0
-     - Guarantee: H(V2,V3 | Cond) = log(m) bits of uncertainty
-   
-   CRT approach (m = pq):
-     - Condition: 0 < U3 < min(p,q)  (stronger!)
-     - Guarantee: H(V2,V3 | Cond) = log(pq) = log(m) bits of uncertainty
-   
-   Both provide maximum entropy over the solution space, meaning
-   Alice learns nothing beyond the constraint itself.
-*)
-
-
-Section dsdp_entropy_connection.
-
-Variable F : finFieldType.
-Variable m_minus_2 : nat.
-Local Notation m := m_minus_2.+2.
-Hypothesis prime_m : prime m.
-Local Notation msg := 'F_m.  (* Finite field with m elements *)
-
-Variable T : finType.
-Variable P : R.-fdist T.
-Variables (V1 V2 V3 U1 U2 U3 S : {RV P -> msg}).
-Let CondRV : {RV P -> (msg * msg * msg * msg * msg)} :=
-  [% V1, U1, U2, U3, S].
-Let VarRV : {RV P -> (msg * msg)} := [%V2, V3].
-
-Definition satisfies_constraint (cond : msg * msg * msg * msg * msg)
-  (var : msg * msg) : Prop :=
-  let '(v1, u1, u2, u3, s) := cond in
-  let '(v2, v3) := var in
-  s - u1 * v1 = u2 * v2 + u3 * v3.
-
-Hypothesis constraint_holds :
-  forall t, satisfies_constraint (CondRV t) (VarRV t).
-
-(* Non-degeneracy assumption *)
-Hypothesis U3_nonzero : forall t, U3 t != 0.
-
-(* Given the constraint (v2, v3) are uniformly distributed over solution pairs,
-   for non-solution pairs have the zero probability, it is proven in lemma
-   `dsdp_non_solution_zero_prob`.
-
-   This hypothesis matches the maximum entropy principle: for any observer
-   has no prior knowledge about the distribution of solutions, they choses
-   the distribution with the maximum entropy.
-*)
-Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
-  U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
-  V1 t = v1 -> S t = s ->
-  forall v2 v3,
-    (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
-    `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
-    (#|dsdp_fiber u1 u2 u3 v1 s|)%:R^-1.
-
-Section dsdp_centropy_uniform_solutions.
-
-(* Helper 1: Pairs not satisfying the constraint have zero
-   conditional probability *)
-Lemma dsdp_non_solution_zero_prob (v1 u1 u2 u3 s : msg) (v2 v3 : msg) :
-  `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
-  (v2, v3) \notin dsdp_fiber u1 u2 u3 v1 s ->
-  `Pr[ VarRV = (v2, v3) | CondRV =
-  (v1, u1, u2, u3, s) ] = 0.
+(* m = p * q > 1 since p, q >= 2 *)
+Let m_gt1 : (1 < m)%N.
 Proof.
-move=> Hcond_pos Hnot_solution.
-set constraint := fun (conds : msg * msg * msg * msg * msg)
-  (vals : msg * msg) =>
-  let '(v1, u1, u2, u3, s) := conds in
-  let '(v2, v3) := vals in
-  (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s.
-have Hconstraint: forall t, constraint (CondRV t) (VarRV t).
-  move=> t.
-  rewrite /constraint /=.
-  rewrite inE /=.
-  by rewrite constraint_holds.
-by rewrite (cond_prob_zero_outside_constraint Hconstraint Hcond_pos).
+(* p >= 2, q >= 2, so p * q >= 4 > 1 *)
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
 Qed.
 
-(* Helper 2: Solutions have uniform probability 1/m *)
-Lemma dsdp_solution_uniform_prob (v1 u1 u2 u3 s : msg) (v2 v3 : msg) :
-  `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
-  u3 != 0 ->
-  (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
-  `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
-  m%:R^-1.
-Proof.
-move=> Hcond_pos Hu3_neq0 Hinsol.
-(* Need to extract witnesses for the equalities from the conditioning event *)
-(* Then apply uniform_over_solutions hypothesis *)
-have card_m : #|dsdp_fiber u1 u2 u3 v1 s| = m.
-  by apply: dsdp_fiber_card.
-move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
-move: Ht; rewrite inE => /eqP Ht.
-case: Ht => HV1 HU1 HU2 HU3 HS.
-by rewrite (@uniform_over_solutions
-  t v1 u1 u2 u3 s HU1 HU2 HU3 HV1 HS v2 v3 Hinsol) card_m.
-Qed.
+Let card_msg : #|msg| = m.
+Proof. by rewrite card_ord Zp_cast. Qed.
 
-(* Single-point conditional entropy: H[VarRV | CondRV = (v1,u1,u2,u3,s)] = log(m).
-   Shows that for each fixed conditioning value, the conditional entropy
-   equals log(m). This applies the general fiber entropy framework to DSDP:
-   - Fiber = {(v2,v3) | u2*v2 + u3*v3 = s - u1*v1} has cardinality m
-   - Uniform distribution over fiber ⟹ entropy = log(m) *)
-Lemma dsdp_entropy_uniform_subset (u1 u2 u3 v1 s : msg) :
-  `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
-  u3 != 0 ->
-  (forall pair : msg * msg,
-    pair \in dsdp_fiber u1 u2 u3 v1 s ->
-    `Pr[ VarRV = pair | CondRV =
-      (v1, u1, u2, u3, s) ] = m%:R^-1) ->
-  (forall pair : msg * msg,
-    pair \notin dsdp_fiber u1 u2 u3 v1 s ->
-    `Pr[ VarRV = pair | CondRV =
-      (v1, u1, u2, u3, s) ] = 0) ->
-  `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] =
-    log (m%:R : R).
-Proof.
-move=> Hcond_pos Hu3_neq0 Hsol_unif Hnonsol_zero.
-(* Express conditional entropy as sum *)
-have ->: `H[VarRV | CondRV = (v1, u1, u2, u3, s)] =
-    - \sum_(pair : msg * msg)
-     `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] *
-     log (`Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)]).
-  rewrite centropy1_RVE // /entropy.
-  congr (- _); apply: eq_bigr => [[v2 v3]] _.
-    by rewrite jfdist_cond_cPr_eq.
-  by rewrite fst_RV2 dist_of_RVE.
-(* Get cardinality *)
-have card_m : #|dsdp_fiber u1 u2 u3 v1 s| = m.
-  by apply: dsdp_fiber_card.
-(* Adjust uniform hypothesis to match expected form *)
-have Hsol_unif': forall pair : msg * msg,
-    pair \in dsdp_fiber u1 u2 u3 v1 s ->
-    `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 
-    #|dsdp_fiber u1 u2 u3 v1 s|%:R^-1.
-  move=> pair Hin.
-  rewrite (Hsol_unif pair Hin).
-  by rewrite card_m.
-rewrite (entropy_sum_split Hsol_unif' Hnonsol_zero).
-have ->: #|dsdp_fiber u1 u2 u3 v1 s| = m.
-  by rewrite card_m.
-exact: entropy_uniform_set.
-Qed.
-
-(* Helper: Each conditioning value gives entropy log(m) *)
-Lemma dsdp_centropy1_uniform (v1 u1 u2 u3 s : msg) :
-  `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
-  u3 != 0 ->
-  `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] =
-    log (m%:R : R).
-Proof.
-move=> Hcond_pos Hu3_neq0.
-apply: dsdp_entropy_uniform_subset => //.
-  move=> [v2 v3] Hpair.
-  exact: dsdp_solution_uniform_prob.
-move=> [v2 v3] Hpair.
-exact: dsdp_non_solution_zero_prob.
-Qed.
-
-(* Main privacy lemma: H((V2,V3) | (V1,U1,U2,U3,S)) = log(m).
-   This shows that given Alice's view of the constraint, the entropy of
-   Bob and Charlie's private inputs (V2,V3) equals log(m), not log(m²).
-   The "missing" log(m) bits represent V3's determination by the constraint. *)
-Lemma dsdp_centropy_uniform_solutions :
-  `H(VarRV | CondRV) = log (m%:R : R).
-Proof.
-(* Expand conditional entropy as weighted sum *)
-rewrite centropy_RVE' /=.
-(* Transform each term in the sum *)
-transitivity (\sum_(a : msg * msg * msg * msg * msg) 
-               `Pr[ CondRV = a ] * log (m%:R : R)).
-  (* Show each term equals Pr[...] * log(m) *)
-  apply: eq_bigr => [] [] [] [] [] v1 u1 u2 u3 s H.
-  have [->|Hcond_pos] := eqVneq (`Pr[CondRV =
-    (v1, u1, u2, u3, s)]) 0.
-    by rewrite !mul0r.
-  have Hu3_neq0: u3 != 0.
-    move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
-    move: Ht; rewrite inE => /eqP Ht.
-    have HU3t : U3 t = u3.
-      by case: Ht => _ _ _ ->.
-    by rewrite -HU3t; apply: U3_nonzero.
-  by rewrite (dsdp_centropy1_uniform Hcond_pos Hu3_neq0).
-under eq_bigr do rewrite mulrC.
-by rewrite -big_distrr /= sum_pfwd1 mulr1.
-Qed.
-
-
-End dsdp_centropy_uniform_solutions.
-
-Section dsdp_var_entropy.
-  
 Let card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
-Proof. by rewrite card_prod /= !card_Fp. Qed.
+Proof. by rewrite card_prod !card_msg expnS expn1. Qed.
 
 (* Unconditional entropy of private inputs (V2, V3) when uniformly distributed.
    
@@ -515,19 +288,21 @@ Proof. by rewrite card_prod /= !card_Fp. Qed.
    The security argument (privacy_by_bonded_leakage at end of file) shows
    that H(V2,V3 | AliceView) = H(V2 | AliceView), i.e., knowing V3 given
    the constraint adds no information beyond knowing V2. *)
-Lemma dsdp_var_entropy :
+Lemma dsdp_var_entropy_zpq :
   `p_VarRV = fdist_uniform card_msg_pair ->
   `H `p_VarRV = log (m%:R * m%:R : R).
 Proof.
 move->.
-rewrite entropy_uniform card_prod !card_Fp. 
-  by rewrite natrM.
-by [].
+rewrite entropy_uniform card_prod !card_msg.
+by rewrite natrM.
 Qed.
 
-End dsdp_var_entropy.
+End dsdp_var_entropy_zpq.
 
-End dsdp_entropy_connection.
+End dsdp_entropy_zpq.
+
+
+(* For finite field (F_m) approach, see dsdp_entropy_field.v *)
 
 Section dsdp_privacy_analysis.
 
@@ -789,14 +564,16 @@ apply: boolp.funext => i //=.
 ring.
 Qed.
 
-(* S as function composition: S = f ∘ (U2,U3,V2,V3,V1,U1) where f computes the sum.
+(* S as function composition:
+       S = f ∘ (U2,U3,V2,V3,V1,U1) where f computes the sum.
    Used for applying composition lemmas in entropy analysis. *)
 Lemma S_compE :
   let f := (fun o => let '(u2, u3, v2, v3, v1, u1) := o
               in u2 * v2 + u3 * v3 + v1 * u1) in
   S = f `o [% U2, U3, V2, V3, V1, U1].
 Proof.
-rewrite /comp_RV /S /VS /US /D3 /VU3R /D2 /VU3 /VU2 /VU1 /Dotp2_rv /dotp2 /add_RV.
+rewrite /comp_RV /S /VS /US /D3 /VU3R /D2 /VU3 /VU2
+  /VU1 /Dotp2_rv /dotp2 /add_RV.
 apply: boolp.funext => i //=.
 ring.
 Qed.
@@ -890,34 +667,22 @@ Section bonded_leakage_privacy.
 (* Functional Determination of V3:
    
    The constraint s = u1*v1 + u2*v2 + u3*v3 creates a functional relationship:
-   given all values except v3 (and assuming u3 ≠ 0), v3 is determined.
+   given all values except v3 (and assuming u3 is invertible), v3 is determined.
    
-   In our F_m formalization: When u3 ≠ 0, we express this determination via
-   division: v3 = (s - u2*v2 - u1*v1) / u3, which always yields exactly one
-   solution. This division is a mathematical expression of functional
-   determination that enables us to apply composition lemmas like
-   `joint_entropy_RV_comp` in the entropy analysis.
-   
-   In Z/pq implementations: The division operation is not directly used by
-   protocol parties. Instead, the constraint is satisfied through homomorphic
-   computation. Parties sample uniformly from Z/pq without avoiding
-   non-invertible elements. The adversary, observing only the encrypted
-   constraint satisfaction (not individual v2, v3 values), cannot exploit
-   whether sampled values are invertible.
+   For Z/pqZ (composite modulus m = p*q):
+   - Invertibility condition: 0 < u3 < min(p,q) ensures u3 is coprime to m
+   - Fiber cardinality: |{(v2,v3) | u2*v2 + u3*v3 = target}| = m
+   - Proved directly in fiber_zpq.v using bijection argument
    
    Key insight: The entropy relationship
 
      H(V2, V3 | constraints) = H(V2 | constraints)
 
    holds because V3 adds no additional entropy once V2 and the constraint
-   are known. This is a consequence of the constraint structure itself,
-   independent of how we mathematically express the determination
-   (division in F_m, or implicit in Z/pq).
+   are known. This is a consequence of the constraint structure itself.
    
-   NOTE: Current formalization uses 'F_m (prime field) where all non-zero
-   elements are invertible, enabling clean entropy analysis via field-based
-   linear algebra. The statistical distance between F_m and Z/pq is negligible
-   (< 2^-1023) for cryptographic parameters, justifying this approximation.
+   See dsdp_entropy_zpq section for Z/pqZ entropy analysis.
+   See dsdp_entropy_field.v for comparison with prime field F_m approach.
 *)
 
 Definition compute_v3 (o : (msg * msg * msg * msg * msg * msg)) : msg :=
@@ -1018,7 +783,8 @@ Hypothesis V3_determined :
 
 (* Privacy via bounded leakage: knowing (V2,V3) given Alice's view is equivalent
    to knowing just V2. V3 adds no additional information because it's determined
-   by V2 and the constraint. This is the core privacy guarantee for Bob's input V2. *)
+   by V2 and the constraint. This is the core privacy guarantee
+   for Bob's input V2. *)
 Lemma privacy_by_bonded_leakage :
   `H([% V2, V3] | AliceView ) = `H(V2 | AliceView).
 Proof.
