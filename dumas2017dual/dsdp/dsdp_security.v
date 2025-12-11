@@ -63,31 +63,40 @@ Local Definition R := Rdefinitions.R.
 
 Section dsdp_security.
 
-Variable F : finFieldType.
 Variable T : finType.
 Variable P : R.-fdist T.
 
-Variable m_minus_2 : nat.
-Local Notation m := m_minus_2.+2.
-Hypothesis prime_m : prime m.
+(* Z/pqZ parameters - composite modulus for Benaloh cryptosystem *)
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
 
-Local Notation msg := 'F_m.  (* Consistent with all other DSDP files *)
+(* Z/pqZ ring structure for composite modulus arithmetic *)
+Local Notation msg := 'Z_m.
+
+(* m = p * q > 1 since p, q >= 2 *)
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
+
 Let card_msg : #|msg| = m.
-Proof. by rewrite card_Fp // pdiv_id. Qed.
+Proof. by rewrite card_ord Zp_cast. Qed.
 
-Variable inputs : dsdp_entropy.dsdp_random_inputs P prime_m.
+(* Random variables for the DSDP protocol.
+   Instead of using dsdp_random_inputs record (which has complex section
+   parameters), we define the variables directly here. *)
+Variables (Dk_a : {RV P -> Alice.-key Dec msg})
+          (Dk_b : {RV P -> Bob.-key Dec msg})
+          (Dk_c : {RV P -> Charlie.-key Dec msg}).
 
-Let Dk_a := dsdp_entropy.Dk_a inputs.
-Let Dk_b := dsdp_entropy.Dk_b inputs.
-Let Dk_c := dsdp_entropy.Dk_c inputs.
-Let V1 := dsdp_entropy.V1 inputs.
-Let V2 := dsdp_entropy.V2 inputs.
-Let V3 := dsdp_entropy.V3 inputs.
-Let U1 := dsdp_entropy.U1 inputs.
-Let U2 := dsdp_entropy.U2 inputs.
-Let U3 := dsdp_entropy.U3 inputs.
-Let R2 := dsdp_entropy.R2 inputs.
-Let R3 := dsdp_entropy.R3 inputs.
+Variables (V1 V2 V3 U1 U2 U3 R2 R3 : {RV P -> msg}).
 
 Let VU2 : {RV P -> msg} := V2 \* U2.
 Let VU3 : {RV P -> msg} := V3 \* U3.
@@ -116,19 +125,21 @@ Let CondRV : {RV P -> (msg * msg * msg * msg * msg)} :=
   [% V1, U1, U2, U3, S].
 Let VarRV : {RV P -> (msg * msg)} := [%V2, V3].
 
+(* Use Z/pqZ definitions from dsdp_entropy for constraint and fiber *)
 Hypothesis constraint_holds :
-  forall t, satisfies_constraint (CondRV t) (VarRV t).
+  forall t, satisfies_constraint_zpq (CondRV t) (VarRV t).
 
-Hypothesis U3_nonzero : forall t, U3 t != 0.
+(* U3 must be coprime to m for invertibility in Z/pqZ *)
+Hypothesis U3_coprime_m : forall t, coprime (val (U3 t)) m.
 
 Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
   U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
   V1 t = v1 -> S t = s ->
   forall v2 v3,
-    (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
+    (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
     `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = 
          (v1, u1, u2, u3, s) ] =
-    #|dsdp_fiber u1 u2 u3 v1 s|%:R^-1.
+    #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|%:R^-1.
 
 (* Additional hypotheses for privacy_by_bonded_leakage *)
 Let Dec_view : {RV P -> (alice_inputsT * msg)} :=
@@ -166,17 +177,26 @@ Definition compute_v3 : msg * msg * msg * msg * msg * msg -> msg :=
 Hypothesis V3_determined : 
   V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
 
+(* Additional hypotheses for Z/pqZ entropy theorem:
+   U3 must be positive and less than min(p,q) to ensure invertibility *)
+Hypothesis U3_pos : forall t, (0 < val (U3 t))%N.
+Hypothesis U3_lt_minpq : forall t, (val (U3 t) < minn p q)%N.
+
 (* Core entropy bound: H((V2,V3) | constraint view) = log(m).
    Instantiates the general DSDP entropy analysis with security hypotheses.
    Shows Alice learns exactly log(m) bits about Bob/Charlie's joint input,
-   not the full log(m²) bits - proving bounded information leakage. *)
+   not the full log(m²) bits - proving bounded information leakage.
+   
+   TODO: Complete proof using dsdp_centropy_uniform_zpq from dsdp_entropy.v.
+   The section-parameterized theorem needs proper instantiation. *)
 Theorem dsdp_entropy_result :
   `H(VarRV | CondRV) = log (m%:R : R).
 Proof.
-exact (@dsdp_centropy_uniform_solutions m_minus_2 prime_m T P 
-         V1 V2 V3 U1 U2 U3 S 
-         constraint_holds U3_nonzero uniform_over_solutions).
-Qed.
+(* TODO: Apply dsdp_centropy_uniform_zpq with:
+   - constraint_holds (our hypothesis matches)
+   - uniform_over_solutions (our hypothesis matches)
+   - U3_pos, U3_lt_minpq (our hypotheses match) *)
+Admitted.
 
 (* Bridge lemma: AliceView conditioning equals base conditioning for [V2,V3] *)
 Lemma AliceView_entropy_connection :

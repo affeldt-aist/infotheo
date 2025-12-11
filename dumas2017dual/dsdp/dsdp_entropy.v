@@ -306,7 +306,6 @@ End dsdp_entropy_zpq.
 
 Section dsdp_privacy_analysis.
 
-Variable F : finFieldType.
 Variable T : finType.
 Variable P : R.-fdist T.
 
@@ -316,14 +315,28 @@ Variable P : R.-fdist T.
 Hypothesis neg_self_indep : forall (TA : finType)
   (A : {RV P -> TA}), ~ P |= A _|_ A.
 
-Variable m_minus_2 : nat.
-Local Notation m := m_minus_2.+2.
-Hypothesis prime_m : prime m.
+(* Z/pqZ parameters - composite modulus for Benaloh cryptosystem *)
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
 
-Local Notation msg := 'F_m. 
-(* Finite field - when m is prime, isomorphic to Z/mZ *)
+(* Z/pqZ ring structure for composite modulus arithmetic *)
+Local Notation msg := 'Z_m.
+
+(* m = p * q > 1 since p, q >= 2 *)
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
+
 Let card_msg : #|msg| = m.
-Proof. by rewrite card_Fp // pdiv_id. Qed.
+Proof. by rewrite card_ord Zp_cast. Qed.
 
 Let enc := enc party msg.
 Let pkey := pkey party msg.
@@ -333,16 +346,12 @@ Let d x : data := inl (inl x).
 Let e x : data := inl (inr x).
 Let k x : data := inr x.
 
-Notation dsdp_traceT := (15.-bseq data).
-Notation dsdp_tracesT := (3.-tuple dsdp_traceT).
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
 
-Definition dsdp_uncurry (o: Alice.-key Dec msg * Bob.-key Dec msg *
-  Charlie.-key Dec msg * msg * msg * msg * msg * msg * msg * msg * msg)
-  : dsdp_tracesT :=
-  let '(dk_a, dk_b, dk_c, v1, v2 , v3, u1, u2, u3, r2, r3) := o in
-  (dsdp_traces dk_a.2 dk_b.2 dk_c.2 v1 v2 v3 u1 u2 u3 r2 r3).
+(* Note: Trace-related entropy lemmas (DSDP_RV_zpq, AliceTraces, 
+   centropy_AliceTraces_AliceView) are defined in dsdp_entropy_trace.v
+   for Z/pqZ analysis. For F_m based trace analysis, see dsdp_entropy_field.v. *)
 
 Record dsdp_random_inputs :=
   DSDPRandomInputs {
@@ -404,17 +413,7 @@ Let AliceInputsView : {RV P -> alice_inputsT} := [% Dk_a, V1, U1, U2, U3, R2, R3
 Hypothesis AliceInputsView_indep_V2 :
   P |= AliceInputsView _|_ V2.
 
-Definition DSDP_RV (inputs : dsdp_random_inputs) :
-  {RV P -> dsdp_tracesT} :=
-    dsdp_uncurry `o
-    [% Dk_a, Dk_b, Dk_c, V1, V2, V3, U1, U2, U3, R2, R3].
-
 Section alice_privacy_analysis.
-
-Local Notation m := m_minus_2.+2.
-
-Let AliceTraces : {RV P -> dsdp_traceT} :=
-      (fun t => tnth t 0) `o DSDP_RV inputs.
 
 (* E_charlie_v3 means it is encrypted (so generated) by the key of charlie.
    Therefore, encrypted RVs should be independent of other parties.
@@ -430,75 +429,10 @@ Let alice_view_valuesT := (Alice.-key Dec msg * msg * msg * msg * msg * msg *
 Let AliceView : {RV P -> alice_view_valuesT} :=
   [% Dk_a, S, V1, U1, U2, U3, R2, R3, E_alice_d3, E_charlie_v3, E_bob_v2].
 
-Let AliceTraces_values_from_view
-  (v : alice_view_valuesT) : 15.-bseq _ :=
-    let '(dk_a, s, v1 , u1, u2, u3, r2, r3,
-      E_alice_d3, E_charlie_v3, E_bob_v2) := v in
-    [bseq d s;
-            e (E_alice_d3 : enc);
-            e (E_charlie_v3 : enc);
-            e (E_bob_v2 : enc);
-            d r3; d r2; d u3; d u2; d u1; d v1; k (dk_a : pkey)].
-
-(* AliceTraces is a function of AliceView: the protocol trace can be 
-   reconstructed from Alice's view (her inputs and received messages). *)
-Lemma AliceTraces_from_viewP :
-  AliceTraces = AliceTraces_values_from_view `o AliceView.
-Proof.
-apply: boolp.funext => x /=.
-rewrite /AliceTraces /DSDP_RV /comp_RV /= dsdp_traces_ok //=.
-have Ha : dsdp_program.k (Alice, Dec, (Dk_a x).2) = k (Dk_a x).
-  (* Rocq doesn't know this is the only case, and it makes both sides equal*)
-  by case: Dk_a => t. 
-rewrite  -[in RHS]Ha //=.
-Qed.
-
-Local Definition AliceView_values_from_trace (xs : dsdp_traceT) :
-  alice_view_valuesT :=
-    let failtrace := (KeyOf Alice Dec 0,
-                        0, 0, 0, 0, 0, 0, 0,
-                        E' Alice 0, E' Charlie 0, E' Bob 0) in
-    if xs is Bseq [:: inl (inl s);
-           inl (inr E_alice_d3);
-           inl (inr E_charlie_v3);
-           inl (inr E_bob_v2);
-           inl (inl r3); inl (inl r2); inl (inl u3);
-           inl (inl u2); inl (inl u1); inl (inl v1); inr dk_a] _
-    then 
-         if (E_alice_d3, E_charlie_v3, E_bob_v2, dk_a) is
-              ((Alice, d3), (Charlie, v3), (Bob, v2), (Alice, Dec, k_a)) then
-            (KeyOf Alice Dec k_a, s, v1 , u1, u2, u3, r2, r3,
-               E' Alice d3, E' Charlie v3, E' Bob v2)
-         else failtrace
-    else failtrace.
-
-(* AliceView_values_from_trace is left-inverse of AliceTraces_values_from_view.
-   This establishes a bijection: AliceView ↔ AliceTraces (no information loss). *)
-Lemma AliceView_values_from_traceP:
-   cancel AliceTraces_values_from_view AliceView_values_from_trace.
-Proof.
-move => [] [] [] [] [] [] [] [] [] [] dk ? ? ? ? ? ? ? a c b //=.
-case: a => -[a ma] /=.  (* msg from `case: a`
-                           can be case again to get 1. nat a 2. nat a < m*)
-case: c => -[c mc] /=.
-case: b => -[b mb] /=.
-case: dk => -[dk mdk] /=.
-by [].
-Qed.
-
-(* Conditional entropy equivalence: conditioning on AliceTraces equals 
-   conditioning on AliceView. They carry the same information. *)
-Lemma centropy_AliceTraces_AliceView (w : finType) (v : {RV P -> w}) :
-  `H(v | AliceTraces ) = `H(v | AliceView ).
-Proof.
-simpl in *.
-transitivity (`H(v | [% AliceTraces, AliceView])).
-  have -> : AliceView = AliceView_values_from_trace `o AliceTraces.
-    by apply: boolp.funext => x /= ;
-       rewrite AliceTraces_from_viewP /comp_RV AliceView_values_from_traceP.
-  by rewrite centropy_RV_contraction.
-by rewrite AliceTraces_from_viewP centropyC centropy_RV_contraction.
-Qed.
+(* Note: Trace-based lemmas (AliceTraces_from_viewP, AliceView_values_from_traceP,
+   centropy_AliceTraces_AliceView) are not needed for Z/pqZ security analysis.
+   They require dsdp_traces from dsdp_program.v which uses 'F_m.
+   For trace-based analysis, see dsdp_entropy_field.v. *)
 
 Local Definition Dec_view : {RV P -> (alice_inputsT * msg)} :=
   [% Dk_a, S, V1, U1, U2, U3, R2, R3].
@@ -713,13 +647,47 @@ Qed.
 
 (* V3 is functionally determined by the other variables via the constraint.
    Given V1, U1, U2, U3, S, V2, we can compute: V3 = (S - U2*V2 - U1*V1) / U3.
-   This is key for showing H(V2,V3|constraint) = H(V2|constraint). *)
+   This is key for showing H(V2,V3|constraint) = H(V2|constraint). 
+   
+   For Z/pqZ (ring, not field), we use:
+   - U3 is a unit because coprime (val U3) m
+   - Division by unit: x / y = x * y^-1
+   - Inverse property: y^-1 * y = 1 when y is unit
+*)
 Lemma V3_determined : V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
 Proof.
-rewrite S_compE /compute_v3 /comp_RV /=.  
+(* Goal: V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2] *)
+rewrite S_compE /compute_v3 /comp_RV /=.
+(* Goal: V3 = fun i => (S i - U2 i * V2 i - U1 i * V1 i) / U3 i *)
 apply/boolp.funext => i /=.
-field.
-exact: (U3_nonzero i).
+(* Goal: V3 i = (U2*V2 + U3*V3 + V1*U1 - U2*V2 - U1*V1) / U3 i 
+   Note: S i expanded to U2*V2 + U3*V3 + V1*U1 from S_compE *)
+
+(* === Step 1: Show U3 i is a unit in 'Z_m === *)
+have HU3_unit: (U3 i) \is a GRing.unit.
+  (* U3 i : 'Z_m, need to show it's a unit *)
+  (* Use: x \is unit in 'Z_m iff coprime m (val x) *)
+  rewrite -[U3 i]natr_Zp unitZpE //.
+  (* Goal: coprime m (val (U3 i)) *)
+  by rewrite coprime_sym (U3_coprime_m i).
+
+(* === Step 2: Simplify numerator to U3*V3 === *)
+(* The numerator: U2*V2 + U3*V3 + V1*U1 - U2*V2 - U1*V1 = U3*V3 *)
+have Hnum: U2 i * V2 i + U3 i * V3 i + V1 i * U1 i - U2 i * V2 i - U1 i * V1 i = 
+           U3 i * V3 i by ring.
+rewrite Hnum.
+
+(* === Step 3: Show V3 = U3*V3 / U3 using unit inverse property === *)
+(* Goal: V3 i = U3 i * V3 i / U3 i *)
+(* In comRing: U3 * V3 = V3 * U3, then V3 * U3 / U3 = V3 * (U3 / U3) = V3 * 1 = V3 *)
+rewrite [U3 i * _]mulrC.
+(* Goal: V3 i = V3 i * U3 i / U3 i *)
+(* x * y / y = x * (y / y) = x * 1 = x *)
+rewrite -mulrA.
+(* Goal: V3 i = V3 i * (U3 i / U3 i) *)
+rewrite divrr //.
+(* Goal: V3 i = V3 i * 1 *)
+by rewrite mulr1.
 Qed.
 
 (* TODO: put an assumption so the lemma
