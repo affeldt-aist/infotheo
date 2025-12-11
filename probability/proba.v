@@ -760,9 +760,10 @@ HB.instance Definition _ := RV_lmodMixin.
 
 End lmodule_random_variables.
 
-(* wip, should use pzLalgType *)
+(* waiting for a newer version of mathcomp, where pzLalgType will be available*)
+(*
 Section lalgebra_random_variables.
-Context {R : realType} {U : finType} {P : R.-fdist U} {K : pzRingType} {V : lalgType K}.
+Context {R : realType} {U : finType} {P : R.-fdist U} {K : pzRingType} {V : pzLalgType K}.
 Local Open Scope ring_scope.
 
 Let scalerAl (a : K) (X Y : {RV P -> V}) : a *: (X * Y) = (a *: X) * Y.
@@ -772,6 +773,7 @@ Fail Program Definition RV_lalgMixin :=
   GRing.Lmodule_isLalgebra.Build  _ _  scalerAl.
 
 End lalgebra_random_variables.
+*)
 
 Section algebraic_constructions_on_random_variables.
 Local Open Scope ring_scope.
@@ -798,7 +800,8 @@ Local Open Scope ring_scope.
 
 Lemma sumrRVE {V : nmodType} I (r : seq I) (p : pred I) (X : I -> {RV P -> V}) :
   \sum_(i <- r | p i) X i = fun x => \sum_(i <- r | p i) X i x.
-Proof. exact: fct_sumE. Qed.
+Proof. by apply/boolp.funext => ?; elim/big_rec2: _ => //= i y ? Pi <-. Qed.
+(* NB: should be `exact: sumrfctE.`, but this does not work for now *)
 
 Lemma prodrRVE {V : pzRingType} I (r : seq I) (p : pred I) (X : I -> {RV P -> V}) :
   \prod_(i <- r | p i) X i = fun x => \prod_(i <- r | p i) X i x.
