@@ -288,7 +288,7 @@ Let WP := Weighted.d C0 PC0.
 Definition sq_dev := (X `-cst `E (WP.-RV X))`^2.
 
 Lemma sq_dev_ge0 u : 0 <= sq_dev u.
-Proof. by rewrite /sq_dev sq_RV_pow2 sqr_ge0. Qed.
+Proof. exact: sqr_ge0. Qed.
 
 Definition sq_dev_max := \big[Order.max/0]_(i | C i != 0) sq_dev i.
 

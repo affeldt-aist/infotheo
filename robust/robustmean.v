@@ -35,59 +35,6 @@ Import numFieldNormedType.Exports.
 (*                                                                            *)
 (******************************************************************************)
 
-(* TODO: define RV_ringType mimicking fct_ringType *)
-Section mul_RV.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U).
-Definition mul_RV (X Y : {RV P -> R}) : {RV P -> R} := fun x => X x * Y x.
-Notation "X `* Y" := (mul_RV X Y) : proba_scope.
-Arguments mul_RV /.
-
-Lemma mul_RVA : associative mul_RV.
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrA. Qed.
-Lemma mul_RVC : commutative mul_RV.
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrC. Qed.
-Lemma mul_RVAC : right_commutative mul_RV.
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrAC. Qed.
-Lemma mul_RVCA : left_commutative mul_RV.
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrCA. Qed.
-Lemma mul_RVACA : interchange mul_RV mul_RV.
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrACA. Qed.
-Lemma mul_RVDr : right_distributive mul_RV (@add_RV _ U P R).
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrDr. Qed.
-Lemma mul_RVDl : left_distributive mul_RV (@add_RV _ U P R).
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite mulrDl. Qed.
-Lemma mul_RVBr (f g h : {RV (P) -> (R)}) : f `* (g `- h) = f `* g `- f `* h.
-Proof. by apply: boolp.funext=> u /=; rewrite mulrBr. Qed.
-Lemma mul_RVBl (f g h : {RV (P) -> (R)}) : (f `- g) `* h = f `* h `- g `* h.
-Proof. by apply: boolp.funext=> u /=; rewrite mulrBl. Qed.
-End mul_RV.
-Notation "X `* Y" := (mul_RV X Y) : proba_scope.
-Arguments mul_RV /.
-
-Section add_RV.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U).
-Arguments add_RV /.
-Lemma add_RVA : associative (@add_RV _ U P R).
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrA. Qed.
-Lemma add_RVC : commutative (@add_RV _ U P R).
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrC. Qed.
-Lemma add_RVAC : right_commutative (@add_RV _ U P R).
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrAC. Qed.
-Lemma add_RVCA : left_commutative (@add_RV _ U P R).
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrCA. Qed.
-Lemma add_RVACA : interchange (@add_RV _ U P R) (@add_RV _ U P R).
-Proof. by move=> *; apply: boolp.funext=> u /=; rewrite addrACA. Qed.
-End add_RV.
-
-Section scale.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U).
-Lemma scalel_RVE m (X : {RV P -> R}) : scale_RV m X = m `* X.
-Proof. by apply: boolp.funext=> ? /=; rewrite /scale_RV /const_RV. Qed.
-End scale.
-
 Section conj_intro_pattern.
 (* /[conj] by Cyril Cohen : *)
 (*    https://coq.zulipchat.com/#narrow/stream/237664-math-comp-users/topic/how.20to.20combine.20two.20top.20assumptions.20with.20.60conj.60 *)
@@ -189,8 +136,7 @@ suff : `E ((a `cst* X `+ b `cst* Y) `^2) =
        (b * b) `cst* (Y `^2) `+ (2 * a * b) `cst* (X `* Y)).
   by rewrite !E_add_RV !E_scale_RV.
 apply: eq_bigr => i H.
-unfold ambient_dist, "`cst*", "`+", "`^2", "`o", "^", "`*".
-rewrite !expr2 /= -!mulr_regl.
+rewrite sqrrD addrAC !RV_fctE/= -!mulr_regl.
 lra.
 Qed.
 
@@ -198,7 +144,7 @@ Qed.
 Lemma sq_RVE' (X : {RV P -> R}) : X `^2 = X `* X.
 Proof. by []. Qed.
 
-Lemma Ind_idem (F : {set U}) : Ind F = (Ind F) `* (Ind F) :> {RV P -> R}.
+Lemma Ind_idem (F : {set U}) : Ind F = (Ind F : {RV P -> R}) `* (Ind F).
 Proof. by rewrite [LHS](@Ind_sqr _ _ P) sq_RVE'. Qed.
 
 Lemma Ex_square_eq0 (X : {RV P -> R}) :
@@ -207,7 +153,7 @@ Proof.
 split=> [XP|EX20].
 - rewrite /Ex big1// => u _.
   have [|->] := XP u; last by rewrite scale0r.
-  by rewrite sq_RVE' /mul_RV=> ->; rewrite mulr0 scaler0.
+  by rewrite sq_RVE' !RV_fctE/= => ->; rewrite mulr0 scaler0.
 - move=> x; rewrite !(rwP eqP); apply/orP.
   rewrite -(sqrf_eq0 (X x)) (_ : _ ^+ 2 = (X `^2 : {RV P -> R}) x) // -mulf_eq0.
   rewrite mulrC mulr_regl.
@@ -230,18 +176,18 @@ have [|a0] := eqVneq a 0.
   have -> : `E (X `* Y) = 0.
     apply/eqP.
     rewrite psumr_eq0.
-      apply/allP => u _; rewrite inE /=.
+      apply/allP => u _; rewrite inE !RV_fctE/=.
       by case: (HY u) => ->; rewrite ?mulr0 ?scaler0 ?scale0r.
-    move => u _; rewrite /= .
+    move => u _; rewrite !RV_fctE/=.
     by case : (HY u) => -> ; rewrite ?mulr0 ?scaler0 ?scale0r.
   by rewrite expr0n; exact/mulr_ge0.
 have [|b0] := eqVneq b 0.
   move/eqP; rewrite sqrtr_eq0. move/(conj EXge0)/andP/le_anti/esym=> b0.
   have HX : forall x, X x = 0 \/ P x = 0 by apply/Ex_square_eq0/b0.
   have -> : `E (X `* Y) = 0.
-    apply/eqP; rewrite psumr_eq0 /mul_RV; last first.
+    apply/eqP; rewrite psumr_eq0 !RV_fctE/=; last first.
       by move=> u _; case : (HX u) => -> ; rewrite ?mul0r ?scaler0 ?scale0r.
-    apply/allP => u _; rewrite inE/=.
+    apply/allP => u _.
     by case : (HX u) => -> ; rewrite ?mul0r ?scaler0 ?scale0r.
   by rewrite expr0n; exact/mulr_ge0.
 have {}a0 : 0 < a. (*removes a0 hypothesis and reuse it*)
@@ -339,11 +285,10 @@ pose y := Num.sqrt (Ex P (((X `-cst mu) `^2) `* Ind F) * Ex P (Ind F)) / Pr P F.
 apply: (@le_trans _ _ y).
   rewrite ler_pM2r ?invr_gt0 // -sqrtr_sqr.
   apply: ler_wsqrtr.
-  rewrite [in leLHS]Ind_idem mul_RVA.
+  rewrite [in leLHS](Ind_idem P) mulrA.
   apply/(le_trans (Cauchy_Schwarz_proba _ _)).
-  rewrite sq_RVE' -!Ind_sqr sq_RVE -![in leLHS]mul_RVA (mul_RVC (Ind F)).
-  by rewrite -![in leLHS]mul_RVA -Ind_idem !mul_RVA.
-rewrite /y /var /cVar -/mu cEx_ExInd.
+  by rewrite exprMn -Ind_sqr.
+rewrite /y /var /cVar -/mu cEx_ExInd !RV_fctE/=.
 rewrite -!mulrA !sqrtrM ?invr_ge0 ?(ltW PrPG_pos) //.
 rewrite -[in leLHS](sqr_sqrtr (ltW PrPF_pos)) invfM !mulrA.
 rewrite -!sqrtrV ?(@ltW _ _ 0) // ler_pM2r ?sqrtr_gt0 ?invr_gt0//.
@@ -352,8 +297,8 @@ rewrite mulfV ?lt0r_neq0 //.
 rewrite -![in leRHS]mulrA -[in leRHS]sqrtrM ?invr_ge0 ?(@ltW _ _ 0) //.
 rewrite mulVf ?lt0r_neq0 //.
 rewrite !sqrtr1 !mulr1 ler_sqrt //.
-apply: ler_sum=> u uU; rewrite ler_pM 1?mulr_ge0 ?sq_RV_ge0 ?Ind_ge0 //.
-rewrite ler_pM ?sq_RV_ge0 ?Ind_ge0 //.
+apply: ler_sum=> u uU; rewrite ler_pM 1?mulr_ge0 ?sqr_ge0 ?Ind_ge0 //.
+rewrite ler_pM ?sqr_ge0 ?Ind_ge0 //.
 by have/Ind_subset := FsubG; apply.
 Qed.
 
@@ -376,7 +321,7 @@ rewrite -!mulrA [in LHS]mulVf ?lt0r_neq0 //.
 rewrite mulVf ?Pr_setC ?subr_eq0 1?eq_sym ?neq_lt ?PrFlt1 // !mulr1.
 rewrite /Ex -big_split /=.
 apply: eq_bigr=> i _.
-rewrite /Ind inE.
+rewrite /Ind !RV_fctE/= inE.
 by case: ifP=> _ /=; rewrite mulr1 mulr0 scaler0 ?addr0 ?add0r.
 Qed.
 
@@ -404,7 +349,7 @@ move => /[dup]; rewrite {1}lt0Pr => PrPGF_neq0 PrPGF_gt0.
 rewrite !cEx_sub ?subsetDl // mulrCA.
 rewrite Ind_setD // mulrAC divff// mul1r.
 congr (_ / _); apply/eqP.
-rewrite mul_RVBr E_sub_RV -subr_eq0 -normr_le0.
+rewrite mulrBr E_sub_RV -subr_eq0 -normr_le0.
 apply: le_trans; first exact: ler_dist_normD.
 rewrite addrCA subrr addr0 normr_le0.
 apply/eqP/normr0_eq0.
@@ -424,8 +369,8 @@ Qed.
 Lemma Ind_one F : Pr P F != 0 -> `E_[Ind F : {RV P -> R} | F] = 1.
 Proof.
 move=> F0; rewrite cEx_ExInd.
-have -> : Ind F `* Ind F = Ind F.
-  by move=>*; rewrite /Ind boolp.funeqE=>? /=; case: ifPn; rewrite ?mulr0 ?mulr1.
+have -> : (Ind F : {RV P -> R}) `* Ind F = Ind F.
+  by rewrite -Ind_idem.
 by rewrite E_Ind mulrV // unitfE.
 Qed.
 
@@ -436,13 +381,13 @@ rewrite !cEx_ExInd -mulrDl.
 congr (_ * _).
 rewrite -E_add_RV.
 apply: congr_big => // i HiU.
-by rewrite /mul_RV mulrDl.
+by rewrite mulrDl.
 Qed.
 
 Lemma cEx_sub_RV (X Y : {RV P -> R}) F : `E_[X `- Y | F] = `E_[X|F] - `E_[Y|F].
 Proof.
 rewrite !cEx_ExInd -mulrBl; congr (_ * _).
-by rewrite mul_RVBl E_sub_RV.
+by rewrite mulrBl E_sub_RV.
 Qed.
 
 Lemma cEx_const_RV (k : R) F : 0 < Pr P F ->
@@ -460,9 +405,9 @@ Proof. by rewrite boolp.funeqE. Qed.
 Lemma cEx_scalel_RV (X : {RV P -> R}) (k : R) F:
   `E_[ k `cst* X | F] = `E_[X | F] * k.
 Proof.
-rewrite !cEx_ExInd mul_RVAC mulrAC /Ex; congr (_ / _).
-rewrite big_distrl /=.
-by apply/eq_bigr => i _; rewrite -!mulr_regl; lra.
+rewrite !cEx_ExInd [RHS]mulrAC (mulrC _ k) (mulr_regl k) -E_scale_RV.
+congr (`E _ / _); rewrite !RV_fctE; apply: boolp.funext => ? /=.
+by rewrite -!mulr_regl mulrA.
 Qed.
 
 Lemma cEx_trans_add_RV (X: {RV P -> R}) m F :
@@ -473,7 +418,7 @@ Lemma cEx_trans_RV_id_rem (X: {RV P -> R}) m F:
   `E_[(X `-cst m) `^2 | F] = `E_[((X `^2 `- ((2 * m) `cst* X)) `+cst m ^+ 2) | F].
 Proof.
 rewrite !cEx_ExInd; congr *%R; apply: eq_bigr => a _.
-rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scale_RV /=.
+rewrite !RV_fctE/= /scale_RV /=.
 by rewrite -!mulr_regl; lra.
 Qed.
 
@@ -507,7 +452,7 @@ Lemma cEx_sub_eq (X : {RV P -> R}) (F G : {set U}) :
 Proof.
 move=> ? Pr_FG_eq; apply/eqP.
 rewrite -subr_eq0 -normr_eq0 distrC.
-rewrite !cEx_ExInd Pr_FG_eq -mulrBl -E_sub_RV -mul_RVBr -Ind_setD //.
+rewrite !cEx_ExInd Pr_FG_eq -mulrBl -E_sub_RV -mulrBr -Ind_setD //.
 rewrite normrM mulf_eq0; apply/orP; left.
 rewrite normr_eq0 -sqrf_eq0 -normr_le0 normrX real_normK ?num_real //.
 apply: le_trans; first exact: Cauchy_Schwarz_proba.
@@ -704,7 +649,8 @@ have Exbad_bound : 0 < Pr P (bad :\: drop) ->
   rewrite 2!cEx_ExInd -mulNr mulrA -(Ind_idem P) -mulrDl big_distrr /=.
   rewrite /Ex -big_split /= [X in `|X / _|](_ : _ =
       \sum_(i in U) (X i - mu) * @Ind _ U (bad :\: drop) i * P i); last first.
-    by apply: eq_bigr => u _; rewrite -!mulr_regl; lra.
+    apply: eq_bigr => u _; rewrite -!mulr_regl.
+    by rewrite mulrCA -mulrDl mulrAC mulrA.
   rewrite normrM (@ger0_norm _ _^-1); last by rewrite ltW // invr_gt0.
   rewrite ler_pdivrMr //; apply: (le_trans (ler_norm_sum _ _ _)).
   rewrite (bigID [pred i | i \in bad :\: drop]) /=.
