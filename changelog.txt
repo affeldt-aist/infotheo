@@ -4,6 +4,24 @@ from 0.9.5 to 0.9.6
 
 * added
 - in proba.v
+  + following instances for RV:
+    eqType, choiceType, nmodType, zmodType, pzRingType,
+    comPzRingType, lmodType
+  + sumrRVE, prodrRVE, addrRVE, natmulRVE, opprRVE, mulrRVE, scalerRVE,
+    trans_add_RVE, trans_sub_RVE, const_RVE, exprRVE, comp_RVE, RV_fctE,
+    addr_const_RV, natmul_const_RV, oppr_const_RV, mulr_const_RV,
+    scaler_const_RV, expr_const_RV
+
+* changed
+- in proba.v
+  + const_RV, trans_add_RV, trans_sub_RV
+
+* removed
+- in proba.v
+  + add_RV, sub_RV, mul_RV, opp_RV, sumR_RV, sq_RV_pow2
+
+* added
+- in proba.v
   + Ind, Ind_ge0, Ind_le1, Ind_set0, Ind_setT, Ind_inP, Ind_notinP,
     Ind_setI, Ind_setU, Ind_bigcap, Ind_bigcup, E_Ind
 
