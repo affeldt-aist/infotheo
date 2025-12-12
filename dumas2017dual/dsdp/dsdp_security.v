@@ -295,72 +295,40 @@ rewrite H_assoc.
 exact: (cinde_centropy_eq cinde_X).
 Qed.
 
-(* Bridge lemma: AliceView conditioning equals base conditioning for [V2,V3].
-   Reuses alice_view_to_cond with cinde_V2V3 hypothesis. *)
-Lemma AliceView_entropy_connection :
-  `H([% V2, V3] | AliceView) = `H([% V2, V3] | CondRV).
-Proof. exact: (alice_view_to_cond cinde_V2V3). Qed.
-
-(* Helper: V3 is determined by V2 and CondRV, so joint entropy equals single.
+(* V3 is determined by V2 and CondRV, so joint entropy equals single.
    Uses chain rule and the fact that V3 = compute_v3(CondRV, V2).
    Follows exact pattern from dsdp_entropy.v V3_determined_centropy_v2. *)
 Lemma V3_determined_centropy_v2_local :
   `H([% V2, V3] | CondRV) = `H(V2 | CondRV).
 Proof.
-(* Unfold CondRV to use exact same proof pattern as dsdp_entropy.v *)
 rewrite /CondRV.
-(* Step 1: Express LHS conditional entropy as joint minus marginal *)
 have ->: `H([% V2, V3] | [% V1, U1, U2, U3, S]) =
   `H([% V1, U1, U2, U3, S], [% V2, V3]) - `H `p_ [% V1, U1, U2, U3, S].
   by rewrite chain_rule_RV addrAC subrr add0r.
-(* Step 2: Substitute V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2] *)
 rewrite V3_determined.
-(* Step 3: Use joint_entropy_RVA and joint_entropy_RV_comp *)
 have ->: `H([% V1, U1, U2, U3, S],
     [% V2, compute_v3 `o [% V1, U1, U2, U3, S, V2]]) =
   `H `p_[% V1, U1, U2, U3, S, V2].
   by rewrite joint_entropy_RVA joint_entropy_RV_comp.
-(* Step 4: Express RHS in same form *)
 have ->: `H(V2 | [% V1, U1, U2, U3, S]) =
   `H([% V1, U1, U2, U3, S], V2) - `H `p_ [% V1, U1, U2, U3, S].
   by rewrite chain_rule_RV addrAC subrr add0r.
-(* Goal: H([%V1,U1,U2,U3,S,V2]) = H([%V1,U1,U2,U3,S], V2) - definitional *)
 by [].
 Qed.
-
-(* Helper: Derive V2 independence from [V2,V3] independence using decomposition.
-   From cinde_V2V3: [Dk_a,R2,R3] _|_ [V2,V3] | CondRV
-   We derive: [Dk_a,R2,R3] _|_ V2 | CondRV *)
-Lemma cinde_V2_derived :
-  P |= [% Dk_a, R2, R3] _|_ V2 | CondRV.
-Proof. exact: (decomposition cinde_V2V3). Qed.
-
-(* AliceView conditioning equals base conditioning for V2.
-   Reuses alice_view_to_cond with cinde_V2_derived. *)
-Lemma AliceView_V2_entropy_connection :
-  `H(V2 | AliceView) = `H(V2 | CondRV).
-Proof. exact: (alice_view_to_cond cinde_V2_derived). Qed.
 
 (* DSDP security guarantee: H(V2 | AliceView) = log(m) > 0.
    Alice cannot learn Bob's private input V2 with certainty.
    The conditional entropy log(m) means V2 remains uniformly distributed
    over m values from Alice's perspective - she gains no advantage over
-   random guessing. The protocol leaks V3's determination but not V2.
-   
-   Pre-proof search:
-     About ltr_log.
-     About log1.
-*)
+   random guessing. The protocol leaks V3's determination but not V2. *)
 Theorem dsdp_security_bounded_leakage :
   `H(V2 | AliceView) = log (m%:R : R) /\
   `H(V2 | AliceView) > 0.
 Proof.
-(* === Proof chain using helper lemmas === *)
-(* H(V2 | AliceView) = H(V2 | CondRV)           [AliceView_V2_entropy_connection]
-                     = H([%V2,V3] | CondRV)     [V3_determined_centropy_v2_local sym]
-                     = log(m)                   [dsdp_constraint_centropy_eqlogm] *)
+(* Proof chain: H(V2|AliceView) = H(V2|CondRV) = H([V2,V3]|CondRV) = log(m) *)
 have H_v2_logm: `H(V2 | AliceView) = log (m%:R : R).
-  rewrite AliceView_V2_entropy_connection.
+  (* Inline: alice_view_to_cond with decomposition cinde_V2V3 *)
+  rewrite (alice_view_to_cond (decomposition cinde_V2V3)).
   rewrite -V3_determined_centropy_v2_local.
   exact: dsdp_constraint_centropy_eqlogm.
 split.
