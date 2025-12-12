@@ -209,29 +209,23 @@ apply: dsdp_centropy_uniform_zpq.
 - exact: U3_lt_minpq.
 Qed.
 
-(* Bridge lemma: AliceView conditioning equals base conditioning for [V2,V3].
-   AliceView = [Dk_a, S, V1, U1, U2, U3, R2, R3, E_alice_d3, E_charlie_v3, E_bob_v2]
-   The additional information [Dk_a, R2, R3, encryptions] is conditionally 
-   independent of [V2,V3] given [V1,U1,U2,U3,S], so it doesn't affect the entropy.
-   
-   Pre-proof search:
-     About E_enc_ce_removal.
-     About cinde_centropy_eq.
-*)
-Lemma AliceView_entropy_connection :
-  `H([% V2, V3] | AliceView) = `H([% V2, V3] | [% V1, U1, U2, U3, S]).
+(* Generic helper: Strip encryptions from AliceView and apply conditional independence.
+   This reuses the proof pattern from privacy_by_bonded_leakage in dsdp_entropy.v.
+   Given: X is conditionally independent of [Dk_a, R2, R3] given CondRV
+   Proves: H(X | AliceView) = H(X | CondRV) *)
+Lemma alice_view_to_cond (A : finType) (Xvar : {RV P -> A}) :
+  (P |= [% Dk_a, R2, R3] _|_ Xvar | CondRV) ->
+  `H(Xvar | AliceView) = `H(Xvar | CondRV).
 Proof.
-(* Goal: `H([% V2, V3] | AliceView) = `H([% V2, V3] | CondRV) *)
-set V := [% V2, V3].
+move=> cinde_X.
 (* Step 1: Remove encryption terms using E_enc_ce_removal *)
 rewrite /AliceView.
-rewrite (E_enc_ce_removal V card_msg); last exact: Pr_AliceView_neq0.
-rewrite (E_enc_ce_removal V card_msg); last exact: Pr_Eqn1View_neq0.
-rewrite (E_enc_ce_removal V card_msg); last exact: Pr_Eqn2View_neq0.
-(* === CHECKPOINT 1: Reduced to H(V | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) === *)
+rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_AliceView_neq0.
+rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_Eqn1View_neq0.
+rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_Eqn2View_neq0.
 (* Step 2: Reorder to group [Dk_a, R2, R3] with CondRV *)
-have H_reorder: `H(V | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
-  `H(V | [% Dk_a, R2, R3, V1, U1, U2, U3, S]).
+have H_reorder: `H(Xvar | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
+  `H(Xvar | [% Dk_a, R2, R3, V1, U1, U2, U3, S]).
   rewrite /centropy_RV /centropy /= !snd_RV2.
   rewrite (reindex (fun '(dk_a', r2', r3', v1', u1', u2', u3', s') => 
                     (dk_a', s', v1', u1', u2', u3', r2', r3')))/=.
@@ -262,10 +256,9 @@ have H_reorder: `H(V | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
            (dk_a', r2', r3', v1', u1', u2', u3', s')) 
            => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
 rewrite H_reorder.
-(* === CHECKPOINT 2: Now have H(V | [% Dk_a, R2, R3, V1, U1, U2, U3, S]) === *)
 (* Step 3: Associate tuples for cinde_centropy_eq application *)
-have H_assoc: `H(V | [% Dk_a, R2, R3, V1, U1, U2, U3, S] ) =
-    `H(V | [% [% Dk_a, R2, R3], [% V1, U1, U2, U3, S]] ).
+have H_assoc: `H(Xvar | [% Dk_a, R2, R3, V1, U1, U2, U3, S] ) =
+    `H(Xvar | [% [% Dk_a, R2, R3], [% V1, U1, U2, U3, S]] ).
   rewrite /centropy_RV /centropy /= !snd_RV2.
   rewrite (reindex (fun '(o, (v1, u1, u2, u3, s)) =>
                     (o, v1, u1, u2, u3, s))) /=.
@@ -298,11 +291,15 @@ have H_assoc: `H(V | [% Dk_a, R2, R3, V1, U1, U2, U3, S] ) =
   - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.
   - by move=> [] [] [] [] [] [] [] [] a1 a2 a3 a4 a5 o1 o2 o3.
 rewrite H_assoc.
-(* === CHECKPOINT 3: Now have H(V | [% [% Dk_a, R2, R3], CondRV]) === *)
 (* Step 4: Apply cinde_centropy_eq to remove [Dk_a, R2, R3] *)
-rewrite /V.
-exact: (cinde_centropy_eq cinde_V2V3).
+exact: (cinde_centropy_eq cinde_X).
 Qed.
+
+(* Bridge lemma: AliceView conditioning equals base conditioning for [V2,V3].
+   Reuses alice_view_to_cond with cinde_V2V3 hypothesis. *)
+Lemma AliceView_entropy_connection :
+  `H([% V2, V3] | AliceView) = `H([% V2, V3] | CondRV).
+Proof. exact: (alice_view_to_cond cinde_V2V3). Qed.
 
 (* Helper: V3 is determined by V2 and CondRV, so joint entropy equals single.
    Uses chain rule and the fact that V3 = compute_v3(CondRV, V2).
@@ -336,92 +333,13 @@ Qed.
    We derive: [Dk_a,R2,R3] _|_ V2 | CondRV *)
 Lemma cinde_V2_derived :
   P |= [% Dk_a, R2, R3] _|_ V2 | CondRV.
-Proof.
-(* Apply decomposition from graphoid.v: X _|_ [Y,W] | Z -> X _|_ Y | Z *)
-exact: (decomposition cinde_V2V3).
-Qed.
+Proof. exact: (decomposition cinde_V2V3). Qed.
 
-(* Helper: AliceView conditioning equals base conditioning for V2.
-   Same structure as AliceView_entropy_connection but for V2 alone. *)
+(* AliceView conditioning equals base conditioning for V2.
+   Reuses alice_view_to_cond with cinde_V2_derived. *)
 Lemma AliceView_V2_entropy_connection :
   `H(V2 | AliceView) = `H(V2 | CondRV).
-Proof.
-(* Same proof structure as AliceView_entropy_connection *)
-rewrite /AliceView.
-rewrite (E_enc_ce_removal V2 card_msg); last exact: Pr_AliceView_neq0.
-rewrite (E_enc_ce_removal V2 card_msg); last exact: Pr_Eqn1View_neq0.
-rewrite (E_enc_ce_removal V2 card_msg); last exact: Pr_Eqn2View_neq0.
-(* Reorder to group [Dk_a, R2, R3] with CondRV *)
-have H_reorder: `H(V2 | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
-  `H(V2 | [% Dk_a, R2, R3, V1, U1, U2, U3, S]).
-  rewrite /centropy_RV /centropy /= !snd_RV2.
-  rewrite (reindex (fun '(dk_a', r2', r3', v1', u1', u2', u3', s') => 
-                    (dk_a', s', v1', u1', u2', u3', r2', r3')))/=.
-    apply: eq_bigr => [] [] [] [] [] [] [] []
-      dk_a' s' v1' u1' u2' u3' r2' r3' _.
-    congr (_ * _).
-         rewrite !dist_of_RVE !pfwd1E; congr Pr; apply/setP => u;
-         rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    rewrite /centropy1; congr (- _).
-    rewrite /jcPr !snd_RV2.
-    apply: eq_bigr => a _.
-    rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
-    congr (_ * _).
-      f_equal.
-        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-           rewrite -[andb]/GRing.mul; ring.
-      by f_equal; congr Pr; apply/setP => u;
-         rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
-    congr log.
-      f_equal.
-        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-           rewrite -[andb]/GRing.mul; ring.
-      f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    by exists (fun '(dk_a', s', v1', u1', u2', u3', r2', r3') =>
-           (dk_a', r2', r3', v1', u1', u2', u3', s')) 
-           => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
-rewrite H_reorder.
-(* Associate tuples for cinde_centropy_eq application *)
-have H_assoc: `H(V2 | [% Dk_a, R2, R3, V1, U1, U2, U3, S] ) =
-    `H(V2 | [% [% Dk_a, R2, R3], [% V1, U1, U2, U3, S]] ).
-  rewrite /centropy_RV /centropy /= !snd_RV2.
-  rewrite (reindex (fun '(o, (v1, u1, u2, u3, s)) =>
-                    (o, v1, u1, u2, u3, s))) /=.
-    apply: eq_bigr =>
-      [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
-    congr (_ * _).
-      rewrite !dist_of_RVE !pfwd1E.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    rewrite /centropy1; congr (- _).
-    rewrite /jcPr !snd_RV2.
-    apply: eq_bigr => a _.
-    rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
-    congr (_ * _).
-      f_equal.
-        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-           rewrite -[andb]/GRing.mul; ring.
-      f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    congr log.
-    f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    f_equal.
-    by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-       rewrite -[andb]/GRing.mul; ring.
-  exists (fun '(o, v1, u1, u2, u3, s) =>
-             (o, (v1, u1, u2, u3, s))).
-  - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.
-  - by move=> [] [] [] [] [] [] [] [] a1 a2 a3 a4 a5 o1 o2 o3.
-rewrite H_assoc.
-(* Apply cinde_centropy_eq with cinde_V2_derived *)
-exact: (cinde_centropy_eq cinde_V2_derived).
-Qed.
+Proof. exact: (alice_view_to_cond cinde_V2_derived). Qed.
 
 (* DSDP security guarantee: H(V2 | AliceView) = log(m) > 0.
    Alice cannot learn Bob's private input V2 with certainty.
