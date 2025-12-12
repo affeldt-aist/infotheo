@@ -50,7 +50,7 @@ Reserved Notation "W '`(' b '|' a ')'" (at level 1, b, a at next level).
 Reserved Notation "W '``^' n" (at level 10).
 Reserved Notation "W '``(|' x ')'" (at level 1, x at next level).
 Reserved Notation "W '``(' y '|' x ')'" (at level 1, y, x at next level).
-Reserved Notation "'`O(' P , W )" (at level 10, P, W at next level,
+Reserved Notation "'`O(' P , W )" (at level 0, P, W at next level,
   format "'`O(' P ,  W )").
 Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level,
   format "'`H(' P  '`o'  W )").

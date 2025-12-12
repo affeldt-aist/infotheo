@@ -53,7 +53,7 @@ Local Open Scope proba_scope.
 
 Definition P : {fdist 'I_3} := FDist.mk pmf01.
 
-Definition X : {RV P -> R^o} := (fun i => i.+1%:R).
+Definition X : {RV P -> R} := (fun i => i.+1%:R).
 
 Lemma expected : `E X = 5/3.
 Proof.

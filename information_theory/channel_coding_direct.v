@@ -477,7 +477,7 @@ Lemma second_summand n k epsilon0 :
     forall i, i != ord0 ->
       (\sum_(f : encT A M n) Wght.d P f *
         Pr (W ``(| f ord0)) (cal_E epsilon0 f i)) =
-   Pr ((P `^ n) `x `O( P , W ) `^ n)%fdist [set x | prod_rV x \in `JTS P W n epsilon0].
+   Pr ((P `^ n) `x (`O( P , W ) `^ n))%fdist [set x | prod_rV x \in `JTS P W n epsilon0].
 Proof.
 move=> M.
 have M_prednK : #|M|.-1.+1 = #|M| by rewrite card_ord.

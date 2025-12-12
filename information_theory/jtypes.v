@@ -28,11 +28,11 @@ Reserved Notation "'P_' n '(' A ',' B ')'" (at level 9,
   n at next level, A at next level, B at next level).
 Reserved Notation "V '.-shell' ta" (at level 5,
   format "V '.-shell'  ta").
-Reserved Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" (at level 50,
+Reserved Notation "'\nu_' n '^{' A ',' B '}' '(' P ')'" (at level 0,
   n, A, B, P at next level, format "'\nu_' n '^{' A ',' B '}' '(' P ')'").
-Reserved Notation "'\nu^{' B '}' '(' P ')'" (at level 50,
+Reserved Notation "'\nu^{' B '}' '(' P ')'" (at level 0,
   B, P at next level, format "'\nu^{' B '}' '(' P ')'").
-Reserved Notation "'`tO(' V )" (at level 10).
+Reserved Notation "'`tO(' V )" (at level 0).
 
 Set Implicit Arguments.
 Unset Strict Implicit.

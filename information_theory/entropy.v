@@ -204,6 +204,55 @@ Proof. exact/entropy_fdistmap/inj_prodA. Qed.
 
 End entropy_fdistA.
 
+Section entropy_fdist_rV.
+Context {R : realType} {A : finType}.
+Variables (P : R.-fdist A) (n : nat).
+
+Lemma entropy_fdist_rV : `H (P `^ n)%fdist = n%:R * `H P.
+Proof.
+elim: n => [|n0 IH].
+  rewrite mul0r /entropy /= big1 ?oppr0 // => i _.
+  by rewrite fdist_rV0 log1 mulr0.
+rewrite -natr1 mulrDl mul1r -IH /entropy -(big_rV_cons_behead _ xpredT xpredT)/=.
+rewrite /= -opprD; congr (- _).
+rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
+    (\sum_(j in 'rV[A]_n0) (\prod_(i0 < n0) P j ``_ i0)) +
+     \sum_(i | i \in A) P i * \sum_(j in 'rV[A]_n0)
+    (\prod_(i0 < n0) P j ``_ i0) * log (\prod_(i0 < n0) P j ``_ i0)); last first.
+  rewrite -big_split /=; apply: eq_bigr => i _.
+  rewrite -mulrA -mulrDr (mulrC (log (P i))) (big_distrl (log (P i)) _ _) /=.
+  rewrite -big_split /= big_distrr /=.
+  apply: eq_bigr => i0 _.
+  rewrite fdist_rVE.
+  rewrite big_ord_recl (_ : _ ``_ ord0 = i); last first.
+    by rewrite mxE; case: splitP => // j Hj; rewrite mxE.
+  rewrite -mulrA.
+  have:= FDist.ge0 P i; rewrite le_eqVlt => /predU1P[<-|pi_pos].
+    by rewrite !mul0r.
+  congr (P i * _).
+  rewrite -mulrDr.
+  rewrite (@eq_bigr _ _ _ _ _ _
+      (fun x => P ((row_mx (\row_(_ < 1) i) i0) ``_ (lift ord0 x)))
+      (fun x => P i0 ``_ x)) => [|i1 _]; last first.
+    congr (P _).
+    rewrite mxE.
+    case: splitP => j; first by rewrite (ord1 j).
+    by rewrite lift0 add1n; case=> /eqP /val_eqP ->.
+  have [<-|rmul_non0] := eqVneq 0 (\prod_(i' < n0) P i0 ``_ i').
+    by rewrite !mul0r.
+  have rmul_pos : 0 < \prod_(i1<n0) P i0 ``_ i1.
+    by rewrite lt0r eq_sym rmul_non0; apply/prodr_ge0 => ?.
+  by rewrite logM//.
+rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
+  rewrite -[RHS](FDist.f1 (P `^ n0)%fdist).
+  by apply: eq_bigr => i _; rewrite fdist_rVE.
+rewrite -big_distrl /= mulr1 [in RHS]addrC; congr +%R.
+rewrite -big_distrl /= FDist.f1 mul1r; apply: eq_bigr => i _.
+by rewrite fdist_rVE.
+Qed.
+
+End entropy_fdist_rV.
+
 Section joint_entropy.
 Variables (R : realType) (A B : finType) (P : R.-fdist (A * B)).
 

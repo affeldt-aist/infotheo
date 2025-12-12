@@ -24,10 +24,10 @@ Require Import ssr_ext ssralg_ext cyclic_code dft.
 (*                                                                            *)
 (******************************************************************************)
 
-Reserved Notation "'\sigma_(' a , e )" (at level 3).
-Reserved Notation "'\sigma_(' a , e , i )" (at level 3).
+Reserved Notation "'\sigma_(' a , e )" (at level 0).
+Reserved Notation "'\sigma_(' a , e , i )" (at level 0).
 Reserved Notation "t '.-'rV[' R ]_ n" (at level 2).
-Reserved Notation "'\omega_(' f , a , e )" (at level 3).
+Reserved Notation "'\omega_(' f , a , e )" (at level 0).
 
 Set Implicit Arguments.
 Unset Strict Implicit.

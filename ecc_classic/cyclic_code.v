@@ -30,8 +30,8 @@ Require Import ssralg_ext poly_ext f2 hamming linearcode dft.
 (******************************************************************************)
 
 Reserved Notation "'`[' P ']_' n" (at level 4).
-Reserved Notation "''pgen[' C ]" (at level 8, format "''pgen[' C ]").
-Reserved Notation "''cgen[' C ]" (at level 8, format "''cgen[' C ]").
+Reserved Notation "''pgen[' C ]" (at level 0, format "''pgen[' C ]").
+Reserved Notation "''cgen[' C ]" (at level 0, format "''cgen[' C ]").
 
 Declare Scope cyclic_code_scope.
 

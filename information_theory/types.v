@@ -29,7 +29,7 @@ Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 (******************************************************************************)
 
 Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).
-Reserved Notation "'T_{' P '}'" (at level 9).
+Reserved Notation "'T_{' P '}'" (at level 0).
 Reserved Notation "P '.-typed_code' c" (at level 50, c at next level).
 
 Declare Scope types_scope.
@@ -87,8 +87,8 @@ have /eqP := @oner_neq0 Rdefinitions.R; apply.
 rewrite -(FDist.f1 d).
 transitivity (\sum_(a | a \in A) (t a)%:R / 0 : Rdefinitions.R); first exact/eq_bigr.
 rewrite -big_distrl /= -natr_sum.
-rewrite (_ : (\sum_(a in A) _)%nat = O) ?mul0r //.
-transitivity (\sum_(a in A) 0)%nat; first by apply: eq_bigr => a _; rewrite (ord1 (t a)).
+rewrite (_ : (\sum_(a in A) _)%N = O) ?mul0r //.
+transitivity (\sum_(a in A) 0)%N; first by apply: eq_bigr => a _; rewrite (ord1 (t a)).
 by rewrite big_const iter_addn.
 Qed.
 
@@ -100,7 +100,7 @@ assert (H2 : \sum_(a in A) f a = 1).
   under eq_bigr do rewrite ffunE /=.
   rewrite -big_distrl /= -natr_sum.
   by rewrite sum_num_occ_alt mulfV // pnatr_eq0.
-assert (H : forall a, (N(a | ta) < n.+2)%nat).
+assert (H : forall a, (N(a | ta) < n.+2)%N).
   move=> a; rewrite ltnS; by apply: num_occ_leq_n.
 refine (@type.mkType _ n.+1 (FDist.make H1 H2)
   [ffun a => @Ordinal n.+2 (N(a | ta)) (H a)] _).
@@ -148,7 +148,7 @@ by rewrite -!mulrA mulVf ?mulr1 ?pnatr_eq0// => ->.
 Qed.
 
 Definition fdist_of_ffun (A : finType) n (f : {ffun A -> 'I_n.+2})
-  (Hf : (\sum_(a in A) f a)%nat == n.+1) : {fdist A}.
+  (Hf : (\sum_(a in A) f a)%N == n.+1) : {fdist A}.
 set pf := [ffun a : A => (f a)%:R / n.+1%:R :> Rdefinitions.R].
 assert (pf_ge0 : forall a, 0 <= pf a).
   move=> a.
@@ -162,20 +162,20 @@ exact: (FDist.make pf_ge0 H).
 Defined.
 
 Lemma fdist_of_ffun_prop (A : finType) n (f : {ffun A -> 'I_n.+2})
-  (Hf : (\sum_(a in A) f a)%nat == n.+1) :
+  (Hf : (\sum_(a in A) f a)%N == n.+1) :
 forall a : A, (fdist_of_ffun Hf) a = (f a)%:R / n.+1%:R.
 Proof. by move=> a; rewrite ffunE. Qed.
 
 Definition type_choice_f (A : finType) n (f : {ffun A -> 'I_n.+1}) : option (P_ n ( A )).
 destruct n; first by exact: None.
-refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1)%nat with
+refine (match Sumbool.sumbool_of_bool (\sum_(a in A) f a == n.+1)%N with
           | left H => Some (@type.mkType _ _ (fdist_of_ffun H) f (fdist_of_ffun_prop H))
           | right _ => None
         end).
 Defined.
 
 Lemma ffun_of_fdist (A : finType) n (d : {fdist A}) (t : {ffun A -> 'I_n.+2})
-  (H : forall a : A, d a = (t a)%:R / n.+1%:R) : (\sum_(a in A) t a)%nat == n.+1.
+  (H : forall a : A, d a = (t a)%:R / n.+1%:R) : (\sum_(a in A) t a)%N == n.+1.
 Proof.
 suff : (\sum_(a in A) t a)%:R == n.+1%:R * \sum_(a | a \in A) d a.
   by move/eqP; rewrite (FDist.f1 d) mulr1 => /eqP; rewrite eqr_nat.
@@ -210,6 +210,7 @@ exact: (pickle f).
 apply: (pi f).*)
 Defined.
 
+(*
 Definition type_unpickle A n (m : nat) : option (P_ n ( A )).
 destruct n.
   exact: None.
@@ -239,15 +240,17 @@ apply/fdist_ext => a; by rewrite ffunE H.
 Qed.
 
 HB.instance Definition _ A n := @PCanIsCountable _ _ _ _ (@type_count_pcancel A n).
+*)
 
-Definition type_enum_f (A : finType) n (f : { f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n} ) : option (P_ n ( A )).
+Definition type_enum_f (A : finType) n
+  (f : { f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%N == n} ) : option (P_ n ( A )).
 destruct n.
   apply: None.
 refine (Some (@type.mkType _ _ (fdist_of_ffun (proj2_sig f)) (sval f) (fdist_of_ffun_prop (proj2_sig f)))).
 Defined.
 
 Definition type_enum A n := pmap (@type_enum_f A n)
-  (enum [the finType of {f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%nat == n}]).
+  (enum [the finType of {f : {ffun A -> 'I_n.+1} | (\sum_(a in A) f a)%N == n}]).
 
 Lemma type_enumP A n : finite_axiom (@type_enum A n).
 Proof.
@@ -255,9 +258,9 @@ destruct n.
   case=> d t H /=; by move: (no_0_type H).
 case=> d t H /=.
 move: (ffun_of_fdist H) => H'.
-have : Finite.axiom (enum [the finType of { f : {ffun A -> 'I_n.+2} | (\sum_(a in A) f a)%nat == n.+1}]).
+have : Finite.axiom (enum [the finType of { f : {ffun A -> 'I_n.+2} | (\sum_(a in A) f a)%N == n.+1}]).
   rewrite enumT; by apply: enumP.
-move/(_ (@exist {ffun A -> 'I_n.+2} (fun f => \sum_(a in A) f a == n.+1)%nat t H')) => <-.
+move/(_ (@exist {ffun A -> 'I_n.+2} (fun f => \sum_(a in A) f a == n.+1)%N t H')) => <-.
 rewrite /type_enum /= /type_enum_f /= count_map.
 by apply: eq_count.
 Qed.
@@ -347,10 +350,10 @@ have Hx : size (flatten [seq nseq (type.f P x0) x0 | x0 <- enum A]) == n.
   rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
   case: (P) => P' f HP' /=.
   apply/eqP.
-  transitivity (\sum_(a in A) f a)%nat; last first.
-    exact/eqP/ffun_of_fdist.
+  transitivity (\sum_(a in A) f a)%N; last first.
+     by apply/eqP; apply: (ffun_of_fdist HP').
   apply: congr_big => //.
-  by rewrite enumT.
+    by rewrite enumT.
   move=> a /= _.
   by rewrite size_nseq.
 exists Hx.

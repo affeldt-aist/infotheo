@@ -13,7 +13,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 Import Prenex Implicits.
 
-Lemma morph_oppr {R : pzRingType} : {morph @GRing.opp R : x y / (x + y)%R : R}.
+Lemma morph_oppr {R : zmodType} : {morph @GRing.opp R : x y / (x + y)%R : R}.
 Proof. by move=> x y /=; rewrite GRing.opprD. Qed.
 
 #[deprecated(since="infotheo 0.9", note="use `big_distrr` instead of `big_morph` + `morph_mulRdr`")]
@@ -21,7 +21,7 @@ Lemma morph_mulRDr {R : pzRingType} a :
   {morph (GRing.mul a) : x y / (x + y)%R : R}.
 Proof. by move=> * /=; rewrite GRing.mulrDr. Qed.
 
-Definition big_morph_oppr {R : pzRingType} :=
+Definition big_morph_oppr {R : zmodType} :=
   big_morph _ morph_oppr (@GRing.oppr0 R).
 
 Section bigop_no_law.
@@ -207,6 +207,27 @@ have /= := @partition_big_undup_map (enum A) f g.
 rewrite enum_uniq => /(_ isT) H.
 transitivity (\big[op/idx]_(i <- enum A) g i); first by rewrite enumT.
 by rewrite H; apply: eq_bigr => i _; apply: congr_big => //; rewrite enumT.
+Qed.
+
+Lemma partition_big_fin_img_set (F : {set A}) (f : A -> B) g :
+  \big[op/idx]_(i in F) (g i) =
+  \big[op/idx]_(r <- fin_img f) \big[op/idx]_(i in F | f i == r) (g i).
+Proof.
+have /= := @partition_big_undup_map (enum A) f (fun i => if i \notin F then idx else g i).
+rewrite enum_uniq => /(_ isT) H.
+transitivity (\big[op/idx]_(i in A) (if i \notin F then idx else g i)).
+rewrite bigID2.
+rewrite [X in op X _]big1_idem// ?Monoid.op1m//; first exact/Monoid.op1m.
+rewrite -big_enum.
+rewrite H.
+apply: eq_bigr => i _.
+rewrite big_mkcond.
+under [LHS]eq_bigr => j _ do rewrite if_neg -if_and.
+rewrite -big_mkcond big_enum_cond.
+apply: eq_big => //.
+move => j.
+congr (_ && _) => //.
+by rewrite andbC.
 Qed.
 
 End partition_big_finType_eqType.
@@ -727,3 +748,19 @@ by rewrite setIC I0 Monoid.op1m.
 Qed.
 
 End big_union.
+
+Section bigID_setC.
+Context {X : finType} {R : pzRingType}.
+Variable f0 : X -> R.
+Variable S : {set  X}.
+Local Open Scope ring_scope.
+
+(* TODO: this is maybe not very useful, try to get rid of it *)
+Lemma bigID_setC :
+  \sum_(x| x \in X) f0 x = \sum_(x| x \in S) f0 x + \sum_(x| x \in ~: S) f0 x.
+Proof.
+rewrite (bigID (fun x => x \in S)) /=; congr (_ + _).
+by apply: eq_bigl => x /=; rewrite inE.
+Qed.
+
+End bigID_setC.
