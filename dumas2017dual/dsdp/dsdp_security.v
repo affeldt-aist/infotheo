@@ -89,14 +89,21 @@ Qed.
 Let card_msg : #|msg| = m.
 Proof. by rewrite card_ord Zp_cast. Qed.
 
-(* Random variables for the DSDP protocol.
-   Instead of using dsdp_random_inputs record (which has complex section
-   parameters), we define the variables directly here. *)
-Variables (Dk_a : {RV P -> Alice.-key Dec msg})
-          (Dk_b : {RV P -> Bob.-key Dec msg})
-          (Dk_c : {RV P -> Charlie.-key Dec msg}).
+(* Use dsdp_random_inputs record to enable reuse of alice_view_to_cond *)
+Variable inputs : dsdp_random_inputs P p_minus_2 q_minus_2.
 
-Variables (V1 V2 V3 U1 U2 U3 R2 R3 : {RV P -> msg}).
+(* Extract random variables from the record *)
+Let Dk_a := dsdp_entropy.Dk_a inputs.
+Let Dk_b := dsdp_entropy.Dk_b inputs.
+Let Dk_c := dsdp_entropy.Dk_c inputs.
+Let V1 := dsdp_entropy.V1 inputs.
+Let V2 := dsdp_entropy.V2 inputs.
+Let V3 := dsdp_entropy.V3 inputs.
+Let U1 := dsdp_entropy.U1 inputs.
+Let U2 := dsdp_entropy.U2 inputs.
+Let U3 := dsdp_entropy.U3 inputs.
+Let R2 := dsdp_entropy.R2 inputs.
+Let R3 := dsdp_entropy.R3 inputs.
 
 Let VU2 : {RV P -> msg} := V2 \* U2.
 Let VU3 : {RV P -> msg} := V3 \* U3.
@@ -209,92 +216,6 @@ apply: dsdp_centropy_uniform_zpq.
 - exact: U3_lt_minpq.
 Qed.
 
-(* Generic helper: Strip encryptions from AliceView and apply conditional independence.
-   This reuses the proof pattern from privacy_by_bonded_leakage in dsdp_entropy.v.
-   Given: X is conditionally independent of [Dk_a, R2, R3] given CondRV
-   Proves: H(X | AliceView) = H(X | CondRV) *)
-Lemma alice_view_to_cond (A : finType) (Xvar : {RV P -> A}) :
-  (P |= [% Dk_a, R2, R3] _|_ Xvar | CondRV) ->
-  `H(Xvar | AliceView) = `H(Xvar | CondRV).
-Proof.
-move=> cinde_X.
-(* Step 1: Remove encryption terms using E_enc_ce_removal *)
-rewrite /AliceView.
-rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_AliceView_neq0.
-rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_Eqn1View_neq0.
-rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_Eqn2View_neq0.
-(* Step 2: Reorder to group [Dk_a, R2, R3] with CondRV *)
-have H_reorder: `H(Xvar | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
-  `H(Xvar | [% Dk_a, R2, R3, V1, U1, U2, U3, S]).
-  rewrite /centropy_RV /centropy /= !snd_RV2.
-  rewrite (reindex (fun '(dk_a', r2', r3', v1', u1', u2', u3', s') => 
-                    (dk_a', s', v1', u1', u2', u3', r2', r3')))/=.
-    apply: eq_bigr => [] [] [] [] [] [] [] []
-      dk_a' s' v1' u1' u2' u3' r2' r3' _.
-    congr (_ * _).
-         rewrite !dist_of_RVE !pfwd1E; congr Pr; apply/setP => u;
-         rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    rewrite /centropy1; congr (- _).
-    rewrite /jcPr !snd_RV2.
-    apply: eq_bigr => a _.
-    rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
-    congr (_ * _).
-      f_equal.
-        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-           rewrite -[andb]/GRing.mul; ring.
-      by f_equal; congr Pr; apply/setP => u;
-         rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
-    congr log.
-      f_equal.
-        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-           rewrite -[andb]/GRing.mul; ring.
-      f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    by exists (fun '(dk_a', s', v1', u1', u2', u3', r2', r3') =>
-           (dk_a', r2', r3', v1', u1', u2', u3', s')) 
-           => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
-rewrite H_reorder.
-(* Step 3: Associate tuples for cinde_centropy_eq application *)
-have H_assoc: `H(Xvar | [% Dk_a, R2, R3, V1, U1, U2, U3, S] ) =
-    `H(Xvar | [% [% Dk_a, R2, R3], [% V1, U1, U2, U3, S]] ).
-  rewrite /centropy_RV /centropy /= !snd_RV2.
-  rewrite (reindex (fun '(o, (v1, u1, u2, u3, s)) =>
-                    (o, v1, u1, u2, u3, s))) /=.
-    apply: eq_bigr =>
-      [] [] [] [] dk_a' r2' r3' [] [] [] [] v1' u1' u2' u3' s' _.
-    congr (_ * _).
-      rewrite !dist_of_RVE !pfwd1E.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    rewrite /centropy1; congr (- _).
-    rewrite /jcPr !snd_RV2.
-    apply: eq_bigr => a _.
-    rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
-    congr (_ * _).
-      f_equal.
-        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-           rewrite -[andb]/GRing.mul; ring.
-      f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    congr log.
-    f_equal.
-      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-         rewrite -[andb]/GRing.mul; ring.
-    f_equal.
-    by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-       rewrite -[andb]/GRing.mul; ring.
-  exists (fun '(o, v1, u1, u2, u3, s) =>
-             (o, (v1, u1, u2, u3, s))).
-  - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.
-  - by move=> [] [] [] [] [] [] [] [] a1 a2 a3 a4 a5 o1 o2 o3.
-rewrite H_assoc.
-(* Step 4: Apply cinde_centropy_eq to remove [Dk_a, R2, R3] *)
-exact: (cinde_centropy_eq cinde_X).
-Qed.
-
 (* V3 is determined by V2 and CondRV, so joint entropy equals single.
    Uses chain rule and the fact that V3 = compute_v3(CondRV, V2).
    Follows exact pattern from dsdp_entropy.v V3_determined_centropy_v2. *)
@@ -327,8 +248,9 @@ Theorem dsdp_security_bounded_leakage :
 Proof.
 (* Proof chain: H(V2|AliceView) = H(V2|CondRV) = H([V2,V3]|CondRV) = log(m) *)
 have H_v2_logm: `H(V2 | AliceView) = log (m%:R : R).
-  (* Inline: alice_view_to_cond with decomposition cinde_V2V3 *)
-  rewrite (alice_view_to_cond (decomposition cinde_V2V3)).
+  (* Use alice_view_to_cond from dsdp_entropy.v with the record *)
+  rewrite (alice_view_to_cond Pr_AliceView_neq0 Pr_Eqn1View_neq0 Pr_Eqn2View_neq0
+             (decomposition cinde_V2V3)).
   rewrite -V3_determined_centropy_v2_local.
   exact: dsdp_constraint_centropy_eqlogm.
 split.
