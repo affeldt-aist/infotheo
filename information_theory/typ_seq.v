@@ -186,7 +186,7 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
 rewrite {1}/Pr big1 ?add0r; last by move=> /= v; rewrite inE => /eqP.
 apply/(le_trans _ (aep He k0_k))/subset_Pr/subsetP => /= t.
 rewrite !inE /= => /andP[-> H3].
-by rewrite /log_RV /= /scale_RV /= -mulr_regl mulrN -mulNr ltW.
+by rewrite /log_RV /= /scale_RV !RV_fctE/= -mulr_regl mulrN -mulNr ltW.
 Qed.
 
 Variable He1 : epsilon < 1.

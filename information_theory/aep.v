@@ -43,32 +43,12 @@ Definition aep_sigma2 : R := `E ((`-- (`log P)) `^2) - (`H P)^+2.
 
 Lemma aep_sigma2E : aep_sigma2 = \sum_(a in A) P a * (log (P a))^+2 - (`H P)^+2.
 Proof.
-rewrite /aep_sigma2 /Ex [in LHS]/log_RV /sq_RV /comp_RV.
+rewrite /aep_sigma2 /Ex [in LHS]/log_RV !RV_fctE/=.
 by under eq_bigr do rewrite /ambient_dist expr2 mulrNN -expr2.
 Qed.
 
 Lemma V_mlog : `V (`-- (`log P)) = aep_sigma2.
-Proof.
-rewrite aep_sigma2E /Var E_trans_RV_id_rem -entropy_Ex.
-transitivity
-    (\sum_(a in A) ((- log (P a))^+2 * P a - 2 * `H P * - log (P a) * P a +
-                    `H P ^+ 2 * P a))%R.
-  apply: eq_bigr => a _.
-  rewrite /scale_RV /log_RV /opp_RV /trans_add_RV /sq_RV /comp_RV /= /sub_RV.
-  by rewrite -mulr_regl mulrC /ambient_dist -!mulrBl -mulrDl.
-rewrite big_split /= big_split /= -big_distrr /= (FDist.f1 P) mulr1.
-rewrite (_ : \sum_(a in A) - _ = - (2 * `H P ^+ 2))%R; last first.
-  rewrite -{1}big_morph_oppr; congr (- _)%R.
-  rewrite [X in X = _](_ : _ =
-    \sum_(a in A) (2 * `H P) * (- (P a * log (P a))))%R; last first.
-    by apply: eq_bigr => a _; rewrite (mulrC (P a)) -[in RHS]mulNr mulrA.
-  rewrite -big_distrr [in LHS]/= -{1}big_morph_oppr.
-  by rewrite -/(entropy P) expr2 mulrA.
-set s := ((\sum_(a in A ) _)%R in LHS).
-rewrite (_ : \sum_(a in A) _ = s)%R; last first.
-  by apply: eq_bigr => a _; rewrite sqrrN mulrC.
-by rewrite (mulr_natl _ 2) mulr2n opprD addrA subrK.
-Qed.
+Proof. by rewrite /aep_sigma2 VarE entropy_Ex. Qed.
 
 Lemma aep_sigma2_ge0 : 0 <= aep_sigma2.
 Proof. by rewrite -V_mlog /Var; apply: Ex_ge0 => ?; exact: sq_RV_ge0. Qed.
@@ -143,7 +123,7 @@ have H2 k i : `V ((\row_(i < k.+1) `-- (`log P)) ``_ i) = aep_sigma2 P.
 have {H1 H2} := (wlln (H1 n) (H2 n) Hsum Hepsilon).
 move/(le_trans _); apply.
 apply/subset_Pr/subsetP => ta; rewrite 2!inE => /andP[H1].
-rewrite /sum_mlog_prod [`-- (`log _)]lock /= -lock /scale_RV /log_RV /opp_RV/=.
+rewrite /sum_mlog_prod [`-- (`log _)]lock /= -lock /scale_RV /log_RV !RV_fctE/=.
 rewrite fdist_rVE log_prodr_sumr_mlog //.
 apply/prod_gt0_inv.
   by move=> x; exact: FDist.ge0.

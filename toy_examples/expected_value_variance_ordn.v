@@ -65,7 +65,7 @@ Qed.
 
 Lemma variance : `V X = 5/9.
 Proof.
-rewrite VarE expected /Ex /X /sq_RV /comp_RV /=.
+rewrite VarE expected /Ex /X !RV_fctE/=.
 rewrite 3!big_ord_recl big_ord0 /=.
 rewrite !ffunE /bump /= -!mulr_regl.
 by field.

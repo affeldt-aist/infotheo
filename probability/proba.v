@@ -1,9 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
+From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup lra.
 From mathcomp Require boolp.
-From mathcomp Require Import unstable mathcomp_extra reals exp.
+From mathcomp Require Import unstable mathcomp_extra functions reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
 (**md**************************************************************************)
@@ -34,7 +35,8 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 (*                T`* F == the set of pairs (x, y) with y in F                *)
 (*               Pr d E == probability of event E over the distribution d     *)
 (*          {RV P -> T} == the type of random variables over an ambient       *)
-(*                         distribution P where T is an eqType                *)
+(*                         distribution P where T is an eqType;               *)
+(*                         if T is a ring or a module, so is {RV P -> T}      *)
 (*       ambient_dist X == the P in X : {RV P -> T}                           *)
 (*         `Pr[ X = a ] == the probability that the random variable X is a    *)
 (*                         with a : A : eqType                                *)
@@ -46,12 +48,22 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 (*                         (expect finTypes)                                  *)
 (*                 `p_X := fdistmap X P with X : {RV P -> A}                  *)
 (*           const_RV k == constant RV                                        *)
+(*                 `log == binary log as a RV                                 *)
+(* ```                                                                        *)
+(*                                                                            *)
+(* Operations on random variables:                                            *)
+(* ```                                                                        *)
 (*               f `o X == composition of a function and a RV                 *)
-(* k `cst* X, X `*cst k == scaling of a RV                                    *)
+(*              f `*: X == non-uniform scaling by scalers specified by f      *)
 (* X `+cst m, X `-cst m == translation of a RV                                *)
-(*               X `/ n := n%:R^-1 `cst* X                                    *)
-(*   `+,`-,`^2,`--,`log == operations on RVs                                  *)
 (*     [% X, Y, ..., Z] == successive pairings of RVs                         *)
+(*                                                                            *)
+(* k `cst* X, X `*cst k := k *: X (parsing-only notations for compatibility)  *)
+(*        `+,`-,`^2,`-- := +, -, ^+ 2, -, resp. (parsing-only, compatibility) *)
+(*               X `/ n := n%:R^-1 `cst* X (parsing-only, compatibility)      *)
+(*                                                                            *)
+(*              RV_fctE == multi-rule for evaluating RVs                      *)
+(*     sumrRVE, prodRVE == evaluation laws for sums and products of RVs       *)
 (* ```                                                                        *)
 (*                                                                            *)
 (* ```                                                                        *)
@@ -82,6 +94,7 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 (*           X \=sum Xs == X is the sum of the n>=1 independent and           *)
 (*                         identically distributed random variables Xs        *)
 (* ```                                                                        *)
+(*                                                                            *)
 (******************************************************************************)
 
 Reserved Notation "E `*T" (at level 40).
@@ -531,6 +544,8 @@ Local Notation "{ 'RV' P -> V }" := (RV_of P%fdist (Phant _) (Phant V)).
 
 Definition ambient_dist (P : R.-fdist U) (X : {RV P -> T}) : R.-fdist U := P.
 
+HB.instance Definition _ (P : R.-fdist U) := boolp.gen_eqMixin {RV P -> T}.
+
 End random_variable.
 Notation "{ 'RV' P -> T }" := (RV_of P%fdist (Phant _) (Phant T)) : proba_scope.
 
@@ -571,6 +586,13 @@ End random_variable_eqType.
 Notation "`Pr[ X = a ]" := (pfwd1 X a) : proba_scope.
 #[global] Hint Extern 0 (is_true (0 <= `Pr[ _ = _ ])) =>
   solve [apply: pfwd1_ge0] : core.
+
+Section random_variable_choiceType.
+Context {R : realType} {U : finType} {T : choiceType} {P : R.-fdist U}.
+
+HB.instance Definition _ := boolp.gen_choiceMixin {RV P -> T}.
+
+End random_variable_choiceType.
 
 Section random_variable_order.
 Context {R : realType}.
@@ -639,71 +661,237 @@ Notation pr_eq_setE := pr_inE (only parsing).
 #[deprecated(since="infotheo 0.9.2", note="renamed to `pr_in1`")]
 Notation pr_eq_set1 := pr_in1 (only parsing).
 
-Section random_variables.
+Section random_variable_basic_constructions.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 
 Definition unit_RV : {RV P -> unit} := fun=> tt.
-Definition const_RV (T : eqType) cst : {RV P -> T} := fun=> cst.
+Definition const_RV (T : eqType) : T -> {RV P -> T} := cst.
 Definition comp_RV (TA TB : eqType) (f : TA -> TB) (X : {RV P -> TA}) : {RV P -> TB} :=
   fun x => f (X x).
 
-End random_variables.
+End random_variable_basic_constructions.
 
 Notation "f `o X" := (comp_RV f X).
 
-Section zmod_random_variables.
-Context {R : realType}.
-Variables (U : finType) (P : R.-fdist U).
-Implicit Types (V : zmodType).
+Section nmod_random_variables.
+Context {R : realType} {U : finType} {P : R.-fdist U} {V : nmodType}.
+Implicit Types f g h : {RV P -> V}.
 Local Open Scope ring_scope.
 
-Definition add_RV V (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x + Y x.
-Definition sub_RV V (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x - Y x.
+HB.instance Definition _ :=
+  @GRing.isNmodule.Build
+    {RV P -> V} 0 +%R (@addrA (U -> V)) (@addrC (U -> V)) (@add0r (U -> V)).
 
-Definition mul_RV (V : lalgType R) (X Y : {RV P -> V}) : {RV P -> V} := fun x => X x * Y x.
+Definition trans_add_RV (X : {RV P -> V}) m : {RV P -> V} := X + const_RV P m.
 
-Definition opp_RV V (X : {RV P -> V}) : {RV P -> V} := fun x => - X x.
-Definition trans_add_RV V (X : {RV P -> V}) m : {RV P -> V} := fun x => X x + m.
-Definition trans_sub_RV V (X : {RV P -> V}) m : {RV P -> V} := fun x => X x - m.
-Definition sumR_RV V I (r : seq I) (p : pred I) (X : I -> {RV P -> V}) : {RV P -> V} :=
-  fun x => \sum_(i <- r | p i) X i x.
+End nmod_random_variables.
 
-Local Notation "X `+ Y" := (add_RV X Y) : proba_scope.
-Local Notation "X `- Y" := (sub_RV X Y) : proba_scope.
+Notation "X `+ Y" := (X + Y) (only parsing) : proba_scope.
+Notation "X '`+cst' m" := (trans_add_RV X m) (only parsing) : proba_scope.
 
-Local Notation "X `* Y" := (mul_RV X Y) : proba_scope.
+Section zmod_random_variables.
+Context {R : realType} {U : finType} {P : R.-fdist U} {V : zmodType}.
+Local Open Scope ring_scope.
 
-Lemma sub_RV_neg V (X Y : {RV P -> V}) :
-  X `- Y = X `+ opp_RV Y.
+HB.instance Definition _ :=
+  @GRing.Nmodule_isZmodule.Build {RV P -> V} -%R (@addNr (U -> V)).
+
+Definition trans_sub_RV (X : {RV P -> V}) m : {RV P -> V} := X - const_RV P m.
+
+Local Notation "X `- Y" := (X - Y) (only parsing) : proba_scope.
+
+Lemma sub_RV_neg (X Y : {RV P -> V}) :
+  X `- Y = X `+ - Y.
 Proof. by []. Qed.
 
 End zmod_random_variables.
 
-Notation "X `+ Y" := (add_RV X Y) : proba_scope.
-Notation "X `- Y" := (sub_RV X Y) : proba_scope.
-Notation "X `* Y" := (mul_RV X Y) : proba_scope.
-Notation "X '`+cst' m" := (trans_add_RV X m) : proba_scope.
-Notation "X '`-cst' m" := (trans_sub_RV X m) : proba_scope.
-Notation "'`--' P" := (opp_RV P) : proba_scope.
+Notation "X `- Y" := (X - Y) (only parsing) : proba_scope.
+Notation "X '`-cst' m" := (trans_sub_RV X m) (only parsing) : proba_scope.
+Notation "'`--' P" := (- P) (only parsing) : proba_scope.
 
-Section ring_random_variables.
+(* copied from mca master *)
+Section pzRing_random_variables.
+Context {R : realType} {U : finType} {P : R.-fdist U} {V : pzRingType}.
+Implicit Types f g h : {RV P -> V}.
+Local Open Scope ring_scope.
+
+Let mulrA : associative (fun f g => f \* g).
+Proof. by move=> f g h; rewrite boolp.funeqE=> x /=; rewrite mulrA. Qed.
+
+Let mul1r : left_id (cst 1) (fun f g => f \* g).
+Proof. by move=> f; rewrite boolp.funeqE=> x /=; rewrite mul1r. Qed.
+
+Let mulr1 : right_id (cst 1) (fun f g => f \* g).
+Proof. by move=> f; rewrite boolp.funeqE=> x /=; rewrite mulr1. Qed.
+
+Let mulrDl : left_distributive (fun f g => f \* g) +%R.
+Proof. by move=> f g h; rewrite boolp.funeqE=> x/=; rewrite mulrDl. Qed.
+
+Let mulrDr : right_distributive (fun f g => f \* g) +%R.
+Proof. by move=> f g h; rewrite boolp.funeqE=> x/=; rewrite mulrDr. Qed.
+
+HB.instance Definition _ := @GRing.Zmodule_isPzRing.Build {RV P -> V} (cst 1)
+  (fun f g => f \* g) mulrA mul1r mulr1 mulrDl mulrDr.
+
+End pzRing_random_variables.
+
+Notation "X `* Y" := (X * Y) (only parsing) : proba_scope.
+
+(* copied from mca master *)
+Section comPzRing_random_variables.
+Context {R : realType} {U : finType} {P : R.-fdist U} {V : comPzRingType}.
+Local Open Scope ring_scope.
+
+Let mulrC : commutative (@GRing.mul {RV P -> V}).
+Proof. by move=> f g; rewrite boolp.funeqE => x; rewrite /GRing.mul/= mulrC. Qed.
+
+HB.instance Definition _ :=
+  GRing.PzRing_hasCommutativeMul.Build {RV P -> V} mulrC.
+
+End comPzRing_random_variables.
+
+(* copied from mca master *)
+Section lmodule_random_variables.
+Context {R : realType} {U : finType} {P : R.-fdist U} {K : pzRingType} {V : lmodType K}.
+
+Program Definition RV_lmodMixin := @GRing.Zmodule_isLmodule.Build K {RV P -> V}
+  (fun k f => k \*: f) _ _ _ _.
+Next Obligation. by move=> k f v; rewrite boolp.funeqE=> x; exact: scalerA. Qed.
+Next Obligation. by move=> f; rewrite boolp.funeqE=> x /=; rewrite scale1r. Qed.
+Next Obligation.
+by move=> f g h; rewrite boolp.funeqE => x /=; rewrite scalerDr.
+Qed.
+Next Obligation.
+by move=> f g h; rewrite boolp.funeqE => x /=; rewrite scalerDl.
+Qed.
+
+HB.instance Definition _ := RV_lmodMixin.
+
+End lmodule_random_variables.
+
+(* waiting for a newer version of mathcomp, where pzLalgType will be available*)
+(*
+Section lalgebra_random_variables.
+Context {R : realType} {U : finType} {P : R.-fdist U} {K : pzRingType} {V : pzLalgType K}.
+Local Open Scope ring_scope.
+
+Let scalerAl (a : K) (X Y : {RV P -> V}) : a *: (X * Y) = (a *: X) * Y.
+Proof. by rewrite boolp.funeqE => x /=; exact: scalerAl. Qed.
+
+Fail Program Definition RV_lalgMixin :=
+  GRing.Lmodule_isLalgebra.Build  _ _  scalerAl.
+
+End lalgebra_random_variables.
+*)
+
+Section algebraic_constructions_on_random_variables.
 Local Open Scope ring_scope.
 Context {R : realType}.
 Variables (U : finType) (P : R.-fdist U).
 
+(* this is not a normal scaling, should be renamed like dependent_scale_RV *)
 Definition scale_RV (V : lmodType R) (f : U -> R) (X : {RV P -> V}) : {RV P -> V}
   := fun x => f x *: X x.
 (* fix scaler_RV / Definition scaler_RV (X : {RV P -> V}) k : {RV P -> V} := fun x => X x * k. *)
-Definition sq_RV (V : lalgType R) (X : {RV P -> V}) : {RV P -> V} := (fun x => x ^+ 2) `o X.
 
-End ring_random_variables.
+End algebraic_constructions_on_random_variables.
 
-Notation "k `cst* X" := (scale_RV (fun=> k) X) : proba_scope.
-Notation "X `*cst k" := (scale_RV (fun=> k) X) : proba_scope.
+Notation "k `cst* X" := (k *: X) (only parsing) : proba_scope.
+Notation "X `*cst k" := (k *: X) (only parsing) : proba_scope.
 Notation "f `*: X" := (scale_RV f X) : proba_scope.
-Notation "X '`/' n" := (scale_RV (fun => n%:R^-1) X) : proba_scope.
-Notation "X '`^2' " := (sq_RV X) : proba_scope.
+Notation "X '`/' n" := (n%:R^-1 *: X) (only parsing) : proba_scope.
+Notation "X '`^2' " := (X ^+ 2) (only parsing) : proba_scope.
+
+Section RV_simplification_lemmas.
+Context {R : realType} {U : finType} {P : R.-fdist U}.
+Implicit Types (K : pzRingType).
+Local Open Scope ring_scope.
+
+Lemma sumrRVE {V : nmodType} I (r : seq I) (p : pred I) (X : I -> {RV P -> V}) :
+  \sum_(i <- r | p i) X i = fun x => \sum_(i <- r | p i) X i x.
+Proof. by apply/boolp.funext => ?; elim/big_rec2: _ => //= i y ? Pi <-. Qed.
+(* NB: should be `exact: sumrfctE.`, but this does not work for now *)
+
+Lemma prodrRVE {V : pzRingType} I (r : seq I) (p : pred I) (X : I -> {RV P -> V}) :
+  \prod_(i <- r | p i) X i = fun x => \prod_(i <- r | p i) X i x.
+Proof. by apply/boolp.funext => ?; elim/big_rec2: _ => //= i y ? Pi <-. Qed.
+(* FIXTHEM: analysis.functions.prodrfctE is not generic enough *)
+
+Lemma addrRVE {V : nmodType} (X Y : {RV P -> V}) :
+  X + Y = fun x => X x + Y x.
+Proof. by []. Qed.
+
+Lemma natmulRVE {V : nmodType} (X : {RV P -> V}) n :
+  X *+ n = fun x => X x *+ n.
+Proof. exact: natmulfctE. Qed.
+
+Lemma opprRVE (V : zmodType) (X : {RV P -> V}) : - X = (fun x => - X x).
+Proof. by []. Qed.
+
+Lemma mulrRVE (V : pzRingType) (X Y : {RV P -> V}) :
+  X * Y = (fun x => X x * Y x).
+Proof. by []. Qed.
+
+Lemma scalerRVE K (V : lmodType K) k (X : {RV P -> V}) :
+  k *: X = (fun x => k *: X x).
+Proof. by []. Qed.
+(* FIXTHEM: analysis.functions.scalrfctE looks like a typo (of scalerfctE) *)
+
+Lemma trans_add_RVE (V : nmodType) (X : {RV P -> V}) m :
+  X `+cst m = (fun x => X x + m).
+Proof. by []. Qed.
+
+Lemma trans_sub_RVE (V : zmodType) (X : {RV P -> V}) m :
+  X `-cst m = (fun x => X x - m).
+Proof. by []. Qed.
+
+Lemma const_RVE (T : eqType) (x : T) :
+  const_RV P x = fun _ => x.
+Proof. by []. Qed.
+
+Lemma exprRVE (V : pzRingType) (X : {RV P -> V}) n:
+  X ^+ n = (fun x => X x ^+ n).
+Proof. by elim: n => [|n h]; rewrite boolp.funeqE=> ?; rewrite ?expr0 ?exprS ?h. Qed.
+(* FIXTHEM: analysis.functions.exprfctE is not generic enough *)
+
+Lemma comp_RVE (T1 T2 : eqType) (f : T1 -> T2) (X : {RV P -> T1}) :
+  f \o X = fun x => f (X x).
+Proof. by []. Qed.
+
+Definition RV_fctE :=
+  (@const_RVE, @comp_RVE, @opprRVE, @addrRVE, @mulrRVE, @scalerRVE, @exprRVE,
+    @natmulRVE, @trans_add_RVE, @trans_sub_RVE, fctE).
+
+Lemma addr_const_RV (V : nmodType) (x y : V) :
+  const_RV P x + const_RV P y = const_RV P (x + y).
+Proof. by []. Qed.
+
+Lemma natmul_const_RV (V : nmodType) (x : V) n :
+  const_RV P x *+ n = const_RV P (x *+ n).
+Proof. by rewrite natmulRVE. Qed.
+
+Lemma oppr_const_RV (V : zmodType) (x : V) :
+  - const_RV P x = const_RV P (- x).
+Proof. by []. Qed.
+
+Lemma mulr_const_RV (V : pzRingType) (x y : V) :
+  const_RV P x * const_RV P y = const_RV P (x * y).
+Proof. by []. Qed.
+
+Lemma scaler_const_RV K (V : lmodType K) k (x : V) :
+  k *: const_RV P x = const_RV P (k *: x).
+Proof. by []. Qed.
+
+Lemma expr_const_RV (V : pzRingType) (x : V) n :
+  const_RV P x ^+ n = const_RV P (x ^+ n).
+Proof. by rewrite exprRVE. Qed.
+
+End RV_simplification_lemmas.
+
+Arguments sumrRVE {R U}.
+Arguments prodrRVE {R U}.
 
 Section real_random_variables.
 Context {R : realType}.
@@ -722,11 +910,8 @@ Lemma scale_RVA f g (X : {RV P -> V}) :
   scale_RV (f \* g) X = scale_RV f (scale_RV g X).
 Proof. by rewrite /scale_RV boolp.funeqE => u; rewrite scalerA. Qed.
 
-Lemma sq_RV_pow2 (X : {RV P -> R}) x : sq_RV X x = (X x) ^+ 2.
-Proof. reflexivity. Qed.
-
-Lemma sq_RV_ge0 (X : {RV P -> R}) x : 0 <= sq_RV X x.
-Proof. by rewrite sq_RV_pow2 sqr_ge0. Qed.
+Lemma sq_RV_ge0 (X : {RV P -> R}) x : 0 <= (X ^+ 2) x.
+Proof. by rewrite sqr_ge0. Qed.
 
 End RV_lemmas.
 
@@ -1033,11 +1218,9 @@ Lemma Ex_ge0 (X : {RV P -> R}) : (forall u, 0 <= X u) -> 0 <= `E X.
 Proof. by move=> H; apply/sumr_ge0 => u _; rewrite mulr_ge0. Qed.
 
 Lemma E_sumR {V : lmodType R} I r p (Z : I -> {RV P -> V}) :
-  `E (sumR_RV r p Z) = \sum_(i <- r | p i) (`E (Z i)).
+  `E (\sum_(i <- r | p i) Z i) = \sum_(i <- r | p i) (`E (Z i)).
 Proof.
-rewrite /Ex.
-under eq_bigr do rewrite scaler_sumr.
-by rewrite exchange_big /=; apply: eq_bigr => i Hi.
+by rewrite exchange_big/=; apply: eq_bigr=> u _; rewrite sumrRVE scaler_sumr.
 Qed.
 
 Lemma E_const_RV {V : lmodType R} (k : V) : `E (@const_RV _ U P V k) = k.
@@ -1064,9 +1247,8 @@ Qed.
 Lemma E_trans_RV_id_rem (X : {RV P -> R}) m :
   `E ((X `-cst m) `^2) = `E ((X `^2 `- ((2 * m) `cst* X)) `+cst m ^+ 2).
 Proof.
-apply: eq_bigr => a _.
-rewrite /sub_RV /trans_add_RV /trans_sub_RV /sq_RV /= /comp_RV /scale_RV /const_RV/=.
-by congr (_ *: _); rewrite sqrrB -mulr_regl; lra.
+congr `E; rewrite sqrrB; congr (_ - _ + _).
+by rewrite -mulr_natr -mulrA mulr_regr mulrC.
 Qed.
 
 Lemma E_comp_RV (f : R -> R) k (X : {RV P -> R}) :
@@ -1225,7 +1407,7 @@ Variables (U : finType) (P : R.-fdist U).
 Lemma Ind_setD (X Y : {set U}) :
   Y \subset X -> Ind (X :\: Y) = Ind X `- Ind Y :> {RV P -> R}.
 Proof.
-move/subsetP=> YsubX; rewrite /Ind /sub_RV. apply: boolp.funext => u /=.
+move/subsetP=> YsubX; rewrite /Ind !RV_fctE; apply: boolp.funext => u /=.
 case: ifPn; rewrite inE ?negb_and;
   first by case/andP => /negbTE -> ->; rewrite subr0.
 case/orP; first by move => /negbNE /[dup] /YsubX -> ->; rewrite subrr.
@@ -1239,7 +1421,7 @@ Proof. by []. Qed.
 
 Lemma Ind_sqr F : Ind F = ((Ind F : {RV P -> R}) `^2).
 Proof.
-rewrite sq_RVE boolp.funeqE /Ind /mul_RV => x.
+rewrite sq_RVE boolp.funeqE /Ind !RV_fctE => x.
 by case: ifPn; rewrite ?mulr0 ?mulr1.
 Qed.
 
@@ -1252,8 +1434,8 @@ Section probability_inclusion_exclusion.
 Context {R : realType}.
 Variables (A : finType) (P : R.-fdist A).
 
-Let SumIndCap (n : nat) (S : 'I_n -> {set A}) (k : nat) (x : A) : R :=
-  \sum_(J in {set 'I_n} | #|J| == k) (Ind (\bigcap_(j in J) S j) x).
+Let SumIndCap (n : nat) (S : 'I_n -> {set A}) (k : nat) : {RV P -> R} :=
+  \sum_(J in {set 'I_n} | #|J| == k) (Ind (\bigcap_(j in J) S j)).
 
 Lemma Ind_bigcup_incl_excl (n : nat) (S : 'I_n -> {set A}) (x : A) :
   Ind (\bigcup_(i < n) S i) x =
@@ -1292,7 +1474,7 @@ apply: eq_bigr => i Hi; rewrite /SumIndCap /Efull.
 rewrite m1powD; last first.
   by case/andP: Hi => Hi _ K0; rewrite K0 in Hi.
 rewrite mulNr.
-rewrite big_distrr/=.
+rewrite (sumrRVE P) big_distrr/=.
 congr -%R; apply: eq_bigr => j Hj.
 rewrite prodrN (eqP Hj).
 rewrite (_ : ?[a] * ((-1)^+i * ?[b]) = (-1)^+i * (?a * ?b)); last by lra.
@@ -1411,17 +1593,18 @@ Variables (U : finType) (P : R.-fdist U) (X : {RV P -> R}).
 (** The variance is not linear: *)
 Lemma Var_scale k : `V (k `cst* X) = k ^+ 2 *: `V X.
 Proof.
-rewrite /Var -E_scale_RV.
-congr Ex; apply: boolp.funext => x /=.
-rewrite /scale_RV/trans_sub_RV/trans_add_RV/sq_RV/comp_RV/=.
-rewrite E_scale_RV/= -!mulr_regl.
-lra.
+rewrite /Var -E_scale_RV /trans_sub_RV; congr Ex.
+rewrite E_scale_RV -scaler_const_RV -scalerBr.
+(* the next line would become unnecessary once pzLalgType is instantiated for RVs *)
+apply/boolp.funext=> ?; rewrite !RV_fctE/=.
+by rewrite exprZn.
 Qed.
 
 Lemma Var_trans m : `V (X `+cst m) = `V X.
 Proof.
 rewrite /Var E_trans_add_RV; congr (`E (_ `^2)).
-by rewrite boolp.funeqE => /= u; rewrite /trans_add_RV /trans_sub_RV /=; lra.
+rewrite /trans_sub_RV /trans_add_RV -addr_const_RV.
+by rewrite [X in _ + _ - X]addrC addrKA.
 Qed.
 
 End variance_prop.
@@ -2407,7 +2590,7 @@ move=> Hsum Hinde.
 rewrite -![in RHS]Ex_altE.
 transitivity (\sum_(i in 'rV_n.+2)
   P i *: ((X1 (i ``_ ord0) + X2 (rbehead i)) ^+ 2%N)).
-  apply: eq_bigr => i _; rewrite /sq_RV /=.
+  apply: eq_bigr => i _; rewrite !RV_fctE/=.
   by rewrite /comp_RV Hsum.
 transitivity (\sum_(i in 'rV_n.+2) P i * ((X1 (i ``_ ord0)) ^+ 2 +
     2 * X1 (i ``_ ord0) * X2 (rbehead i) + (X2 (rbehead i)) ^+ 2)).
