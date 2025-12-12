@@ -749,60 +749,53 @@ Hypothesis cinde_V2 :
 Hypothesis V3_determined : 
   V3 = compute_v3 `o [% V1, U1, U2, U3, S, V2].
 
-(* Privacy via bounded leakage: knowing (V2,V3) given Alice's view is equivalent
-   to knowing just V2. V3 adds no additional information because it's determined
-   by V2 and the constraint. This is the core privacy guarantee
-   for Bob's input V2. *)
-Lemma privacy_by_bonded_leakage :
-  `H([% V2, V3] | AliceView ) = `H(V2 | AliceView).
+(* Generic helper: Strip encryptions from AliceView and apply conditional independence.
+   Given: X is conditionally independent of [Dk_a, R2, R3] given CondRV
+   Proves: H(X | AliceView) = H(X | CondRV)
+   This is reused in dsdp_security.v for the bounded leakage proof. *)
+Lemma alice_view_to_cond (A : finType) (Xvar : {RV P -> A}) :
+  (P |= [% Dk_a, R2, R3] _|_ Xvar | [% V1, U1, U2, U3, S]) ->
+  `H(Xvar | AliceView) = `H(Xvar | [% V1, U1, U2, U3, S]).
 Proof.
-set OtherAlice : {RV P -> (Alice.-key Dec msg) * msg * msg} :=
-  [% Dk_a, R2, R3].
-have H: forall V, `H(V | AliceView ) =
-    `H(V | [% OtherAlice, V1, U1, U2, U3, S] ).
-  move => t V.
-  rewrite /OtherAlice /AliceView.
-  rewrite !(E_enc_ce_removal V card_msg); last first.
-    exact: Pr_AliceView_neq0; last first.
-    exact: Pr_Eqn1View_neq0; last first.
-    exact: Pr_Eqn2View_neq0.
-  have H_reorder: `H( V | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
-    `H( V | [% Dk_a, R2, R3, V1, U1, U2, U3, S]).
-    rewrite /centropy_RV /centropy /= !snd_RV2.
-    rewrite (reindex (fun '(dk_a', r2', r3', v1', u1', u2', u3', s') => 
-                      (dk_a', s', v1', u1', u2', u3', r2', r3')))/=.
-      apply: eq_bigr => [] [] [] [] [] [] [] []
-        dk_a' s' v1' u1' u2' u3' r2' r3' _.
-      congr (_ * _).
-           rewrite !dist_of_RVE !pfwd1E; congr Pr; apply/setP => u;
-           rewrite !inE /= !xpair_eqE;
-           (* GRing.mul has many instances so specify it then ring works. *)
-           rewrite -[andb]/GRing.mul; ring.
-      rewrite /centropy1; congr (- _).
-      rewrite /jcPr !snd_RV2.
-      apply: eq_bigr => a _.
-      rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
-      congr (_ * _).
-        f_equal.
-          by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-             rewrite -[andb]/GRing.mul; ring.
-        by f_equal; congr Pr; apply/setP => u;
-           rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
-      congr log.
-        f_equal.
-          by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
-             rewrite -[andb]/GRing.mul; ring.
-        f_equal.
+move=> cinde_X.
+rewrite /AliceView.
+rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_AliceView_neq0.
+rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_Eqn1View_neq0.
+rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_Eqn2View_neq0.
+have H_reorder: `H(Xvar | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
+  `H(Xvar | [% Dk_a, R2, R3, V1, U1, U2, U3, S]).
+  rewrite /centropy_RV /centropy /= !snd_RV2.
+  rewrite (reindex (fun '(dk_a', r2', r3', v1', u1', u2', u3', s') => 
+                    (dk_a', s', v1', u1', u2', u3', r2', r3')))/=.
+    apply: eq_bigr => [] [] [] [] [] [] [] []
+      dk_a' s' v1' u1' u2' u3' r2' r3' _.
+    congr (_ * _).
+         rewrite !dist_of_RVE !pfwd1E; congr Pr; apply/setP => u;
+         rewrite !inE /= !xpair_eqE;
+         rewrite -[andb]/GRing.mul; ring.
+    rewrite /centropy1; congr (- _).
+    rewrite /jcPr !snd_RV2.
+    apply: eq_bigr => a _.
+    rewrite /jcPr !setX1 !Pr_set1 !dist_of_RVE !pfwd1E.
+    congr (_ * _).
+      f_equal.
         by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
            rewrite -[andb]/GRing.mul; ring.
-      by exists (fun '(dk_a', s', v1', u1', u2', u3', r2', r3') =>
-             (dk_a', r2', r3', v1', u1', u2', u3', s')) 
-             => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
-    exact: H_reorder.
-rewrite (H msg V2) (H (msg * msg)%type [% V2, V3]).
-have H_assoc: forall V, `H(V | [% OtherAlice, V1, U1, U2, U3, S] ) =
-    `H(V | [% OtherAlice, [%V1, U1, U2, U3, S]] ).
-  move => t v.
+      by f_equal; congr Pr; apply/setP => u;
+         rewrite !inE /= !xpair_eqE; rewrite -[andb]/GRing.mul; ring.
+    congr log.
+      f_equal.
+        by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+           rewrite -[andb]/GRing.mul; ring.
+      f_equal.
+      by congr Pr; apply/setP => u; rewrite !inE /= !xpair_eqE;
+         rewrite -[andb]/GRing.mul; ring.
+    by exists (fun '(dk_a', s', v1', u1', u2', u3', r2', r3') =>
+           (dk_a', r2', r3', v1', u1', u2', u3', s')) 
+           => [] [] [] []  [] [] [] [] dk_a' v1' u1' r2' r3' u2' u3' s'.
+rewrite H_reorder.
+have H_assoc: `H(Xvar | [% Dk_a, R2, R3, V1, U1, U2, U3, S] ) =
+    `H(Xvar | [% [% Dk_a, R2, R3], [% V1, U1, U2, U3, S]] ).
   rewrite /centropy_RV /centropy /= !snd_RV2.
   rewrite (reindex (fun '(o, (v1, u1, u2, u3, s)) =>
                     (o, v1, u1, u2, u3, s))) /=.
@@ -832,14 +825,22 @@ have H_assoc: forall V, `H(V | [% OtherAlice, V1, U1, U2, U3, S] ) =
        rewrite -[andb]/GRing.mul; ring.
   exists (fun '(o, v1, u1, u2, u3, s) =>
              (o, (v1, u1, u2, u3, s))).
-        - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.
-        - by move=> [] [] [] [] [] [] [] [] a1 a2 a3 a4 a5 o1 o2 o3.
-rewrite (H_assoc msg V2) (H_assoc (msg * msg)%type [% V2, V3]).
-rewrite (cinde_centropy_eq cinde_V2V3).
-rewrite (cinde_centropy_eq cinde_V2).
+  - by move=> [] o [] [] [] [] a1 a2 a3 a4 a5.
+  - by move=> [] [] [] [] [] [] [] [] a1 a2 a3 a4 a5 o1 o2 o3.
+rewrite H_assoc.
+exact: (cinde_centropy_eq cinde_X).
+Qed.
+
+(* Privacy via bounded leakage: knowing (V2,V3) given Alice's view is equivalent
+   to knowing just V2. V3 adds no additional information because it's determined
+   by V2 and the constraint. This is the core privacy guarantee for Bob's input V2. *)
+Lemma privacy_by_bonded_leakage :
+  `H([% V2, V3] | AliceView ) = `H(V2 | AliceView).
+Proof.
+rewrite (alice_view_to_cond cinde_V2V3) (alice_view_to_cond cinde_V2).
 apply: V3_determined_centropy_v2.
 exact: U3_coprime_m.
-Qed. (* TODO: opaque check takes very long. *)
+Qed.
 
 End semi_honest_case_analysis.
 
