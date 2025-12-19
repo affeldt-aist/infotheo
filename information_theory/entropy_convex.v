@@ -174,7 +174,7 @@ have h0 p1 p2 : [forall i, 0 <= h p1 p2 i].
   apply/forallP=> ?; rewrite /h /= ffunE.
   case: ifPn => [_ | _]; first exact/mulr_ge0.
   case: ifPn => [_ |]; last by move=>*; exact: lexx.
-  by apply/mulr_ge0 => //; exact/onem_ge0/prob_le1.
+  by apply/mulr_ge0 => //; exact/onem_ge0/le1.
 have h01 (x0 : 'I_2) : 0 <= h x.1 y.1 x0.
   rewrite /= /h ffunE/=; case: ifPn => _; first exact: mulr_ge0.
   by case: ifPn => // _; exact: mulr_ge0.

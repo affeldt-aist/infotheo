@@ -178,11 +178,6 @@ Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
   solve [apply/(FDist.ge0 _)] : core.
 #[export] Hint Extern 0 (_ <= 1)%R =>
   solve [apply/(FDist.le1 _)] : core.
-(* TODO: try to rm this *)
-#[export] Hint Extern 0 (0 <= _%:num)%R =>
-  solve [apply/(prob_ge0 _)] : core.
-#[export] Hint Extern 0 (_%:num <= 1)%R =>
-  solve [apply/(prob_le1 _)] : core.
 
 #[export] Hint Extern 0 (onem _ <= 1)%R =>
   exact/onem_le1 : core.
@@ -828,7 +823,7 @@ Qed.
 
 (* NB: this is defined here and not in realType_ext.v because it uses the scope %coqR *)
 Lemma onem_probR_ge0 (p: {prob R}) : (0 <= (p%:num).~)%R.
-Proof. exact/onem_ge0/prob_le1. Qed.
+Proof. exact/onem_ge0/le1. Qed.
 Hint Resolve onem_probR_ge0 : core.
 
 Lemma convACA (a b c d : T) p q :
@@ -1288,14 +1283,8 @@ Proof.
 rewrite /conv_ereal; case/boolP : (a \is a fin_num) => [?|].
   by rewrite -muleDl// -EFinD probKC mul1e.
 rewrite fin_numE negb_and !negbK => /predU1P[-> | /eqP->].
-- rewrite -ge0_muleDl.
-  + by rewrite -EFinD probKC mul1e.
-  + by rewrite lee_fin; apply/prob_ge0.
-  + by rewrite lee_fin; apply/prob_ge0.
-- rewrite -ge0_muleDl.
-  + by rewrite -EFinD probKC mul1e.
-  + by rewrite lee_fin; apply/prob_ge0.
-  + by rewrite lee_fin; apply/prob_ge0.
+- by rewrite -ge0_muleDl ?lee_fin// -EFinD probKC mul1e.
+- by rewrite -ge0_muleDl ?lee_fin// -EFinD probKC mul1e.
 Qed.
 
 Let conv_ereal_convC p a b : conv_ereal p a b = conv_ereal p%:num.~%:i01%R b a.
