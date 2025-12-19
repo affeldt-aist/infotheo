@@ -116,7 +116,7 @@ by rewrite mulVf ?mulr1// An1 pnatr_eq0.
 Qed.
 
 (** the binary entropy H2 is the entropy over {x, y}: *)
-Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : prob R) :
+Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : {prob R}) :
   H2 (p%:num) = entropy (fdist_binary card_A p (Set2.a card_A)).
 Proof.
 rewrite /H2 /entropy Set2sumE /= fdist_binaryxx !fdist_binaryE.

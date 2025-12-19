@@ -3394,7 +3394,7 @@ Import (canonicals) analysis.convex.
 Variable R : realType.
 
 Lemma mc_convRE (a b : R^o) (p : {prob R}) :
-  mathcomp.analysis.convex.conv (i01_of_prob p) a b = conv p a b :> R^o.
+  mathcomp.analysis.convex.conv p a b = conv p a b :> R^o.
 Proof. by []. Qed.
 
 End mc_conv.

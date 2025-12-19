@@ -551,7 +551,7 @@ Local Open Scope ring_scope.
 Variable R : realType.
 Variable A : finType.
 Hypothesis HA : #|A| = 2%nat.
-Variable p : prob R.
+Variable p : {prob R}.
 
 Let f (a : A) := [ffun a' => (if a' == a then p%:num.~ else p%:num)].
 
@@ -586,7 +586,7 @@ Variable R : realType.
 Variables (A : finType) (P Q : fdist R A).
 Hypothesis card_A : #|A| = 2%nat.
 
-Lemma charac_bdist : {r : prob R | P = fdist_binary card_A r (Set2.a card_A)}.
+Lemma charac_bdist : {r : {prob R} | P = fdist_binary card_A r (Set2.a card_A)}.
 Proof.
 destruct P as [pf pf01].
 have rb : 0 <= pf (Set2.b card_A) <= 1.
@@ -709,7 +709,7 @@ Proof. move: (fdist_card_neq0 d); by rewrite card_ord. Qed.
 Section fdistI2.
 Local Open Scope ring_scope.
 Variable R : realType.
-Variable p : prob R.
+Variable p : {prob R}.
 
 Definition fdistI2 : R.-fdist 'I_2 :=
   fdist_binary (card_ord 2) p (lift ord0 ord0).
@@ -748,7 +748,7 @@ Variable R : realType.
 Variables (n m : nat)
   (d1 : R.-fdist 'I_n)
   (d2 : R.-fdist 'I_m)
-  (p : prob R).
+  (p : {prob R}).
 
 Let f := [ffun i : 'I_(n + m) =>
   let si := fintype.split i in
@@ -879,7 +879,7 @@ End fdist_convn_prop.
 Section fdist_conv.
 Local Open Scope ring_scope.
 Variable R : realType.
-Variables (A : finType) (p : prob R) (d1 d2 : fdist R A).
+Variables (A : finType) (p : {prob R}) (d1 d2 : fdist R A).
 
 Definition fdist_conv : R.-fdist A := locked
   (fdist_convn (fdistI2 p) (fun i => if i == ord0 then d1 else d2)).

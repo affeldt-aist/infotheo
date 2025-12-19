@@ -210,63 +210,63 @@ End dominance.
 Notation "P '`<<' Q" := (dominates Q P) : reals_ext_scope.
 Notation "P '`<<b' Q" := (dominatesb Q P) : reals_ext_scope.
 
-Notation "'prob' R" := ({i01 R}) (at level 0).
-(*Arguments prob : clear implicits.*)
-
 Module Prob.
 Section prob.
 Context {R : realType}.
-Lemma O1 (p : prob R) : (0 <= p%:num <= 1)%R.
+Lemma O1 (p : {i01 R}) : (0 <= p%:num <= 1)%R.
 Proof. by apply/andP; split. Qed.
-Definition mk (q : R) (O1 : (0 <= q <= 1)%R) : prob R :=
+Definition mk (q : R) (O1 : (0 <= q <= 1)%R) : {i01 R} :=
   Itv01 (andP O1).1 (andP O1).2.
-(*HB.instance Definition _ (R : realType) := [isSub for @p R].*)
-(*HB.instance Definition _ (R : realType) := [Choice of t R by <:].*)
+#[deprecated(since="infotheo 0.9.7", note="use %:num instead")]
+Definition p (t : {i01 R}) := t%:num%R.
 End prob.
 End Prob.
 
+(* #[deprecated(since="infotheo 0.9.7", note="use %:i01 instead")]
+Notation "q %:pr" := (q%:num)%R. *)
 Notation "q %:pr" := (@Prob.mk _ q (@Prob.O1 _ _)).
 
-Notation "{ 'prob' T }" := (prob T).
+#[deprecated(since="infotheo 0.9.7", note="use {i01 _} instead")]
+Notation "'prob' R" := ({i01 R}) (at level 1).
 
-HB.instance Definition _ (R : realType) :=
-  [SubChoice_isSubOrder of {prob R} by <: with ring_display].
+(*#[deprecated(since="infotheo 0.9.7", note="use {i01 _} instead")]*)
+Notation "{ 'prob' R }" := {i01 R}.
 
 Section prob_lemmas.
 Local Open Scope ring_scope.
 Variable R : realType.
 Implicit Types p q : {prob R}.
 
-Lemma OO1 : ((0 <= 0 :> R) && (0 <= 1 :> R))%R.
-Proof. by apply/andP; split; [rewrite lexx | rewrite ler01]. Qed.
+#[deprecated(since="infotheo 0.9.7", note="use 0%:i01 instead")]
+Definition prob0 : {i01 R} := 0%:i01.
+#[deprecated(since="infotheo 0.9.7", note="use 1%:i01 instead")]
+Definition prob1 : {i01 R} := 1%:i01.
 
-Lemma O11 : ((0 <= 1 :> R) && (1 <= 1 :> R))%R.
-Proof. by apply/andP; split; [rewrite ler01| rewrite lexx]. Qed.
+Canonical probcplt (p : {prob R}) :=
+  Eval hnf in Prob.mk (onem_prob (Prob.O1 p)).
 
-(*Canonical prob0 := Eval hnf in Prob.mk OO1.
-Canonical prob1 := Eval hnf in Prob.mk O11.*)
-Canonical probcplt (p : prob R) := Eval hnf in Prob.mk (onem_prob (Prob.O1 p)).
-
-Lemma prob_ge0 (p : prob R) : (0 <= p%:num)%R.
+#[deprecated(since="infotheo 0.9.7", note="use ge0 instead")]
+Lemma prob_ge0 (p : {prob R}) : (0 <= p%:num)%R.
 Proof. done. Qed.
 
-Lemma prob_le1 (p : prob R) : (p%:num <= 1)%R.
+#[deprecated(since="infotheo 0.9.7", note="use le1 instead")]
+Lemma prob_le1 (p : {prob R}) : (p%:num <= 1)%R.
 Proof. done. Qed.
 
-Lemma prob_gt0 (p : prob R) : p != 0%:i01 <-> 0 < p%:num.
+Lemma prob_gt0 (p : {prob R}) : p != 0%:i01 <-> 0 < p%:num.
 Proof.
 rewrite lt_neqAle; split=> [H|/andP[+ pge0]].
-  by apply/andP; split; [rewrite eq_sym|exact: prob_ge0].
+  by apply/andP; split; [rewrite eq_sym|exact: ge0].
 by apply: contra => /eqP ->.
 Qed.
 
 (*Lemma prob_gt0' p : p != 0 :> R <-> 0 < Prob.p p.
 Proof. exact: prob_gt0. Qed.*)
 
-Lemma prob_lt1 (p : prob R) : p != 1%:i01 <-> p%:num < 1.
+Lemma prob_lt1 (p : {prob R}) : p != 1%:i01 <-> p%:num < 1.
 Proof.
 rewrite lt_neqAle; split=> [H|/andP[+ pge0]].
-  by apply/andP; split => //; exact: prob_le1.
+  by apply/andP; split => //; exact: le1.
 by apply: contra => /eqP ->.
 Qed.
 
@@ -291,7 +291,7 @@ Proof. exact: add_onemK. Qed.
 Lemma probadd_eq0 p q : p%:num + q%:num = 0 <-> p = 0%:i01 /\ q = 0%:i01.
 Proof.
 split; last by move=> [-> ->] /=; rewrite addr0.
-move/eqP; rewrite paddr_eq0; [|exact: prob_ge0|exact: prob_ge0].
+move/eqP; rewrite paddr_eq0; [|exact: ge0|exact: ge0].
 by move=> /andP[/eqP ? /eqP ?]; split; exact/val_inj.
 Qed.
 
@@ -311,7 +311,7 @@ have := prob_le1 p; rewrite le_eqVlt => /orP[/eqP p1|p1].
   by rewrite p1 mul1r in pq1; split; exact/val_inj.
 have := prob_le1 q; rewrite le_eqVlt => /orP[/eqP q1|q1].
   by rewrite q1 mulr1 in pq1; split; exact/val_inj.
-have {}p0 : 0 < p%:num by rewrite lt_neqAle prob_ge0 eq_sym andbT.
+have {}p0 : 0 < p%:num by rewrite lt_neqAle ge0 eq_sym andbT.
 by move: p1; rewrite -[in X in X -> _]pq1 (ltr_pMr _ p0) ltNge (ltW q1).
 Qed.
 
@@ -325,8 +325,8 @@ Global Hint Resolve prob_le1 : core.
 #[export] Hint Extern 0 (is_true (@Order.le ring_display _ _ _)) =>
   exact/prob_ge0 : core.
 
-(*Arguments prob0 {R}.
-Arguments prob1 {R}.*)
+Arguments prob0 {R}.
+Arguments prob1 {R}.
 
 Lemma prob_invn {R : realType} (m : nat) :
   (0 <= ((1 + m)%:R^-1 : R) <= 1)%R.
@@ -594,7 +594,7 @@ Proof.
 case/andP=> p0 p1; apply/eqP => pq1; move: (p1).
 rewrite [X in (_ < X)%R -> _](_ : _ = 1%:i01%:num) //.
 rewrite -pq1 p_of_rsE -ltr_pdivrMr // divff ?gt_eqF//.
-by rewrite ltNge prob_le1.
+by rewrite ltNge le1.
 Qed.
 
 Lemma p_of_rs1 r s :
@@ -889,18 +889,15 @@ End oprob_lemmas2.
 Section i01_prob.
 Variable R : realType.
 
-Definition i01_of_prob (p : {prob R}) : {i01 R} :=
-  Itv01 (prob_ge0 p) (prob_le1 p).
-
-Let _prob_of_i01 (p : {i01 R}) :=
-      fun q => @Prob.mk _ p%:num (introTF andP q).
-Definition prob_of_i01 (p : {i01 R}) : {prob R} :=
-  _prob_of_i01 (conj (ge0 p) (le1 p)).
-
+#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
+Definition i01_of_prob (p : {prob R}) : {i01 R} := p.
+#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
+Definition prob_of_i01 (p : {i01 R}) : {prob R} := p.
+#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
 Lemma i01_of_probK : cancel i01_of_prob prob_of_i01.
-Proof. by move=> p; apply/val_inj. Qed.
-
+Proof. by []. Qed.
+#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
 Lemma prob_of_i01K : cancel prob_of_i01 i01_of_prob.
-Proof. by move=>p; apply/val_inj. Qed.
+Proof. by []. Qed.
 
 End i01_prob.
