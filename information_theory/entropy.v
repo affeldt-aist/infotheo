@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect all_algebra fingroup perm.
-From mathcomp Require Import reals exp.
+From mathcomp Require Import interval_inference reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist jfdist_cond proba binary_entropy_function divergence.
 
@@ -117,7 +117,7 @@ Qed.
 
 (** the binary entropy H2 is the entropy over {x, y}: *)
 Lemma entropy_H2 (card_A : #|A| = 2%nat) (p : prob R) :
-  H2 (Prob.p p) = entropy (fdist_binary card_A p (Set2.a card_A)).
+  H2 (p%:num) = entropy (fdist_binary card_A p (Set2.a card_A)).
 Proof.
 rewrite /H2 /entropy Set2sumE /= fdist_binaryxx !fdist_binaryE.
 by rewrite eq_sym (negbTE (Set2.a_neq_b _)) opprD addrC.

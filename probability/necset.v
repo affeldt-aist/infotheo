@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg ssrnum.
+From mathcomp Require Import all_ssreflect ssralg ssrnum interval_inference.
 From mathcomp Require Import finmap.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets reals.
 Require Import realType_ext classical_sets_ext fdist fsdist convex.
@@ -237,7 +237,7 @@ Proof.
 by case=> x ?; rewrite conv_pt_setE=> -[] y ? <-; exists x, y.
 Qed.
 
-Lemma convC_set p (X Y : set A) : X :<| p |>: Y = Y :<| (Prob.p p).~%:pr |>: X.
+Lemma convC_set p (X Y : set A) : X :<| p |>: Y = Y :<| p%:num.~%:i01%R |>: X.
 Proof.
 by rewrite eqEsubset; split=> u; case=> x Xx;
   rewrite conv_pt_setE => -[] y Yy <-;
@@ -269,29 +269,29 @@ rewrite eqEsubset; split=> [u|u ->]; last exact: conv_in_conv_set.
 by case/conv_in_conv_set'=> x' [] y' [] -> [] -> ->.
 Qed.
 
-Lemma conv1_pt_set x (Y : neset A) : x <| 1%:pr |>: Y = [set x].
+Lemma conv1_pt_set x (Y : neset A) : x <| 1%:i01%R |>: Y = [set x].
 Proof.
 rewrite eqEsubset;split => u; rewrite conv_pt_setE.
 - by case => y _; rewrite conv1.
 - by move=> ->; eexists => //; rewrite conv1.
 Qed.
 
-Lemma conv0_pt_set x (Y : set A) : x <| 0%:pr |>: Y = Y.
+Lemma conv0_pt_set x (Y : set A) : x <| 0%:i01%R |>: Y = Y.
 Proof.
 rewrite eqEsubset; split => u; rewrite conv_pt_setE.
 - by case=> y Yy <-; rewrite conv0.
 - by move=> Yu; exists u=> //; rewrite conv0.
 Qed.
 
-Lemma conv1_set X (Y : neset A) : X :<| 1%:pr |>: Y = X.
+Lemma conv1_set X (Y : neset A) : X :<| 1%:i01%R |>: Y = X.
 Proof.
 transitivity (\bigcup_(x in X) [set x]); last by rewrite bigcup_imset1 image_id.
 by apply: eq_bigcupr => x; rewrite conv1_pt_set.
 Qed.
 
-Lemma conv0_set (X : neset A) Y : X :<| 0%:pr |>: Y = Y.
+Lemma conv0_set (X : neset A) Y : X :<| 0%:i01%R |>: Y = Y.
 Proof.
-rewrite convC_set /= (_ : 0.~%:pr = 1%:pr) ?conv1_set //.
+rewrite convC_set /= (_ : widen_itv _ = 1%:i01)%R ?conv1_set //.
 by apply: val_inj; rewrite /= onem0.
 Qed.
 
@@ -320,7 +320,7 @@ Lemma iterS_conv_set (X : set A) (n : nat) :
 Proof. by []. Qed.
 
 Lemma probset_neq0 : probset != set0.
-Proof. by apply/set0P; exists 0%:pr. Qed.
+Proof. by apply/set0P; exists 0%:i01%R. Qed.
 
 Lemma natset_neq0 : natset != set0.
 Proof. by apply/set0P; exists O. Qed.
@@ -332,7 +332,7 @@ Lemma conv_set_neq0 p (X Y : neset A) : X :<| p |>: Y != set0.
 Proof. by rewrite neset_neq0. Qed.
 
 Lemma oplus_conv_set_neq0 (X Y : neset A) : oplus_conv_set X Y != set0.
-Proof. apply/set0P; eexists; exists 1%:pr => //; by rewrite conv1_set. Qed.
+Proof. apply/set0P; eexists; exists 1%:i01%R => //; by rewrite conv1_set. Qed.
 
 Fixpoint iter_conv_set_neq0 (X : neset A) (n : nat) :
   iter_conv_set X n != set0 :=
@@ -440,7 +440,7 @@ Proof.
 elim: m => [n _|m IHm].
 - case: n => // n.
   rewrite iter0_conv_set iterS_conv_set.
-  by exists 1%:pr => //; rewrite conv1_set.
+  by exists 1%:i01%R => //; rewrite conv1_set.
 - case => // n /(IHm _) mn.
   rewrite iterS_conv_set=> a [] p _ H.
   exists p => //.
@@ -454,7 +454,7 @@ Proof. by move=> a H; exists n. Qed.
 Lemma iter_conv_set_superset (X : neset A) n : X `<=` iter_conv_set X n .
 Proof.
 move=> x Xx; elim: n => // n IHn; rewrite iterS_conv_set.
-by exists 1%:pr => //; rewrite conv1_set.
+by exists 1%:i01%R => //; rewrite conv1_set.
 Qed.
 
 Lemma Convn_iter_conv_set (n : nat) :
@@ -480,7 +480,10 @@ Lemma oplus_convC_set (X Y : set A) : oplus_conv_set X Y = oplus_conv_set Y X.
 Proof.
 suff H : forall X' Y', oplus_conv_set X' Y' `<=` oplus_conv_set Y' X'
   by rewrite eqEsubset; split => // /H.
-by move=> {X} {Y} X Y u [] p _; rewrite convC_set => H; exists (Prob.p p).~%:pr.
+move=> {X} {Y} X Y u [] p _.
+rewrite convC_set.
+rewrite (_ : widen_itv _ = p%:num.~%:i01%R)// => H.
+by exists p%:num.~%:i01%R => //=.
 Qed.
 
 Lemma convmm_cset (p : {prob R}) (X : {convex_set A}) : X :<| p |>: X = X.
@@ -494,7 +497,7 @@ Lemma oplus_convmm_cset (X : {convex_set A}) : oplus_conv_set X X = X.
 Proof.
 rewrite eqEsubset; split => [x [p _]|x Xx].
 - by rewrite convmm_cset.
-- by exists 0%:pr => //; rewrite convmm_cset.
+- by exists 0%:i01%R => //; rewrite convmm_cset.
 Qed.
 
 Lemma oplus_convmm_set_hull (X : set A) :
@@ -935,13 +938,13 @@ Definition conv p (X Y : necset A) : necset A := X :<|p|>: Y.
 Lemma convE p (X Y : necset A) : conv p X Y = conv_set p X Y :> set A.
 Proof. by rewrite /conv; unlock. Qed.
 
-Lemma conv1 X Y : conv 1%R%:pr X Y = X.
+Lemma conv1 X Y : conv 1%:i01%R X Y = X.
 Proof. by apply: necset_ext; rewrite convE conv1_set. Qed.
 
 Lemma convmm p X : conv p X X = X.
 Proof. by apply: necset_ext; rewrite convE convmm_cset. Qed.
 
-Lemma convC p X Y : conv p X Y = conv (Prob.p p).~%:pr Y X.
+Lemma convC p X Y : conv p X Y = conv p%:num.~%:i01%R Y X.
 Proof. by apply: necset_ext; rewrite !convE convC_set. Qed.
 
 Lemma convA p q X Y Z :

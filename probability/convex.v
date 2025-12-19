@@ -178,9 +178,10 @@ Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
   solve [apply/(FDist.ge0 _)] : core.
 #[export] Hint Extern 0 (_ <= 1)%R =>
   solve [apply/(FDist.le1 _)] : core.
-#[export] Hint Extern 0 (0 <= Prob.p _)%R =>
+(* TODO: try to rm this *)
+#[export] Hint Extern 0 (0 <= _%:num)%R =>
   solve [apply/(prob_ge0 _)] : core.
-#[export] Hint Extern 0 (Prob.p _ <= 1)%R =>
+#[export] Hint Extern 0 (_%:num <= 1)%R =>
   solve [apply/(prob_le1 _)] : core.
 
 #[export] Hint Extern 0 (onem _ <= 1)%R =>
@@ -203,9 +204,9 @@ HB.mixin Record isConvexSpace0 {R : realType} T of Choice T := {
   conv : {prob R} -> T -> T -> T ;
   convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T ;
   convnE : forall n d g, convn n d g = Convn conv d g ;
-  conv1 : forall a b, conv 1%:pr a b = a ;
+  conv1 : forall a b, conv 1%:i01%R a b = a ;
   convmm : forall p a, conv p a a = a ;
-  convC : forall p a b, conv p a b = conv (onem (Prob.p p))%:pr b a ;
+  convC : forall p a b, conv p a b = conv (onem (p%:num))%:i01%R b a ;
   convA : forall (p q : {prob R}) (a b c : T),
       conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
 
@@ -214,17 +215,18 @@ HB.mixin Record isConvexSpace0 {R : realType} T of Choice T := {
 HB.structure Definition ConvexSpace {R : realType} := {T of isConvexSpace0 R T & }.
 Arguments convn {R s n}.
 
-Notation "a <| p |> b" := (conv p a b) : convex_scope.
+Notation "a <| p |> b" := (conv p%R a b) : convex_scope.
 Local Open Scope convex_scope.
 
 Section convex_space_lemmas.
 Context {R : realType}.
 Variables A : convType R.
 Implicit Types a b : A.
+Local Open Scope ring_scope.
 
-Lemma conv0 a b : a <| 0%:pr |> b = b.
+Lemma conv0 a b : a <| 0%:i01 |> b = b.
 Proof.
-by rewrite convC /= (_ : _ %:pr = 1%:pr) ?conv1 //; apply/val_inj/onem0.
+by rewrite convC /= (_ : _ %:i01 = 1%:i01) ?conv1 //; apply/val_inj/onem0.
 Qed.
 
 Let Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> A) :
@@ -236,11 +238,11 @@ case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
   rewrite fdist1E; case j0 : (_ == _) => /=.
     by move=> _; rewrite (eqP j0).
   by move/eqP; rewrite eq_sym oner_eq0.
-rewrite (_ : probfdist _ _ = 0%:pr) ?conv0; last first.
+rewrite (_ : probfdist _ _ = 0%:i01) ?conv0; last first.
   apply: val_inj => /=; move: b01; rewrite !fdist1E => j0.
   by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
 have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
-have j0' : 0 < j by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
+have j0' : (0 < j)%N by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
 move=> [:H]; have @j' : 'I_n.
   by apply: (@Ordinal _ j.-1 _); abstract: H; rewrite prednK // -ltnS.
 rewrite (_ : fdist_del b01 = fdist1 j'); last first.
@@ -278,7 +280,7 @@ Let ConvnI2E (g : 'I_2 -> A) (d : {fdist 'I_2}) :
 Proof.
 have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
-  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
+  rewrite (_ : probfdist _ _ = 1%:i01) ?conv1 //.
   by apply: val_inj; rewrite /= fdist1xx.
 rewrite ConvnIE; congr (conv _ _ _).
 by rewrite ConvnI1E /fdist_del_idx ltnn.
@@ -291,19 +293,19 @@ Section segment.
 Context {R : realType}.
 Variable A : convType R.
 Definition segment (x y : A) : set A := (fun p => conv p x y) @` [set: {prob R}].
+Local Open Scope ring_scope.
 
 Lemma segment_sym u v : (segment u v `<=` segment v u)%classic.
-Proof. by move=> x [p _ <-]; exists ((Prob.p p).~%:pr); rewrite -?convC. Qed.
+Proof. by move=> x [p _ <-]; exists (p%:num).~%:i01; rewrite -?convC. Qed.
 
 Lemma segmentC u v : segment u v = segment v u.
 Proof. by rewrite eqEsubset; split; exact: segment_sym. Qed.
 
-Lemma segmentL x y : segment x y x. Proof. by exists 1%:pr; rewrite ?conv1. Qed.
+Lemma segmentL x y : segment x y x. Proof. by exists 1%:i01; rewrite ?conv1. Qed.
 
-Lemma segmentR x y : segment x y y. Proof. by exists 0%:pr; rewrite ?conv0. Qed.
+Lemma segmentR x y : segment x y y. Proof. by exists 0%:i01; rewrite ?conv0. Qed.
 
 End segment.
-
 
 Definition affine {R : realType} (U V : convType R) (f : U -> V) :=
   forall p, {morph f : a b / a <| p |> b >-> a <| p |> b}.
@@ -671,17 +673,18 @@ End real_cone_instance.
 Section convpt_convex_space.
 Context {R : realType}.
 Variable A : convType R.
+Local Open Scope ring_scope.
 
 Let convpt (p : {prob R}) (x y : scaled A) :=
-  addpt (scalept (Prob.p p) x) (scalept (Prob.p p).~ y).
+  addpt (scalept p%:num x) (scalept p%:num.~ y).
 
-Let convpt1 a b : convpt (1%:pr) a b = a.
+Let convpt1 a b : convpt (1%:i01) a b = a.
 Proof. by rewrite /convpt onem1 scale1pt scale0pt addpt0. Qed.
 
 Let convptmm (p : {prob R}) a : convpt p a a = a.
 Proof. by rewrite /convpt -scaleptDl// add_onemK scale1pt. Qed.
 
-Let convptC (p : {prob R}) a b : convpt p a b = convpt ((Prob.p p).~)%:pr b a.
+Let convptC (p : {prob R}) a b : convpt p a b = convpt (p%:num.~)%:pr b a.
 Proof. by rewrite [RHS]addptC onemK. Qed.
 
 Let convptA (p q : {prob R}) a b c :
@@ -761,17 +764,18 @@ Lemma weight_barycenter (pts : seq (@scaled R A)) :
 Proof. by rewrite (big_morph raw_weight weight_addpt weight0). Qed.
 
 Section adjunction.
+Local Open Scope ring_scope.
 
 Lemma affine_S1 : affine (@S1 R A).
 Proof.
 move=> p x y.
 have := prob_ge0 p; rewrite le_eqVlt => /predU1P[p0|p0].
-  by rewrite (_ : p = 0%:pr) ?conv0 //; exact/val_inj.
+  by rewrite (_ : p = 0%:i01) ?conv0 //; exact/val_inj.
 have := prob_le1 p; rewrite le_eqVlt => /predU1P[p1|p1].
-  by rewrite (_ : p = 1%:pr) ?conv1 //; exact/val_inj.
-rewrite convptE (scalept_gt0 _ _ p0) (@scalept_gt0 (Prob.p p).~).
+  by rewrite (_ : p = 1%:i01) ?conv1 //; exact/val_inj.
+rewrite convptE (scalept_gt0 _ _ p0) (@scalept_gt0 p%:num.~).
   exact/onem_gt0.
-move=> mp0; congr (_ *: _) => /=.
+move=> mp0/=; congr (_ *: _)%scaled => /=.
   by apply/val_inj => /=; rewrite !mulr1 add_onemK.
 by congr (_ <| _ |> _); apply: val_inj; rewrite /= !mulr1 addrC subrK divr1.
 Qed.
@@ -788,21 +792,22 @@ Section convex_space_prop1.
 Context {R : realType}.
 Variables T : convType R.
 Implicit Types a b : T.
+Local Open Scope ring_scope.
 
 Lemma convA0 (p q r s : {prob R}) a b c :
-  Prob.p p = (Prob.p r * Prob.p s)%R :> R -> ((Prob.p s).~ = (Prob.p p).~ * (Prob.p q).~)%R ->
+  p%:num = (r%:num * s%:num)%R :> R -> (s%:num.~ = p%:num.~ * q%:num.~)%R ->
   a <| p |> (b <| q |> c) = (a <| r |> b) <| s |> c.
 Proof.
 move=> H1 H2.
-have [r0|r0] := eqVneq r 0%:pr.
-  rewrite r0 conv0 (_ : p = 0%:pr) ?conv0; last first.
+have [r0|r0] := eqVneq r 0%:i01.
+  rewrite r0 conv0 (_ : p = 0%:i01) ?conv0; last first.
     by apply/val_inj; rewrite /= H1 r0 mul0r.
   congr (_ <| _ |> _); move: H2; rewrite H1 r0 mul0r onem0 mul1r.
   by move/(congr1 (@onem R)); rewrite !onemK => ?; exact/val_inj.
-have [s0|s0] := eqVneq s 0%:pr.
-  have p0 : p = 0%:pr by apply/val_inj; rewrite /= H1 s0 mulr0.
+have [s0|s0] := eqVneq s 0%:i01.
+  have p0 : p = 0%:i01 by apply/val_inj; rewrite /= H1 s0 mulr0.
   rewrite s0 conv0 p0 // ?conv0.
-  rewrite (_ : q = 0%:pr) ?conv0 //.
+  rewrite (_ : q = 0%:i01) ?conv0 //.
   move: H2; rewrite p0 onem0 mul1r => /(congr1 (@onem R)); rewrite !onemK => sq.
   by rewrite -s0; exact/val_inj.
 rewrite convA; congr ((_ <| _ |> _) <| _ |> _).
@@ -815,14 +820,14 @@ Qed.
 Lemma convA' (r s : {prob R}) a b c :
   a <| [p_of r, s] |> (b <| [q_of r, s] |> c) = (a <| r |> b) <| s |> c.
 Proof.
-have [/eqP|H] := eqVneq [p_of r, s] 1%:pr.
+have [/eqP|H] := eqVneq [p_of r, s] 1%:i01.
   by move=> /p_of_rs1P[-> ->]; rewrite p_of_r1 3!conv1.
-have [->|s0] := eqVneq s 0%:pr; first by rewrite p_of_r0 q_of_r0 3!conv0.
+have [->|s0] := eqVneq s 0%:i01; first by rewrite p_of_r0 q_of_r0 3!conv0.
 by rewrite convA s_of_pqK// r_of_pqK.
 Qed.
 
 (* NB: this is defined here and not in realType_ext.v because it uses the scope %coqR *)
-Lemma onem_probR_ge0 (p: {prob R}) : (0 <= (Prob.p p).~)%R.
+Lemma onem_probR_ge0 (p: {prob R}) : (0 <= (p%:num).~)%R.
 Proof. exact/onem_ge0/prob_le1. Qed.
 Hint Resolve onem_probR_ge0 : core.
 
@@ -831,8 +836,8 @@ Lemma convACA (a b c d : T) p q :
 Proof.
 apply: (S1_inj R).
 rewrite [LHS]affine_conv/= ![in LHS]affine_conv/= !convptE.
-rewrite !scaleptDr !scaleptA// !(mulrC (Prob.p p)) !(mulrC (Prob.p p).~) addptA addptC.
-rewrite (addptC (scalept (Prob.p q * Prob.p p) _)) !addptA -addptA -!scaleptA -?scaleptDr//.
+rewrite !scaleptDr !scaleptA// !(mulrC (p%:num)) !(mulrC (p%:num).~) addptA addptC.
+rewrite (addptC (scalept (q%:num * p%:num) _)) !addptA -addptA -!scaleptA -?scaleptDr//.
 by rewrite !(addptC (scalept _.~ _)) !(@affine_conv R).
 Qed.
 
@@ -854,8 +859,8 @@ Lemma convACA' (a b c d : T) (p q r : {prob R}) :
   exists p' q' r', (a <|p|> b) <|q|> (c <|r|> d) = (a <|p'|> c) <|q'|> (b <|r'|> d).
 Proof.
 rewrite (convC p) convA convC !convA.
-set C0 := _.~%:pr.
-set C1 := _.~%:pr.
+set C0 := _.~%:i01.
+set C1 := _.~%:i01.
 rewrite -convA' (convC _ d) convC.
 by eexists; eexists; eexists; congr ((_ <|_|> _) <|_|> (_ <|_|> _)).
 Qed.
@@ -873,11 +878,11 @@ Definition map_scaled (x : @scaled R T) : scaled U :=
 Lemma affine_map_scaled : affine map_scaled.
 Proof.
 move=> p [q x|] [r y|] /=; rewrite 2!convptE ?scalept0 //.
-- rewrite !(scalept_Scaled (Prob.p p)) !(scalept_Scaled (Prob.p p).~) /= /scalept /=.
+- rewrite !(scalept_Scaled (p%:num)) !(scalept_Scaled (p%:num).~) /= /scalept /=.
   case: pselect => Hpq; case: pselect => Hpr //=; congr (_ *: _).
   by rewrite affine_conv.
-- by rewrite !addpt0 !(scalept_Scaled (Prob.p p)) /= /scalept /=; case: pselect.
-- by rewrite !add0pt !(scalept_Scaled (Prob.p p).~) /= /scalept/=; case: pselect.
+- by rewrite !addpt0 !(scalept_Scaled (p%:num)) /= /scalept /=; case: pselect.
+- by rewrite !add0pt !(scalept_Scaled (p%:num).~) /= /scalept/=; case: pselect.
 Qed.
 
 HB.instance Definition _ := isAffine.Build _ _ _ map_scaled affine_map_scaled.
@@ -1021,7 +1026,7 @@ Lemma ConvnI2E' (g : 'I_2 -> T) (d : {fdist 'I_2}) :
 Proof.
 have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
-  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
+  rewrite (_ : probfdist _ _ = 1%:i01%R) ?conv1 //.
   by apply: val_inj; rewrite /= fdist1xx.
 rewrite ConvnIE; congr (_ <| _ |> _).
 by rewrite ConvnI1E /fdist_del_idx ltnn.
@@ -1032,7 +1037,7 @@ Lemma ConvnI2E (g : 'I_2 -> T) (d : {fdist 'I_2}) :
 Proof.
 have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite fdist1E1 convnE => /eqP ->; rewrite Convn_fdist1.
-  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
+  rewrite (_ : probfdist _ _ = 1%:i01%R) ?conv1 //.
   by apply: val_inj; rewrite /= fdist1xx.
 rewrite convnE ConvnIE; congr (conv _ _ _).
 by rewrite ConvnI1E /fdist_del_idx ltnn.
@@ -1041,9 +1046,9 @@ End convex_space_prop2.
 
 HB.factory Record isConvexSpace {R : realType} T of Choice T := {
   conv : {prob R} -> T -> T -> T ;
-  conv1 : forall a b, conv 1%:pr a b = a ;
+  conv1 : forall a b, conv 1%:i01%R a b = a ;
   convmm : forall p a, conv p a a = a ;
-  convC : forall p a b, conv p a b = conv (onem (Prob.p p))%:pr b a ;
+  convC : forall p a b, conv p a b = conv (onem (p%:num))%:i01%R b a ;
   convA : forall (p q : {prob R}) (a b c : T),
       conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
 
@@ -1051,9 +1056,9 @@ HB.builders Context R T of isConvexSpace R T.
 
 Definition convn := Convn conv.
 
-Let conv0 a b : conv 0%:pr a b = b.
+Let conv0 a b : conv 0%:i01%R a b = b.
 Proof.
-by rewrite convC /= (_ : _ %:pr = 1%:pr) ?conv1 //; apply/val_inj/onem0.
+by rewrite convC /= (_ : _ %:i01 = 1%:i01)%R ?conv1 //; apply/val_inj/onem0.
 Qed.
 
 Let Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> T) :
@@ -1065,7 +1070,7 @@ case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
   rewrite fdist1E; case j0 : (_ == _) => /=.
     by move=> _; rewrite (eqP j0).
   by move/eqP; rewrite eq_sym oner_eq0.
-rewrite (_ : probfdist _ _ = 0%:pr) ?conv0; last first.
+rewrite (_ : probfdist _ _ = 0%:i01%R) ?conv0; last first.
   apply: val_inj => /=; move: b01; rewrite !fdist1E => j0.
   by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
 have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
@@ -1111,7 +1116,7 @@ move=> g d.
 have [/eqP|i1] := eqVneq (d ord0) 1%R.
   rewrite fdist1E1 => /eqP ->.
   rewrite Convn_fdist1.
-  rewrite (_ : probfdist _ _ = 1%:pr) ?conv1 //.
+  rewrite (_ : probfdist _ _ = 1%:i01%R) ?conv1 //.
   by apply: val_inj; rewrite /= fdist1xx.
 rewrite ConvnIE; congr conv.
 by rewrite ConvnI1E /fdist_del_idx ltnn.
@@ -1250,7 +1255,7 @@ exists 2, (fun i => if i == ord0 then a0 else a1), (fdistI2 p); split => /=.
   by move=> _ [i _ <-] /=; case: ifPn => _; [left | right].
 case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb H].
   rewrite fdistI2E eqxx /= => p1.
-  by rewrite (_ : p = 1%:pr) ?conv1 //; exact/val_inj.
+  by rewrite (_ : p = 1%:i01%R) ?conv1 //; exact/val_inj.
 congr (_ <| _ |> _); first by apply: val_inj; rewrite /= fdistI2E eqxx.
 case: Bool.bool_dec => // H'.
 exfalso.
@@ -1273,10 +1278,10 @@ Section ereal_convex.
 Context {R : realType}.
 Local Open Scope ereal_scope.
 
-Let conv_ereal (p : {prob R}) x y := (Prob.p p : R)%:E * x + (Prob.p p).~%:E * y.
+Let conv_ereal (p : {prob R}) x y := (p%:num : R)%:E * x + (p%:num).~%:E * y.
 
-Let conv_ereal_conv1 a b : conv_ereal 1%:pr a b = a.
-Proof. by rewrite /conv_ereal probpK onem1 /= mul1e mul0e adde0. Qed.
+Let conv_ereal_conv1 a b : conv_ereal 1%:i01%R a b = a.
+Proof. by rewrite /conv_ereal/= onem1 /= mul1e mul0e adde0. Qed.
 
 Let conv_ereal_convmm p a : conv_ereal p a a = a.
 Proof.
@@ -1293,7 +1298,7 @@ rewrite fin_numE negb_and !negbK => /predU1P[-> | /eqP->].
   + by rewrite lee_fin; apply/prob_ge0.
 Qed.
 
-Let conv_ereal_convC p a b : conv_ereal p a b = conv_ereal ((Prob.p p).~)%:pr b a.
+Let conv_ereal_convC p a b : conv_ereal p a b = conv_ereal p%:num.~%:i01%R b a.
 Proof. by rewrite [in RHS]/conv_ereal onemK addeC. Qed.
 
 Lemma oprob_sg1 (p : {oprob R}) : Num.sg (oprob_to_real p) = 1%R.
@@ -1318,12 +1323,12 @@ pattern q; apply: (prob_trichotomy' q);
 Ltac mulr_infty X := do ! (rewrite mulr_infty X mul1e).
 have sgp := oprob_sg1 p.
 have sgq := oprob_sg1 q.
-have sgonemp := oprob_sg1 (oprob_to_real p).~%:opr.
-have sgonemq := oprob_sg1 (oprob_to_real q).~%:opr.
+have sgonemp := oprob_sg1 (oprob_to_real p).~%:pr%:opr.
+have sgonemq := oprob_sg1 (oprob_to_real q).~%:pr%:opr.
 have sgrpq := oprob_sg1 [r_of OProb.p p, OProb.p q]%:opr.
 have sgspq := oprob_sg1 [s_of OProb.p p, OProb.p q]%:opr.
-have sgonemrpq := oprob_sg1 (Prob.p [r_of OProb.p p, OProb.p q]).~%:opr.
-have sgonemspq := oprob_sg1 (Prob.p [s_of OProb.p p, OProb.p q]).~%:opr.
+have sgonemrpq := oprob_sg1 ([r_of OProb.p p, OProb.p q]%:num).~%:pr%:opr.
+have sgonemspq := oprob_sg1 ([s_of OProb.p p, OProb.p q]%:num).~%:pr%:opr.
 set sg := (sgp,sgq,sgonemp,sgonemq,sgrpq,sgspq,sgonemrpq,sgonemspq).
 case: a=> [a | | ]; case: b=> [b | | ]; case: c=> [c | | ];
   try by mulr_infty sg.
@@ -1389,7 +1394,7 @@ apply/idP/idP => H; apply/asboolP.
   rewrite ConvnIE //.
   by move/asboolP : H; apply => //; exact/gX/classical_sets.imageP.
 move=> x y p xX yX.
-have [->|p1] := eqVneq p 1%:pr; first by rewrite conv1.
+have [->|p1] := eqVneq p 1%:i01%R; first by rewrite conv1.
 set g : 'I_2 -> T := fun i => if i == ord0 then x else y.
 have gX : range g `<=` X by move=> a -[i _ <-]; rewrite /g; case: ifPn.
 move/asboolP : H => /(_ _ g (fdistI2 p) gX).
@@ -1665,11 +1670,11 @@ suff [a] : exists2 a, a \in scaled_set X & exists2 b, b \in scaled_set Y &
     S1 z = addpt a b.
   have [-> _ [b bY]|a0 aX [b]] := eqVneq a Zero.
     rewrite add0pt => S1zy.
-    exists dx; rewrite ?in_setE //; exists z; last by exists 0%:pr; rewrite conv0.
+    exists dx; rewrite ?in_setE //; exists z; last by exists 0%:i01%R; rewrite conv0.
     by rewrite -(@point_S1 R _ z); apply: scaled_set_extract; rewrite S1zy.
   have [-> _|b0 bY] := eqVneq b Zero.
     rewrite addpt0 => S1zx.
-    exists z; last by exists dy; rewrite ?in_setE //; exists 1%:pr; rewrite conv1.
+    exists z; last by exists dy; rewrite ?in_setE //; exists 1%:i01%R; rewrite conv1.
     by rewrite -(@point_S1 R _ z); apply: scaled_set_extract; rewrite S1zx.
   rewrite addptE => -[_ zxy].
   exists [point of a0]; first exact: (@scaled_set_extract _ a).
@@ -1745,27 +1750,27 @@ Variable E : lmodType R.
 Implicit Type p q : {prob R}.
 Local Open Scope ring_scope.
 
-Let avg p (a b : E) := (Prob.p p) *: a + (Prob.p p).~ *: b.
+Let avg p (a b : E) := (p%:num) *: a + (p%:num).~ *: b.
 
-Let avg1 a b : avg 1%:pr a b = a.
+Let avg1 a b : avg 1%:i01 a b = a.
 Proof. by rewrite /avg /= scale1r onem1 scale0r addr0. Qed.
 
 Let avgI p x : avg p x x = x.
 Proof. by rewrite /avg -scalerDl add_onemK scale1r. Qed.
 
-Let avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x.
+Let avgC p x y : avg p x y = avg (p%:num).~%:i01 y x.
 Proof. by rewrite /avg onemK addrC. Qed.
 
 Let avgA p q (d0 d1 d2 : E) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
 Proof.
 rewrite /avg /onem.
-set s := Prob.p [s_of p, q].
-set r := Prob.p [r_of p, q].
+set s := [s_of p, q]%:num.
+set r := [r_of p, q]%:num.
 rewrite (scalerDr s) -addrA (scalerA s) (mulrC s); congr +%R.
   by rewrite (p_is_rs p q) -/s.
 rewrite scalerDr (scalerA _ _ d2).
-rewrite -/(Prob.p p).~ -/(Prob.p q).~ -/r.~ -/s.~.
+rewrite -/(p%:num).~ -/q%:num.~ -/r.~ -/s.~.
 rewrite {2}/s (s_of_pqE p q) onemK; congr +%R.
 rewrite 2!scalerA; congr (_ *: _).
 by rewrite pq_is_rs -/r -/s mulrC.
@@ -2048,14 +2053,14 @@ Implicit Types p q : {prob R}.
 Import LmoduleConvex.
 Let avg p (a b : (R^o : lmodType R)) := a <| p |> b.
 
-Let avgE p a b : avg p a b = (Prob.p p * a + (Prob.p p).~ * b)%R.
+Let avgE p a b : avg p a b = (p%:num * a + (p%:num).~ * b)%R.
 Proof. by []. Qed.
 
-Let avg1 a b : avg 1%:pr a b = a. Proof. by rewrite /avg conv1. Qed.
+Let avg1 a b : avg 1%:i01%R a b = a. Proof. by rewrite /avg conv1. Qed.
 
 Let avgI p x : avg p x x = x. Proof. by rewrite /avg convmm. Qed.
 
-Let avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x. Proof. by rewrite /avg convC. Qed.
+Let avgC p x y : avg p x y = avg p%:num.~%:i01%R y x. Proof. by rewrite /avg convC. Qed.
 
 Let avgA p q (d0 d1 d2 : R) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
@@ -2066,7 +2071,7 @@ Proof. by rewrite /avg convA. Qed.
 (*#[non_forgetful_inheritance]*)
 HB.instance Definition _ := @isConvexSpace.Build R R^o avg avg1 avgI avgC avgA.
 
-Lemma avgRE p (x y : R^o) : x <| p |> y = (Prob.p p * x + (Prob.p p).~ * y)%R. Proof. by []. Qed.
+Lemma avgRE p (x y : R^o) : x <| p |> y = (p%:num * x + (p%:num).~ * y)%R. Proof. by []. Qed.
 
 Lemma avgR_oppD p (x y : R^o) : (- x <| p |> - y = - (x <| p |> y))%R.
 Proof. exact: (@avgr_oppD _ R^o). Qed.
@@ -2131,11 +2136,11 @@ Local Notation T := funT.
 HB.instance Definition _ := Choice.on T.
 Implicit Types p q : {prob R}.
 Local Definition avg p (x y : T) := fun a : A => (x a <| p |> y a).
-Let avg1 (x y : T) : avg 1%:pr x y = x.
+Let avg1 (x y : T) : avg 1%:i01%R x y = x.
 Proof. rewrite funeqE => a; exact/conv1. Qed.
 Let avgI p (x : T) : avg p x x = x.
 Proof. rewrite funeqE => a; exact/convmm. Qed.
-Let avgC p (x y : T) : avg p x y = avg (Prob.p p).~%:pr y x.
+Let avgC p (x y : T) : avg p x y = avg p%:num.~%:i01%R y x.
 Proof. rewrite funeqE => a; exact/convC. Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
@@ -2152,7 +2157,7 @@ Variables (A : choiceType) (B : A -> convType R).
 Let T := forall x : A, B x.
 Implicit Types p q : {prob R}.
 Let avg p (x y : T) := fun a : A => (x a <| p |> y a).
-Let avg1 (x y : T) : avg 1%:pr x y = x.
+Let avg1 (x y : T) : avg 1%:i01%R x y = x.
 Proof.
 apply: boolp.functional_extensionality_dep => a.
 exact/conv1.
@@ -2162,7 +2167,7 @@ Proof.
 apply: boolp.functional_extensionality_dep => a.
 exact/convmm.
 Qed.
-Let avgC p (x y : T) : avg p x y = avg (Prob.p p).~%:pr y x.
+Let avgC p (x y : T) : avg p x y = avg p%:num.~%:i01%R y x.
 Proof.
 apply: boolp.functional_extensionality_dep => a.
 exact/convC.
@@ -2189,11 +2194,11 @@ Variables (A B : convType R).
 Let T := (A * B)%type.
 Implicit Types p q : {prob R}.
 Let avg p (x y : T) := (x.1 <| p |> y.1, x.2 <| p |> y.2).
-Let avg1 (x y : T) : avg 1%:pr x y = x.
+Let avg1 (x y : T) : avg 1%:i01%R x y = x.
 Proof. rewrite /avg (conv1 x.1) (conv1 x.2); by case x. Qed.
 Let avgI p (x : T) : avg p x x = x.
 Proof. rewrite /avg (convmm _ x.1) (convmm _ x.2); by case x. Qed.
-Let avgC p (x y : T) : avg p x y = avg (Prob.p p).~%:pr y x.
+Let avgC p (x y : T) : avg p x y = avg p%:num.~%:i01%R y x.
 Proof. by congr (pair _ _); apply: convC. Qed.
 Let avgA p q (d0 d1 d2 : T) :
   avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
@@ -2211,12 +2216,12 @@ Context {R : realType}.
 Variable A : finType.
 Implicit Types a b c : R.-fdist A.
 
-Let conv1 a b : (a <| 1%:pr |> b)%fdist = a.
+Let conv1 a b : (a <| 1%:i01%R |> b)%fdist = a.
 Proof.
 by apply/fdist_ext => a0; rewrite fdist_convE /= onem1 mul1r mul0r addr0.
 Qed.
 
-Let convC p a b : (a <| p |> b = b <| (Prob.p p).~%:pr |> a)%fdist.
+Let convC p a b : (a <| p |> b = b <| p%:num.~%:i01%R |> a)%fdist.
 Proof. by apply/fdist_ext => a0 /=; rewrite 2!fdist_convE onemK addrC. Qed.
 
 Let convmm p a : (a <| p |> a)%fdist = a.
@@ -2231,10 +2236,10 @@ Let convA p q a b c :
 Proof.
 apply/fdist_ext => a0 /=; rewrite 4!fdist_convE /=.
 set r := r_of_pq p q.  set s := s_of_pq p q.
-transitivity (Prob.p p * a a0 + (Prob.p p).~ * Prob.p q * b a0 + (Prob.p p).~ * (Prob.p q).~ * c a0).
+transitivity (p%:num * a a0 + p%:num.~ * q%:num * b a0 + p%:num.~ * q%:num.~ * c a0).
   by rewrite mulrDr !mulrA !addrA.
-transitivity (Prob.p r * Prob.p s * a a0 + (Prob.p r).~ * Prob.p s * b a0 + (Prob.p s).~ * c a0); last first.
-  by rewrite 2!(mulrC _ (Prob.p s)) -2!mulrA -mulrDr.
+transitivity (r%:num * s%:num * a a0 + r%:num.~ * s%:num * b a0 + s%:num.~ * c a0); last first.
+  by rewrite 2!(mulrC _ s%:num) -2!mulrA -mulrDr.
 congr (_ + _ + _);
   [by rewrite (p_is_rs p q) | | by rewrite s_of_pqE onemK].
 by rewrite pq_is_rs.
@@ -2470,13 +2475,13 @@ Definition unbox_oppT (x : T)  := match x with mkOpp x' => x' end.
 
 Local Definition avg p a b := mkOpp (unbox_oppT a <| p |> unbox_oppT b).
 
-Local Lemma avg1 a b : avg 1%:pr a b = a.
+Local Lemma avg1 a b : avg 1%:i01%R a b = a.
 Proof. by case a;case b=>b' a';rewrite/avg/unbox_oppT/=conv1. Qed.
 
 Local Lemma avgI p x : avg p x x = x.
 Proof. by case x=>x';rewrite/avg/unbox_oppT/=convmm. Qed.
 
-Local Lemma avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x.
+Local Lemma avgC p x y : avg p x y = avg p%:num.~%:i01%R y x.
 Proof. by case x;case y=>y' x'; rewrite/avg/unbox_oppT/=convC. Qed.
 
 Local Lemma avgA p q d0 d1 d2 :
@@ -2535,7 +2540,7 @@ Definition convex_function_at_Convn f n (a : 'I_n -> T) (d : {fdist 'I_n}) :=
   (f (<|>_d a) <= <|>_d (f \o a))%O.
 
 Definition strictly_convexf_at f := forall a b (t : {prob R}),
-  a <> b -> (0 < Prob.p t < 1)%R -> convex_function_at f a b t.
+  a <> b -> (0 < t%:num < 1)%R -> convex_function_at f a b t.
 
 Lemma convex_function_atxx f a t : convex_function_at f a a t.
 Proof. rewrite /convex_function_at !convmm; exact/lexx. Qed.
@@ -2568,8 +2573,14 @@ Lemma convex_function_sym (f : T -> U) a b :
   (forall t, convex_function_at f a b t) ->
   (forall t, convex_function_at f b a t).
 Proof.
-move=> H t; move: (H (Prob.p t).~%:pr).
-by rewrite /convex_function_at /= convC -probK (convC _ (f a)) -probK.
+move=> H t.
+have := (H (t%:num).~%:pr)%R.
+rewrite /convex_function_at /=.
+rewrite convC.
+rewrite (convC _ (f a))/=.
+rewrite (_ : widen_itv _ = t)//.
+apply/val_inj => /=.
+by rewrite onemK.
 Qed.
 
 Lemma convex_function_comp (f : {convex T -> U}) (g : {convex U -> V}) :
@@ -2668,7 +2679,7 @@ Definition concave_function_at f a b t := @convex_function_at R d A _
   (fun a => \opp{f a}) a b t.
 Definition concave_function_at' f a b t := (f a <| t |> f b <= f (a <| t |> b))%O.
 Definition strictly_concavef_at f := forall a b (t : {prob R}),
-  a <> b -> (0 < Prob.p t < 1)%R -> concave_function_at f a b t.
+  a <> b -> (0 < t%:num < 1)%R -> concave_function_at f a b t.
 Lemma concave_function_at'P f a b t :
   concave_function_at' f a b t <-> concave_function_at f a b t.
 Proof.
@@ -2977,7 +2988,7 @@ Definition Rpos_interval : set R^o := (fun x => 0 < x)%R.
 Lemma Rpos_convex : is_convex_set Rpos_interval.
 Proof.
 apply/asboolP => x y t Hx Hy.
-have [->|Ht0] := eqVneq t 0%:pr; first by rewrite conv0.
+have [->|Ht0] := eqVneq t 0%:i01%R; first by rewrite conv0.
 rewrite /Rpos_interval.
 apply: ltr_wpDr.
   apply: mulr_ge0 => //.
@@ -3001,17 +3012,17 @@ Lemma open_interval_convex (a b : R^o) (Hab : (a < b)%R) :
   is_convex_set (fun x => a < x < b)%R.
 Proof.
 apply/asboolP => x y t /andP[xa xb] /andP[ya yb].
-have [->/=|t0] := eqVneq t 0%:pr.
+have [->/=|t0] := eqVneq t 0%:i01%R.
   by rewrite conv0 ya.
-have [->|t1] := eqVneq t 1%:pr.
+have [->|t1] := eqVneq t 1%:i01%R.
   by rewrite conv1 xa.
 apply/andP; split.
-- rewrite -[X in (X < Prob.p t * x + (Prob.p t).~ * y)%R]mul1r -(add_onemK (Prob.p t)).
+- rewrite -[X in (X < t%:num * x + t%:num.~ * y)%R]mul1r -(add_onemK t%:num).
   rewrite (mulrDl _ _ a).
   by rewrite ltrD// ltr_pM2l//; [exact/prob_gt0 | exact/onem_gt0/prob_lt1].
 - (*rewrite -[X in (_ + _ < X)%coqR]mul1R -(onemKC t) mulRDl.*)
 rewrite -[ltRHS]mul1r.
-rewrite -(add_onemK (Prob.p t)).
+rewrite -(add_onemK t%:num).
 by rewrite mulrDl ltrD// ltr_pM2l//; [exact/prob_gt0 | exact/onem_gt0/prob_lt1].
 Qed.
 
@@ -3039,7 +3050,7 @@ exact: ler_wpM2r.
 Qed.
 
 Lemma convexf_at_onem x y (t : {prob R}) f : (0 < x -> 0 < y -> x < y ->
-  convex_function_at f x y t -> convex_function_at f y x (Prob.p t).~%:pr)%R.
+  convex_function_at f x y t -> convex_function_at f y x t%:num.~%:i01)%R.
 Proof.
 move=> x0 y0 xy H; rewrite /convex_function_at.
 rewrite [in X in (_ <= X)%R]avgRE /= onemK addrC.
@@ -3050,7 +3061,7 @@ by rewrite addrC lexx.
 Qed.
 
 Lemma concavef_at_onem x y (t : {prob R}) f : (0 < x -> 0 < y -> x < y ->
-  concave_function_at f x y t -> concave_function_at f y x (Prob.p t).~%:pr)%R.
+  concave_function_at f x y t -> concave_function_at f y x t%:num.~%:i01)%R.
 Proof.
 move=>x0 y0 xy; rewrite/concave_function_at/convex_function_at.
 rewrite !conv_leoppD !leoppP/=.
@@ -3112,24 +3123,24 @@ Let convexf_ptP : (forall x, a <= x <= b -> 0 <= L x - f x) ->
   forall t, f (a <| t |> b) <= f a <| t |> f b.
 Proof.
 move=> H t; rewrite /convex_function_at.
-set x := (Prob.p t * a + (Prob.p t).~ * b)%R.
+set x := (t%:num * a + t%:num.~ * b)%R.
 have : (a <= x <= b)%R.
   rewrite /x; apply/andP; split.
-  - apply: (@le_trans _ _ (Prob.p t * a + (Prob.p t).~ * a)).
+  - apply: (@le_trans _ _ (t%:num * a + t%:num.~ * a)).
       by rewrite -mulrDl addrCA subrr addr0 mul1r lexx.
-    have [->|t1] := eqVneq t 1%:pr.
+    have [->|t1] := eqVneq t 1%:i01.
       by rewrite mul1r onem1 2!mul0r.
     rewrite lerD2l; apply: ler_wpM2l => //; exact/ltW.
-  - apply: (@le_trans _ _ (Prob.p t * b + (Prob.p t).~ * b)); last first.
+  - apply: (@le_trans _ _ (t%:num * b + t%:num.~ * b)); last first.
       by rewrite -mulrDl addrCA subrr addr0 mul1r lexx.
     by rewrite lerD2r; apply: ler_wpM2l => //; exact/ltW.
 move/H; rewrite subr_ge0 => /le_trans; apply.
 rewrite LE //.
-have -> : ((b - x) / (b - a) = Prob.p t)%R.
+have -> : ((b - x) / (b - a) = t%:num)%R.
   rewrite /x opprD addrCA mulrBl mul1r opprB (addrCA b).
   rewrite subrr addr0 -mulrN addrC -mulrDr.
   by rewrite -mulrA mulfV ?mulr1 // subr_eq0 gt_eqF//.
-have -> : ((x - a) / (b - a) = (Prob.p t).~)%R.
+have -> : ((x - a) / (b - a) = t%:num.~)%R.
   rewrite /x addrAC -{1}(opprK a) mulrN -mulNr -{2}(mul1r (- a)%R).
   rewrite -mulrDl (addrC _ 1%R) -mulrDr addrC.
   rewrite -mulrA (addrC _ b) mulfV ?mulr1 ?subr_eq0 ?gt_eqF//.
@@ -3263,22 +3274,26 @@ Local Open Scope ring_scope.
 Variables (R : realType).
 
 Let avg_proof (p x y : {prob R}) :
-  0 <= Prob.p p * Prob.p x + (Prob.p p).~ * Prob.p y <= 1.
+  0 <= p%:num * x%:num + p%:num.~ * y%:num <= 1.
 Proof.
 rewrite addr_ge0 ?mulr_ge0//=.
 rewrite -[leRHS](@convmm _ R^o p) avgRE.
 by rewrite lerD// ler_wpM2l//.
 Qed.
 
-Let avg p x y := Eval hnf in Prob.mk_ (avg_proof p x y).
+Let avg p x y := Eval hnf in Prob.mk (avg_proof p x y).
 
-Let avg1 x y : avg 1%:pr x y = x.
-Proof. by apply/val_inj => /=; rewrite -avgRE conv1. Qed.
+Let avg1 x y : avg 1%:i01%R x y = x.
+Proof.
+apply/val_inj => /=.
+have /= <- := avgRE 1%:i01%R x%:num y%:num.
+by rewrite conv1.
+Qed.
 
 Let avgI p x : avg p x x = x.
 Proof. by apply/val_inj => /=; rewrite -avgRE convmm. Qed.
 
-Let avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x.
+Let avgC p x y : avg p x y = avg (p%:num).~%:i01 y x.
 Proof. by apply/val_inj => /=; rewrite -avgRE convC. Qed.
 
 Let avgA p q d0 d1 d2 :
@@ -3289,7 +3304,7 @@ Proof. by apply/val_inj => /=; rewrite -!avgRE convA. Qed.
 HB.instance Definition _ := isConvexSpace.Build R {prob R} avg1 avgI avgC avgA.
 
 Lemma avg_probE p (x y : {prob R}) :
-  x <|p|> y = Prob.p p * Prob.p x + (Prob.p p).~ * Prob.p y :> R.
+  (x <|p|> y)%:num = p%:num * x%:num + (p%:num).~ * y%:num :> R.
 Proof. by []. Qed.
 
 End prob_convType.
@@ -3299,10 +3314,10 @@ HB.export probConvex.
 Section magnified_prob.
 Local Open Scope ring_scope.
 Variables (R : realType) (p q r : {prob R}).
-Variables (pr : Prob.p p < Prob.p r) (pqr : Prob.p p <= Prob.p q <= Prob.p r).
+Variables (pr : p%:num < r%:num) (pqr : p%:num <= q%:num <= r%:num).
 
 Lemma magnified_prob_proof :
-  0 <= magnified_weight (Prob.p p) (Prob.p q) (Prob.p r) <= 1.
+  0 <= magnified_weight p%:num q%:num r%:num <= 1.
 Proof.
 have pr' := negbT (lt_eqF pr).
 have[|qnep]:= eqVneq q p.
@@ -3311,22 +3326,22 @@ have[|qner]:= eqVneq q r.
   by move/(congr1 \val) /magnified_weight_eq0 ->; exact/andP.
 case/andP: pqr => pq qr.
 have:= pr => /[dup] /gt_eqF /negbT rp; rewrite -subr_gt0 => rp'.
-have rq : 0 < Prob.p r - Prob.p q by rewrite subr_gt0 lt_def qr eq_sym qner.
+have rq : 0 < r%:num - q%:num by rewrite subr_gt0 lt_def qr eq_sym qner.
 apply/andP; split; first by rewrite divr_ge0// subr_ge0// (le_trans pq).
 by rewrite -(ler_pM2r rp') -mulrA mulVf ?subr_eq0// mulr1 mul1r lerD2l lerN2.
 Qed.
 
 Definition magnified_prob : {prob R} :=
-  Eval hnf in Prob.mk_ magnified_prob_proof.
+  Eval hnf in Prob.mk magnified_prob_proof.
 
-Lemma magnified_prob_eq1 : q = p -> magnified_prob = 1%:pr.
+Lemma magnified_prob_eq1 : q = p -> magnified_prob = 1%:i01.
 Proof.
 have ? := negbT (lt_eqF (pr)).
 move/(congr1 \val) => /= ?.
 exact/val_inj/magnified_weight_eq1.
 Qed.
 
-Lemma magnified_prob_eq0 : q = r -> magnified_prob = 0%:pr.
+Lemma magnified_prob_eq0 : q = r -> magnified_prob = 0%:i01.
 Proof.
 have ? := negbT (lt_eqF (pr)).
 move/(congr1 \val) => /= ?.
@@ -3340,7 +3355,7 @@ have:= pr; rewrite -subr_gt0 => /gt_eqF /negbT ?.
 by field.
 Qed.
 
-Lemma real_magnify_self : (Prob.p p : R^o) <|magnified_prob|> Prob.p r = Prob.p q.
+Lemma real_magnify_self : (p%:num : R^o) <|magnified_prob|> r%:num = q%:num.
 Proof. by rewrite -prob_magnify_self. Qed.
 
 End magnified_prob.
@@ -3349,7 +3364,7 @@ Section magnify_conv.
 Local Open Scope ring_scope.
 Local Open Scope convex_scope.
 Variables (R : realType) (T : convType R) (p q r : {prob R}) (x y : T).
-Variables (pr : Prob.p p < Prob.p r) (pqr : Prob.p p <= Prob.p q <= Prob.p r).
+Variables (pr : p%:num < r%:num) (pqr : p%:num <= q%:num <= r%:num).
 
 Local Notation m := (magnified_prob pr pqr).
 Local Notation "x +' y" := (addpt x y) (at level 50).
@@ -3364,7 +3379,7 @@ have[|qner]:= eqVneq q r.
   by move/[dup]/magnified_prob_eq0->; rewrite conv0 => ->.
 case/andP: (pqr) => pq qr.
 apply: (S1_inj R); rewrite ![in LHS]affine_conv/= convptE.
-rewrite !scaleptDr !scaleptA // (addptC ((Prob.p m * Prob.p p) *' S1 x)) addptA.
+rewrite !scaleptDr !scaleptA // (addptC ((m%:num * p%:num) *' S1 x)) addptA.
 rewrite addptC !addptA -scaleptDl// -!addptA -scaleptDl//.
 rewrite addrC -!avgRE -onem_affine real_magnify_self.
 by rewrite addptC -convptE affine_conv.

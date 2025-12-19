@@ -2,6 +2,7 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup perm matrix.
+From mathcomp Require Import interval_inference.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
 From mathcomp Require Import functions reals.
 From mathcomp Require Import finmap.
@@ -614,7 +615,7 @@ Definition binconv p (a b : C) :=
   <&>_(fdistI2 p) (fun x => if x == ord0 then a else b).
 Notation "a <& p &> b" := (binconv p a b).
 
-Lemma binconvC p a b : a <& p &> b = b <& ((Prob.p p).~)%:pr &> a.
+Lemma binconvC p a b : a <& p &> b = b <& ((p%:num).~)%:i01%R &> a.
 Proof.
 rewrite /binconv.
 set g1 := fun x => _.
@@ -666,7 +667,7 @@ case: j => -[|[|[]]] //= ?; rewrite ?(mulr1,mulr0,add0r).
   by rewrite !fdistI2E/= mulr0 add0r s_of_pqE onemK.
 Qed.
 
-Lemma binconv1 a b : binconv 1%:pr a b = a.
+Lemma binconv1 a b : binconv 1%:i01%R a b = a.
 Proof.
 apply: axidem => /= i; rewrite inE fdistI2E; case: ifP => //=.
 by rewrite /onem subrr eqxx.
