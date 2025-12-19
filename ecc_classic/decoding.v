@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
-From mathcomp Require Import zmodp matrix vector order.
+From mathcomp Require Import zmodp matrix vector order interval_inference.
 From mathcomp Require Import lra ring mathcomp_extra Rstruct reals.
 Require Import realType_ext ssr_ext ssralg_ext f2 bigop_ext fdist proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
@@ -128,7 +128,7 @@ elim: r => [| h t IH].
 rewrite 2!big_cons.
 case: ifP => Qh //.
  rewrite -IH.
-by rewrite maxr_pMr//.
+by rewrite maxr_pMr.
 Qed.
 
 (* TODO: mv *)
@@ -251,7 +251,6 @@ Lemma ML_smallest_err_rate phi :
   echa(W, mkCode enc dec) <= echa(W, mkCode enc phi).
 Proof.
 rewrite ler_wpM2l//=.
-  by rewrite invr_ge0.
 rewrite /ErrRateCond /=.
 rewrite [leRHS](eq_bigr
   (fun m => 1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m])); last first.
@@ -313,7 +312,7 @@ Variable enc : encT 'F_2 M n.
 Hypothesis compatible : cancel_on C enc discard.
 Variable P : {fdist 'rV['F_2]_n}.
 
-Lemma MD_implies_ML : Prob.p p < 1/2 :> R-> MD_decoding [set cw in C] f ->
+Lemma MD_implies_ML : p%:num < 1/2 :> R-> MD_decoding [set cw in C] f ->
   (forall y, f y != None) -> ML_decoding W C f P.
 Proof.
 move=> p05 MD f_total y.
@@ -330,7 +329,7 @@ case: oc Hoc => [c|] Hc; last first.
 exists c; split; first by reflexivity.
 (* replace  W ``^ n (y | f c) with a closed formula because it is a BSC *)
 pose dH_y c := dH y c.
-pose g : nat -> R := fun d : nat => ((1 - Prob.p p) ^+ (n - d) * (Prob.p p) ^+ d)%R.
+pose g : nat -> R := fun d : nat => ((1 - p%:num) ^+ (n - d) * (p%:num) ^+ d)%R.
 have -> : W ``(y | c) = g (dH_y c).
   move: (DMC_BSC_prop p enc (discard c) y).
   rewrite [X in BSC.c X _](_ : _ = card_F2) //.

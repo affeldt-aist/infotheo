@@ -2,6 +2,7 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum zmodp matrix lra.
+From mathcomp Require Import interval_inference.
 From mathcomp Require Import unstable mathcomp_extra classical_sets Rstruct.
 From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
@@ -52,7 +53,7 @@ Let p_01'_ : 0 <= p <= 1.
 by move: p_01' => /andP[/ltW -> /ltW ->].
 Qed.
 
-Let p_01 : {prob Rdefinitions.R} := Eval hnf in Prob.mk_ p_01'_.
+Let p_01 : {prob Rdefinitions.R} := Eval hnf in Prob.mk p_01'_.
 
 Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01)%channel = - H2 p.
 Proof.
@@ -175,13 +176,13 @@ Hypothesis p_01' : 0 < p < 1.
 Let p_01'_ : 0 <= p <= 1.
 by move: p_01' => /andP[/ltW -> /ltW ->].
 Qed.
-Let p_01 : {prob R} := Eval hnf in Prob.mk_ p_01'_.
+Let p_01 : {prob R} := Eval hnf in Prob.mk p_01'_.
 
 Theorem BSC_capacity : capacity (BSC.c card_A p_01) = 1 - H2 p.
 Proof.
 rewrite /capacity /image.
 set E := (fun y : R => _).
-set p' := Prob.mk_ p_01'_.
+set p' := Prob.mk p_01'_.
 have has_sup_E : has_sup E.
   split.
     set d := fdist_binary card_A p' (Set2.a card_A).
@@ -190,10 +191,10 @@ have has_sup_E : has_sup E.
   have := IPW card_A P p_01'.
   set tmp := (X in `I(_, BSC.c _ X)).
   rewrite (_ : tmp = p_01)//; last first.
-    by apply/val_inj => //.
+    exact: val_inj.
   move=> ->.
   rewrite lerBlDr (le_trans (H_out_max card_A P p_01'))//.
-  rewrite -lerBlDl subrr (_ : p = Prob.p p')// (entropy_H2 card_A).
+  rewrite -lerBlDl subrr (_ : p = p'%:num)// (entropy_H2 card_A).
   exact/entropy_ge0.
 apply/eqP; rewrite eq_le; apply/andP; split.
   have [_ /(_ (1 - H2 p))] := Rsup_isLub (0 : R) has_sup_E.
@@ -202,16 +203,16 @@ apply/eqP; rewrite eq_le; apply/andP; split.
     have := IPW card_A d p_01'.
     set tmp := (X in `I(_, BSC.c _ X)).
     rewrite (_ : tmp = p_01)//; last first.
-      by apply/val_inj => //.
+      exact: val_inj.
     set tmp' := (X in _ = `H(d `o (BSC.c card_A X)) - _ -> _).
     rewrite (_ : tmp' = p_01)//; last first.
-      by apply/val_inj => //.
+      exact: val_inj.
     rewrite dx => -> ?.
     by rewrite lerBlDr subrK.
   have := H_out_max card_A d p_01'.
   set tmp' := (X in `H(d `o (BSC.c card_A X)) <= _ -> _).
   rewrite (_ : tmp' = p_01)//.
-  by apply/val_inj.
+  exact: val_inj.
 move: (@IPW _ card_A (fdist_uniform card_A) _ p_01').
 rewrite H_out_binary_uniform => <-.
 apply/Rsup_ub => //=.
@@ -233,11 +234,11 @@ Variables (M : finType) (n : nat) (f : encT 'F_2 M n).
 Local Open Scope vec_ext_scope.
 
 Lemma DMC_BSC_prop m y : let d := dH y (f m) in
-  W ``(y | f m) = (1 - Prob.p p) ^+ (n - d) * Prob.p p ^+ d.
+  W ``(y | f m) = (1 - p%:num) ^+ (n - d) * p%:num ^+ d.
 Proof.
 move=> d; rewrite DMCE.
-transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - Prob.p p)) *
-              (\prod_(i < n | (f m) ``_ i != y ``_ i) Prob.p p)).
+transitivity ((\prod_(i < n | (f m) ``_ i == y ``_ i) (1 - p%:num)) *
+              (\prod_(i < n | (f m) ``_ i != y ``_ i) p%:num)).
   rewrite (bigID [pred i | (f m) ``_ i == y ``_ i]) /=; congr (_ * _).
     by apply: eq_bigr => // i /eqP ->; rewrite /BSC.c fdist_binaryxx.
   apply: eq_bigr => //= i /negbTE Hyi; by rewrite /BSC.c fdist_binaryE eq_sym Hyi.
@@ -275,14 +276,14 @@ apply: exprn_ege1.
 by rewrite ler_pdivlMr // mul1r.
 Qed.
 
-Lemma bsc_prob_prop (p : {prob R}) n : Prob.p p < 1 / 2 ->
+Lemma bsc_prob_prop (p : {prob R}) n : p%:num < 1 / 2 ->
   forall n1 n2 : nat, (n1 <= n2 <= n)%N ->
-  (1 - Prob.p p) ^+ (n - n2) * (Prob.p p) ^+ n2 <=
-  (1 - Prob.p p) ^+ (n - n1) * (Prob.p p) ^+ n1.
+  (1 - p%:num) ^+ (n - n2) * (p%:num) ^+ n2 <=
+  (1 - p%:num) ^+ (n - n1) * (p%:num) ^+ n1.
 Proof.
 move=> p05 d1 d2 d1d2.
-have [->|] := eqVneq p 0%:pr.
-  rewrite probpK subr0 !expr1n !mul1r !expr0n.
+have [->|] := eqVneq p 0%:i01.
+  rewrite subr0 !expr1n !mul1r !expr0n.
   move: d1d2; case: d2; first by rewrite leqn0 => /andP [] ->.
   by case: (d1 == 0%N).
 move/prob_gt0 => p1.
@@ -310,7 +311,7 @@ Let p_01'_ : 0 <= p <= 1.
 by move: p_01' => /andP [/ltW -> /ltW ->].
 Qed.
 
-Let p_01 : {prob R} := Eval hnf in Prob.mk_ p_01'_.
+Let p_01 : {prob R} := Eval hnf in Prob.mk p_01'_.
 
 Let P := fdist_uniform (R:=R) card_A.
 Variable a' : A.
@@ -331,8 +332,7 @@ rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1); last first.
   by rewrite -sum_fdist_binary_swap // FDist.f1.
 rewrite mxE mulr1 big_ord_recl big_ord0 /BSC.c fdist_binaryE /= eq_sym !mxE.
 rewrite mulr1 onemE.
-rewrite mulrAC mulfV ?mul1r // fdist_uniformE card_A invr_neq0 //.
-by apply: lt0r_neq0; lra.
+by rewrite mulrAC mulfV ?mul1r // fdist_uniformE card_A invr_neq0.
 Qed.
 
 End post_proba_bsc_unif.
