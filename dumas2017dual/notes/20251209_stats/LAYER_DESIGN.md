@@ -192,6 +192,35 @@ Each lemma should have a comment explaining:
 | 5 (dsdp) | 5 | 47 | ~2500 |
 | **Total** | **12** | **141** | **~5900** |
 
+## Homomorphic Encryption Layer
+
+In addition to the DSDP-specific layers, we also provide a foundational **homomorphic encryption** layer in `homomorphic_encryption/homomorphic_encryption.v`. This layer establishes the cryptographic primitives required for DSDP's secure computation:
+
+**Key Components:**
+
+| Component | Description |
+|-----------|-------------|
+| `party` | Finite type for protocol participants (Alice, Bob, Charlie) |
+| `key` | Key types (Dec, Enc) for encryption/decryption |
+| `enc` | Encrypted message type `(party * msg)` |
+| `pkey` | Party key type `(party * key * msg)` |
+| `E`, `D` | Encryption and decryption operations |
+| `Emul`, `Epow` | Homomorphic operations (addition via `*h`, scalar multiplication via `^h`) |
+| `p.-enc T` | Type-level encryption label for party `p` |
+| `p.-key k T` | Type-level key label for party `p` with key type `k` |
+
+**Key Lemmas:**
+
+| Lemma | Statement |
+|-------|-----------|
+| `card_party_key` | `#|{:p.-key k T}| = #|T|` — key types preserve cardinality |
+| `card_enc_for` | `#|{:p.-enc T}| = #|T|` — encryption types preserve cardinality |
+| `E_enc_unif` | Encryptions are uniformly distributed (axiom) |
+| `E_enc_inde` | Encryptions are independent of other random variables (axiom) |
+| `E_enc_ce_removal` | `H(Z | [%X, E]) = H(Z | X)` — encryption can be removed from conditioning |
+
+**Role in DSDP:** This layer provides the semantic security axioms (`E_enc_unif`, `E_enc_inde`) that allow DSDP to treat encrypted values as independent random values, which is essential for the entropy-based security analysis.
+
 ## Related Documents
 
 - `20251209_v2_stats.md`: Complete lemma listing with signatures and meanings
