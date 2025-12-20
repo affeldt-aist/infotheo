@@ -6,3 +6,14 @@
 *~
 Makefile.conf
 *.aux
+
+# Generated build files
+.Makefile.coq.d
+Makefile.coq
+Makefile.coq.conf
+
+# Editor/IDE
+.vscode/
+
+# Nix
+.nix/coq-overlays/
