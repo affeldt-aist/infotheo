@@ -110,7 +110,6 @@ dumas2017dual/dsdp/dsdp_program.v
 dumas2017dual/dsdp/dsdp_algebra.v
 dumas2017dual/dsdp/dsdp_entropy_trace.v
 dumas2017dual/dsdp/dsdp_entropy.v
-dumas2017dual/dsdp/dsdp_entropy_field.v
 dumas2017dual/dsdp/dsdp_security.v
 
 -R . infotheo
