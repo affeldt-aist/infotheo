@@ -436,7 +436,7 @@ split; last first.
       have ->: `p_ [% Y, Z] (a, b) = `p_ [% Z, Y] (b, a).
         by rewrite !dist_of_RVE pfwd1_pairC.
       rewrite -!Pr_set1.
-      rewrite (_ : [set (b, a)] = [set b] `* [set a]); last first.
+      rewrite (_ : [set (b, a)] = setX [set b] [set a]); last first.
         by apply/setP => -[c d]; rewrite !inE xpair_eqE.
       rewrite jproduct_rule.
       by rewrite -(snd_RV2 Z Y) Pr_set1 dist_of_RVE.
