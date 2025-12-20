@@ -193,10 +193,10 @@ have ->: `Pr[X = x] = Pr (`p_X) [set x].
 have ->: Pr (`p_X) [set x] = Pr (`p_[% X, Y])`1 [set x].
   by rewrite fst_RV2.
 have ->: Pr (`p_[% X, Y])`1 [set x] = 
-         \sum_(y : B) Pr (`p_[% X, Y]) ([set x] `* [set y]).
+         \sum_(y : B) Pr (`p_[% X, Y]) (setX [set x] [set y]).
   by rewrite -PrX_fst.
 apply: eq_bigr => y _.
-have ->: Pr (`p_[% X, Y]) ([set x] `* [set y]) = 
+have ->: Pr (`p_[% X, Y]) (setX [set x] [set y]) = 
          Pr (`p_[% X, Y]) [set (x, y)].
   congr (Pr (`p_[% X, Y]) _).
   by apply/setP => -[a b]; rewrite !inE xpair_eqE.
@@ -214,7 +214,7 @@ Lemma jproduct_ruleRV (A B T : finType) (P : R.-fdist T)
 Proof.
 have ->: `Pr[[% X, Y] = (x, y)] = Pr (`p_[% X, Y]) [set (x, y)].
   by rewrite -pr_in1 Pr_set1 dist_of_RVE pr_in1.
-have ->: [set (x, y)] = [set x] `* [set y].
+have ->: [set (x, y)] = setX [set x] [set y].
   by apply/setP => -[a b]; rewrite !inE xpair_eqE.
 rewrite jproduct_rule.
 rewrite mulrC; congr (_ * _).
