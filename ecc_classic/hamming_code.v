@@ -1018,7 +1018,7 @@ Qed.
 
 Lemma hamming_error_rate : p%:num < 1/2 ->
   echa(W, hamming_channel_code) =
-    1 - (1 - p%:num ^+ n) - n%:R * p%:num * (1 - p%:num ^+ (n - 1)).
+    1 - (1 - p%:num) ^+ n - n%:R * p%:num * (1 - p%:num) ^+ (n - 1).
 Proof.
 move=> p05.
 rewrite /CodeErrRate.
