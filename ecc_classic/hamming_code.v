@@ -954,13 +954,13 @@ Let hamming_channel_code : code _ _ _ n := Hamming'.channel_code m'.
 Lemma e_hamming m0 :
   e(W, hamming_channel_code) m0 =
   \sum_(e0 in [set e0 : 'rV['F_2]_n | (2 <= wH e0)%nat])
-    (1 - p%:num) ^+ (n - wH e0) * (p%:num) ^+ wH e0 :> R.
+    (1 - p%:num) ^+ (n - wH e0) * p%:num ^+ wH e0 :> R.
 Proof.
 rewrite /ErrRateCond /Pr /=.
 transitivity (
   \sum_(a | a \in preimC (dec hamming_channel_code) m0)
     let d := dH ((enc hamming_channel_code) m0) a in
-    (1 - p%:num) ^+ (n - d) * (p%:num) ^+ d).
+    (1 - p%:num) ^+ (n - d) * p%:num ^+ d).
   apply: eq_bigr => /= t Ht.
   rewrite dH_sym.
   rewrite -(DMC_BSC_prop p (enc hamming_channel_code) m0 t).
@@ -970,7 +970,7 @@ transitivity (
                            m1 != m0 else
                            true])
       (let d := dH ((enc hamming_channel_code) m0) a in
-       (1 - p%:num) ^+ (n - d) * (p%:num) ^+ d)).
+       (1 - p%:num) ^+ (n - d) * p%:num ^+ d)).
   apply: eq_bigl => t /=.
   rewrite !inE.
   case_eq (dec hamming_channel_code t) => [m1 Hm1|]; last first.
@@ -980,7 +980,7 @@ set y0 := (enc hamming_channel_code) m0.
 set f : 'rV__ -> 'rV__ := fun y => (y0 + y).
 transitivity (
   \sum_(y | f y \in [set e1 | (1 < wH e1)%nat])
-    (1 - p%:num) ^+ (n - wH (f y)) * (p%:num) ^+ wH (f y)).
+    (1 - p%:num) ^+ (n - wH (f y)) * p%:num ^+ wH (f y)).
   apply: eq_big.
     move=> y.
     simpl in y, f, m0.
@@ -1018,7 +1018,7 @@ Qed.
 
 Lemma hamming_error_rate : p%:num < 1/2 ->
   echa(W, hamming_channel_code) =
-    1 - ((1 - p%:num) ^+ n) - n%:R * (p%:num) * ((1 - p%:num) ^+ (n - 1)).
+    1 - (1 - p%:num ^+ n) - n%:R * p%:num * (1 - p%:num ^+ (n - 1)).
 Proof.
 move=> p05.
 rewrite /CodeErrRate.
@@ -1043,7 +1043,7 @@ have toleft (A B C D : R) : A + C + D = B -> A = B - C - D.
  by rewrite addrAC addrK addrK.
 apply: toleft.
 rewrite -addrA.
-rewrite -(hamming_01 n (p%:num)).
+rewrite -(hamming_01 n p%:num).
 rewrite -big_union //=.
   rewrite (_ : _ :|: _ = [set: 'rV_n]).
     by rewrite binomial_theorem//.

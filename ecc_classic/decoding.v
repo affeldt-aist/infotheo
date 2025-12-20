@@ -329,7 +329,7 @@ case: oc Hoc => [c|] Hc; last first.
 exists c; split; first by reflexivity.
 (* replace  W ``^ n (y | f c) with a closed formula because it is a BSC *)
 pose dH_y c := dH y c.
-pose g : nat -> R := fun d : nat => ((1 - p%:num) ^+ (n - d) * (p%:num) ^+ d)%R.
+pose g : nat -> R := fun d : nat => ((1 - p%:num) ^+ (n - d) * p%:num ^+ d)%R.
 have -> : W ``(y | c) = g (dH_y c).
   move: (DMC_BSC_prop p enc (discard c) y).
   rewrite [X in BSC.c X _](_ : _ = card_F2) //.

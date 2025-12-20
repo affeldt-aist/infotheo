@@ -278,8 +278,8 @@ Qed.
 
 Lemma bsc_prob_prop (p : {prob R}) n : p%:num < 1 / 2 ->
   forall n1 n2 : nat, (n1 <= n2 <= n)%N ->
-  (1 - p%:num) ^+ (n - n2) * (p%:num) ^+ n2 <=
-  (1 - p%:num) ^+ (n - n1) * (p%:num) ^+ n1.
+  (1 - p%:num) ^+ (n - n2) * p%:num ^+ n2 <=
+  (1 - p%:num) ^+ (n - n1) * p%:num ^+ n1.
 Proof.
 move=> p05 d1 d2 d1d2.
 have [->|] := eqVneq p 0%:i01.

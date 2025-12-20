@@ -615,7 +615,7 @@ Definition binconv p (a b : C) :=
   <&>_(fdistI2 p) (fun x => if x == ord0 then a else b).
 Notation "a <& p &> b" := (binconv p a b).
 
-Lemma binconvC p a b : a <& p &> b = b <& ((p%:num).~)%:i01%R &> a.
+Lemma binconvC p a b : a <& p &> b = b <& p%:num.~%:i01%R &> a.
 Proof.
 rewrite /binconv.
 set g1 := fun x => _.

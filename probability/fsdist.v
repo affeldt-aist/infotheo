@@ -869,7 +869,7 @@ Proof.
 move=> p x y.
 have [->|pn0] := eqVneq p 0%:i01; first by rewrite !conv0.
 have [->|pn1] := eqVneq p 1%:i01; first by rewrite !conv1.
-have opn0 : (p%:num).~ != 0 by apply/onem_neq0.
+have opn0 : p%:num.~ != 0 by apply/onem_neq0.
 apply: (S1_inj R); rewrite affine_conv/= !S1_Convn_finType ssum_seq_finsuppE.
 under [LHS]eq_bigr do rewrite fsdist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.
