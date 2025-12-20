@@ -2,6 +2,7 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum interval ring lra.
+From mathcomp Require Import interval_inference.
 From mathcomp Require Import unstable mathcomp_extra classical_sets functions.
 From mathcomp Require Import set_interval reals topology normedtype.
 From mathcomp Require Import sequences derive exp realfun.
@@ -224,8 +225,7 @@ rewrite (@le_trans _ _ (4 / ln 2 - 8 * c)) //.
   rewrite subr_ge0 -ler_pdivlMl//.
   by rewrite [leRHS](_ : _ = (2 * ln 2)^-1); last by lra.
 rewrite lerB// invfM ler_pM// ?invr_ge0 ?ln2_ge0//.
-rewrite -[leLHS]invrK lef_pV2 ?x_x2_max// posrE ?x_x2_pos//.
-lra.
+by rewrite -[leLHS]invrK lef_pV2 ?x_x2_max// posrE ?x_x2_pos//.
 Qed.
 
 Lemma pinsker_fun'_le0 (p c q : R) :
@@ -238,8 +238,7 @@ rewrite (@le_trans _ _ (4 / ln 2 - 8 * c)) //.
   rewrite subr_ge0 -ler_pdivlMl//.
   by rewrite [leRHS](_ : _ = (2 * ln 2)^-1); last by lra.
 rewrite lerB// invfM ler_pM// ?invr_ge0 ?ln2_ge0//.
-rewrite -[leLHS]invrK lef_pV2 ?x_x2_max// posrE ?x_x2_pos//.
-lra.
+by rewrite -[leLHS]invrK lef_pV2 ?x_x2_max// posrE ?x_x2_pos//.
 Qed.
 
 Lemma pinsker_fun_decreasing_on_0_to_p (p c : R) (Hc : c <= (2 * ln 2)^-1)
@@ -287,37 +286,38 @@ Hypothesis card_A : #|A| = 2%nat.
 Hypothesis P_dom_by_Q :
   fdist_binary card_A p (Set2.a card_A) `<< fdist_binary card_A q (Set2.a card_A).
 
-Lemma pinsker_fun_pos (c : R) : 0 <= c <= (2 * ln 2)^-1 -> 0 <= pinsker_fun p c q.
+Lemma pinsker_fun_pos (c : R) :
+  0 <= c <= (2 * ln 2)^-1 -> 0 <= pinsker_fun p%:num c q%:num.
 Proof.
 move=> Hc.
 set a := Set2.a card_A. set b := Set2.b card_A.
-have [p0|p0] := eqVneq p 0%:pr.
+have [p0|p0] := eqVneq p 0%:i01.
   subst p.
   rewrite /pinsker_fun.
   rewrite !(mul0r,mulr0,addr0,add0r,sub0r,subr0).
-  have [q1|q1] := eqVneq q 1%:pr.
+  have [q1|q1] := eqVneq q 1%:i01.
     subst q.
     exfalso.
     move/dominatesP : P_dom_by_Q => /(_ a).
     by rewrite !fdist_binaryE !/onem subrr eqxx subr0; lra.
   apply: le_trans.
-    apply: (@pinsker_fun_p0_pos _ _ q Hc).
+    apply: (@pinsker_fun_p0_pos _ _ q%:num Hc).
     rewrite in_itv /=; apply/andP; split=> //.
     by rewrite -prob_lt1.
   rewrite pinsker_fun_p0 /pinsker_function_spec -?prob_lt1//.
   rewrite le_eqVlt; apply/orP; left; apply/eqP.
   by rewrite mul1r div1r logV; [field | rewrite subr_gt0 -prob_lt1].
-have [p1|p1] := eqVneq p 1%:pr.
+have [p1|p1] := eqVneq p 1%:i01.
   subst p.
   rewrite /pinsker_fun subrr mul0r addr0.
-  have [q0|q0] := eqVneq q 0%:pr.
+  have [q0|q0] := eqVneq q 0%:i01.
     subst q.
     exfalso.
     move/dominatesP : P_dom_by_Q => /(_ b).
     rewrite !fdist_binaryE /onem subrr eq_sym (negbTE (Set2.a_neq_b card_A)) /=.
     by move=> /(_ erefl)/eqP; rewrite oner_eq0.
   apply: le_trans.
-    have : 0 <= 1 - Prob.p q < 1.
+    have : 0 <= 1 - q%:num < 1.
       apply/andP; split; first by rewrite subr_ge0.
       by rewrite ltrBlDr -{1}(addr0 1) ltrD2l; apply/prob_gt0.
     exact: pinsker_fun_p0_pos Hc.
@@ -325,21 +325,21 @@ have [p1|p1] := eqVneq p 1%:pr.
     by rewrite -[ltRHS]subr0 ltrD2l ltrN2 -prob_gt0.
   rewrite le_eqVlt; apply/orP; left; apply/eqP.
   rewrite mul1r div1r logV; [|by apply/prob_gt0].
-  by rewrite (_ : 1 - (1 - Prob.p q) = q :> R) //=; by field.
-have [q0|q0] := eqVneq q 0%:pr.
+  by rewrite (_ : 1 - (1 - q%:num) = q%:num :> R) //=; by field.
+have [q0|q0] := eqVneq q 0%:i01.
   subst q.
   rewrite /pinsker_fun.
   exfalso.
   move/dominatesP : P_dom_by_Q => /(_ b).
   rewrite !fdist_binaryE eq_sym (negbTE (Set2.a_neq_b card_A)) => /(_ erefl) p0_.
   by move/eqP : p0; apply; apply/val_inj; rewrite /= p0_.
-have [q1|q1] := eqVneq q 1%:pr.
+have [q1|q1] := eqVneq q 1%:i01.
   subst q.
   exfalso.
   move/dominatesP : P_dom_by_Q => /(_ a).
   rewrite !fdist_binaryE /onem subrr eqxx=> /(_ erefl) /eqP /[!subr_eq0] /eqP p1_.
   by move/eqP : p1; apply; apply/val_inj; rewrite /= -p1_.
-rewrite -(pinsker_fun_p p c).
+rewrite -(pinsker_fun_p p%:num c).
 have/orP[qp|qp]:= le_total q p.
   apply: pinsker_fun_decreasing_on_0_to_p => //.
   - lra.
@@ -369,44 +369,45 @@ Let Q := fdist_binary card_A q (Set2.a card_A).
 
 Hypothesis P_dom_by_Q : P `<< Q.
 
-Lemma pinsker_fun_p_eq c : pinsker_fun p c q = D(P || Q) - c * d(P , Q) ^+ 2.
+Lemma pinsker_fun_p_eq c :
+  pinsker_fun p%:num c q%:num = D(P || Q) - c * d(P , Q) ^+ 2.
 Proof.
 pose a := Set2.a card_A. pose b := Set2.b card_A.
 set pi := P a.
 set pj := P b.
 set qi := Q a.
 set qj := Q b.
-have Hpi : pi = 1 - Prob.p p by rewrite /pi /P fdist_binaryxx.
-have Hqi : qi = 1 - Prob.p q by rewrite /qi /= fdist_binaryxx.
-have Hpj : pj = p.
+have Hpi : pi = 1 - p%:num by rewrite /pi /P fdist_binaryxx.
+have Hqi : qi = 1 - q%:num by rewrite /qi /= fdist_binaryxx.
+have Hpj : pj = p%:num.
   by rewrite /pj /= fdist_binaryE eq_sym (negbTE (Set2.a_neq_b card_A)).
-have Hqj : qj = q.
+have Hqj : qj = q%:num.
   by rewrite /qj /= fdist_binaryE eq_sym (negbTE (Set2.a_neq_b card_A)).
-transitivity (D(P || Q) - c * (`| (p : R) - Prob.p q | + `| (1 - Prob.p p) - (1 - Prob.p q) |) ^+ 2).
+transitivity (D(P || Q) - c * (`| p%:num - q%:num | + `| (1 - p%:num) - (1 - q%:num) |) ^+ 2).
   rewrite /pinsker_fun /div Set2sumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
   set tmp := (`| _ | + _) ^+ 2.
-  have -> : tmp = 4 * ((p : R) - Prob.p q) ^+ 2.
-    rewrite /tmp (_ : 1 - Prob.p p - (1 - Prob.p q) = (q : R) - Prob.p p); last by simpl; ring.
-    rewrite sqrrD (distrC (q : R) (p : R)) -{3}(expr1 `|(p : R) - Prob.p q|).
+  have -> : tmp = 4 * (p%:num - q%:num) ^+ 2.
+    rewrite /tmp (_ : 1 - p%:num - (1 - q%:num) = q%:num - p%:num); last by simpl; ring.
+    rewrite sqrrD (distrC q%:num p%:num) -{3}(expr1 `|p%:num - q%:num|).
     by rewrite -exprS real_normK ?num_real//; ring.
   rewrite [X in _ = _ + _ - X]mulrA.
   rewrite [in X in _ = _ + _ - X](mulrC c).
   congr (_ - _).
-  case/boolP : (p == 0%:pr) => [/eqP |] p0;
-    first by rewrite p0 !mul0r subr0 addr0 add0r !mul1r.
-  have [q0|q0] := eqVneq q 0%:pr.
+  have [p0|p0] := eqVneq p 0%:i01.
+    by rewrite p0 !mul0r subr0 addr0 add0r !mul1r.
+  have [q0|q0] := eqVneq q 0%:i01.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.b card_A)).
     rewrite -/pj -/qj Hqj q0 => /(_ erefl).
     rewrite Hpj => abs.
-    have : p == 0%:pr by exact/eqP/val_inj.
+    have : p == 0%:i01 by exact/eqP/val_inj.
     by rewrite (negbTE p0).
-  have [->|p1] := eqVneq p 1%:pr.
+  have [->|p1] := eqVneq p 1%:i01.
     rewrite subrr !mul0r logM //; last first.
       by rewrite invr_gt0; exact/prob_gt0.
     by rewrite !(add0r,mul1r,addr0,sub0r).
   rewrite logM //; [| exact/prob_gt0 | by rewrite invr_gt0; exact/prob_gt0].
   rewrite logV //; last exact/prob_gt0.
-  have [q1|q1] := eqVneq q 1%:pr.
+  have [q1|q1] := eqVneq q 1%:i01.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
     rewrite -/pi -/qi Hqi q1 subrr => /(_ erefl).
     by rewrite Hpi=> ->; rewrite mul0r addr0 add0r.
