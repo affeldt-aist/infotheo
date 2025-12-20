@@ -91,5 +91,25 @@ toy_examples/expected_value_variance.v
 toy_examples/expected_value_variance_ordn.v
 toy_examples/expected_value_variance_tuple.v
 toy_examples/conditional_entropy.v
+smc/smc_proba.v
+smc/smc_entropy.v
+smc/smc_interpreter.v
+smc/smc_tactics.v
+smc/scalar_product_program.v
+smc/scalar_product_proof.v
+homomorphic_encryption/homomorphic_encryption.v
+dumas2017dual/lib/extra_algebra.v
+dumas2017dual/lib/extra_proba.v
+dumas2017dual/lib/extra_entropy.v
+dumas2017dual/lib/rouche_capelli.v
+dumas2017dual/entropy_fiber/entropy_fibers.v
+dumas2017dual/entropy_fiber/entropy_linear_fibers.v
+dumas2017dual/zpq/fiber_zpq.v
+dumas2017dual/dsdp/dsdp_extra.v
+dumas2017dual/dsdp/dsdp_program.v
+dumas2017dual/dsdp/dsdp_algebra.v
+dumas2017dual/dsdp/dsdp_entropy_trace.v
+dumas2017dual/dsdp/dsdp_entropy.v
+dumas2017dual/dsdp/dsdp_security.v
 
 -R . infotheo
