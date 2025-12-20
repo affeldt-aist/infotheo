@@ -218,7 +218,6 @@ Section convex_space_lemmas.
 Context {R : realType}.
 Variables A : convType R.
 Implicit Types a b : A.
-Local Open Scope ring_scope.
 
 Lemma conv0 a b : a <| 0%:i01 |> b = b.
 Proof.
@@ -289,7 +288,6 @@ Section segment.
 Context {R : realType}.
 Variable A : convType R.
 Definition segment (x y : A) : set A := (fun p => conv p x y) @` [set: {prob R}].
-Local Open Scope ring_scope.
 
 Lemma segment_sym u v : (segment u v `<=` segment v u)%classic.
 Proof. by move=> x [p _ <-]; exists (p%:num).~%:i01; rewrite -?convC. Qed.
@@ -333,7 +331,6 @@ Delimit Scope scaled_scope with scaled.
 Section scaled.
 Context {R : realType}.
 Variable A : Type.
-Local Open Scope ring_scope.
 
 (* Note: we need the argument of Scaled to be an Rpos, because otherwise
    addpt cannot make a commutative monoid:
@@ -669,7 +666,6 @@ End real_cone_instance.
 Section convpt_convex_space.
 Context {R : realType}.
 Variable A : convType R.
-Local Open Scope ring_scope.
 
 Let convpt (p : {prob R}) (x y : scaled A) :=
   addpt (scalept p%:num x) (scalept p%:num.~ y).
@@ -761,7 +757,6 @@ Lemma weight_barycenter (pts : seq (@scaled R A)) :
 Proof. by rewrite (big_morph raw_weight weight_addpt weight0). Qed.
 
 Section adjunction.
-Local Open Scope ring_scope.
 
 Lemma affine_S1 : affine (@S1 R A).
 Proof.
@@ -789,7 +784,6 @@ Section convex_space_prop1.
 Context {R : realType}.
 Variables T : convType R.
 Implicit Types a b : T.
-Local Open Scope ring_scope.
 
 Lemma convA0 (p q r s : {prob R}) a b c :
   p%:num = r%:num * s%:num :> R -> s%:num.~ = p%:num.~ * q%:num.~ ->
@@ -1188,8 +1182,6 @@ Qed.
 Lemma ConvnDl n (p : {prob R}) (x : T) (g : 'I_n -> T) (d : {fdist 'I_n}) :
   <|>_d g <|p|> x = <|>_d (fun i => g i <|p|> x).
 Proof. by rewrite convC ConvnDr; apply: eq_Convn =>// i; rewrite -convC. Qed.
-
-Local Open Scope ring_scope.
 
 Lemma ConvnDlr n m (p : {prob R}) (f : 'I_n -> T) (d : {fdist 'I_n})
                               (g : 'I_m -> T) (e : {fdist 'I_m}) :
@@ -1739,7 +1731,6 @@ Section lmodR_convex_space.
 Context {R : realType}.
 Variable E : lmodType R.
 Implicit Type p q : {prob R}.
-Local Open Scope ring_scope.
 
 Let avg p (a b : E) := (p%:num) *: a + (p%:num).~ *: b.
 
@@ -1779,7 +1770,6 @@ Section lmodR_convex_space_prop.
 Context {R : realType}.
 Variable E : lmodType R.
 Implicit Type p q : {prob R}.
-Local Open Scope ring_scope.
 Import LmoduleConvex.
 
 Lemma avgr_addD p (a b c d : E) :
@@ -1864,7 +1854,6 @@ End lmodR_convex_space_prop.
 Section freeN_combination.
 Import ssrnum vector.
 Variable (R : fieldType) (E : vectType R).
-Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
 
 Lemma freeN_combination n (s : n.-tuple E) : ~~ free s ->
@@ -1908,7 +1897,6 @@ Section caratheodory.
 Import ssrnum vector.
 Context {R : realType}.
 Variable E : vectType R.
-Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
 Import LmoduleConvex.
 
@@ -2023,7 +2011,6 @@ End caratheodory.
 
 Module LinearAffine.
 Section linear_affine.
-Open Scope ring_scope.
 Context {R : realType}.
 Variables (E F : lmodType R) (f : {linear E -> F}).
 Import LmoduleConvex.
@@ -2220,8 +2207,6 @@ Proof.
 by apply/fdist_ext => a0; rewrite fdist_convE mulrBl mul1r addrCA addrN addr0.
 Qed.
 
-Open Scope ring_scope.
-
 Let convA p q a b c :
   (a <| p |> (b <| q |> c) = (a <| [r_of p, q] |> b) <| [s_of p, q] |> c)%fdist.
 Proof.
@@ -2296,7 +2281,6 @@ End scaled_convex_lemmas_depending_on_T_convType.
 
 Module Convn_finType.
 Section def.
-Local Open Scope ring_scope.
 Context {R : realType}.
 
 Variables (A : convType R) (T : finType) (d' : R.-fdist T) (f : T -> A).
@@ -2864,7 +2848,6 @@ Qed.
 
 Section linear_function_image0.
 Local Open Scope classical_set_scope.
-Local Open Scope ring_scope.
 Variables (R : pzRingType) (T U : lmodType R).
 
 (* TODO: move to mathcomp *)
@@ -2882,7 +2865,6 @@ End linear_function_image0.
 
 Section linear_function_image.
 Local Open Scope classical_set_scope.
-Local Open Scope ring_scope.
 Context {R : realType}.
 Variables (T U : lmodType R).
 Import LmoduleConvex.
@@ -3087,7 +3069,6 @@ Import numFieldTopology.Exports.
 
 Section twice_derivable_convex.
 Context {R : realType}.
-Local Open Scope ring_scope.
 Local Open Scope classical_set_scope.
 
 Variables (f : R^o -> R^o) (a b : R^o).
@@ -3252,7 +3233,6 @@ Qed.
 End twice_derivable_convex.
 
 Section magnified_weight.
-Local Open Scope ring_scope.
 Variables (R : fieldType) (p q r : R).
 
 Definition magnified_weight := (r - q) / (r - p).
@@ -3267,7 +3247,6 @@ End magnified_weight.
 
 Module probConvex.
 Section prob_convType.
-Local Open Scope ring_scope.
 Variables (R : realType).
 
 Let avg_proof (p x y : {prob R}) :
@@ -3309,7 +3288,6 @@ End probConvex.
 HB.export probConvex.
 
 Section magnified_prob.
-Local Open Scope ring_scope.
 Variables (R : realType) (p q r : {prob R}).
 Variables (pr : p%:num < r%:num) (pqr : p%:num <= q%:num <= r%:num).
 
@@ -3358,7 +3336,6 @@ Proof. by rewrite -prob_magnify_self. Qed.
 End magnified_prob.
 
 Section magnify_conv.
-Local Open Scope ring_scope.
 Local Open Scope convex_scope.
 Variables (R : realType) (T : convType R) (p q r : {prob R}) (x y : T).
 Variables (pr : p%:num < r%:num) (pqr : p%:num <= q%:num <= r%:num).
@@ -3386,7 +3363,6 @@ End magnify_conv.
 
 (* mc_convRE == a <|p|> b (mathcomp_analysis) = a <|p|> b (infotheo) :> R *)
 Section mc_conv.
-Local Open Scope ring_scope.
 Import (canonicals) analysis.convex.
 Variable R : realType.
 
