@@ -185,6 +185,8 @@ Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 #[export] Hint Extern 0 (0 <= onem _) =>
   exact/onem_ge0 : core.
 
+(* TODO: rename this to convn_rec and related lemmas accordinggly *)
+(* TODO: move lemmas for Convn here and remove duplication of code *)
 Fixpoint Convn {R : realType} (A : Type) (f : {prob R} -> A -> A -> A) n : {fdist 'I_n} -> ('I_n -> A) -> A :=
   match n return forall (e : {fdist 'I_n}) (g : 'I_n -> A), A with
   | O => fun e g => False_rect A (fdistI0_False e)
@@ -224,7 +226,7 @@ Proof.
 by rewrite convC /= (_ : _ %:i01 = 1%:i01) ?conv1 //; apply/val_inj/onem0.
 Qed.
 
-Let Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> A) :
+Lemma convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> A) :
   convn (fdist1 j) g = g j.
 Proof.
 elim: n j g => [[] [] //|n IH j g /=].
@@ -254,7 +256,7 @@ rewrite -/(Convn _ _) -convnE IH /fdist_del_idx ltn0; congr g.
 by apply: val_inj; rewrite /= /bump leq0n add1n prednK // lt0n.
 Qed.
 
-Let ConvnIE n (g : 'I_n.+1 -> A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1) :
+Lemma convnIE n (g : 'I_n.+1 -> A) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1) :
   convn d g = (g ord0) <| probfdist d ord0 |>
                   (convn (fdist_del i1) (fun x => g (fdist_del_idx ord0 x))).
 Proof.
@@ -263,22 +265,22 @@ exfalso; by rewrite (eqP H) eqxx in i1.
 by rewrite (eq_irrelevance H i1).
 Qed.
 
-Let ConvnI1E (g : 'I_1 -> A) (e : {fdist 'I_1}) : convn e g = g ord0.
+Lemma convnI1E (g : 'I_1 -> A) (e : {fdist 'I_1}) : convn e g = g ord0.
 Proof.
 rewrite convnE /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H.
 exfalso; move/eqP: H; apply.
 by apply/eqP; rewrite fdist1E1 (fdist1I1 e).
 Qed.
 
-Let ConvnI2E (g : 'I_2 -> A) (d : {fdist 'I_2}) :
+Lemma convnI2E (g : 'I_2 -> A) (d : {fdist 'I_2}) :
   convn d g = (g ord0) <| probfdist d ord0 |> (g (lift ord0 ord0)).
 Proof.
 have [/eqP|i1] := eqVneq (d ord0) 1.
-  rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
+  rewrite fdist1E1 => /eqP ->; rewrite convn_fdist1.
   rewrite (_ : probfdist _ _ = 1%:i01) ?conv1 //.
   by apply: val_inj; rewrite /= fdist1xx.
-rewrite ConvnIE; congr (conv _ _ _).
-by rewrite ConvnI1E /fdist_del_idx ltnn.
+rewrite convnIE; congr (conv _ _ _).
+by rewrite convnI1E /fdist_del_idx ltnn.
 Qed.
 
 End convex_space_lemmas.
@@ -971,15 +973,11 @@ Qed.
 
 Lemma Convn_fdist1 (n : nat) (j : 'I_n) (g : 'I_n -> T) :
   <|>_(fdist1 j) g = g j.
-Proof. by apply: Convn_proj; rewrite fdist1xx. Qed.
+Proof. by rewrite -convnE convn_fdist1. Qed.
 
 Lemma ConvnI1E
   (g : 'I_1 -> T) (e : {fdist 'I_1}) : <|>_ e g = g ord0.
-Proof.
-rewrite /=; case: Bool.bool_dec => // /Bool.eq_true_not_negb H.
-exfalso; move/eqP: H; apply.
-by apply/eqP; rewrite fdist1E1 (fdist1I1 e).
-Qed.
+Proof. by rewrite -convnE convnI1E. Qed.
 
 Lemma ConvnI1_eq_rect n (g : 'I_n -> T) (d : {fdist 'I_n}) (Hn1 : n = 1) :
   <|>_d g = eq_rect n (fun n => 'I_n -> T) g 1 Hn1 ord0.
@@ -1006,33 +1004,12 @@ Global Arguments ConvnI1_eq [n g d n1].
 Lemma ConvnIE n (g : 'I_n.+1 -> T) (d : {fdist 'I_n.+1}) (i1 : d ord0 != 1) :
   <|>_d g = g ord0 <| probfdist d ord0 |>
             <|>_(fdist_del i1) (fun x => g (fdist_del_idx ord0 x)).
-Proof.
-rewrite /=; case: Bool.bool_dec => /= [|/Bool.eq_true_not_negb] H.
-exfalso; by rewrite (eqP H) eqxx in i1.
-by rewrite (eq_irrelevance H i1).
-Qed.
-
-Lemma ConvnI2E' (g : 'I_2 -> T) (d : {fdist 'I_2}) :
-  <|>_d g = g ord0 <| probfdist d ord0 |> g (lift ord0 ord0).
-Proof.
-have [/eqP|i1] := eqVneq (d ord0) 1.
-  rewrite fdist1E1 => /eqP ->; rewrite Convn_fdist1.
-  rewrite (_ : probfdist _ _ = 1%:i01) ?conv1 //.
-  by apply: val_inj; rewrite /= fdist1xx.
-rewrite ConvnIE; congr (_ <| _ |> _).
-by rewrite ConvnI1E /fdist_del_idx ltnn.
-Qed.
+Proof. by rewrite -!convnE convnIE. Qed.
 
 Lemma ConvnI2E (g : 'I_2 -> T) (d : {fdist 'I_2}) :
-  convn d g = (g ord0) <| probfdist d ord0 |> (g (lift ord0 ord0)).
-Proof.
-have [/eqP|i1] := eqVneq (d ord0) 1.
-  rewrite fdist1E1 convnE => /eqP ->; rewrite Convn_fdist1.
-  rewrite (_ : probfdist _ _ = 1%:i01) ?conv1 //.
-  by apply: val_inj; rewrite /= fdist1xx.
-rewrite convnE ConvnIE; congr (conv _ _ _).
-by rewrite ConvnI1E /fdist_del_idx ltnn.
-Qed.
+  <|>_d g = g ord0 <| probfdist d ord0 |> g (lift ord0 ord0).
+Proof. by rewrite -convnE convnI2E. Qed.
+
 End convex_space_prop2.
 
 HB.factory Record isConvexSpace {R : realType} T of Choice T := {

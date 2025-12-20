@@ -707,7 +707,7 @@ rewrite -[a]/(g ord0).
 rewrite -[b]/(g (lift ord0 ord0)).
 pose d := fdistI2 p.
 rewrite [in LHS](_ : p = probfdist d ord0).
-  by rewrite -!ConvnI2E convnE.
+  by rewrite -!convnI2E convnE.
 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
 Qed.
 
@@ -761,7 +761,7 @@ set d := fdistI2 p.
 rewrite -[x]/(g ord0).
 rewrite -[y]/(g (lift ord0 ord0)).
 have -> : p = probfdist d ord0 by apply: val_inj=> /=; rewrite fdistI2E eqxx.
-by rewrite -ConvnI2E convnE equiv_convn.
+by rewrite -convnI2E convnE equiv_convn.
 Qed.
 
 End proof.

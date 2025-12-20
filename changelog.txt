@@ -6,6 +6,10 @@ from 0.9.6 to 0.9.7
 - in realType_ext.v
   + {prob R} to be a mere alias of {i01 R}
 
+* renamed
+- in convex.v
+  + prefix "convn" for lemmas about convn, and "Convn" for Convn
+
 * added
 - in proba.v
   + following instances for RV:
