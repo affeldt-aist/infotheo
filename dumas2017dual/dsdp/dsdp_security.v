@@ -193,12 +193,6 @@ Hypothesis U3_lt_minpq : forall t, (val (U3 t) < minn p q)%N.
    Instantiates the general DSDP entropy analysis with security hypotheses.
    Shows Alice learns exactly log(m) bits about Bob/Charlie's joint input,
    not the full log(m^2) bits - proving bounded information leakage.
-   
-   Pre-proof search:
-     About dsdp_centropy_uniform_zpq.
-   Expected: prime p -> prime q -> constraint_holds -> uniform_over_solutions ->
-             forall t, (0 < U3 t)%N -> forall t, (U3 t < minn p q)%N ->
-             `H(VarRV | CondRV) = log (m%:R : R)
 *)
 Theorem dsdp_constraint_centropy_eqlogm :
   `H(VarRV | CondRV) = log (m%:R : R).
