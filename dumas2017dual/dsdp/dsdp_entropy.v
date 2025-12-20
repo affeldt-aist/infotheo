@@ -473,7 +473,7 @@ Notation "x \+ y" := (add_RV x y).
 Definition dotp2 (x y: (msg * msg)) := x.1 * y.1 + x.2 * y.2.
 
 Definition dotp2_solutions (s : msg) : {set (msg * msg) * (msg * msg)} :=
-  [set uv in setT `* setT | dotp2 uv.1 uv.2 == s].
+  [set uv in setX setT setT | dotp2 uv.1 uv.2 == s].
 
 Definition Dotp2_rv (X Y : {RV P -> (msg * msg)}) : {RV P -> msg} :=
   fun p => dotp2 (X p) (Y p).
