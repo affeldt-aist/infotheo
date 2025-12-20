@@ -12,12 +12,12 @@ From mathcomp Require Import ring lra.
 (* TODO: doc incomplete                                                       *)
 (*                                                                            *)
 (* ```                                                                        *)
-(*     +| r | := maxr 0 r                                                     *)
-(*    P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0      *)
+(*      +| r | := maxr 0 r                                                    *)
+(*     P `<< Q == P is dominated by Q, i.e., forall a, Q a = 0 -> P a = 0     *)
 (*    P `<<b Q == boolean version of P `<< Q                                  *)
 (* frac_part x := x - (Num.floor x)%:~R                                       *)
-(*       prob == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1      *)
-(*      oprob == type of "open unit interval", i.e., reals p s.t. 0 < p < 1   *)
+(*    {prob R} == type of "probabilities", i.e., reals p s.t. 0 <= p <= 1     *)
+(*   {oprob R} == type of "open unit interval", i.e., reals p s.t. 0 < p < 1  *)
 (* ```                                                                        *)
 (*                                                                            *)
 (******************************************************************************)
@@ -227,7 +227,7 @@ Notation "q %:pr" := (q%:num)%R. *)
 Notation "q %:pr" := (@Prob.mk _ q (@Prob.O1 _ _)).
 
 #[deprecated(since="infotheo 0.9.7", note="use {i01 _} instead")]
-Notation "'prob' R" := ({i01 R}) (at level 1).
+Notation "'prob' R" := {i01 R} (at level 1).
 
 (*#[deprecated(since="infotheo 0.9.7", note="use {i01 _} instead")]*)
 Notation "{ 'prob' R }" := {i01 R}.

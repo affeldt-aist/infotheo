@@ -2,6 +2,10 @@
 from 0.9.6 to 0.9.7
 -------------------
 
+* changed
+- in realType_ext.v
+  + {prob R} to be a mere alias of {i01 R}
+
 * added
 - in proba.v
   + following instances for RV:
