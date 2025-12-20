@@ -70,6 +70,7 @@ Unset Printing Implicit Defensive.
 
 Import GRing.Theory Num.Theory.
 
+Local Open Scope ring_scope.
 Local Open Scope reals_ext_scope.
 Local Open Scope fdist_scope.
 Local Open Scope convex_scope.
@@ -224,12 +225,12 @@ have trivIK i j x : x \in fdist_supp (e i) -> x \in fdist_supp (e j) -> i = j.
   have [//| + xi xj] := eqVneq i j.
   by move/e0 => /setP/(_ x); rewrite inE xi xj inE.
 have neqj j a k :
-    a \in fdist_supp (e (h j)) -> k != h j -> (d k * e k a = 0)%R.
+    a \in fdist_supp (e (h j)) -> k != h j -> d k * e k a = 0.
   move=> aj kj.
   have [ak|] := boolP (a \in fdist_supp (e k)).
     by rewrite (trivIK _ _ _ aj ak) eqxx in kj.
   by rewrite inE negbK => /eqP ->; rewrite mulr0.
-have maph' i : fdistmap h' d i = (\sum_j d (h i) * e (h i) j)%R.
+have maph' i : fdistmap h' d i = \sum_j d (h i) * e (h i) j.
   rewrite -big_distrr fdistE /= FDist.f1 /= mulr1.
   rewrite (bigD1 (h i)) /=; last by rewrite /h /h' !inE enum_valK_in eqxx.
   rewrite big1 /= ?addr0 // => j /andP[] /eqP <-.
@@ -241,10 +242,10 @@ have Hmap i :
     fdistmap h' d i.
   rewrite fdistE big_mkcond /=.
   under eq_bigr do rewrite fdistE.
-  rewrite (eq_bigr (fun j => d (h i) * e (h i) j)%R).
+  rewrite (eq_bigr (fun j => d (h i) * e (h i) j)).
     by rewrite maph'.
   move=> /= a _; rewrite !inE; case: (f a) => j /= /orP[/forallP /= |] Ha.
-    have dea0 k : (d k * e k a = 0)%R.
+    have dea0 k : d k * e k a = 0.
       have [Hk|] := boolP (k \in fdist_supp d).
         have := Ha (h' k).
         by rewrite inE negbK /h/h' enum_rankK_in // => /eqP ->; rewrite mulr0.
@@ -255,7 +256,7 @@ have Hmap i :
   by rewrite (neqj j) //; apply: contra ji => /eqP/enum_val_inj ->.
 congr (<&>_ _ _); first by apply: fdist_ext => /= i; rewrite Hmap.
 apply: funext => i /=.
-have HF : fdistmap h' d i != 0%R.
+have HF : fdistmap h' d i != 0.
   rewrite fdistE /=.
   apply/eqP => /psumr_eq0P H.
   have : h i \in fdist_supp d by apply: enum_valP.
@@ -386,7 +387,7 @@ have [->|Hj] := eqVneq j p.2; last first.
 rewrite (big_pred1 p.1) /=; last first.
   move=> i; rewrite !inE -(enum_valK k) (can_eq enum_rankK).
   by rewrite (surjective_pairing (enum_val k)) xpair_eqE eqxx andbT.
-have [Hp|Hp] := eqVneq (\sum_(i < n) d i * e i p.2)%R 0%R.
+have [Hp|Hp] := eqVneq (\sum_(i < n) d i * e i p.2) 0.
   rewrite Hp mul0r.
   by move/psumr_eq0P : Hp => ->//= i _; rewrite mulr_ge0.
 rewrite [RHS]mulrC !fdistE jfdist_condE !fdistE /=; last first.
@@ -615,18 +616,18 @@ Definition binconv p (a b : C) :=
   <&>_(fdistI2 p) (fun x => if x == ord0 then a else b).
 Notation "a <& p &> b" := (binconv p a b).
 
-Lemma binconvC p a b : a <& p &> b = b <& p%:num.~%:i01%R &> a.
+Lemma binconvC p a b : a <& p &> b = b <& p%:num.~%:i01 &> a.
 Proof.
 rewrite /binconv.
 set g1 := fun x => _.
 set g2 := fun x => _.
-have -> : g1 = g2 \o tperm ord0 (Ordinal (erefl (1 < 2))).
+have -> : g1 = g2 \o tperm ord0 (Ordinal (erefl (1 < 2)%N)).
   rewrite /g1 /g2 /=.
   apply: funext => i /=.
   by have /orP[|] := ord2 i => /eqP -> /=; rewrite (tpermL,tpermR).
 rewrite axmap.
 congr (<&>_ _ _); apply: fdist_ext => i.
-rewrite fdistmapE (bigD1 (tperm ord0 (Ordinal (erefl (1 < 2))) i)) /=; last first.
+rewrite fdistmapE (bigD1 (tperm ord0 (Ordinal (erefl (1 < 2)%N)) i)) /=; last first.
   by rewrite !inE tpermK.
 rewrite big1 ?addr0.
   rewrite !fdistI2E onemK.
@@ -643,7 +644,7 @@ Lemma binconvA p q a b c :
   a <& p &> (b <& q &> c) = (a <& [r_of p, q] &> b) <& [s_of p, q] &> c.
 Proof.
 rewrite /binconv.
-set g := fun i : 'I_3 => if i <= 0 then a else if i <= 1 then b else c.
+set g := fun i : 'I_3 => if (i <= 0)%N then a else if (i <= 1)%N then b else c.
 rewrite [X in <&>_(fdistI2 q) X](_ : _ = g \o lift ord0); last first.
   by apply: funext => i; case/orP: (ord2 i) => /eqP ->.
 rewrite [X in <&>_(fdistI2 [r_of p, q]) X](_ : _ = g \o widen_ord (leqnSn 2)); last first.
@@ -667,7 +668,7 @@ case: j => -[|[|[]]] //= ?; rewrite ?(mulr1,mulr0,add0r).
   by rewrite !fdistI2E/= mulr0 add0r s_of_pqE onemK.
 Qed.
 
-Lemma binconv1 a b : binconv 1%:i01%R a b = a.
+Lemma binconv1 a b : binconv 1%:i01 a b = a.
 Proof.
 apply: axidem => /= i; rewrite inE fdistI2E; case: ifP => //=.
 by rewrite /onem subrr eqxx.
@@ -746,7 +747,7 @@ have [->|] := eqVneq i ord0; first by rewrite big1 // mulr0 mulr1 addr0.
 case: (unliftP ord0 i) => //= [j|] -> // Hj.
 rewrite (big_pred1 j) //=.
 rewrite fdist_delE fdistD1E /= /onem.
-rewrite mulr0 add0r mulrA (mulrC (1 - d ord0)%R) mulfK //.
+rewrite mulr0 add0r mulrA (mulrC (1 - d ord0)) mulfK //.
 apply/eqP => /(congr1 (+%R (d ord0))).
 rewrite addrCA addrN !addr0 => d01.
 by move: b {d'}; rewrite -d01 eqxx.
@@ -800,7 +801,6 @@ Counterexamples to show that some combinations are strictly weaker:
 
 Module counterexample_bary_const_noproj.
 Section counterexample.
-Local Open Scope ring_scope.
 Variable (R : realType).
 
 (* first projection, ignoring d *)
@@ -839,7 +839,6 @@ End counterexample_bary_const_noproj.
 
 Module counterexample_proj_part_noconst_noidem.
 Section counterexample.
-Local Open Scope ring_scope.
 Variables (R : realType).
 
 (* flat sum, equalizing all probabilities to 1 *)
@@ -862,7 +861,7 @@ Proof.
 move=> n m K d g.
 rewrite /convn/= /weight1_sum/=.
 rewrite (bigID (fun i => fdistmap K d i == 0))/=.
-rewrite [X in _ = X + _]big1 ?add0r/=; last by move=> ? ->.
+rewrite [X in _ = (X + _)%N]big1 ?add0r/=; last by move=> ? ->.
 under [RHS]eq_bigr=> i /negPf -> do [].
 rewrite exchange_big/=; apply: eq_bigr=> i _.
 rewrite big_mkcond (bigD1 (K i))//=.
@@ -905,7 +904,6 @@ End counterexample_proj_part_noconst_noidem.
 
 Module counterexample_part_const_noproj.
 Section counterexample.
-Local Open Scope ring_scope.
 Variables (R : realType).
 
 (* bad bigmin that does not respect d *)
@@ -945,7 +943,6 @@ End counterexample_part_const_noproj.
 (* compare to the previous counterexample *)
 Module example_proj_part_const.
 Section example.
-Local Open Scope ring_scope.
 Variables (R : realType).
 
 (* (good) bigmin in bool *)
