@@ -14,6 +14,9 @@ All theorems are closed under the global context.
 
 ### Theorems (in benaloh_homo.v)
 
+See also `benaloh_he_instance.v` for connection to the idealized model in
+`homomorphic_encryption/homomorphic_encryption.v`.
+
 1. **Additive Homomorphism:**
    ```
    E(m₁) · E(m₂) = E((m₁ + m₂) mod r)
