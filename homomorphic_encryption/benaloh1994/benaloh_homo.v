@@ -13,7 +13,7 @@
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp.
-Require Import benaloh_enc.
+From infotheo Require Import homomorphic_encryption.benaloh1994.benaloh_enc.
 
 Import GRing.Theory.
 Import Num.Theory.

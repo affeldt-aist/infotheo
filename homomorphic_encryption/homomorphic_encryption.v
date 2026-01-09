@@ -3,32 +3,18 @@
 (* Idealized Homomorphic Encryption Model                                     *)
 (*                                                                            *)
 (* This file defines an IDEALIZED model of homomorphic encryption for use in  *)
-(* information-theoretic and entropy-based proofs. It is NOT a cryptographic  *)
-(* implementation.                                                            *)
+(* information-theoretic and entropy-based proofs.                            *)
 (*                                                                            *)
-(* == Ideal vs Concrete Implementation ==                                     *)
+(* == Related Files ==                                                        *)
 (*                                                                            *)
-(* This model:                                                                *)
-(*   - enc := (party * msg) -- ciphertext is just (party label, plaintext)    *)
-(*   - E i m := (i, m) -- "encryption" stores the plaintext directly          *)
-(*   - Emul/Epow operate directly on plaintexts                               *)
-(*   - No randomness in encryption                                            *)
-(*   - Axioms: E_enc_unif (uniform distribution), E_enc_inde (independence)   *)
+(*   he_sig.v - HE_SIG module signature (shared interface)                    *)
+(*   benaloh1994/benaloh_he_instance.v - Benaloh_HE functor                   *)
+(*   paillier1999/paillier_he_instance.v - Paillier_HE functor                *)
 (*                                                                            *)
-(* This idealization is useful for:                                           *)
-(*   - Proving information-theoretic properties (entropy, independence)       *)
-(*   - Analyzing protocols at an abstract level                               *)
-(*   - Conditional entropy removal lemmas (E_enc_ce_removal)                  *)
+(* == This File ==                                                            *)
 (*                                                                            *)
-(* For a concrete cryptographic implementation with proved homomorphic        *)
-(* properties, see: benaloh1994/benaloh_enc.v                                 *)
-(*   - benaloh_enc y m u := y ^+ m * u ^+ r (actual encryption)               *)
-(*   - Includes randomness u : 'Z_n                                           *)
-(*   - enc_mul_dist: E(m1)*E(m2) = E(m1+m2) (proved, not axiom)               *)
-(*   - enc_exp_dist: E(m1)^k = E(m1*+k) (proved, not axiom)                   *)
-(*                                                                            *)
-(* The connection between ideal and concrete is in:                           *)
-(*   benaloh1994/benaloh_he_instance.v                                        *)
+(*   Ideal_HE module - ciphertext = plaintext, for abstract proofs            *)
+(*   Party/Key/Enc types and axioms for entropy proofs                        *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -58,6 +44,53 @@ Local Definition R := Rdefinitions.R.
 
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
+
+(* HE_SIG module signature is defined in he_sig.v *)
+From infotheo Require Export homomorphic_encryption.he_sig.
+
+(* ========================================================================== *)
+(*                      Idealized HE Implementation                            *)
+(* ========================================================================== *)
+
+(* The ideal model: ciphertext IS the plaintext, no real encryption.
+   Useful for information-theoretic proofs where we care about 
+   algebraic structure, not cryptographic security. *)
+
+Module Ideal_HE <: HE_SIG.
+  
+  (* For the ideal model, we parameterize over any commutative ring *)
+  Definition msg : comRingType := [comRingType of int].
+  Definition ct : ringType := [ringType of int].
+  Definition rand : Type := unit.
+  
+  (* Identity encryption: ciphertext = plaintext *)
+  Definition enc (m : msg) (_ : rand) : ct := m.
+  
+  Lemma Emul_hom : forall (m1 m2 : msg) (r1 r2 : rand),
+    exists r : rand, enc m1 r1 * enc m2 r2 = enc (m1 + m2) r.
+  Proof.
+    move=> m1 m2 _ _.
+    exists tt.
+    rewrite /enc.
+    ring.
+  Qed.
+  
+  Lemma Epow_hom : forall (m : msg) (k : nat) (r : rand),
+    exists r' : rand, (enc m r) ^+ k = enc (m *+ k) r'.
+  Proof.
+    move=> m k _.
+    exists tt.
+    rewrite /enc.
+    elim: k => [|k IHk].
+    - by rewrite expr0 mulr0n.
+    - by rewrite exprS mulrSr IHk.
+  Qed.
+
+End Ideal_HE.
+
+(* ========================================================================== *)
+(*                          Party and Type Definitions                         *)
+(* ========================================================================== *)
 
 Section party_def.
 
