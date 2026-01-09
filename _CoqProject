@@ -101,6 +101,9 @@ homomorphic_encryption/homomorphic_encryption.v
 homomorphic_encryption/benaloh1994/benaloh_enc.v
 homomorphic_encryption/benaloh1994/benaloh_homo.v
 homomorphic_encryption/benaloh1994/benaloh_he_instance.v
+homomorphic_encryption/paillier1999/paillier_enc.v
+homomorphic_encryption/paillier1999/paillier_homo.v
+homomorphic_encryption/paillier1999/paillier_he_instance.v
 dumas2017dual/lib/extra_algebra.v
 dumas2017dual/lib/extra_proba.v
 dumas2017dual/lib/extra_entropy.v
