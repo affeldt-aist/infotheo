@@ -12,6 +12,32 @@ homomorphic properties from the cryptographic hypothesis `y_order_r : y ^+ r = 1
 
 All theorems are closed under the global context.
 
+## HE_SIG Interface
+
+`Benaloh_HE` is a module functor in `benaloh_he_instance.v` that takes 
+`Benaloh_Params` and produces an `HE_SIG` implementation from `he_sig.v`:
+
+```coq
+Module Type Benaloh_Params.
+  Parameter n r : nat.
+  Parameter n_gt1 : (1 < n)%N.
+  Parameter r_gt1 : (1 < r)%N.
+  Parameter y : 'Z_n.
+  Parameter y_order_r : y ^+ r = 1.
+End Benaloh_Params.
+
+Module Benaloh_HE (P : Benaloh_Params) <: HE_SIG.
+```
+
+| HE_SIG | Benaloh |
+|--------|---------|
+| `msg` | `'Z_r` |
+| `ct` | `'Z_n` |
+| `rand` | `'Z_n` |
+| `enc m u` | `y^m * u^r` |
+| `Emul_hom` | `enc_mul_dist` |
+| `Epow_hom` | `enc_exp_dist` |
+
 ### Theorems (in benaloh_homo.v)
 
 See also `benaloh_he_instance.v` for connection to the idealized model in

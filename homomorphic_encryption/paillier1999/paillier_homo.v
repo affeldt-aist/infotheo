@@ -13,7 +13,7 @@
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp.
-Require Import paillier_enc.
+From infotheo Require Import homomorphic_encryption.paillier1999.paillier_enc.
 
 Import GRing.Theory.
 Import Num.Theory.

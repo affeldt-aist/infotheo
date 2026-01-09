@@ -9,6 +9,32 @@
 This formalization defines the Paillier encryption scheme and its two core 
 homomorphic properties from the cryptographic hypothesis `g_order_n : g ^+ n = 1`.
 
+## HE_SIG Interface
+
+`Paillier_HE` is a module functor in `paillier_he_instance.v` that takes 
+`Paillier_Params` and produces an `HE_SIG` implementation from `he_sig.v`:
+
+```coq
+Module Type Paillier_Params.
+  Parameter n : nat.
+  Parameter n_gt1 : (1 < n)%N.
+  Definition n2 := (n * n)%N.
+  Parameter g : 'Z_n2.
+  Parameter g_order_n : g ^+ n = 1.
+End Paillier_Params.
+
+Module Paillier_HE (P : Paillier_Params) <: HE_SIG.
+```
+
+| HE_SIG | Paillier |
+|--------|----------|
+| `msg` | `'Z_n` |
+| `ct` | `'Z_{n²}` |
+| `rand` | `'Z_{n²}` |
+| `enc m r` | `g^m * r^n` |
+| `Emul_hom` | `enc_mul_dist` |
+| `Epow_hom` | `enc_exp_dist` |
+
 All theorems are closed under the global context.
 
 ### Theorems (in paillier_homo.v)

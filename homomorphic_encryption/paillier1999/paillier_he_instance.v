@@ -2,15 +2,19 @@
 (*                                                                            *)
 (* Paillier as Homomorphic Encryption Instance                                *)
 (*                                                                            *)
-(* This file connects the Paillier cryptosystem to the abstract homomorphic   *)
-(* encryption interface. It shows that Paillier's concrete operations satisfy *)
-(* the same algebraic properties as the idealized Emul/Epow operations.       *)
+(* This file shows that Paillier implements the HE_SIG interface from         *)
+(* homomorphic_encryption.v using Coq's module functor pattern.               *)
+(*                                                                            *)
+(* Structure:                                                                 *)
+(*   Paillier_Params - Module type for Paillier parameters                    *)
+(*   Paillier_HE     - Functor: Paillier_Params -> HE_SIG                     *)
 (*                                                                            *)
 (******************************************************************************)
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp.
-Require Import paillier_enc.
+From infotheo Require Import homomorphic_encryption.paillier1999.paillier_enc.
+From infotheo Require Import homomorphic_encryption.he_sig.
 
 Import GRing.Theory.
 
@@ -20,76 +24,88 @@ Import Prenex Implicits.
 
 Local Open Scope ring_scope.
 
-Section paillier_he_connection.
+(* ========================================================================== *)
+(*                       Paillier Parameter Module Type                        *)
+(* ========================================================================== *)
 
-Variable n : nat.
-Hypothesis n_gt1 : (1 < n)%N.
+Module Type Paillier_Params.
+  Parameter n : nat.
+  Parameter n_gt1 : (1 < n)%N.
+  Definition n2 := (n * n)%N.
+  Parameter g : 'Z_n2.
+  Parameter g_order_n : g ^+ n = 1.
+End Paillier_Params.
 
-Let n2 := (n * n)%N.
+(* ========================================================================== *)
+(*                     Paillier HE_SIG Functor                                 *)
+(* ========================================================================== *)
 
-Variable g : 'Z_n2.
-Hypothesis g_order_n : g ^+ n = 1.
+(* Given Paillier parameters, produce an HE_SIG implementation *)
+Module Paillier_HE (P : Paillier_Params) <: HE_SIG.
+  
+  Definition msg : comRingType := 'Z_P.n.
+  Definition ct : ringType := 'Z_P.n2.
+  Definition rand : Type := 'Z_P.n2.
+  
+  Definition enc (m : msg) (r : rand) : ct := paillier_enc P.g m r.
+  
+  Lemma Emul_hom : forall (m1 m2 : msg) (r1 r2 : rand),
+    exists r : rand, enc m1 r1 * enc m2 r2 = enc (m1 + m2) r.
+  Proof.
+    move=> m1 m2 r1 r2.
+    exists (r1 * r2).
+    exact: (enc_mul_dist P.n_gt1 P.g_order_n).
+  Qed.
+  
+  Lemma Epow_hom : forall (m : msg) (k : nat) (r : rand),
+    exists r' : rand, (enc m r) ^+ k = enc (m *+ k) r'.
+  Proof.
+    move=> m k r.
+    exists (r ^+ k).
+    exact: (enc_exp_dist P.n_gt1 P.g_order_n).
+  Qed.
 
-(* Paillier satisfies additive homomorphism: 
-   multiplying ciphertexts adds plaintexts.
-   
-   Corresponds to abstract: Emul (E i m1) (E i m2) = E i (m1 + m2)
-   
-   The existential captures that resulting randomness depends on inputs. *)
-Lemma paillier_Emul_correct : forall (m1 m2 : 'Z_n) (r1 r2 : 'Z_n2),
-  exists r : 'Z_n2,
-    paillier_enc g m1 r1 * paillier_enc g m2 r2 = paillier_enc g (m1 + m2) r.
-Proof.
-  move=> m1 m2 r1 r2.
-  exists (r1 * r2).
-  exact: (enc_mul_dist n_gt1 g_order_n).
-Qed.
+End Paillier_HE.
 
-(* Paillier satisfies scalar homomorphism:
-   exponentiating ciphertext multiplies plaintext by scalar.
-   
-   Paillier uses nat exponent: E(m1)^k = E(m1 *+ k) where k : nat
-   Abstract Epow uses ring exponent: Epow (E i m1) m2 = E i (m1 * m2) where m2 : msg
-   
-   These are compatible for 'Z_n: see scalar_eq_ring_mul below. *)
-Lemma paillier_Epow_correct : forall (m1 : 'Z_n) (k : nat) (r : 'Z_n2),
-  exists r' : 'Z_n2,
-    (paillier_enc g m1 r) ^+ k = paillier_enc g (m1 *+ k) r'.
-Proof.
-  move=> m1 k r.
-  exists (r ^+ k).
-  exact: (enc_exp_dist n_gt1 g_order_n).
-Qed.
+(* ========================================================================== *)
+(*                        Additional Paillier Properties                       *)
+(* ========================================================================== *)
 
-(* Connection between scalar multiplication and ring multiplication for 'Z_n.
-   For m2 : 'Z_n, we have: m1 * m2 = m1 *+ (m2 : nat) in 'Z_n *)
-Lemma scalar_eq_ring_mul : forall (m1 m2 : 'Z_n),
-  m1 * m2 = m1 *+ (m2 : nat).
-Proof.
-  move=> m1 m2.
-  rewrite mulrC -[m2 in m2 * _]natr_Zp mulr_natl.
-  reflexivity.
-Qed.
+(* These lemmas provide stronger results than HE_SIG (concrete randomness) *)
 
-(* Paillier with ring exponent (matching abstract Epow signature) *)
-Lemma paillier_Epow_ring : forall (m1 m2 : 'Z_n) (r : 'Z_n2),
-  exists r' : 'Z_n2,
-    (paillier_enc g m1 r) ^+ (m2 : nat) = paillier_enc g (m1 * m2) r'.
-Proof.
-  move=> m1 m2 r.
-  exists (r ^+ m2).
-  rewrite (enc_exp_dist n_gt1 g_order_n).
-  by rewrite scalar_eq_ring_mul.
-Qed.
+Module Paillier_Extra (P : Paillier_Params).
+  
+  Definition msg := 'Z_P.n.
+  Definition ct := 'Z_P.n2.
+  Definition rand := 'Z_P.n2.
+  Definition enc (m : msg) (r : rand) : ct := paillier_enc P.g m r.
+  
+  (* Concrete randomness formulas *)
+  Lemma Emul_randomness : forall (m1 m2 : msg) (r1 r2 : rand),
+    enc m1 r1 * enc m2 r2 = enc (m1 + m2) (r1 * r2).
+  Proof. exact: (enc_mul_dist P.n_gt1 P.g_order_n). Qed.
+  
+  Lemma Epow_randomness : forall (m : msg) (k : nat) (r : rand),
+    (enc m r) ^+ k = enc (m *+ k) (r ^+ k).
+  Proof. exact: (enc_exp_dist P.n_gt1 P.g_order_n). Qed.
+  
+  (* Ring multiplication version of scalar homomorphism *)
+  Lemma scalar_eq_ring_mul : forall (m1 m2 : msg),
+    m1 * m2 = m1 *+ (m2 : nat).
+  Proof.
+    move=> m1 m2.
+    rewrite mulrC -[m2 in m2 * _]natr_Zp mulr_natl.
+    reflexivity.
+  Qed.
+  
+  (* Epow with ring exponent *)
+  Lemma Epow_ring : forall (m1 m2 : msg) (r : rand),
+    exists r' : rand, (enc m1 r) ^+ (m2 : nat) = enc (m1 * m2) r'.
+  Proof.
+    move=> m1 m2 r.
+    exists (r ^+ m2).
+    rewrite (enc_exp_dist P.n_gt1 P.g_order_n).
+    by rewrite scalar_eq_ring_mul.
+  Qed.
 
-(* Concrete randomness computation for Emul *)
-Lemma paillier_Emul_randomness : forall (m1 m2 : 'Z_n) (r1 r2 : 'Z_n2),
-  paillier_enc g m1 r1 * paillier_enc g m2 r2 = paillier_enc g (m1 + m2) (r1 * r2).
-Proof. exact: (enc_mul_dist n_gt1 g_order_n). Qed.
-
-(* Concrete randomness computation for Epow *)
-Lemma paillier_Epow_randomness : forall (m1 : 'Z_n) (k : nat) (r : 'Z_n2),
-  (paillier_enc g m1 r) ^+ k = paillier_enc g (m1 *+ k) (r ^+ k).
-Proof. exact: (enc_exp_dist n_gt1 g_order_n). Qed.
-
-End paillier_he_connection.
+End Paillier_Extra.
