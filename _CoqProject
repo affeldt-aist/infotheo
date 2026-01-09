@@ -98,6 +98,8 @@ smc/smc_tactics.v
 smc/scalar_product_program.v
 smc/scalar_product_proof.v
 homomorphic_encryption/homomorphic_encryption.v
+homomorphic_encryption/benaloh1994/benaloh_enc.v
+homomorphic_encryption/benaloh1994/benaloh_homo.v
 dumas2017dual/lib/extra_algebra.v
 dumas2017dual/lib/extra_proba.v
 dumas2017dual/lib/extra_entropy.v
