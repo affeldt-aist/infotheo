@@ -13,8 +13,8 @@ dumas2017dual/
 │   └── rouche_capelli.v          # Linear system solution counting (Rouché-Capelli)
 │
 ├── entropy_fiber/                 # Layers 2-3: Abstract + linear fiber entropy
-│   ├── entropy_fibers.v          # Abstract fiber entropy framework
-│   └── entropy_linear_fibers.v   # Linear algebra specialization
+│   ├── entropy_fiber.v           # Abstract fiber entropy framework
+│   └── entropy_linear_fiber.v    # Linear algebra specialization
 │
 ├── zpq/                           # Layer 4: Z/pqZ specialization
 │   └── fiber_zpq.v               # Fiber cardinality over composite moduli
@@ -45,12 +45,12 @@ dumas2017dual/
                                    │
                     ┌──────────────▼──────────────────┐
                     │   Layer 3: Linear Fibers        │
-                    │   entropy_linear_fibers.v       │
+                    │   entropy_linear_fiber.v        │
                     └──────────────┬──────────────────┘
                                    │
                     ┌──────────────▼──────────────────┐
                     │   Layer 2: Abstract Fibers      │
-                    │   entropy_fibers.v              │
+                    │   entropy_fiber.v               │
                     └──────────────┬──────────────────┘
                                    │
         ┌──────────────────────────┼──────────────────────────┐
@@ -83,7 +83,7 @@ dumas2017dual/
 
 **Design Principle:** These lemmas could potentially be contributed upstream to infotheo or mathcomp-analysis.
 
-### Layer 2: Abstract Fiber Entropy (`entropy_fiber/entropy_fibers.v`)
+### Layer 2: Abstract Fiber Entropy (`entropy_fiber/entropy_fiber.v`)
 
 **Purpose:** Establish the connection between fiber (preimage) structure and entropy calculations in a type-generic way.
 
@@ -99,7 +99,7 @@ dumas2017dual/
 | `centropy_constant_fibers` | H(X\|Y) = log(k) when all fibers have size k |
 | `centropy_determined_contract` | H((X,Y)\|Cond) = H(X\|Cond) when Y is determined by X |
 
-### Layer 3: Linear Fiber Entropy (`entropy_fiber/entropy_linear_fibers.v`)
+### Layer 3: Linear Fiber Entropy (`entropy_fiber/entropy_linear_fiber.v`)
 
 **Purpose:** Specialize the abstract fiber framework to linear algebra structures over finite fields.
 
@@ -194,18 +194,49 @@ Each lemma should have a comment explaining:
 
 ## Homomorphic Encryption Layer
 
-In addition to the DSDP-specific layers, we also provide a foundational **homomorphic encryption** layer in `homomorphic_encryption/homomorphic_encryption.v`. This layer establishes the cryptographic primitives required for DSDP's secure computation:
+The `homomorphic_encryption/` directory provides a layered architecture for homomorphic encryption:
 
-**Key Components:**
+```
+  Section he_ideal (backward compatible, used by dsdp)
+  ≈ Party_Ideal_HE(Ideal_HE(msg))
+                      |
+                      v uses
+  Party_Ideal_HE (party labels + Ideal_HE)
+  - enc = (party * ct)
+  - E, D, Emul, Epow with party labels
+                      |
+                      v wraps
+  HE_SIG (abstract interface in he_sig.v)
+  - msg, ct, rand, enc
+  - Emul : ct -> ct -> ct
+  - Epow : ct -> msg -> ct
+        /              |               \
+       v               v                v
+  Ideal_HE         Benaloh_HE       Paillier_HE
+  ct = msg         ct = 'Z_n        ct = 'Z_{n²}
+  Emul = +         Emul = *         Emul = *
+  Epow = *         Epow = ^+        Epow = ^+
+```
+
+**Files:**
+
+| File | Description |
+|------|-------------|
+| `he_sig.v` | `HE_SIG` module signature: abstract HE interface |
+| `homomorphic_encryption.v` | `Ideal_HE`, `Party_Ideal_HE`, `Section he_ideal`, party/key types |
+| `benaloh1994/benaloh_he_instance.v` | `Benaloh_HE` functor implementing `HE_SIG` |
+| `paillier1999/paillier_he_instance.v` | `Paillier_HE` functor implementing `HE_SIG` |
+
+**Key Components (from `homomorphic_encryption.v`):**
 
 | Component | Description |
 |-----------|-------------|
 | `party` | Finite type for protocol participants (Alice, Bob, Charlie) |
 | `key` | Key types (Dec, Enc) for encryption/decryption |
-| `enc` | Encrypted message type `(party * msg)` |
-| `pkey` | Party key type `(party * key * msg)` |
-| `E`, `D` | Encryption and decryption operations |
-| `Emul`, `Epow` | Homomorphic operations (addition via `*h`, scalar multiplication via `^h`) |
+| `HE_SIG` | Abstract module signature with `enc`, `Emul`, `Epow` |
+| `Ideal_HE` | Implements `HE_SIG` with `ct = msg` (identity encryption) |
+| `Party_Ideal_HE` | Wraps `Ideal_HE` with party labels |
+| `Section he_ideal` | Backward-compatible interface for dsdp (E, D, Emul, Epow) |
 | `p.-enc T` | Type-level encryption label for party `p` |
 | `p.-key k T` | Type-level key label for party `p` with key type `k` |
 
@@ -213,13 +244,15 @@ In addition to the DSDP-specific layers, we also provide a foundational **homomo
 
 | Lemma | Statement |
 |-------|-----------|
+| `Emul_hom` | `Emul(enc m1, enc m2) = enc(m1 + m2)` — homomorphic addition |
+| `Epow_hom` | `Epow(enc m1, m2) = enc(m1 * m2)` — homomorphic scalar mult |
 | `card_party_key` | `#|{:p.-key k T}| = #|T|` — key types preserve cardinality |
 | `card_enc_for` | `#|{:p.-enc T}| = #|T|` — encryption types preserve cardinality |
 | `E_enc_unif` | Encryptions are uniformly distributed (axiom) |
 | `E_enc_inde` | Encryptions are independent of other random variables (axiom) |
 | `E_enc_ce_removal` | `H(Z | [%X, E]) = H(Z | X)` — encryption can be removed from conditioning |
 
-**Role in DSDP:** This layer provides the semantic security axioms (`E_enc_unif`, `E_enc_inde`) that allow DSDP to treat encrypted values as independent random values, which is essential for the entropy-based security analysis.
+**Role in DSDP:** The `Section he_ideal` provides party-labeled encryption operations (`E`, `D`, `Emul`, `Epow`) used by dsdp protocol proofs. The semantic security axioms (`E_enc_unif`, `E_enc_inde`) allow DSDP to treat encrypted values as independent random values, which is essential for the entropy-based security analysis.
 
 ## Related Documents
 
