@@ -57,3 +57,16 @@ Reserved Notation "u ^h w" (at level 40).
    For Z/pqZ specific fiber entropy, see:
    - fiber_zpq.v
 *)
+
+(* Independence implies conditional entropy equals unconditional: H(X|V) = H(X) *)
+Lemma inde_cond_entropy (U A B : finType) (P : Rdefinitions.R.-fdist U)
+  (View : {RV P -> A}) (X : {RV P -> B}) :
+  P |= View _|_ X ->
+  `H(X | View) = `H `p_ X.
+Proof.
+move=> Hinde; rewrite /centropy_RV.
+have Hprod := inde_dist_of_RV2 Hinde.
+have Hprod2 : (`p_[%X, View]) = (((`p_[%X, View])`1) `x ((`p_[%X, View])`2))%fdist.
+  by rewrite fst_RV2 snd_RV2 -fdistX_RV2 Hprod fdistX_prod.
+by rewrite (centropy_indep Hprod2) fst_RV2.
+Qed.
