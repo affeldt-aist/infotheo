@@ -153,13 +153,45 @@ Lemma dsdp_uniform_over_solutions_from_joint_uniform :
       `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
       (#|dsdp_fiber_full_zpq u1 u2 u3 v1 s|)%:R^-1.
 Proof.
-(* TODO: Full proof requires relating S to the constraint and 
-   using independence to factor joint probabilities.
-   The key steps are:
-   1. Use inde_RV to factor Pr[(V2,V3)=(v2,v3) ∧ (V1,U1,U2,U3)=(v1,u1,u2,u3)]
-   2. Use constraint_holds to show S is determined
-   3. Sum over fiber for denominator
-   4. Simplify to get 1/|fiber|
+move=> Hunif Hinde t v1 u1 u2 u3 s HU1 HU2 HU3 HV1 HS v2 v3 Hin_fiber.
+(* 
+   Step 1: Unfold conditional probability definition
+   Pr[VarRV = (v2,v3) | CondRV = cond] = Pr[joint] / Pr[CondRV = cond]
+*)
+rewrite cpr_eqE.
+(*
+   Step 2: The key factorization using independence
+   
+   Since P |= [%V1, U1, U2, U3] _|_ VarRV, by inde_RV_sym we have
+   P |= VarRV _|_ [%V1, U1, U2, U3].
+   
+   For any (v2,v3) and (v1,u1,u2,u3):
+   Pr[VarRV=(v2,v3) ∧ [%V1,U1,U2,U3]=(v1,u1,u2,u3)] 
+     = Pr[VarRV=(v2,v3)] × Pr[[%V1,U1,U2,U3]=(v1,u1,u2,u3)]
+   
+   By the uniform hypothesis: Pr[VarRV=(v2,v3)] = 1/m²
+   
+   Step 3: The constraint determines S
+   
+   Given constraint_holds: ∀t, S(t) - U1(t)*V1(t) = U2(t)*V2(t) + U3(t)*V3(t)
+   The value s is completely determined by (v1,u1,u2,u3,v2,v3).
+   
+   So: Pr[CondRV = (v1,u1,u2,u3,s)] 
+     = Σ_{(v2',v3') ∈ fiber} Pr[VarRV=(v2',v3') ∧ [%V1,U1,U2,U3]=(v1,u1,u2,u3)]
+     = Σ_{(v2',v3') ∈ fiber} (1/m²) × Pr[[%V1,U1,U2,U3]=(v1,u1,u2,u3)]
+     = |fiber| × (1/m²) × Pr[[%V1,U1,U2,U3]=(v1,u1,u2,u3)]
+   
+   Step 4: Final calculation
+   
+   Pr[VarRV=(v2,v3) | CondRV=cond]
+     = [(1/m²) × Pr[[%V1,U1,U2,U3]=...]] / [|fiber| × (1/m²) × Pr[[%V1,U1,U2,U3]=...]]
+     = 1 / |fiber|
+   
+   The proof requires additional helper lemmas to formalize these steps.
+   Key lemmas needed:
+   - Relating joint distribution [%VarRV, CondRV] to marginals via independence
+   - Showing the constraint determines S uniquely
+   - Summing over fiber elements
 *)
 Admitted.
 
