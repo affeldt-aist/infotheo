@@ -43,8 +43,8 @@ End Paillier_Params.
 (* Given Paillier parameters, produce an HE_SIG implementation *)
 Module Paillier_HE (P : Paillier_Params) <: HE_SIG.
   
-  Definition msg : comRingType := 'Z_P.n.
-  Definition ct : ringType := 'Z_P.n2.
+  Definition msg : finComNzRingType := 'Z_P.n.
+  Definition ct : finComNzRingType := 'Z_P.n2.
   Definition rand : Type := 'Z_P.n2.
   
   Definition enc (m : msg) (r : rand) : ct := paillier_enc P.g m r.
