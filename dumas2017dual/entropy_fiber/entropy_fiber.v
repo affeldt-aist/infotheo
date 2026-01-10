@@ -19,7 +19,7 @@ Import Num.Theory.
 (*  - Uniform distribution over fibers leads to predictable entropy           *)
 (*                                                                            *)
 (*  Main results:                                                             *)
-(*  - centropy1_uniform_fiber: H(X | Y=c) = log(|fiber(c)|)                    *)
+(*  - centropy1_uniform_fiber: H(X | Y=c) = log(|fiber(c)|)               *)
 (*    when X is uniformly distributed over fiber(c)                           *)
 (*  - functional_determinacy: H([X,Z] | Cond) = H(X | Cond)                   *)
 (*    when Z is functionally determined by X and Cond                         *)
@@ -182,6 +182,20 @@ rewrite (centropy1_as_sum Hcond_pos).
 rewrite (entropy_sum_split Hsol_unif Hnonsol_zero).
 exact: entropy_uniform_set.
 Qed.
+
+(** Uniform prior implies uniform posterior on fibers. *)
+Lemma uniform_prior_cond_uniform_fiber
+  (card_dom : nat) (c : CodomainT) :
+  #|DomainT| = card_dom ->
+  `p_ X = fdist_uniform card_dom ->
+  `Pr[Y = c] != 0 ->
+  let fiber_c := fiber f c in
+  (forall x, x \in fiber_c ->
+    `Pr[X = x | Y = c] = #|fiber_c|%:R ^-1) /\
+  (forall x, x \notin fiber_c ->
+    `Pr[X = x | Y = c] = 0).
+Proof.
+Admitted.
 
 End fiber_entropy.
 
@@ -351,7 +365,9 @@ Proof.
 move=> Hcard Hcard_pos.
 rewrite centropy_RVE' /=.
 (* Show each term equals Pr * log(fiber_card) *)
-transitivity (\sum_(yz : YT * ZT) `Pr[[% Y, Z] = yz] * log (fiber_card%:R : R)).  
+transitivity
+  (\sum_(yz : YT * ZT)
+    `Pr[[% Y, Z] = yz] * log (fiber_card%:R : R)).
   apply: eq_bigr => [[y z]] _.
   have [Hyz_eq0 | Hyz_neq0] := eqVneq (`Pr[[% Y, Z] = (y, z)]) 0.
     by rewrite Hyz_eq0 !mul0r.

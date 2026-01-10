@@ -43,7 +43,8 @@ Import Num.Theory.
 (*                                                                            *)
 (* Z/pqZ APPROACH: Uses composite modulus m = p*q directly via CRT. The       *)
 (* fiber cardinality |{(v2,v3) : u2*v2 + u3*v3 = target}| = m is proven       *)
-(* in fiber_zpq.v using CRT decomposition. Security condition 0 < U3 < min(p,q)*)
+(* in fiber_zpq.v using CRT decomposition.
+   Security condition 0 < U3 < min(p,q) *)
 (* ensures U3 is coprime to m, hence invertible. See notes/ for details.      *)
 (*                                                                            *)
 (******************************************************************************)
@@ -118,7 +119,8 @@ Let E_charlie_v3 := E' charlie `o V3.
 Let E_bob_v2 := E' bob `o V2.
 
 (* Alice's view of the protocol *)
-Let alice_inputsT := (Alice.-key Dec msg * msg * msg * msg * msg * msg * msg)%type.
+Let alice_inputsT :=
+  (Alice.-key Dec msg * msg * msg * msg * msg * msg * msg)%type.
 Let AliceInputsView := [% Dk_a, V1, U1, U2, U3, R2, R3].
 Let alice_view_valuesT := 
   (Alice.-key Dec msg * msg * msg * msg * msg * msg * msg * msg * 
@@ -199,7 +201,8 @@ Theorem dsdp_constraint_centropy_eqlogm :
 Proof.
 (* Goal: `H(VarRV | CondRV) = log (m%:R : R)
    where VarRV = [% V2, V3], CondRV = [% V1, U1, U2, U3, S] *)
-(* Apply dsdp_centropy_uniform_zpq from dsdp_entropy.v with all section params *)
+(* Apply dsdp_centropy_uniform_zpq from dsdp_entropy.v with all section
+   params *)
 apply: dsdp_centropy_uniform_zpq.
 (* === 6 subgoals from section parameters === *)
 - exact: prime_p.
@@ -243,8 +246,8 @@ Proof.
 (* Proof chain: H(V2|AliceView) = H(V2|CondRV) = H([V2,V3]|CondRV) = log(m) *)
 have H_v2_logm: `H(V2 | AliceView) = log (m%:R : R).
   (* Use alice_view_to_cond from dsdp_entropy.v with the record *)
-  rewrite (alice_view_to_cond Pr_AliceView_neq0 Pr_Eqn1View_neq0 Pr_Eqn2View_neq0
-             (decomposition cinde_V2V3)).
+  rewrite (alice_view_to_cond Pr_AliceView_neq0 Pr_Eqn1View_neq0
+            Pr_Eqn2View_neq0 (decomposition cinde_V2V3)).
   rewrite -V3_determined_centropy_v2_local.
   exact: dsdp_constraint_centropy_eqlogm.
 split.
