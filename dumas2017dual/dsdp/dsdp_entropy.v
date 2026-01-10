@@ -122,10 +122,29 @@ Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
     `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
     (#|dsdp_fiber_full_zpq u1 u2 u3 v1 s|)%:R^-1.
 
-(** Optional bridge: derive uniform-over-solutions from a joint-uniform
-    prior. *)
+(** Bridge lemma: derive uniform-over-solutions from joint-uniform prior
+    and independence.
+    
+    Mathematical reasoning:
+    - Assumption: (V2,V3) is uniform over msg×msg with distribution 1/m²
+    - Assumption: (V2,V3) is independent of (V1,U1,U2,U3)
+    - The constraint S = u1*v1 + u2*v2 + u3*v3 determines S given the others
+    
+    For (v2,v3) in the fiber {(v2',v3') | u2*v2' + u3*v3' = s - u1*v1}:
+    
+    Numerator: Pr[(V2,V3)=(v2,v3) ∧ (V1,U1,U2,U3)=(v1,u1,u2,u3)]
+             = Pr[(V2,V3)=(v2,v3)] × Pr[(V1,U1,U2,U3)=(v1,u1,u2,u3)]  (indep)
+             = (1/m²) × Pr[(V1,U1,U2,U3)=(v1,u1,u2,u3)]
+    
+    Denominator: Pr[CondRV=(v1,u1,u2,u3,s)]
+               = Σ_{(v2',v3') ∈ fiber} (1/m²) × Pr[(V1,U1,U2,U3)=...]
+               = |fiber|/m² × Pr[(V1,U1,U2,U3)=(v1,u1,u2,u3)]
+    
+    Result: Numerator/Denominator = 1/|fiber|
+*)
 Lemma dsdp_uniform_over_solutions_from_joint_uniform :
   `p_ VarRV = fdist_uniform card_msg_pair ->
+  P |= [%V1, U1, U2, U3] _|_ VarRV ->
   forall t v1 u1 u2 u3 s,
     U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
     V1 t = v1 -> S t = s ->
@@ -134,6 +153,14 @@ Lemma dsdp_uniform_over_solutions_from_joint_uniform :
       `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
       (#|dsdp_fiber_full_zpq u1 u2 u3 v1 s|)%:R^-1.
 Proof.
+(* TODO: Full proof requires relating S to the constraint and 
+   using independence to factor joint probabilities.
+   The key steps are:
+   1. Use inde_RV to factor Pr[(V2,V3)=(v2,v3) ∧ (V1,U1,U2,U3)=(v1,u1,u2,u3)]
+   2. Use constraint_holds to show S is determined
+   3. Sum over fiber for denominator
+   4. Simplify to get 1/|fiber|
+*)
 Admitted.
 
 (* Fiber cardinality for full constraint *)
@@ -292,11 +319,7 @@ have Hq2: (1 < q)%N by [].
 by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
 Qed.
 
-Let card_msg : #|msg| = m.
-Proof. by rewrite card_ord Zp_cast. Qed.
-
-Let card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
-Proof. by rewrite card_prod !card_msg expnS expn1. Qed.
+(* card_msg and card_msg_pair are inherited from outer section *)
 
 (* Unconditional entropy of private inputs (V2, V3) when uniformly distributed.
    
