@@ -49,51 +49,26 @@ Reserved Notation "u ^h w" (at level 40).
 From infotheo Require Export homomorphic_encryption.he_sig.
 
 (* ========================================================================== *)
-(*                      Idealized HE Implementation                            *)
+(*                      Note on Ideal vs Concrete HE                           *)
 (* ========================================================================== *)
 
-(* The ideal model: Useful for information-theoretic proofs
-   where we care about upper protocols built on top of HE,
-   rather than the security of the HE scheme itself.
+(* The HE_SIG interface is designed for CONCRETE cryptographic schemes like
+   Benaloh and Paillier, where:
+   - ct is different from msg (ciphertext hides the plaintext)
+   - Ring multiplication on ct corresponds to addition on msg
+   - The homomorphic property: enc(m1) * enc(m2) = enc(m1 + m2)
    
-   Ideal_HE is parameterized by message type M. The ciphertext equals
-   the plaintext (ct = msg), modeling perfect security where the 
-   ciphertext reveals nothing beyond what we axiomatize. *)
-
-Module Type Ideal_Params.
-  Parameter M : finComNzRingType.
-End Ideal_Params.
-
-Module Ideal_HE (P : Ideal_Params) <: HE_SIG.
-  
-  Definition msg : finComNzRingType := P.M.
-  Definition ct : finComNzRingType := P.M.  (* ct = msg: identity encryption *)
-  Definition rand : Type := unit. (* Deterministic encryption *)
-  
-  (* Identity encryption: ciphertext = plaintext *)
-  Definition enc (m : msg) (_ : rand) : ct := m.
-  
-  Lemma Emul_hom : forall (m1 m2 : msg) (r1 r2 : rand),
-    exists r : rand, enc m1 r1 * enc m2 r2 = enc (m1 + m2) r.
-  Proof.
-    move=> m1 m2 _ _.
-    exists tt.
-    rewrite /enc.
-    ring.
-  Qed.
-  
-  Lemma Epow_hom : forall (m : msg) (k : nat) (r : rand),
-    exists r' : rand, (enc m r) ^+ k = enc (m *+ k) r'.
-  Proof.
-    move=> m k _.
-    exists tt.
-    rewrite /enc.
-    elim: k => [|k IHk].
-    - by rewrite expr0 mulr0n.
-    - by rewrite exprS mulrSr IHk.
-  Qed.
-
-End Ideal_HE.
+   An "ideal" model where enc(m) = m cannot implement HE_SIG because
+   m1 * m2 ≠ m1 + m2 for general rings.
+   
+   For information-theoretic proofs, we use Section he_ideal below,
+   which defines explicit Emul/Epow functions rather than relying on
+   ring operations. This ideal model is compatible with the p.-enc type
+   for entropy-based security proofs.
+   
+   For concrete HE implementations, use:
+   - Benaloh_HE (benaloh1994/benaloh_he_instance.v)
+   - Paillier_HE (paillier1999/paillier_he_instance.v) *)
 
 (* ========================================================================== *)
 (*                       Party-Labeled HE Functor                              *)
@@ -122,20 +97,20 @@ Module Party_HE (HE : HE_SIG).
   
   (* Homomorphic multiplication on party-labeled ciphertexts.
      Only operates if parties match. *)
-  Definition pEmul (P : eqType) (e1 e2 : penc P) : penc P :=
+  Definition pEmul (P : finType) (e1 e2 : penc P) : penc P :=
     match e1, e2 with
     | (i1, c1), (i2, c2) => 
         if i1 == i2 then (i1, c1 * c2) else (i1, 1)  (* 1 = enc(0) ideally *)
     end.
   
   (* Homomorphic exponentiation on party-labeled ciphertexts *)
-  Definition pEpow (P : Type) (e : penc P) (k : nat) : penc P :=
+  Definition pEpow (P : finType) (e : penc P) (k : nat) : penc P :=
     match e with
     | (i, c) => (i, c ^+ k)
     end.
   
   (* Homomorphic properties lift from HE *)
-  Lemma pEmul_hom (P : eqType) : forall (i : P) (m1 m2 : HE.msg) (r1 r2 : HE.rand),
+  Lemma pEmul_hom (P : finType) : forall (i : P) (m1 m2 : HE.msg) (r1 r2 : HE.rand),
     exists r, pEmul (E i m1 r1) (E i m2 r2) = E i (m1 + m2) r.
   Proof.
     move=> i m1 m2 r1 r2.
@@ -145,7 +120,7 @@ Module Party_HE (HE : HE_SIG).
     by rewrite Hr.
   Qed.
   
-  Lemma pEpow_hom (P : Type) : forall (i : P) (m : HE.msg) (k : nat) (r : HE.rand),
+  Lemma pEpow_hom (P : finType) : forall (i : P) (m : HE.msg) (k : nat) (r : HE.rand),
     exists r', pEpow (E i m r) k = E i (m *+ k) r'.
   Proof.
     move=> i m k r.
