@@ -285,4 +285,165 @@ transitivity (`H(v | [% AliceTraces, AliceView])).
 by rewrite AliceTraces_from_viewP centropyC centropy_RV_contraction.
 Qed.
 
+(******************************************************************************)
+(* Bob's Trace-to-View Lifting                                                *)
+(*                                                                            *)
+(* Bob's trace: [e (E charlie (v3*u3+r3)); e (E bob (v2*u2+r2)); d v2; k dk_b] *)
+(* Bob sees: encrypted value from Charlie (can't decrypt), his own encrypted  *)
+(* computation, his private input v2, and his decryption key.                 *)
+(******************************************************************************)
+
+(* Bob's trace: element 1 of dsdp_traces *)
+Let BobTraces : {RV P -> dsdp_traceT} :=
+  (fun t => tnth t 1) `o DSDP_RV_zpq.
+
+(* Encrypted values Bob receives *)
+Let E_charlie_vur3 : {RV P -> Charlie.-enc msg} := E' charlie `o (VU3 \+ R3).
+Let E_bob_d2 : {RV P -> Bob.-enc msg} := E' bob `o D2.
+
+(* Bob's view type - what Bob knows:
+   - His decryption key dk_b
+   - His private input v2
+   - Encrypted value from Charlie (can't decrypt): E_charlie(v3*u3+r3)
+   - His own encrypted computation: E_bob(v2*u2+r2) *)
+Let bob_view_valuesT := (Bob.-key Dec msg * msg * 
+  Charlie.-enc msg * Bob.-enc msg)%type.
+
+Let BobView : {RV P -> bob_view_valuesT} :=
+  [% Dk_b, V2, E_charlie_vur3, E_bob_d2].
+
+(* Reconstruct Bob's trace from his view *)
+Definition BobTraces_values_from_view (v : bob_view_valuesT) : 15.-bseq data :=
+  let '(dk_b, v2, e_charlie_vur3, e_bob_d2) := v in
+  [bseq e (e_charlie_vur3 : enc); e (e_bob_d2 : enc); d v2; k (dk_b : pkey)].
+
+(* BobTraces is a function of BobView *)
+Lemma BobTraces_from_viewP :
+  BobTraces = BobTraces_values_from_view `o BobView.
+Proof.
+apply: boolp.funext => x /=.
+rewrite /BobTraces /DSDP_RV_zpq /comp_RV /dsdp_uncurry_zpq
+        /dsdp_traces_zpq /=.
+rewrite /BobView /BobTraces_values_from_view /=.
+by case: Dk_b => t.
+Qed.
+
+(* Extract Bob's view from trace *)
+Definition BobView_values_from_trace (xs : dsdp_traceT) : bob_view_valuesT :=
+  let failtrace := (KeyOf Bob Dec 0, 0, E' Charlie 0, E' Bob 0) in
+  if xs is Bseq [:: inl (inr e_charlie_vur3);
+                    inl (inr e_bob_d2);
+                    inl (inl v2);
+                    inr dk_b] _
+  then 
+    if (e_charlie_vur3, e_bob_d2, dk_b) is
+         ((Charlie, vur3), (Bob, d2), (Bob, Dec, k_b)) then
+      (KeyOf Bob Dec k_b, v2, E' Charlie vur3, E' Bob d2)
+    else failtrace
+  else failtrace.
+
+(* BobView_values_from_trace is left-inverse of BobTraces_values_from_view *)
+Lemma BobView_values_from_traceP :
+  cancel BobTraces_values_from_view BobView_values_from_trace.
+Proof.
+move => [] [] [] dk v2' ec eb /=.
+case: ec => -[c' mc] /=.
+case: eb => -[b' mb] /=.
+case: dk => -[dk' mdk] /=.
+by [].
+Qed.
+
+(* Conditional entropy equivalence for Bob: conditioning on BobTraces equals 
+   conditioning on BobView. *)
+Lemma centropy_BobTraces_BobView (w : finType) (v : {RV P -> w}) :
+  `H(v | BobTraces) = `H(v | BobView).
+Proof.
+simpl in *.
+transitivity (`H(v | [% BobTraces, BobView])).
+  have -> : BobView = BobView_values_from_trace `o BobTraces.
+    by apply: boolp.funext => x /=;
+       rewrite BobTraces_from_viewP /comp_RV BobView_values_from_traceP.
+  by rewrite centropy_RV_contraction.
+by rewrite BobTraces_from_viewP centropyC centropy_RV_contraction.
+Qed.
+
+(******************************************************************************)
+(* Charlie's Trace-to-View Lifting                                            *)
+(*                                                                            *)
+(* Charlie's trace: [e (E charlie (v3*u3+r3+(v2*u2+r2))); d v3; k dk_c]        *)
+(* Charlie sees: encrypted aggregate (can decrypt), his private input v3,     *)
+(* and his decryption key.                                                    *)
+(******************************************************************************)
+
+(* Charlie's trace: element 2 of dsdp_traces *)
+Let CharlieTraces : {RV P -> dsdp_traceT} :=
+  (fun t => tnth t 2) `o DSDP_RV_zpq.
+
+(* Encrypted value Charlie receives - the aggregate D3 = v3*u3+r3+(v2*u2+r2) *)
+Let E_charlie_d3 : {RV P -> Charlie.-enc msg} := E' charlie `o D3.
+
+(* Charlie's view type - what Charlie knows:
+   - His decryption key dk_c
+   - His private input v3
+   - Encrypted aggregate: E_charlie(v3*u3+r3+(v2*u2+r2)) *)
+Let charlie_view_valuesT := (Charlie.-key Dec msg * msg * Charlie.-enc msg)%type.
+
+Let CharlieView : {RV P -> charlie_view_valuesT} :=
+  [% Dk_c, V3, E_charlie_d3].
+
+(* Reconstruct Charlie's trace from his view *)
+Definition CharlieTraces_values_from_view (v : charlie_view_valuesT) 
+  : 15.-bseq data :=
+  let '(dk_c, v3, e_charlie_d3) := v in
+  [bseq e (e_charlie_d3 : enc); d v3; k (dk_c : pkey)].
+
+(* CharlieTraces is a function of CharlieView *)
+Lemma CharlieTraces_from_viewP :
+  CharlieTraces = CharlieTraces_values_from_view `o CharlieView.
+Proof.
+apply: boolp.funext => x /=.
+rewrite /CharlieTraces /DSDP_RV_zpq /comp_RV /dsdp_uncurry_zpq
+        /dsdp_traces_zpq /=.
+rewrite /CharlieView /CharlieTraces_values_from_view /=.
+by case: Dk_c => t.
+Qed.
+
+(* Extract Charlie's view from trace *)
+Definition CharlieView_values_from_trace (xs : dsdp_traceT) 
+  : charlie_view_valuesT :=
+  let failtrace := (KeyOf Charlie Dec 0, 0, E' Charlie 0) in
+  if xs is Bseq [:: inl (inr e_charlie_d3);
+                    inl (inl v3);
+                    inr dk_c] _
+  then 
+    if (e_charlie_d3, dk_c) is
+         ((Charlie, d3), (Charlie, Dec, k_c)) then
+      (KeyOf Charlie Dec k_c, v3, E' Charlie d3)
+    else failtrace
+  else failtrace.
+
+(* CharlieView_values_from_trace is left-inverse of CharlieTraces_values_from_view *)
+Lemma CharlieView_values_from_traceP :
+  cancel CharlieTraces_values_from_view CharlieView_values_from_trace.
+Proof.
+move => [] [] dk v3' ec /=.
+case: ec => -[c' mc] /=.
+case: dk => -[dk' mdk] /=.
+by [].
+Qed.
+
+(* Conditional entropy equivalence for Charlie: conditioning on CharlieTraces 
+   equals conditioning on CharlieView. *)
+Lemma centropy_CharlieTraces_CharlieView (w : finType) (v : {RV P -> w}) :
+  `H(v | CharlieTraces) = `H(v | CharlieView).
+Proof.
+simpl in *.
+transitivity (`H(v | [% CharlieTraces, CharlieView])).
+  have -> : CharlieView = CharlieView_values_from_trace `o CharlieTraces.
+    by apply: boolp.funext => x /=;
+       rewrite CharlieTraces_from_viewP /comp_RV CharlieView_values_from_traceP.
+  by rewrite centropy_RV_contraction.
+by rewrite CharlieTraces_from_viewP centropyC centropy_RV_contraction.
+Qed.
+
 End trace_entropy_analysis.

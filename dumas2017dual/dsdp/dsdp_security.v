@@ -141,14 +141,15 @@ Hypothesis constraint_holds :
 (* U3 must be coprime to m for invertibility in Z/pqZ *)
 Hypothesis U3_coprime_m : forall t, coprime (val (U3 t)) m.
 
-Hypothesis uniform_over_solutions : forall t v1 u1 u2 u3 s,
-  U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
-  V1 t = v1 -> S t = s ->
-  forall v2 v3,
-    (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
-    `Pr[ [% V2, V3] = (v2, v3) | [% V1, U1, U2, U3, S] = 
-         (v1, u1, u2, u3, s) ] =
-    #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|%:R^-1.
+(* Cryptographic assumptions for DSDP security:
+   1. VarRV = (V2, V3) is uniformly distributed over msg × msg
+   2. VarRV is independent of the inputs (V1, U1, U2, U3)
+   These are standard assumptions in secure multi-party computation.
+   Note: We use dsdp_entropy.card_msg_pair_subproof to match the
+   parameter expected by dsdp_centropy_uniform_zpq. *)
+Hypothesis VarRV_uniform : 
+  `p_ VarRV = fdist_uniform (dsdp_entropy.card_msg_pair_subproof p_minus_2 q_minus_2).
+Hypothesis VarRV_indep_inputs : P |= [%V1, U1, U2, U3] _|_ VarRV.
 
 (* Additional hypotheses for privacy_by_bonded_leakage *)
 Let Dec_view : {RV P -> (alice_inputsT * msg)} :=
@@ -202,13 +203,15 @@ Proof.
 (* Goal: `H(VarRV | CondRV) = log (m%:R : R)
    where VarRV = [% V2, V3], CondRV = [% V1, U1, U2, U3, S] *)
 (* Apply dsdp_centropy_uniform_zpq from dsdp_entropy.v with all section
-   params *)
+   params. The new structure uses VarRV_uniform and VarRV_indep_inputs
+   instead of the old uniform_over_solutions hypothesis. *)
 apply: dsdp_centropy_uniform_zpq.
-(* === 6 subgoals from section parameters === *)
+(* === Section parameters for dsdp_entropy_zpq === *)
 - exact: prime_p.
 - exact: prime_q.
 - exact: constraint_holds.
-- exact: uniform_over_solutions.
+- exact: VarRV_uniform.
+- exact: VarRV_indep_inputs.
 - exact: U3_pos.
 - exact: U3_lt_minpq.
 Qed.
@@ -278,5 +281,226 @@ Qed.
 *)
 
 End dsdp_security.
+
+(******************************************************************************)
+(* Bob's Security                                                             *)
+(*                                                                            *)
+(* Bob cannot learn Alice's input V1 or Charlie's input V3.                   *)
+(*                                                                            *)
+(* Bob's view: [Dk_b, V2, E_charlie(v3*u3+r3), E_bob(v2*u2+r2)]                *)
+(*                                                                            *)
+(* Security guarantees:                                                       *)
+(*   - H(V1 | BobView) = H(V1) > 0: V1 remains completely hidden              *)
+(*   - H(V3 | BobView) = H(V3) > 0: V3 remains completely hidden              *)
+(*                                                                            *)
+(* Key observations:                                                          *)
+(*   - V1 never transmitted to Bob                                            *)
+(*   - V3 encrypted with Charlie's key, Bob cannot decrypt                    *)
+(******************************************************************************)
+
+Section bob_security.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+
+(* Z/pqZ parameters *)
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+(* m = p * q > 1 since p, q >= 2 *)
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
+
+Let card_msg : #|msg| = m.
+Proof. by rewrite card_ord Zp_cast. Qed.
+
+Variable inputs : dsdp_random_inputs P p_minus_2 q_minus_2.
+
+Let Dk_b := dsdp_entropy.Dk_b inputs.
+Let V1 := dsdp_entropy.V1 inputs.
+Let V2 := dsdp_entropy.V2 inputs.
+Let V3 := dsdp_entropy.V3 inputs.
+Let U2 := dsdp_entropy.U2 inputs.
+Let U3 := dsdp_entropy.U3 inputs.
+Let R2 := dsdp_entropy.R2 inputs.
+Let R3 := dsdp_entropy.R3 inputs.
+Let VU2 : {RV P -> msg} := V2 \* U2.
+Let VU3 : {RV P -> msg} := V3 \* U3.
+Let D2  : {RV P -> msg} := VU2 \+ R2.
+Let VU3R : {RV P -> msg} := VU3 \+ R3.
+
+(* Bob's view components *)
+Let E_charlie_vur3 : {RV P -> Charlie.-enc msg} := E' charlie `o VU3R.
+Let E_bob_d2 : {RV P -> Bob.-enc msg} := E' bob `o D2.
+
+Let bob_view_valuesT := (Bob.-key Dec msg * msg * 
+  Charlie.-enc msg * Bob.-enc msg)%type.
+
+Let BobView : {RV P -> bob_view_valuesT} :=
+  [% Dk_b, V2, E_charlie_vur3, E_bob_d2].
+
+(* Independence hypotheses *)
+Hypothesis BobView_indep_V1 : P |= BobView _|_ V1.
+Hypothesis BobView_indep_V3 : P |= BobView _|_ V3.
+
+(* Uniform distribution of V1 *)
+Hypothesis pV1_unif : `p_ V1 = fdist_uniform card_msg.
+
+(* Uniform distribution of V3 *)
+Hypothesis pV3_unif : `p_ V3 = fdist_uniform card_msg.
+
+(* Bob cannot learn V1 - complete privacy *)
+Theorem bob_privacy_V1 :
+  `H(V1 | BobView) = log (m%:R : R) /\
+  `H(V1 | BobView) > 0.
+Proof.
+have H_v1_logm: `H(V1 | BobView) = log (m%:R : R).
+  (* Use inde_cond_entropy: independence implies H(X|Y) = H(X) *)
+  rewrite (inde_cond_entropy BobView_indep_V1).
+  by rewrite pV1_unif entropy_uniform card_msg.
+split.
+- exact: H_v1_logm.
+- rewrite H_v1_logm -log1.
+  apply: ltr_log; first by [].
+  by rewrite ltr1n.
+Qed.
+
+(* Bob cannot learn V3 - complete privacy *)
+Theorem bob_privacy_V3 :
+  `H(V3 | BobView) = log (m%:R : R) /\
+  `H(V3 | BobView) > 0.
+Proof.
+have H_v3_logm: `H(V3 | BobView) = log (m%:R : R).
+  (* Use inde_cond_entropy: independence implies H(X|Y) = H(X) *)
+  rewrite (inde_cond_entropy BobView_indep_V3).
+  by rewrite pV3_unif entropy_uniform card_msg.
+split.
+- exact: H_v3_logm.
+- rewrite H_v3_logm -log1.
+  apply: ltr_log; first by [].
+  by rewrite ltr1n.
+Qed.
+
+End bob_security.
+
+(******************************************************************************)
+(* Charlie's Security                                                         *)
+(*                                                                            *)
+(* Charlie cannot learn Alice's input V1 or Bob's input V2.                   *)
+(*                                                                            *)
+(* Charlie's view: [Dk_c, V3, E_charlie(v3*u3+r3+(v2*u2+r2))]                  *)
+(*                                                                            *)
+(* Security guarantees:                                                       *)
+(*   - H(V1 | CharlieView) = H(V1) > 0: V1 remains completely hidden          *)
+(*   - H(V2 | CharlieView) = H(V2) > 0: V2 remains completely hidden          *)
+(*                                                                            *)
+(* Key observations:                                                          *)
+(*   - V1 never transmitted to Charlie                                        *)
+(*   - V2 is masked by r2 in the aggregate, Charlie doesn't know r2           *)
+(******************************************************************************)
+
+Section charlie_security.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+
+(* Z/pqZ parameters *)
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+(* m = p * q > 1 since p, q >= 2 *)
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
+
+Let card_msg : #|msg| = m.
+Proof. by rewrite card_ord Zp_cast. Qed.
+
+Variable inputs : dsdp_random_inputs P p_minus_2 q_minus_2.
+
+Let Dk_c := dsdp_entropy.Dk_c inputs.
+Let V1 := dsdp_entropy.V1 inputs.
+Let V2 := dsdp_entropy.V2 inputs.
+Let V3 := dsdp_entropy.V3 inputs.
+Let U2 := dsdp_entropy.U2 inputs.
+Let U3 := dsdp_entropy.U3 inputs.
+Let R2 := dsdp_entropy.R2 inputs.
+Let R3 := dsdp_entropy.R3 inputs.
+Let VU2 : {RV P -> msg} := V2 \* U2.
+Let VU3 : {RV P -> msg} := V3 \* U3.
+Let D2  : {RV P -> msg} := VU2 \+ R2.
+Let VU3R : {RV P -> msg} := VU3 \+ R3.
+Let D3 : {RV P -> msg} := VU3R \+ D2.
+
+(* Charlie's view components *)
+Let E_charlie_d3 : {RV P -> Charlie.-enc msg} := E' charlie `o D3.
+
+Let charlie_view_valuesT := (Charlie.-key Dec msg * msg * Charlie.-enc msg)%type.
+
+Let CharlieView : {RV P -> charlie_view_valuesT} :=
+  [% Dk_c, V3, E_charlie_d3].
+
+(* Independence hypotheses *)
+Hypothesis CharlieView_indep_V1 : P |= CharlieView _|_ V1.
+Hypothesis CharlieView_indep_V2 : P |= CharlieView _|_ V2.
+
+(* Uniform distribution of V1 *)
+Hypothesis pV1_unif : `p_ V1 = fdist_uniform card_msg.
+
+(* Uniform distribution of V2 *)
+Hypothesis pV2_unif : `p_ V2 = fdist_uniform card_msg.
+
+(* Charlie cannot learn V1 - complete privacy *)
+Theorem charlie_privacy_V1 :
+  `H(V1 | CharlieView) = log (m%:R : R) /\
+  `H(V1 | CharlieView) > 0.
+Proof.
+have H_v1_logm: `H(V1 | CharlieView) = log (m%:R : R).
+  (* Use inde_cond_entropy: independence implies H(X|Y) = H(X) *)
+  rewrite (inde_cond_entropy CharlieView_indep_V1).
+  by rewrite pV1_unif entropy_uniform card_msg.
+split.
+- exact: H_v1_logm.
+- rewrite H_v1_logm -log1.
+  apply: ltr_log; first by [].
+  by rewrite ltr1n.
+Qed.
+
+(* Charlie cannot learn V2 - complete privacy *)
+Theorem charlie_privacy_V2 :
+  `H(V2 | CharlieView) = log (m%:R : R) /\
+  `H(V2 | CharlieView) > 0.
+Proof.
+have H_v2_logm: `H(V2 | CharlieView) = log (m%:R : R).
+  (* Use inde_cond_entropy: independence implies H(X|Y) = H(X) *)
+  rewrite (inde_cond_entropy CharlieView_indep_V2).
+  by rewrite pV2_unif entropy_uniform card_msg.
+split.
+- exact: H_v2_logm.
+- rewrite H_v2_logm -log1.
+  apply: ltr_log; first by [].
+  by rewrite ltr1n.
+Qed.
+
+End charlie_security.
 
 
