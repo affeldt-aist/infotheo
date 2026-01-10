@@ -133,12 +133,90 @@ HB.instance Definition _ := isFinite.Build key key_enumP.
 End key_def.
 
 (* ========================================================================== *)
-(*                    Ideal Party-Labeled Encryption                           *)
+(*                         Ideal HE (implements HE_SIG)                        *)
 (* ========================================================================== *)
 
-(* This section provides the IDEAL model where ciphertext = plaintext.
-   Parameterized by party and msg types for flexibility.
-   Used by dumas2017dual/dsdp/ for protocol proofs. *)
+(* Ideal_HE: Identity encryption where ct = msg.
+   Used as base for Party_HE to create the party-labeled ideal model. *)
+
+Module Type Ideal_Params.
+  Parameter M : finComNzRingType.
+End Ideal_Params.
+
+Module Ideal_HE (P : Ideal_Params) <: HE_SIG.
+  
+  Definition msg : finComNzRingType := P.M.
+  Definition ct : finType := P.M.  (* Identity: ciphertext = message *)
+  Definition rand : Type := unit.  (* Deterministic encryption *)
+  
+  Definition enc (m : msg) (_ : rand) : ct := m.  (* Identity function *)
+  
+  (* Homomorphic addition: ring addition since ct = msg *)
+  Definition Emul (c1 c2 : ct) : ct := c1 + c2.
+  
+  (* Homomorphic scalar multiplication: ring multiplication *)
+  Definition Epow (c : ct) (m : msg) : ct := c * m.
+  
+  Lemma Emul_hom : forall (m1 m2 : msg) (r1 r2 : rand),
+    exists r : rand, Emul (enc m1 r1) (enc m2 r2) = enc (m1 + m2) r.
+  Proof. by move=> m1 m2 r1 r2; exists tt. Qed.
+  
+  Lemma Epow_hom : forall (m1 m2 : msg) (r : rand),
+    exists r' : rand, Epow (enc m1 r) m2 = enc (m1 * m2) r'.
+  Proof. by move=> m1 m2 r; exists tt. Qed.
+
+End Ideal_HE.
+
+(* ========================================================================== *)
+(*              Party-Labeled Ideal HE (uses Ideal_HE internally)              *)
+(* ========================================================================== *)
+
+(* Party_Ideal_HE builds on Ideal_HE to add party labels.
+   This is the concrete implementation of what Section he_ideal provides.
+   
+   For concrete HE (Benaloh, Paillier), party labeling would need
+   additional handling of randomness and decryption. *)
+
+Module Party_Ideal_HE (P : Ideal_Params).
+
+  Module IHE := Ideal_HE P.
+  
+  Parameter party : finType.
+  
+  (* Party-labeled ciphertext: ct = msg for ideal *)
+  Definition enc := (party * IHE.ct)%type.
+  Definition pkey := (party * key * IHE.msg)%type.
+  
+  (* Encryption with party label (deterministic since Ideal_HE uses unit rand) *)
+  Definition E (i : party) (m : IHE.msg) : enc := (i, IHE.enc m tt).
+  Definition K (i : party) (k : key) (m : IHE.msg) : pkey := (i, k, m).
+  
+  (* Decryption - trivial since ct = msg *)
+  Definition D (dk : pkey) (e : enc) : option IHE.msg :=
+    match dk, e with
+    | (i, k, _), (j, c) => if (i == j) && (k == Dec) then Some c else None
+    end.
+  
+  (* Homomorphic operations lifted from Ideal_HE *)
+  Definition Emul (e1 e2 : enc) : enc := 
+    match e1, e2 with
+    | (i1, c1), (i2, c2) => 
+        if i1 == i2 then (i1, IHE.Emul c1 c2) else (i1, IHE.enc 0 tt)
+    end.
+  
+  Definition Epow (e : enc) (m : IHE.msg) : enc :=
+    match e with
+    | (i, c) => (i, IHE.Epow c m)
+    end.
+
+End Party_Ideal_HE.
+
+(* ========================================================================== *)
+(*               Section he_ideal (backward compatible interface)              *)
+(* ========================================================================== *)
+
+(* This section provides the same interface as before for dsdp files.
+   Conceptually: Section he_ideal ≈ Party_HE(Ideal_HE(msg)) *)
 
 Section he_ideal.
 

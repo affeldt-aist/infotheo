@@ -45,25 +45,36 @@ End Benaloh_Params.
 Module Benaloh_HE (P : Benaloh_Params) <: HE_SIG.
   
   Definition msg : finComNzRingType := 'Z_P.r.
-  Definition ct : finComNzRingType := 'Z_P.n.
+  Definition ct : finType := 'Z_P.n.
   Definition rand : Type := 'Z_P.n.
   
   Definition enc (m : msg) (u : rand) : ct := benaloh_enc P.y m u.
   
+  (* Homomorphic addition: ring multiplication on ciphertexts *)
+  Definition Emul (c1 c2 : ct) : ct := c1 * c2.
+  
+  (* Homomorphic scalar multiplication: ring exponentiation *)
+  Definition Epow (c : ct) (m : msg) : ct := c ^+ (m : nat).
+  
   Lemma Emul_hom : forall (m1 m2 : msg) (r1 r2 : rand),
-    exists r : rand, enc m1 r1 * enc m2 r2 = enc (m1 + m2) r.
+    exists r : rand, Emul (enc m1 r1) (enc m2 r2) = enc (m1 + m2) r.
   Proof.
     move=> m1 m2 u1 u2.
     exists (u1 * u2).
+    rewrite /Emul.
     exact: (enc_mul_dist P.r_gt1 P.y_order_r).
   Qed.
   
-  Lemma Epow_hom : forall (m : msg) (k : nat) (r : rand),
-    exists r' : rand, (enc m r) ^+ k = enc (m *+ k) r'.
+  Lemma Epow_hom : forall (m1 m2 : msg) (r : rand),
+    exists r' : rand, Epow (enc m1 r) m2 = enc (m1 * m2) r'.
   Proof.
-    move=> m k u.
-    exists (u ^+ k).
-    exact: (enc_exp_dist P.r_gt1 P.y_order_r).
+    move=> m1 m2 u.
+    exists (u ^+ m2).
+    rewrite /Epow (enc_exp_dist P.r_gt1 P.y_order_r).
+    (* Need: m1 *+ (m2 : nat) = m1 * m2 *)
+    congr (benaloh_enc _ _ _).
+    rewrite mulrC -[m2 in m2 * _]natr_Zp mulr_natl.
+    reflexivity.
   Qed.
 
 End Benaloh_HE.

@@ -44,25 +44,35 @@ End Paillier_Params.
 Module Paillier_HE (P : Paillier_Params) <: HE_SIG.
   
   Definition msg : finComNzRingType := 'Z_P.n.
-  Definition ct : finComNzRingType := 'Z_P.n2.
+  Definition ct : finType := 'Z_P.n2.
   Definition rand : Type := 'Z_P.n2.
   
   Definition enc (m : msg) (r : rand) : ct := paillier_enc P.g m r.
   
+  (* Homomorphic addition: ring multiplication on ciphertexts *)
+  Definition Emul (c1 c2 : ct) : ct := c1 * c2.
+  
+  (* Homomorphic scalar multiplication: ring exponentiation *)
+  Definition Epow (c : ct) (m : msg) : ct := c ^+ (m : nat).
+  
   Lemma Emul_hom : forall (m1 m2 : msg) (r1 r2 : rand),
-    exists r : rand, enc m1 r1 * enc m2 r2 = enc (m1 + m2) r.
+    exists r : rand, Emul (enc m1 r1) (enc m2 r2) = enc (m1 + m2) r.
   Proof.
     move=> m1 m2 r1 r2.
     exists (r1 * r2).
+    rewrite /Emul.
     exact: (enc_mul_dist P.n_gt1 P.g_order_n).
   Qed.
   
-  Lemma Epow_hom : forall (m : msg) (k : nat) (r : rand),
-    exists r' : rand, (enc m r) ^+ k = enc (m *+ k) r'.
+  Lemma Epow_hom : forall (m1 m2 : msg) (r : rand),
+    exists r' : rand, Epow (enc m1 r) m2 = enc (m1 * m2) r'.
   Proof.
-    move=> m k r.
-    exists (r ^+ k).
-    exact: (enc_exp_dist P.n_gt1 P.g_order_n).
+    move=> m1 m2 r.
+    exists (r ^+ m2).
+    rewrite /Epow (enc_exp_dist P.n_gt1 P.g_order_n).
+    congr (paillier_enc _ _ _).
+    rewrite mulrC -[m2 in m2 * _]natr_Zp mulr_natl.
+    reflexivity.
   Qed.
 
 End Paillier_HE.
