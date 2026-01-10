@@ -44,8 +44,8 @@ End Benaloh_Params.
 (* Given Benaloh parameters, produce an HE_SIG implementation *)
 Module Benaloh_HE (P : Benaloh_Params) <: HE_SIG.
   
-  Definition msg : comRingType := 'Z_P.r.
-  Definition ct : ringType := 'Z_P.n.
+  Definition msg : finComNzRingType := 'Z_P.r.
+  Definition ct : finComNzRingType := 'Z_P.n.
   Definition rand : Type := 'Z_P.n.
   
   Definition enc (m : msg) (u : rand) : ct := benaloh_enc P.y m u.

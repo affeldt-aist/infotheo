@@ -3,7 +3,11 @@
 (* Homomorphic Encryption Module Signature                                    *)
 (*                                                                            *)
 (* This file defines HE_SIG, the module type for additively homomorphic       *)
-(* encryption schemes.                                                        *)
+(* encryption schemes used in protocol proofs.                                *)
+(*                                                                            *)
+(* Requirements:                                                              *)
+(*   - msg, ct must be finComRingType for probability distributions           *)
+(*   - Homomorphic properties: E(m1)*E(m2) = E(m1+m2), E(m)^k = E(m*+k)       *)
 (*                                                                            *)
 (* Implementations:                                                           *)
 (*   - Ideal_HE (homomorphic_encryption.v)                                    *)
@@ -28,11 +32,13 @@ Local Open Scope ring_scope.
 (* ========================================================================== *)
 
 Module Type HE_SIG.
-  (* Message space: a commutative ring *)
-  Parameter msg : comRingType.
+  (* Message space: finite commutative non-zero ring (for probability distributions) *)
+  Parameter msg : finComNzRingType.
   
-  (* Ciphertext space: a ring for homomorphic operations *)
-  Parameter ct : ringType.
+  (* Ciphertext space: finite commutative non-zero ring 
+     - Finite for probability distributions in protocol proofs
+     - Ring for homomorphic operations (ct multiplication = msg addition) *)
+  Parameter ct : finComNzRingType.
   
   (* Randomness type for probabilistic encryption *)
   Parameter rand : Type.

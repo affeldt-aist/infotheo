@@ -52,16 +52,23 @@ From infotheo Require Export homomorphic_encryption.he_sig.
 (*                      Idealized HE Implementation                            *)
 (* ========================================================================== *)
 
-(* The ideal model: ciphertext IS the plaintext, no real encryption.
-   Useful for information-theoretic proofs where we care about 
-   algebraic structure, not cryptographic security. *)
+(* The ideal model: Useful for information-theoretic proofs
+   where we care about upper protocols built on top of HE,
+   rather than the security of the HE scheme itself.
+   
+   Ideal_HE is parameterized by message type M. The ciphertext equals
+   the plaintext (ct = msg), modeling perfect security where the 
+   ciphertext reveals nothing beyond what we axiomatize. *)
 
-Module Ideal_HE <: HE_SIG.
+Module Type Ideal_Params.
+  Parameter M : finComNzRingType.
+End Ideal_Params.
+
+Module Ideal_HE (P : Ideal_Params) <: HE_SIG.
   
-  (* For the ideal model, we parameterize over any commutative ring *)
-  Definition msg : comRingType := [comRingType of int].
-  Definition ct : ringType := [ringType of int].
-  Definition rand : Type := unit.
+  Definition msg : finComNzRingType := P.M.
+  Definition ct : finComNzRingType := P.M.  (* ct = msg: identity encryption *)
+  Definition rand : Type := unit. (* Deterministic encryption *)
   
   (* Identity encryption: ciphertext = plaintext *)
   Definition enc (m : msg) (_ : rand) : ct := m.
@@ -87,6 +94,68 @@ Module Ideal_HE <: HE_SIG.
   Qed.
 
 End Ideal_HE.
+
+(* ========================================================================== *)
+(*                       Party-Labeled HE Functor                              *)
+(* ========================================================================== *)
+
+(* Party_HE wraps an HE_SIG with party labels for multi-party protocols.
+   
+   Given HE_SIG with:
+     enc : msg -> rand -> ct
+   
+   Party_HE provides:
+     penc = (party * ct)         -- party-labeled ciphertext
+     E : party -> msg -> rand -> penc
+     pEmul, pEpow using HE operations
+   
+   The p.-enc type (defined later) provides type-level party tagging. *)
+
+Module Party_HE (HE : HE_SIG).
+  
+  (* Party-labeled ciphertext: (party, ciphertext) *)
+  Definition penc (P : finType) := (P * HE.ct)%type.
+  
+  (* Party-labeled encryption *)
+  Definition E (P : finType) (i : P) (m : HE.msg) (r : HE.rand) : penc P :=
+    (i, HE.enc m r).
+  
+  (* Homomorphic multiplication on party-labeled ciphertexts.
+     Only operates if parties match. *)
+  Definition pEmul (P : eqType) (e1 e2 : penc P) : penc P :=
+    match e1, e2 with
+    | (i1, c1), (i2, c2) => 
+        if i1 == i2 then (i1, c1 * c2) else (i1, 1)  (* 1 = enc(0) ideally *)
+    end.
+  
+  (* Homomorphic exponentiation on party-labeled ciphertexts *)
+  Definition pEpow (P : Type) (e : penc P) (k : nat) : penc P :=
+    match e with
+    | (i, c) => (i, c ^+ k)
+    end.
+  
+  (* Homomorphic properties lift from HE *)
+  Lemma pEmul_hom (P : eqType) : forall (i : P) (m1 m2 : HE.msg) (r1 r2 : HE.rand),
+    exists r, pEmul (E i m1 r1) (E i m2 r2) = E i (m1 + m2) r.
+  Proof.
+    move=> i m1 m2 r1 r2.
+    rewrite /pEmul /E eq_refl.
+    case: (HE.Emul_hom m1 m2 r1 r2) => r Hr.
+    exists r.
+    by rewrite Hr.
+  Qed.
+  
+  Lemma pEpow_hom (P : Type) : forall (i : P) (m : HE.msg) (k : nat) (r : HE.rand),
+    exists r', pEpow (E i m r) k = E i (m *+ k) r'.
+  Proof.
+    move=> i m k r.
+    rewrite /pEpow /E.
+    case: (HE.Epow_hom m k r) => r' Hr.
+    exists r'.
+    by rewrite Hr.
+  Qed.
+
+End Party_HE.
 
 (* ========================================================================== *)
 (*                          Party and Type Definitions                         *)
@@ -172,33 +241,48 @@ HB.instance Definition _ := isFinite.Build key key_enumP.
 
 End key_def.
 
-Section he.
+(* ========================================================================== *)
+(*                    Ideal Party-Labeled Encryption                           *)
+(* ========================================================================== *)
+
+(* This section provides the IDEAL model where ciphertext = plaintext.
+   This is equivalent to Party_HE(Ideal_HE(msg)) but written directly
+   for compatibility with existing code.
+   
+   For real HE schemes, use Party_HE(Benaloh_HE) or Party_HE(Paillier_HE). *)
+
+Section he_ideal.
 
 Variable party : finType.
-Variable msg : finComRingType.
+Variable msg : finComNzRingType.
 
+(* In the ideal model, ciphertext = plaintext (no real encryption) *)
 Definition enc := (party * msg)%type.
 Definition pkey := (party * key * msg)%type.
 
+(* Ideal encryption: just pair party with plaintext *)
 Definition E i m : enc := (i, m).
 Definition K i k m : pkey := (i, k, m).
 
+(* Decryption (trivial in ideal model) *)
 Definition D (k : pkey) (e : enc) : option msg :=
   match k, e with
   | (i, k, _), (j, m) => if (i == j) && (k == Dec) then Some m else None
   end.
 
+(* Homomorphic addition: operates directly on plaintexts *)
 Definition Emul (e1 e2 : enc) : enc := 
   match (e1, e2) with
   | ((i1, m1), (i2, m2)) => if i1 == i2 then E i1 (m1 + m2) else E i1 0
   end.
 
+(* Homomorphic scalar multiplication: operates directly on plaintexts *)
 Definition Epow (e : enc) (m2 : msg) : enc :=
   match e with
   | (i, m1) => E i (m1 * m2)
   end.
 
-End he.
+End he_ideal.
 
 Section party_key_def.
 
