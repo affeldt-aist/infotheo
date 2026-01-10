@@ -1,20 +1,27 @@
 (******************************************************************************)
 (*                                                                            *)
-(* Idealized Homomorphic Encryption Model                                     *)
+(* Party-Labeled Encryption Types for Information-Theoretic Proofs            *)
 (*                                                                            *)
-(* This file defines an IDEALIZED model of homomorphic encryption for use in  *)
-(* information-theoretic and entropy-based proofs.                            *)
+(* This file defines party-labeled encryption types (p.-enc T) for use in     *)
+(* information-theoretic and entropy-based proofs of cryptographic protocols. *)
 (*                                                                            *)
-(* == Related Files ==                                                        *)
+(* == Key Definitions ==                                                      *)
+(*                                                                            *)
+(*   party - Protocol participants (Alice, Bob, Charlie, NoParty)             *)
+(*   key - Key types (Dec, Enc)                                               *)
+(*   p.-enc T - Party-labeled ciphertext type (p tags the party)              *)
+(*   p.-key k T - Party-labeled key type                                      *)
+(*                                                                            *)
+(* == Security Axioms ==                                                      *)
+(*                                                                            *)
+(*   E_enc_unif - Ciphertexts are uniformly distributed                       *)
+(*   E_enc_inde - Ciphertexts are independent of other random variables       *)
+(*                                                                            *)
+(* == Concrete HE Implementations ==                                          *)
 (*                                                                            *)
 (*   he_sig.v - HE_SIG module signature (shared interface)                    *)
-(*   benaloh1994/benaloh_he_instance.v - Benaloh_HE functor                   *)
-(*   paillier1999/paillier_he_instance.v - Paillier_HE functor                *)
-(*                                                                            *)
-(* == This File ==                                                            *)
-(*                                                                            *)
-(*   Ideal_HE module - ciphertext = plaintext, for abstract proofs            *)
-(*   Party/Key/Enc types and axioms for entropy proofs                        *)
+(*   benaloh1994/benaloh_he_instance.v - Benaloh scheme (default)             *)
+(*   paillier1999/paillier_he_instance.v - Paillier scheme                    *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -47,90 +54,6 @@ Reserved Notation "u ^h w" (at level 40).
 
 (* HE_SIG module signature is defined in he_sig.v *)
 From infotheo Require Export homomorphic_encryption.he_sig.
-
-(* ========================================================================== *)
-(*                      Note on Ideal vs Concrete HE                           *)
-(* ========================================================================== *)
-
-(* The HE_SIG interface is designed for CONCRETE cryptographic schemes like
-   Benaloh and Paillier, where:
-   - ct is different from msg (ciphertext hides the plaintext)
-   - Ring multiplication on ct corresponds to addition on msg
-   - The homomorphic property: enc(m1) * enc(m2) = enc(m1 + m2)
-   
-   An "ideal" model where enc(m) = m cannot implement HE_SIG because
-   m1 * m2 ≠ m1 + m2 for general rings.
-   
-   For information-theoretic proofs, we use Section he_ideal below,
-   which defines explicit Emul/Epow functions rather than relying on
-   ring operations. This ideal model is compatible with the p.-enc type
-   for entropy-based security proofs.
-   
-   For concrete HE implementations, use:
-   - Benaloh_HE (benaloh1994/benaloh_he_instance.v)
-   - Paillier_HE (paillier1999/paillier_he_instance.v) *)
-
-(* ========================================================================== *)
-(*                       Party-Labeled HE Functor                              *)
-(* ========================================================================== *)
-
-(* Party_HE wraps an HE_SIG with party labels for multi-party protocols.
-   
-   Given HE_SIG with:
-     enc : msg -> rand -> ct
-   
-   Party_HE provides:
-     penc = (party * ct)         -- party-labeled ciphertext
-     E : party -> msg -> rand -> penc
-     pEmul, pEpow using HE operations
-   
-   The p.-enc type (defined later) provides type-level party tagging. *)
-
-Module Party_HE (HE : HE_SIG).
-  
-  (* Party-labeled ciphertext: (party, ciphertext) *)
-  Definition penc (P : finType) := (P * HE.ct)%type.
-  
-  (* Party-labeled encryption *)
-  Definition E (P : finType) (i : P) (m : HE.msg) (r : HE.rand) : penc P :=
-    (i, HE.enc m r).
-  
-  (* Homomorphic multiplication on party-labeled ciphertexts.
-     Only operates if parties match. *)
-  Definition pEmul (P : finType) (e1 e2 : penc P) : penc P :=
-    match e1, e2 with
-    | (i1, c1), (i2, c2) => 
-        if i1 == i2 then (i1, c1 * c2) else (i1, 1)  (* 1 = enc(0) ideally *)
-    end.
-  
-  (* Homomorphic exponentiation on party-labeled ciphertexts *)
-  Definition pEpow (P : finType) (e : penc P) (k : nat) : penc P :=
-    match e with
-    | (i, c) => (i, c ^+ k)
-    end.
-  
-  (* Homomorphic properties lift from HE *)
-  Lemma pEmul_hom (P : finType) : forall (i : P) (m1 m2 : HE.msg) (r1 r2 : HE.rand),
-    exists r, pEmul (E i m1 r1) (E i m2 r2) = E i (m1 + m2) r.
-  Proof.
-    move=> i m1 m2 r1 r2.
-    rewrite /pEmul /E eq_refl.
-    case: (HE.Emul_hom m1 m2 r1 r2) => r Hr.
-    exists r.
-    by rewrite Hr.
-  Qed.
-  
-  Lemma pEpow_hom (P : finType) : forall (i : P) (m : HE.msg) (k : nat) (r : HE.rand),
-    exists r', pEpow (E i m r) k = E i (m *+ k) r'.
-  Proof.
-    move=> i m k r.
-    rewrite /pEpow /E.
-    case: (HE.Epow_hom m k r) => r' Hr.
-    exists r'.
-    by rewrite Hr.
-  Qed.
-
-End Party_HE.
 
 (* ========================================================================== *)
 (*                          Party and Type Definitions                         *)
@@ -215,49 +138,6 @@ Proof. by case. Qed.
 HB.instance Definition _ := isFinite.Build key key_enumP.
 
 End key_def.
-
-(* ========================================================================== *)
-(*                    Ideal Party-Labeled Encryption                           *)
-(* ========================================================================== *)
-
-(* This section provides the IDEAL model where ciphertext = plaintext.
-   This is equivalent to Party_HE(Ideal_HE(msg)) but written directly
-   for compatibility with existing code.
-   
-   For real HE schemes, use Party_HE(Benaloh_HE) or Party_HE(Paillier_HE). *)
-
-Section he_ideal.
-
-Variable party : finType.
-Variable msg : finComNzRingType.
-
-(* In the ideal model, ciphertext = plaintext (no real encryption) *)
-Definition enc := (party * msg)%type.
-Definition pkey := (party * key * msg)%type.
-
-(* Ideal encryption: just pair party with plaintext *)
-Definition E i m : enc := (i, m).
-Definition K i k m : pkey := (i, k, m).
-
-(* Decryption (trivial in ideal model) *)
-Definition D (k : pkey) (e : enc) : option msg :=
-  match k, e with
-  | (i, k, _), (j, m) => if (i == j) && (k == Dec) then Some m else None
-  end.
-
-(* Homomorphic addition: operates directly on plaintexts *)
-Definition Emul (e1 e2 : enc) : enc := 
-  match (e1, e2) with
-  | ((i1, m1), (i2, m2)) => if i1 == i2 then E i1 (m1 + m2) else E i1 0
-  end.
-
-(* Homomorphic scalar multiplication: operates directly on plaintexts *)
-Definition Epow (e : enc) (m2 : msg) : enc :=
-  match e with
-  | (i, m1) => E i (m1 * m2)
-  end.
-
-End he_ideal.
 
 Section party_key_def.
 
