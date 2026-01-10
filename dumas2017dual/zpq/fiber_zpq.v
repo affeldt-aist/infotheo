@@ -5,8 +5,8 @@ From mathcomp Require Import mathcomp_extra.
 From robot Require Import euclidean.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
-Require Import extra_algebra extra_proba extra_entropy entropy_fibers.
-Require Import entropy_linear_fibers.
+Require Import extra_algebra extra_proba extra_entropy entropy_fiber.
+Require Import entropy_linear_fiber.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -21,8 +21,8 @@ Import Num.Theory.
 (* Key insight from CRT:                                                      *)
 (*   Z/pqZ ≅ Z/pZ × Z/qZ  (when gcd(p,q) = 1)                                 *)
 (*                                                                            *)
-(* Generalization from entropy_linear_fibers.v:                               *)
-(*   - entropy_linear_fibers.v: works over 'F_m (field, m prime)              *)
+(* Generalization from entropy_linear_fiber.v:                                *)
+(*   - entropy_linear_fiber.v: works over 'F_m (field, m prime)               *)
 (*   - This file: works over 'Z_m (ring, m = p*q composite)                   *)
 (*                                                                            *)
 (* For constraints of the form u · v = target (dot product):                  *)
