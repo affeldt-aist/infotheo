@@ -5,7 +5,7 @@ From mathcomp Require Import mathcomp_extra.
 From robot Require Import euclidean.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
-Require Import entropy_fibers.
+Require Import entropy_fiber.
 Require Import rouche_capelli.
 
 Import GRing.Theory.
@@ -160,7 +160,7 @@ Qed.
    but entropy applications use dot products u·v = s. This wrapper:
    1. Hides matrix notation - takes row vector u directly
    2. Provides the natural "for all targets s1, s2" interface
-   3. Enables direct application in entropy_fibers.v's constant-fiber framework
+   3. Enables direct application in entropy_fiber.v's constant-fiber framework
    
    Mathematical content: fiber(s) = x₀ + ker(u) for any solution x₀,
    so |fiber(s₁)| = |ker(u)| = |fiber(s₂)|.

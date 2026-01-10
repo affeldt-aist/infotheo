@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption entropy_fibers.
+Require Import smc_proba homomorphic_encryption entropy_fiber.
 Require Import dsdp_program dsdp_extra dsdp_algebra.
 Require Import fiber_zpq.
 
