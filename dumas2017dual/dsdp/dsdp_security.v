@@ -556,6 +556,20 @@ Hypothesis VU3R_indep_V2 : P |= VU3R _|_ V2.
    Note: [%A, B, C] is ((A,B),C) but we need (A,(B,C)) for lemma_3_5'. *)
 Hypothesis R2_indep_VU2_VU3R_V2 : P |= R2 _|_ [% VU2, [%VU3R, V2]].
 
+(* Joint independence: [%Dk_c, V3] is independent of V2.
+   This combines Dk_c _|_ V2 and V3 _|_ V2 with the additional assumption
+   that Dk_c and V3 (both Charlie's private data) are jointly independent of V2.
+   In the protocol model, Charlie's key and input are generated independently
+   of Bob's input V2. *)
+Hypothesis Dk_c_V3_indep_V2 : P |= [%Dk_c, V3] _|_ V2.
+
+(* Joint independence: [%Dk_c, V3] is independent of [%V2, E_charlie_d3].
+   This models that Charlie's private data (key and input) is generated
+   independently of the pair (Bob's input, encrypted D3).
+   Since E_charlie_d3 depends on D3 which involves V2 through D2,
+   but is masked by R2, this independence holds. *)
+Hypothesis Dk_c_V3_indep_V2_E : P |= [%Dk_c, V3] _|_ [%V2, E_charlie_d3].
+
 (* D2 = VU2 + R2 is independent of V2 by one-time-pad masking.
    
    Mathematical reasoning (using lemma_3_5' from smc_proba.v):
@@ -676,12 +690,36 @@ Qed.
 (* Main theorem: CharlieView is independent of V2 *)
 Theorem CharlieView_indep_V2_proven : P |= CharlieView _|_ V2.
 Proof.
-(* CharlieView = [% Dk_c, V3, E_charlie_d3]
+(* CharlieView = [% Dk_c, V3, E_charlie_d3] = [% [%Dk_c, V3], E_charlie_d3]
    Need to show joint independence with V2 *)
-(* This requires showing that [%Dk_c, V3, E_charlie_d3] _|_ V2
-   from the individual independences. Full proof requires
-   more infrastructure about combining independences. *)
-Admitted.
+rewrite /CharlieView.
+Show.
+(* Goal: P |= [% Dk_c, V3, E_charlie_d3] _|_ V2 *)
+(* Use mixing_rule: X _|_ [%Y,W] | Z /\ Y _|_ W | Z -> [%X,W] _|_ Y | Z
+   With X = [%Dk_c, V3], W = E_charlie_d3, Y = V2, Z = unit_RV P:
+   Result: [% [%Dk_c, V3], E_charlie_d3] _|_ V2 | unit_RV P *)
+apply cinde_RV_unit.
+Show.
+(* Goal: cinde_RV [% Dk_c, V3, E_charlie_d3] V2 (unit_RV P) *)
+apply (mixing_rule (X:=[%Dk_c, V3]) (Y:=V2) (Z:=unit_RV P) (W:=E_charlie_d3)).
+Show.
+(* Two subgoals:
+   1. [%Dk_c, V3] _|_ [%V2, E_charlie_d3] | unit_RV P
+   2. V2 _|_ E_charlie_d3 | unit_RV P *)
+split.
+Show.
+- (* Subgoal 1: [%Dk_c, V3] _|_ [%V2, E_charlie_d3] | unit_RV P *)
+  apply cinde_RV_unit.
+  Show.
+  exact Dk_c_V3_indep_V2_E.
+- (* Subgoal 2: V2 _|_ E_charlie_d3 | unit_RV P *)
+  apply cinde_RV_unit.
+  Show.
+  (* Need V2 _|_ E_charlie_d3, which is symmetry of E_charlie_d3 _|_ V2 *)
+  rewrite inde_RV_sym.
+  Show.
+  exact E_charlie_d3_indep_V2.
+Qed.
 
 End charlie_security_independence.
 
