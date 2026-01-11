@@ -529,27 +529,6 @@ Definition triple_coeff_matrix (u1 u2 u3 : msg) : 'M[msg]_(1, 3) :=
    
    For DSDP-specific version, see dsdp_solution_set_card_full in dsdp_algebra.v
 *)
-(* 
-   constrained_triples_card: |{(v1,v2,v3) : u1*v1 + u2*v2 + u3*v3 = s}| = m^2
-   
-   STATUS: Aborted - not needed for DSDP protocol analysis
-   
-   REASON: In DSDP, only Alice (result-computing party) knows the constraint
-   result s. Alice's view already includes v1, reducing the problem from 3D to 2D:
-   
-     Alice knows: v1, u1, u2, u3, s
-     Alice infers: (v2, v3) from u2*v2 + u3*v3 = s - u1*v1
-     Use: constrained_pairs_card gives |{(v2,v3)}| = m
-   
-   WHEN NEEDED: This 3D lemma would be required for protocols where:
-   - Adversary sees only (u1,u2,u3,s) but NO variable values
-     Example: External eavesdropper on constraint announcement
-   - Multi-round leakage analysis: H(V1,V2,V3|U,S) before revelation
-     then H(V2,V3|V1,U,S) after, measuring Δ = log(m^2) - log(m) = log(m)
-   - Protocol composition: Multiple DSDP instances before any vi revealed
-   
-   For DSDP-specific version, see dsdp_solution_set_card_full in dsdp_algebra.v
-*)
 Lemma constrained_triples_card (u1 u2 u3 target : msg) :
   (u1 != 0) || (u2 != 0) || (u3 != 0) ->
   #|constrained_triples u1 u2 u3 target| = (m ^ 2)%N.
