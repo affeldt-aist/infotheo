@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg.
-From mathcomp Require Import Rstruct ring boolp finmap lra.
+From mathcomp Require Import Rstruct ring boolp finmap lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
 Require Import extra_algebra extra_proba.
@@ -30,13 +30,13 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 
-Local Definition R := Rdefinitions.R.
-
 (* ========================================================================== *)
 (*                      Entropy sum manipulation                               *)
 (* ========================================================================== *)
 
 Section entropy_sum.
+
+Context {R : realType}.
 
 (* Entropy sum over a subset with uniform probability *)
 Lemma entropy_sum_split (A : finType) 
@@ -62,6 +62,7 @@ End entropy_sum.
 
 Section cinde_cond_mutual_info0.
 
+Context {R : realType}.
 Variables (T TX TY TZ : finType).
 Variable (P : R.-fdist T).
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
@@ -116,6 +117,7 @@ End cinde_cond_mutual_info0.
 
 Section cinde_centropy_eq.
 
+Context {R : realType}.
 Variables (T TX TY TZ : finType).
 Variable (P : R.-fdist T).
 Variables (X : {RV P -> TX}) (Y : {RV P -> TY}) (Z : {RV P -> TZ}).
@@ -145,6 +147,7 @@ End cinde_centropy_eq.
 
 Section zero_entropy_eq_point_mass.
 
+Context {R : realType}.
 Variables (T : finType) (P : R.-fdist T).
 
 (* Zero entropy characterizes point mass distributions:
@@ -275,6 +278,8 @@ End zero_entropy_eq_point_mass.
 
 Section zero_centropy_eq_point_mass.
 
+Context {R : realType}.
+
 (* Helper: if the conditional distribution Pr[Z | Y = y] is deterministic 
    (i.e., there exists z with Pr[Z = z | Y = y] = 1),
    then the corresponding term in the conditional entropy sum is zero. *)
@@ -399,7 +404,7 @@ have [z Hz] : exists z, cond_dist z = 1.
 
   (* With the wrapper RV, apply zero_entropy_eq_point_mass1 *)
   have [z Hz_RV]: exists z, `Pr[idRV = z] = 1.
-    have := @zero_entropy_eq_point_mass1 _ cond_dist W idRV.
+    have := @zero_entropy_eq_point_mass1 R W cond_dist W idRV.
     rewrite H_dist H_cond_zero.
     by move=> [H_fwd _]; apply: H_fwd.
 

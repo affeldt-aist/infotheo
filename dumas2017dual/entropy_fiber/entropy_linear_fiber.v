@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
+From mathcomp Require Import Rstruct ring boolp finmap matrix lra reals.
 From mathcomp Require Import mathcomp_extra.
 From robot Require Import euclidean.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
@@ -67,8 +67,6 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
-
-Local Definition R := Rdefinitions.R.
 
 Section linear_functional.
 
@@ -386,6 +384,7 @@ Section bilinear_entropy_applications.
 
 (* Apply fiber entropy theory to bilinear constraints *)
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 Variable F : finFieldType.
@@ -424,7 +423,7 @@ have fiber_size: forall (u : 'rV[msg]_n) (s : msg),
   rewrite (@linear_fiber_card m_minus_2 n u_vec s_val u_vec_neq0 n_pos).
   by rewrite card_m.
 apply: (@centropy_jcond_determined_fibers 
-         T P 'rV[msg]_n 'rV[msg]_n msg 
+         R T P 'rV[msg]_n 'rV[msg]_n msg 
          V U S 
          (fun v u => u *d v)).
   - by [].

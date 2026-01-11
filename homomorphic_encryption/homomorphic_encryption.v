@@ -45,7 +45,7 @@
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap.
+From mathcomp Require Import Rstruct ring boolp finmap reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
 Require Import smc_proba smc_entropy.
@@ -64,8 +64,6 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
-
-Local Definition R := Rdefinitions.R.
 
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
@@ -385,6 +383,7 @@ End enc_types.
 
 Section enc_lemmas.
 
+Context {R : realType}.
 Variables (T : finType)(P : R.-fdist T).
 
 Axiom E_enc_unif : forall (T : finType) (P : R.-fdist T)

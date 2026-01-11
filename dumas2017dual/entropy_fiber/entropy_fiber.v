@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
+From mathcomp Require Import Rstruct ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid dsdp_extra.
 
@@ -35,8 +35,6 @@ Local Open Scope reals_ext_scope.
 Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
-
-Local Definition R := Rdefinitions.R.
 
 Section abstract_fibers.
 
@@ -81,6 +79,7 @@ End abstract_fibers.
 
 Section fiber_entropy.
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 Variables (DomainT CodomainT : finType).
@@ -201,6 +200,7 @@ End fiber_entropy.
 
 Section constant_fiber_size.
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 
@@ -264,6 +264,7 @@ Section functional_determinacy.
 (* When an auxiliary variable is functionally determined,
    it adds no information to entropy *)
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 
@@ -309,6 +310,7 @@ Section conditional_entropy_with_functional_constraint.
    the conditional entropy H(X | Y, Z) can be computed from 
    H(X | Y) by restricting to the fibers where Z takes specific values *)
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 Variables (XT YT ZT : finType).

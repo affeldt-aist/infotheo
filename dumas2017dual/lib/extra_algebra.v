@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg.
-From mathcomp Require Import Rstruct ring boolp.
+From mathcomp Require Import Rstruct ring boolp reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext.
 
 Import GRing.Theory.
@@ -23,13 +23,13 @@ Import Prenex Implicits.
 
 Local Open Scope ring_scope.
 
-Local Definition R := Rdefinitions.R.
-
 (* ========================================================================== *)
 (*                           Log function lemmas                               *)
 (* ========================================================================== *)
 
 Section log_extra.
+
+Context {R : realType}.
 
 (* log x = 0 iff x = 1 (for positive x).
    This is fundamental for entropy calculations where log(prob) = 0 
@@ -162,6 +162,8 @@ End Zp_unit_extra.
 (* ========================================================================== *)
 
 Section Zp_Fp_equivalence.
+
+Context {R : realType}.
 
 (* When m is prime, 'Z_m and 'F_m have the same cardinality *)
 Lemma Zp_Fp_card_eq (m_minus_2 : nat) :

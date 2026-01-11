@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg.
-From mathcomp Require Import Rstruct ring boolp finmap lra.
+From mathcomp Require Import Rstruct ring boolp finmap lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
 Require Import extra_algebra.
@@ -30,13 +30,13 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 
-Local Definition R := Rdefinitions.R.
-
 (* ========================================================================== *)
 (*                    Conditional probability lemmas                           *)
 (* ========================================================================== *)
 
 Section proba_extra.
+
+Context {R : realType}.
 
 (* If a is not in the image of X, then (a, b) cannot be in the joint image.
    This is used to show that pairs outside the support have zero probability. *)
@@ -230,6 +230,7 @@ End proba_extra.
 
 Section perm_extra.
 
+Context {R : realType}.
 Variables (T : finType) (P : R.-fdist T).
 
 (* Projection of triple (X,Y,Z) onto (Y,Z) gives the joint distribution of (Y,Z).

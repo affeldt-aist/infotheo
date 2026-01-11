@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
+From mathcomp Require Import Rstruct ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption entropy_fiber.
@@ -32,8 +32,6 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
-Local Definition R := Rdefinitions.R.
-
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
@@ -57,6 +55,7 @@ Reserved Notation "u ^h w" (at level 40).
 *)
 Section dsdp_entropy_zpq.
 
+Context {R : realType}.
 Variables (p_minus_2 q_minus_2 : nat).
 Local Notation p := p_minus_2.+2.
 Local Notation q := q_minus_2.+2.
@@ -271,7 +270,7 @@ have Hmargin: `Pr[CondRV = (v1, u1, u2, u3, s)] =
     apply: eq_bigr => vv _.
     by rewrite pfwd1_pairC.
   (* Now use PrX_fstRV with CondRV as first component *)
-  by rewrite -(@PrX_fstRV _ _ _ P CondRV VarRV).
+  by rewrite -(@PrX_fstRV _ _ _ _ P CondRV VarRV).
 
 rewrite Hmargin.
 
@@ -605,6 +604,7 @@ End dsdp_entropy_zpq.
 
 Section dsdp_privacy_analysis.
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 
