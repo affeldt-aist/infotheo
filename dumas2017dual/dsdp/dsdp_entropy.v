@@ -476,7 +476,8 @@ Qed.
    Shows that for each fixed conditioning value, the conditional entropy
    equals log(m). This applies the general fiber entropy framework to DSDP:
    - Fiber = {(v2,v3) | u2*v2 + u3*v3 = s - u1*v1} has cardinality m
-   - Uniform distribution over fiber implies entropy = log(m) *)
+   - Uniform distribution over fiber implies entropy = log(m)
+*)
 Lemma dsdp_entropy_uniform_subset_zpq (u1 u2 u3 v1 s : msg) :
   `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
   (0 < u3)%N -> (u3 < minn p q)%N ->
@@ -489,29 +490,21 @@ Lemma dsdp_entropy_uniform_subset_zpq (u1 u2 u3 v1 s : msg) :
   `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] = log (m%:R : R).
 Proof.
 move=> Hcond_pos Hu3_pos Hu3_lt Hsol_unif Hnonsol_zero.
-(* Express conditional entropy as sum *)
-have ->: `H[VarRV | CondRV = (v1, u1, u2, u3, s)] =
-    - \sum_(pair : msg * msg)
-     `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] *
-     log (`Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)]).
-  rewrite centropy1_RVE // /entropy.
-  congr (- _); apply: eq_bigr => [[v2 v3]] _.
-    by rewrite jfdist_cond_cPr_eq.
-  by rewrite fst_RV2 dist_of_RVE.
-(* Get cardinality *)
+(* Use the general centropy1_uniform_over_set lemma *)
 have card_m : #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
   by apply: dsdp_fiber_full_zpq_card.
-(* Adjust uniform hypothesis to match expected form *)
+(* Adapt uniform hypothesis to use fiber cardinality *)
 have Hsol_unif': forall pair : msg * msg,
     pair \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
     `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 
     #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|%:R^-1.
-  move=> pair Hin.
-  rewrite (Hsol_unif pair Hin).
-  by rewrite card_m.
-rewrite (entropy_sum_split Hsol_unif' Hnonsol_zero).
-rewrite card_m.
-exact: entropy_uniform_set.
+  by move=> pair Hin; rewrite (Hsol_unif pair Hin) card_m.
+(* Apply general lemma *)
+rewrite (@centropy1_uniform_over_set R T P _ _ VarRV CondRV
+           (dsdp_fiber_full_zpq u1 u2 u3 v1 s) (v1, u1, u2, u3, s)
+           Hcond_pos Hsol_unif' Hnonsol_zero); first by rewrite card_m.
+(* Prove fiber cardinality is positive: m = p*q > 0 since p, q are primes *)
+by rewrite card_m muln_gt0 prime_gt0 // prime_gt0.
 Qed.
 
 (* Helper: Each conditioning value gives entropy log(m) *)

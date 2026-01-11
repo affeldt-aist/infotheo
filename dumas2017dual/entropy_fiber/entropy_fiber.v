@@ -77,6 +77,64 @@ Proof. by rewrite mem_fiber. Qed.
 
 End abstract_fibers.
 
+(* ========================================================================== *)
+(* General pointwise conditional entropy over arbitrary sets                  *)
+(* This section provides lemmas that do NOT require Y = f `o X.               *)
+(* ========================================================================== *)
+
+Section general_pointwise_entropy.
+
+Context {R : realType}.
+Variable T : finType.
+Variable P : R.-fdist T.
+Variables (DomainT CodomainT : finType).
+Variable X : {RV P -> DomainT}.
+Variable Y : {RV P -> CodomainT}.
+
+(* General pointwise conditional entropy when distribution is uniform over a set.
+   KEY: This does NOT require Y = f `o X - works for any relationship between
+   X and Y, making it applicable to DSDP and other protocols where the
+   conditioning variable is not simply a function of the variable of interest.
+
+   Usage: When X is uniformly distributed over set S given Y = c, and has
+   zero probability outside S, the conditional entropy equals log(|S|).
+*)
+Lemma centropy1_uniform_over_set (S : {set DomainT}) (c : CodomainT) :
+  `Pr[Y = c] != 0 ->
+  (forall x, x \in S -> `Pr[X = x | Y = c] = #|S|%:R^-1) ->
+  (forall x, x \notin S -> `Pr[X = x | Y = c] = 0) ->
+  (0 < #|S|)%N ->
+  `H[X | Y = c] = log (#|S|%:R : R).
+Proof.
+move=> Hcond_pos Hsol_unif Hnonsol_zero Hcard_pos.
+(* Step 1: Expand conditional entropy as negative sum of p*log(p) *)
+have ->: `H[X | Y = c] =
+  - \sum_(x : DomainT) `Pr[X = x | Y = c] * log (`Pr[X = x | Y = c]).
+  rewrite centropy1_RVE //.
+    rewrite /entropy; congr (- _); apply: eq_bigr => x _.
+    by rewrite jfdist_cond_cPr_eq // fst_RV2 dist_of_RVE.
+  by rewrite fst_RV2 dist_of_RVE.
+(* Step 2: Split sum over S and its complement *)
+rewrite (bigID (mem S)) /=.
+(* Step 3: Non-solutions contribute 0 *)
+have ->: \sum_(i | i \notin S) 
+  `Pr[X = i | Y = c] * log (`Pr[X = i | Y = c]) = 0.
+  apply: big1 => x Hx_notin.
+  by rewrite (Hnonsol_zero x Hx_notin) mul0r.
+rewrite addr0.
+(* Step 4: Solutions have uniform probability: Pr = 1/#|S| *)
+have ->: \sum_(i in S) `Pr[X = i | Y = c] * log (`Pr[X = i | Y = c]) =
+         \sum_(i in S) #|S|%:R^-1 * log (#|S|%:R^-1 : R).
+  apply: eq_bigr => x Hx_in.
+  by rewrite (Hsol_unif x Hx_in).
+(* Step 5: Compute: -|S| * (1/|S|) * log(1/|S|) = log(|S|) *)
+rewrite big_const iter_addr addr0 -mulr_natr.
+rewrite logV; first by field; rewrite pnatr_eq0 -lt0n.
+by rewrite ltr0n.
+Qed.
+
+End general_pointwise_entropy.
+
 Section fiber_entropy.
 
 Context {R : realType}.
