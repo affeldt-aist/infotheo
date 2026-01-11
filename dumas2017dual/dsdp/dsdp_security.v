@@ -462,13 +462,24 @@ Hypothesis Dk_b_V2_E_charlie_vur3_indep_V3_E_bob :
 (* D2 = VU2 + R2 is independent of V3 by one-time-pad masking *)
 Lemma D2_indep_V3 : P |= D2 _|_ V3.
 Proof.
-(* Use lemma_3_5' with R2 as the uniform random mask 
-   Need: R2 uniform, R2 _|_ [%VU2, V3], then VU2 + R2 _|_ V3 *)
+(* One-time-pad argument using lemma_3_5' from smc_proba.v:
+   D2 = VU2 + R2 where R2 is uniform and R2 _|_ [%VU2, V3].
+   By lemma_3_5', (VU2 + R2) _|_ V3. *)
 rewrite /D2.
-(* Apply add_RV_unif since we don't need the full power of lemma_3_5' *)
-(* Actually, need proper structure for lemma_3_5' *)
-(* For now, assume this follows from R2 being OTP mask *)
-Admitted.
+(* Goal: P |= VU2 \+ R2 _|_ V3 *)
+(* lemma_3_5' expects:
+   - Z_XY_indep: P |= Z _|_ [%X, Y]
+   - n : nat, card_TZ : #|TZ| = n.+1
+   - pZ_unif: `p_ Z = fdist_uniform card_TZ *)
+have card_TZ : #|msg| = (Zp_trunc m).+1.+1.
+  by rewrite card_ord.
+have pR2_unif_adjusted : `p_ R2 = fdist_uniform card_TZ.
+  rewrite pR2_unif.
+  congr fdist_uniform.
+  exact: eq_irrelevance.
+exact: (@lemma_3_5' R T msg msg P VU2 R2 V3 R2_indep_VU2_V3
+        (Zp_trunc m).+1 card_TZ pR2_unif_adjusted).
+Qed.
 
 (* E_bob_d2 is independent of V3 because D2 is *)
 Lemma E_bob_d2_indep_V3 : P |= E_bob_d2 _|_ V3.
