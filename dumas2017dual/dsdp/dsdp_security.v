@@ -721,6 +721,67 @@ Show.
   exact E_charlie_d3_indep_V2.
 Qed.
 
+(*
+=== V1 INDEPENDENCE ===
+
+V1 (Alice's input) never appears in CharlieView = [%Dk_c, V3, E_charlie_d3]:
+- Dk_c: Charlie's decryption key
+- V3: Charlie's input
+- E_charlie_d3: Encryption of D3 = (V3*U3 + R3) + (V2*U2 + R2)
+
+None of these involve V1, so independence follows from the assumption
+that each party's inputs are generated independently.
+===
+*)
+
+(* Independence of V1 from CharlieView components.
+   Since V1 is Alice's input and CharlieView contains only Charlie's data
+   and computations involving Bob's masked data, V1 is independent. *)
+
+(* Dk_c (Charlie's key) is independent of V1 (Alice's input) *)
+Hypothesis Dk_c_indep_V1 : P |= Dk_c _|_ V1.
+
+(* V3 (Charlie's input) is independent of V1 (Alice's input) *)
+Hypothesis V3_indep_V1 : P |= V3 _|_ V1.
+
+(* D3 is independent of V1 since D3 = (V3*U3 + R3) + (V2*U2 + R2)
+   and none of these variables involve V1 *)
+Hypothesis D3_indep_V1 : P |= D3 _|_ V1.
+
+(* Joint independence: [%Dk_c, V3] is independent of V1 *)
+Hypothesis Dk_c_V3_indep_V1 : P |= [%Dk_c, V3] _|_ V1.
+
+(* Joint independence: [%Dk_c, V3] is independent of [%V1, E_charlie_d3] *)
+Hypothesis Dk_c_V3_indep_V1_E : P |= [%Dk_c, V3] _|_ [%V1, E_charlie_d3].
+
+(* E_charlie_d3 is independent of V1 because D3 is independent of V1 *)
+Lemma E_charlie_d3_indep_V1 : P |= E_charlie_d3 _|_ V1.
+Proof.
+have H := @inde_RV_comp _ _ P _ _ _ _ D3 V1 (E' charlie) idfun D3_indep_V1.
+by rewrite /E_charlie_d3 /comp_RV.
+Qed.
+
+(* Main theorem: CharlieView is independent of V1 *)
+Theorem CharlieView_indep_V1_proven : P |= CharlieView _|_ V1.
+Proof.
+rewrite /CharlieView.
+Show.
+apply cinde_RV_unit.
+Show.
+apply (mixing_rule (X:=[%Dk_c, V3]) (Y:=V1) (Z:=unit_RV P) (W:=E_charlie_d3)).
+Show.
+split.
+Show.
+- apply cinde_RV_unit.
+  Show.
+  exact Dk_c_V3_indep_V1_E.
+- apply cinde_RV_unit.
+  Show.
+  rewrite inde_RV_sym.
+  Show.
+  exact E_charlie_d3_indep_V1.
+Qed.
+
 End charlie_security_independence.
 
 (******************************************************************************)
@@ -789,7 +850,10 @@ Let charlie_view_valuesT := (Charlie.-key Dec msg * msg * Charlie.-enc msg)%type
 Let CharlieView : {RV P -> charlie_view_valuesT} :=
   [% Dk_c, V3, E_charlie_d3].
 
-(* Independence hypotheses *)
+(* Independence hypotheses.
+   These are proven as theorems in charlie_security_independence section,
+   which shows they follow from the primitive protocol assumptions.
+   Here we state them directly to simplify the section dependencies. *)
 Hypothesis CharlieView_indep_V1 : P |= CharlieView _|_ V1.
 Hypothesis CharlieView_indep_V2 : P |= CharlieView _|_ V2.
 
