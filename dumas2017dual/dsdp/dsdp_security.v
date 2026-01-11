@@ -60,10 +60,9 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
-Local Definition R := Rdefinitions.R.
-
 Section dsdp_security.
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 
@@ -300,6 +299,7 @@ End dsdp_security.
 
 Section bob_security.
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 
@@ -802,6 +802,7 @@ End charlie_security_independence.
 
 Section charlie_security.
 
+Context {R : realType}.
 Variable T : finType.
 Variable P : R.-fdist T.
 
@@ -850,12 +851,28 @@ Let charlie_view_valuesT := (Charlie.-key Dec msg * msg * Charlie.-enc msg)%type
 Let CharlieView : {RV P -> charlie_view_valuesT} :=
   [% Dk_c, V3, E_charlie_d3].
 
-(* Independence hypotheses.
-   These are proven as theorems in charlie_security_independence section,
-   which shows they follow from the primitive protocol assumptions.
-   Here we state them directly to simplify the section dependencies. *)
-Hypothesis CharlieView_indep_V1 : P |= CharlieView _|_ V1.
-Hypothesis CharlieView_indep_V2 : P |= CharlieView _|_ V2.
+(* Primitive independence hypotheses needed for CharlieView independence.
+   These are proven in charlie_security_independence section using
+   one-time-pad arguments (lemma_3_5') and graphoid axioms (mixing_rule). *)
+
+(* For V2 independence (one-time-pad masking) *)
+Hypothesis R2_indep_VU2_V2 : P |= R2 _|_ [% VU2, V2].
+Hypothesis R2_indep_VU2_VU3R_V2 : P |= R2 _|_ [% VU2, [%VU3R, V2]].
+Hypothesis Dk_c_V3_indep_V2_E : P |= [%Dk_c, V3] _|_ [%V2, E_charlie_d3].
+
+(* For V1 independence (V1 not in CharlieView) *)
+Hypothesis D3_indep_V1 : P |= D3 _|_ V1.
+Hypothesis Dk_c_V3_indep_V1_E : P |= [%Dk_c, V3] _|_ [%V1, E_charlie_d3].
+
+(* Derived: CharlieView is independent of V1 and V2.
+   Uses proven theorems from charlie_security_independence section. *)
+Let CharlieView_indep_V1 : P |= CharlieView _|_ V1 :=
+  @CharlieView_indep_V1_proven R T P p_minus_2 q_minus_2 inputs
+    D3_indep_V1 Dk_c_V3_indep_V1_E.
+
+Let CharlieView_indep_V2 : P |= CharlieView _|_ V2 :=
+  @CharlieView_indep_V2_proven R T P p_minus_2 q_minus_2 inputs
+    R2_indep_VU2_V2 R2_indep_VU2_VU3R_V2 Dk_c_V3_indep_V2_E.
 
 (* Uniform distribution of V1 *)
 Hypothesis pV1_unif : `p_ V1 = fdist_uniform card_msg.

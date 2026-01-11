@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
+From mathcomp Require Import Rstruct ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 
@@ -37,8 +37,6 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
-Local Definition R := Rdefinitions.R.
-
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
@@ -58,8 +56,12 @@ Reserved Notation "u ^h w" (at level 40).
    - fiber_zpq.v
 *)
 
+Section inde_entropy_lemmas.
+
+Context {R : realType}.
+
 (* Independence implies conditional entropy equals unconditional: H(X|V) = H(X) *)
-Lemma inde_cond_entropy (U A B : finType) (P : Rdefinitions.R.-fdist U)
+Lemma inde_cond_entropy (U A B : finType) (P : R.-fdist U)
   (View : {RV P -> A}) (X : {RV P -> B}) :
   P |= View _|_ X ->
   `H(X | View) = `H `p_ X.
@@ -70,3 +72,5 @@ have Hprod2 : (`p_[%X, View]) = (((`p_[%X, View])`1) `x ((`p_[%X, View])`2))%fdi
   by rewrite fst_RV2 snd_RV2 -fdistX_RV2 Hprod fdistX_prod.
 by rewrite (centropy_indep Hprod2) fst_RV2.
 Qed.
+
+End inde_entropy_lemmas.
