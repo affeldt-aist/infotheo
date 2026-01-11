@@ -745,7 +745,22 @@ Hypothesis Dk_c_indep_V1 : P |= Dk_c _|_ V1.
 Hypothesis V3_indep_V1 : P |= V3 _|_ V1.
 
 (* D3 is independent of V1 since D3 = (V3*U3 + R3) + (V2*U2 + R2)
-   and none of these variables involve V1 *)
+   and none of these variables involve V1.
+   
+   Mathematical justification:
+   From dsdp_random_inputs we have:
+   - alice_indep: [%Dk_a, V1, U1, U2, U3, R2, R3] _|_ [%V2, V3]
+     => [%V2, V3] _|_ V1 (by symmetry and decomposition)
+   - alice_V1_indep_randoms: V1 _|_ [%U1, U2, U3, R2, R3]
+     => [%U2, U3, R2, R3] _|_ V1 (by decomposition and symmetry)
+   
+   D3 is a deterministic function of [%V2, V3, U2, U3, R2, R3].
+   Since these variables are jointly independent of V1, D3 _|_ V1 follows
+   from the composition property of independence.
+   
+   Full mechanized proof requires careful handling of tuple associativity
+   and the graphoid contraction axiom to combine the independences.
+*)
 Hypothesis D3_indep_V1 : P |= D3 _|_ V1.
 
 (* Joint independence: [%Dk_c, V3] is independent of V1 *)
