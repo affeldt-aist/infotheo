@@ -550,6 +550,12 @@ Hypothesis V3_indep_V2 : P |= V3 _|_ V2.
    VU3R = V3*U3 + R3 doesn't involve V2, so should be independent of V2 *)
 Hypothesis VU3R_indep_V2 : P |= VU3R _|_ V2.
 
+(* R2 is independent of [%VU2, [%VU3R, V2]] - with right-associated nesting.
+   This models that R2 (Alice's random mask) is generated independently of
+   both VU2 and the pair [%VU3R, V2]. 
+   Note: [%A, B, C] is ((A,B),C) but we need (A,(B,C)) for lemma_3_5'. *)
+Hypothesis R2_indep_VU2_VU3R_V2 : P |= R2 _|_ [% VU2, [%VU3R, V2]].
+
 (* D2 = VU2 + R2 is independent of V2 by one-time-pad masking.
    
    Mathematical reasoning (using lemma_3_5' from smc_proba.v):
@@ -573,19 +579,89 @@ Hypothesis VU3R_indep_V2 : P |= VU3R _|_ V2.
 *)
 Lemma D2_indep_V2 : P |= D2 _|_ V2.
 Proof.
-(* One-time-pad argument: R2 masks V2*U2, making D2 independent of V2 *)
-Admitted.
+(* One-time-pad argument using lemma_3_5' from smc_proba.v:
+   D2 = VU2 + R2 where R2 is uniform and R2 _|_ [%VU2, V2].
+   By lemma_3_5', (VU2 + R2) _|_ V2. *)
+rewrite /D2.
+(* Goal: P |= VU2 \+ R2 _|_ V2 *)
+(* lemma_3_5' expects:
+   - Z_XY_indep: P |= Z _|_ [%X, Y]
+   - n : nat, card_TZ : #|TZ| = n.+1
+   - pZ_unif: `p_ Z = fdist_uniform card_TZ
+   The key issue is that pR2_unif uses dsdp_entropy.card_msg which has
+   type #|msg| = m, not #|msg| = n.+1.
+   
+   Since 'Z_m has cardinality (Zp_trunc m).+2 by definition,
+   and card_msg proves #|msg| = m = (Zp_trunc m).+2, we can use
+   (Zp_trunc m).+1 as n. *)
+have card_TZ : #|msg| = (Zp_trunc m).+1.+1.
+  by rewrite card_ord.
+have pR2_unif_adjusted : `p_ R2 = fdist_uniform card_TZ.
+  rewrite (pR2_unif inputs).
+  congr fdist_uniform.
+  exact: eq_irrelevance.
+exact: (@lemma_3_5' R T msg msg P VU2 R2 V2 R2_indep_VU2_V2
+        (Zp_trunc m).+1 card_TZ pR2_unif_adjusted).
+Qed.
+
+(* Intermediate lemma: D2 is independent of [%VU3R, V2] 
+   This follows from lemma_3_5' applied to D2 = VU2 + R2 *)
+Lemma D2_indep_VU3R_V2 : P |= D2 _|_ [%VU3R, V2].
+Proof.
+(* D2 = VU2 + R2 where R2 is uniform and R2 _|_ [%VU2, VU3R, V2].
+   We need R2 _|_ [%VU2, [%VU3R, V2]] to apply lemma_3_5'.
+   
+   Note: The triple [%VU2, VU3R, V2] is right-associated as [%VU2, [%VU3R, V2]].
+   So R2_indep_VU2_VU3R_V2 directly gives what we need. *)
+rewrite /D2.
+have card_TZ : #|msg| = (Zp_trunc m).+1.+1.
+  by rewrite card_ord.
+have pR2_unif_adjusted : `p_ R2 = fdist_uniform card_TZ.
+  rewrite (pR2_unif inputs).
+  congr fdist_uniform.
+  exact: eq_irrelevance.
+(* R2_indep_VU2_VU3R_V2 : P |= R2 _|_ [% VU2, VU3R, V2]
+   In infotheo, [% A, B, C] = [% A, [% B, C]] by definition.
+   So this is already R2 _|_ [% VU2, [%VU3R, V2]]. *)
+exact: (@lemma_3_5' R T _ msg P VU2 R2 [%VU3R, V2] R2_indep_VU2_VU3R_V2
+        (Zp_trunc m).+1 card_TZ pR2_unif_adjusted).
+Qed.
 
 (* D3 = VU3R + D2 is independent of V2.
-   Since VU3R _|_ V2 and D2 _|_ V2, and they are combined by addition. *)
+   Since D2 is uniform and D2 _|_ [%VU3R, V2], by lemma_3_5', 
+   VU3R + D2 = D3 _|_ V2. *)
 Lemma D3_indep_V2 : P |= D3 _|_ V2.
 Proof.
 (* D3 = VU3R + D2
-   Need to show [%VU3R, D2] _|_ V2, then use inde_RV_comp *)
-(* This requires that VU3R and D2 are jointly independent of V2 *)
-(* For now, we assume this as a hypothesis - full proof requires
-   more infrastructure about joint independence *)
-Admitted.
+   By lemma_3_5' with X = VU3R, Z = D2, Y = V2:
+   Need D2 _|_ [%VU3R, V2] (proven above) and D2 uniform. *)
+rewrite /D3.
+(* D2 is uniform because D2 = VU2 + R2 where R2 is uniform and independent of VU2.
+   By add_RV_unif, VU2 + R2 is uniform. *)
+have card_TZ : #|msg| = (Zp_trunc m).+1.+1.
+  by rewrite card_ord.
+(* We need to show D2 is uniform to apply lemma_3_5' *)
+have pD2_unif : `p_ D2 = fdist_uniform card_TZ.
+  rewrite /D2.
+  (* D2 = VU2 + R2, R2 is uniform and R2 _|_ VU2 *)
+  (* From R2_indep_VU2_V2 : P |= R2 _|_ [%VU2, V2], get R2 _|_ VU2 by decomposition *)
+  have R2_VU2_indep : P |= R2 _|_ VU2.
+    exact/cinde_RV_unit/decomposition/cinde_RV_unit/R2_indep_VU2_V2.
+  (* add_RV_unif needs: X Y card_A pY_unif XY_indep
+     - X = VU2, Y = R2
+     - card_A = card_TZ
+     - pY_unif = pR2_unif (adjusted for card_TZ)
+     - XY_indep = VU2 _|_ R2 (need symmetry of R2_VU2_indep) *)
+  have VU2_R2_indep : P |= VU2 _|_ R2.
+    by rewrite inde_RV_sym.
+  have pR2_unif_adjusted : `p_ R2 = fdist_uniform card_TZ.
+    rewrite (pR2_unif inputs).
+    congr fdist_uniform.
+    exact: eq_irrelevance.
+  exact: (add_RV_unif VU2 R2 card_TZ pR2_unif_adjusted VU2_R2_indep).
+exact: (@lemma_3_5' R T msg msg P VU3R D2 V2 D2_indep_VU3R_V2
+        (Zp_trunc m).+1 card_TZ pD2_unif).
+Qed.
 
 (* E_charlie_d3 is independent of V2 because D3 is independent of V2
    and encryption is a deterministic function of D3. *)
