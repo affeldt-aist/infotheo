@@ -392,19 +392,44 @@ Qed.
 (* VU3 = V3*U3 is independent of V1 *)
 Lemma VU3_indep_V1 : P |= VU3 _|_ V1.
 Proof.
-(* V3 _|_ V1 and U3 _|_ V1, so V3*U3 _|_ V1 *)
-(* This requires showing that V3 and U3 are jointly independent of V1 *)
-(* For now, we assume it as it requires complex tuple manipulation *)
-Admitted.
+(* Use V3_U3_indep_V1 from the record and apply inde_RV_comp with multiplication *)
+have H := V3_U3_indep_V1 inputs.
+(* H : P |= [%V3, U3] _|_ V1 *)
+(* Define multiplication function *)
+pose f := (fun x : (msg * msg) => let '(v3, u3) := x in (v3 * u3)%R).
+(* Apply inde_RV_comp *)
+have Hcomp := @inde_RV_comp _ _ P _ _ _ _ [%V3, U3] V1 f idfun H.
+(* Simplify composition *)
+rewrite /comp_RV /= in Hcomp.
+(* Hcomp should now be: (fun x => V3 x * U3 x) _|_ V1 which is VU3 _|_ V1 *)
+rewrite /VU3.
+exact Hcomp.
+Qed.
 
 (* VU3R = V3*U3 + R3 is independent of V1 *)
 Lemma VU3R_indep_V1 : P |= VU3R _|_ V1.
 Proof.
-(* VU3R = VU3 + R3. We have [%U3, R3] _|_ V1.
-   If we also have V3 _|_ V1, we can show [%V3, U3, R3] _|_ V1,
-   then VU3R = f(V3, U3, R3) _|_ V1 by inde_RV_comp *)
-(* For now, simplified approach using the fact that VU3R doesn't involve V1 *)
-Admitted.
+(* Use lemma_3_5' with R3 as uniform mask: VU3 + R3 _|_ V1
+   Need: R3 uniform, R3 _|_ [%VU3, V1] *)
+rewrite /VU3R.
+(* Goal: P |= VU3 \+ R3 _|_ V1 *)
+(* Setup cardinality proof *)
+have card_TZ : #|msg| = (Zp_trunc m).+1.+1.
+  by rewrite card_ord.
+(* Adjust pR3_unif to match card_TZ *)
+have pR3_unif_adjusted : `p_ R3 = fdist_uniform card_TZ.
+  rewrite (pR3_unif inputs).
+  congr fdist_uniform.
+  exact: eq_irrelevance.
+(* Get R3_indep_VU3_V1 from the record *)
+have R3_indep := R3_indep_VU3_V1 inputs.
+(* R3_indep : P |= R3 _|_ [%V3 \* U3, V1] 
+   Need to show this equals R3 _|_ [%VU3, V1] *)
+rewrite /VU3 in R3_indep.
+(* Apply lemma_3_5' *)
+exact: (@lemma_3_5' R T msg msg P VU3 R3 V1 R3_indep
+        (Zp_trunc m).+1 card_TZ pR3_unif_adjusted).
+Qed.
 
 (* E_charlie_vur3 is independent of V1 because VU3R is *)
 Lemma E_charlie_vur3_indep_V1 : P |= E_charlie_vur3 _|_ V1.

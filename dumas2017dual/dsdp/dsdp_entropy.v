@@ -691,6 +691,15 @@ Record dsdp_random_inputs :=
     pU3_unif : `p_ U3 = fdist_uniform card_msg;
     pR2_unif : `p_ R2 = fdist_uniform card_msg;
     pR3_unif : `p_ R3 = fdist_uniform card_msg;
+
+    (* Joint independence of V3 and U3 from V1 for proving VU3_indep_V1.
+       Models that Charlie's input V3 and random value U3 are jointly independent
+       of Alice's input V1. *)
+    V3_U3_indep_V1 : P |= [%V3, U3] _|_ V1;
+
+    (* R3 independent of [VU3, V1] for one-time-pad property in VU3R.
+       Models that R3 is generated independently of both VU3 = V3*U3 and V1. *)
+    R3_indep_VU3_V1 : P |= R3 _|_ [%V3 \* U3, V1];
 }.
 
 Variable inputs : dsdp_random_inputs.
