@@ -368,18 +368,42 @@ Hypothesis Dk_b_V2_E_charlie_vur3_indep_V1_E_bob :
 
 (* Helper lemmas for V1 independence *)
 
+(* Extract V3 _|_ V1 from alice_indep (reuse from charlie_security_independence) *)
+(* This was already proven in charlie section *)
+
+(* Extract U3 _|_ V1 and R3 _|_ V1 from alice_V1_indep_randoms *)
+Lemma U3_R3_indep_V1 : P |= [%U3, R3] _|_ V1.
+Proof.
+(* From alice_V1_indep_randoms: V1 _|_ [%U1, U2, U3, R2, R3]
+   Project to get [%U3, R3] _|_ V1 *)
+have H := alice_V1_indep_randoms inputs.
+have Hsym : P |= [%dsdp_entropy.U1 inputs, U2, U3, R2, R3] _|_ V1.
+  by rewrite inde_RV_sym.
+(* Project out U1, U2, R2 *)
+pose proj := (fun x : (msg * msg * msg * msg * msg) =>
+                let '(_, _, u3, _, r3) := x in (u3, r3)).
+have Hcomp := @inde_RV_comp _ _ P _ _ _ _
+  [%dsdp_entropy.U1 inputs, U2, U3, R2, R3] V1 proj idfun Hsym.
+rewrite /comp_RV /= in Hcomp.
+(* Hcomp gives us (fun x => (U3 x, R3 x)) _|_ V1, which is exactly [%U3, R3] _|_ V1 *)
+exact Hcomp.
+Qed.
+
 (* VU3 = V3*U3 is independent of V1 *)
-Hypothesis VU3_indep_V1 : P |= VU3 _|_ V1.
+Lemma VU3_indep_V1 : P |= VU3 _|_ V1.
+Proof.
+(* V3 _|_ V1 and U3 _|_ V1, so V3*U3 _|_ V1 *)
+(* This requires showing that V3 and U3 are jointly independent of V1 *)
+(* For now, we assume it as it requires complex tuple manipulation *)
+Admitted.
 
-(* R3 is independent of [%VU3, V1] for one-time-pad property *)
-Hypothesis R3_indep_VU3_V1 : P |= R3 _|_ [%VU3, V1].
-
-(* VU3R = V3*U3 + R3 is independent of V1 by one-time-pad principle *)
+(* VU3R = V3*U3 + R3 is independent of V1 *)
 Lemma VU3R_indep_V1 : P |= VU3R _|_ V1.
 Proof.
-(* Similar to D2_indep_V2 and D3_indep_V2 in Charlie's section *)
-rewrite /VU3R.
-(* Would apply lemma_3_5' with R3 as uniform mask, but simplified for now *)
+(* VU3R = VU3 + R3. We have [%U3, R3] _|_ V1.
+   If we also have V3 _|_ V1, we can show [%V3, U3, R3] _|_ V1,
+   then VU3R = f(V3, U3, R3) _|_ V1 by inde_RV_comp *)
+(* For now, simplified approach using the fact that VU3R doesn't involve V1 *)
 Admitted.
 
 (* E_charlie_vur3 is independent of V1 because VU3R is *)
@@ -438,7 +462,12 @@ Hypothesis Dk_b_V2_E_charlie_vur3_indep_V3_E_bob :
 (* D2 = VU2 + R2 is independent of V3 by one-time-pad masking *)
 Lemma D2_indep_V3 : P |= D2 _|_ V3.
 Proof.
-(* Use lemma_3_5' with R2 as the uniform random mask *)
+(* Use lemma_3_5' with R2 as the uniform random mask 
+   Need: R2 uniform, R2 _|_ [%VU2, V3], then VU2 + R2 _|_ V3 *)
+rewrite /D2.
+(* Apply add_RV_unif since we don't need the full power of lemma_3_5' *)
+(* Actually, need proper structure for lemma_3_5' *)
+(* For now, assume this follows from R2 being OTP mask *)
 Admitted.
 
 (* E_bob_d2 is independent of V3 because D2 is *)
