@@ -693,31 +693,24 @@ Proof.
 (* CharlieView = [% Dk_c, V3, E_charlie_d3] = [% [%Dk_c, V3], E_charlie_d3]
    Need to show joint independence with V2 *)
 rewrite /CharlieView.
-Show.
 (* Goal: P |= [% Dk_c, V3, E_charlie_d3] _|_ V2 *)
 (* Use mixing_rule: X _|_ [%Y,W] | Z /\ Y _|_ W | Z -> [%X,W] _|_ Y | Z
    With X = [%Dk_c, V3], W = E_charlie_d3, Y = V2, Z = unit_RV P:
    Result: [% [%Dk_c, V3], E_charlie_d3] _|_ V2 | unit_RV P *)
 apply cinde_RV_unit.
-Show.
 (* Goal: cinde_RV [% Dk_c, V3, E_charlie_d3] V2 (unit_RV P) *)
 apply (mixing_rule (X:=[%Dk_c, V3]) (Y:=V2) (Z:=unit_RV P) (W:=E_charlie_d3)).
-Show.
 (* Two subgoals:
    1. [%Dk_c, V3] _|_ [%V2, E_charlie_d3] | unit_RV P
    2. V2 _|_ E_charlie_d3 | unit_RV P *)
 split.
-Show.
 - (* Subgoal 1: [%Dk_c, V3] _|_ [%V2, E_charlie_d3] | unit_RV P *)
   apply cinde_RV_unit.
-  Show.
   exact Dk_c_V3_indep_V2_E.
 - (* Subgoal 2: V2 _|_ E_charlie_d3 | unit_RV P *)
   apply cinde_RV_unit.
-  Show.
   (* Need V2 _|_ E_charlie_d3, which is symmetry of E_charlie_d3 _|_ V2 *)
   rewrite inde_RV_sym.
-  Show.
   exact E_charlie_d3_indep_V2.
 Qed.
 
@@ -747,21 +740,190 @@ Hypothesis V3_indep_V1 : P |= V3 _|_ V1.
 (* D3 is independent of V1 since D3 = (V3*U3 + R3) + (V2*U2 + R2)
    and none of these variables involve V1.
    
-   Mathematical justification:
-   From dsdp_random_inputs we have:
-   - alice_indep: [%Dk_a, V1, U1, U2, U3, R2, R3] _|_ [%V2, V3]
-     => [%V2, V3] _|_ V1 (by symmetry and decomposition)
-   - alice_V1_indep_randoms: V1 _|_ [%U1, U2, U3, R2, R3]
-     => [%U2, U3, R2, R3] _|_ V1 (by decomposition and symmetry)
-   
-   D3 is a deterministic function of [%V2, V3, U2, U3, R2, R3].
-   Since these variables are jointly independent of V1, D3 _|_ V1 follows
-   from the composition property of independence.
-   
-   Full mechanized proof requires careful handling of tuple associativity
-   and the graphoid contraction axiom to combine the independences.
+   Proof strategy using graphoid axioms:
+   1. From alice_indep: [%V2, V3] _|_ [%Dk_a, V1, U1, U2, U3, R2, R3]
+      By decomposition: [%V2, V3] _|_ [%V1, U2, U3, R2, R3]
+   2. From alice_V1_indep_randoms: V1 _|_ [%U1, U2, U3, R2, R3]
+      By decomposition: V1 _|_ [%U2, U3, R2, R3]
+   3. By mixing_rule with X=[%V2,V3], Y=V1, W=[%U2,U3,R2,R3]:
+      [%V2,V3] _|_ [%V1, U2,U3,R2,R3] /\ V1 _|_ [%U2,U3,R2,R3]
+      => [%V2, V3, U2, U3, R2, R3] _|_ V1
+   4. D3 = f(V2, V3, U2, U3, R2, R3), so by inde_RV_comp: D3 _|_ V1
 *)
-Hypothesis D3_indep_V1 : P |= D3 _|_ V1.
+
+(* Helper: Extract [%V2, V3] _|_ V1 from alice_indep *)
+Lemma V2V3_indep_V1 : P |= [%V2, V3] _|_ V1.
+Proof.
+have H := alice_indep inputs.
+(* H : [%Dk_a inputs, V1, U1, U2, U3, R2, R3] _|_ [%V2, V3] *)
+have Hsym : P |= [%V2, V3] _|_ [%dsdp_entropy.Dk_a inputs, V1, 
+                                dsdp_entropy.U1 inputs, U2, U3, R2, R3].
+  by rewrite inde_RV_sym.
+(* Decompose step by step to get [%V2, V3] _|_ V1 *)
+(* Structure: [% [% [% [% [% [% Dk_a, V1], U1], U2], U3], R2], R3] *)
+have H1 : P |= [%V2, V3] _|_ [%dsdp_entropy.Dk_a inputs, V1, 
+                               dsdp_entropy.U1 inputs, U2, U3, R2].
+  exact/cinde_RV_unit/decomposition/cinde_RV_unit/Hsym.
+have H2 : P |= [%V2, V3] _|_ [%dsdp_entropy.Dk_a inputs, V1, 
+                               dsdp_entropy.U1 inputs, U2, U3].
+  exact/cinde_RV_unit/decomposition/cinde_RV_unit/H1.
+have H3 : P |= [%V2, V3] _|_ [%dsdp_entropy.Dk_a inputs, V1, 
+                               dsdp_entropy.U1 inputs, U2].
+  exact/cinde_RV_unit/decomposition/cinde_RV_unit/H2.
+have H4 : P |= [%V2, V3] _|_ [%dsdp_entropy.Dk_a inputs, V1, 
+                               dsdp_entropy.U1 inputs].
+  exact/cinde_RV_unit/decomposition/cinde_RV_unit/H3.
+have H5 : P |= [%V2, V3] _|_ [%dsdp_entropy.Dk_a inputs, V1].
+  exact/cinde_RV_unit/decomposition/cinde_RV_unit/H4.
+(* Now swap to get V1 first, then decompose to remove Dk_a *)
+have H6 : P |= [%V2, V3] _|_ [%V1, dsdp_entropy.Dk_a inputs].
+  exact/cinde_RV_unit/cinde_drv_2C/cinde_RV_unit/H5.
+exact/cinde_RV_unit/decomposition/cinde_RV_unit/H6.
+Qed.
+
+(* Helper: Extract V1 _|_ [%U2, U3, R2, R3] from alice_V1_indep_randoms *)
+Lemma V1_indep_U2U3R2R3 : P |= V1 _|_ [%U2, U3, R2, R3].
+Proof.
+have H := alice_V1_indep_randoms inputs.
+(* H : V1 _|_ [%U1, U2, U3, R2, R3]
+   Use inde_RV_comp: f(X) _|_ Y follows from X _|_ Y
+   [%U2, U3, R2, R3] = proj `o [%U1, U2, U3, R2, R3] where proj drops U1 *)
+
+(* First get symmetry: [%U1, U2, U3, R2, R3] _|_ V1 *)
+have Hsym : P |= [%dsdp_entropy.U1 inputs, U2, U3, R2, R3] _|_ V1.
+  by rewrite inde_RV_sym.
+
+(* Define projection function that removes first component *)
+pose proj := (fun x : (msg * msg * msg * msg * msg) => 
+                let '(_, u2, u3, r2, r3) := x in (u2, u3, r2, r3)).
+
+(* Apply inde_RV_comp *)
+have Hproj := @inde_RV_comp _ _ P _ _ _ _ 
+  [%dsdp_entropy.U1 inputs, U2, U3, R2, R3] V1 proj idfun Hsym.
+
+(* proj `o [%U1, U2, U3, R2, R3] = [%U2, U3, R2, R3] by computation *)
+rewrite /comp_RV /= in Hproj.
+
+(* Result: [%U2, U3, R2, R3] _|_ V1 *)
+have Hresult : P |= [%U2, U3, R2, R3] _|_ V1.
+  exact Hproj.
+
+(* By symmetry: V1 _|_ [%U2, U3, R2, R3] *)
+by rewrite inde_RV_sym.
+Qed.
+
+(* Helper: Remove first element from 7-tuple using projection *)
+Lemma alice_indep_no_Dka : 
+  P |= [%V1, dsdp_entropy.U1 inputs, U2, U3, R2, R3] _|_ [%V2, V3].
+Proof.
+have H := alice_indep inputs.
+(* H : [%Dk_a, V1, U1, U2, U3, R2, R3] _|_ [%V2, V3] *)
+(* Use inde_RV_comp to project out Dk_a *)
+pose proj := (fun x : (Alice.-key Dec msg * msg * msg * msg * msg * msg * msg) =>
+                let '(_, v1, u1, u2, u3, r2, r3) := x in (v1, u1, u2, u3, r2, r3)).
+have Hcomp := @inde_RV_comp _ _ P _ _ _ _
+  [%dsdp_entropy.Dk_a inputs, V1, dsdp_entropy.U1 inputs, U2, U3, R2, R3]
+  [%V2, V3] proj idfun H.
+rewrite /comp_RV /= in Hcomp.
+exact Hcomp.
+Qed.
+
+(* Helper: Remove U1 from 6-tuple using projection *)
+Lemma alice_indep_no_Dka_U1 :
+  P |= [%V1, U2, U3, R2, R3] _|_ [%V2, V3].
+Proof.
+have H := alice_indep_no_Dka.
+(* H : [%V1, U1, U2, U3, R2, R3] _|_ [%V2, V3] *)
+(* Use inde_RV_comp to project out U1 *)
+pose proj := (fun x : (msg * msg * msg * msg * msg * msg) =>
+                let '(v1, _, u2, u3, r2, r3) := x in (v1, u2, u3, r2, r3)).
+have Hcomp := @inde_RV_comp _ _ P _ _ _ _
+  [%V1, dsdp_entropy.U1 inputs, U2, U3, R2, R3]
+  [%V2, V3] proj idfun H.
+rewrite /comp_RV /= in Hcomp.
+exact Hcomp.
+Qed.
+
+(* Helper: [%V2, V3] _|_ [%V1, U2, U3, R2, R3] from alice_indep *)
+Lemma V2V3_indep_V1_randoms : P |= [%V2, V3] _|_ [%V1, U2, U3, R2, R3].
+Proof.
+have H := alice_indep_no_Dka_U1.
+(* H : [%V1, U2, U3, R2, R3] _|_ [%V2, V3] *)
+by rewrite inde_RV_sym.
+Qed.
+
+
+(* Helper: Extract [%V2, V3] _|_ [%V1, [%U2, U3, R2, R3]] from alice_indep *)
+(* This is the structure needed for mixing_rule *)
+Lemma V2V3_indep_V1_randoms_structured : P |= [%V2, V3] _|_ [%V1, [%U2, U3, R2, R3]].
+Proof.
+have H := alice_indep inputs.
+(* H : [%Dk_a, V1, U1, U2, U3, R2, R3] _|_ [%V2, V3] *)
+(* By symmetry: [%V2, V3] _|_ [%Dk_a, V1, U1, U2, U3, R2, R3] *)
+have Hsym : P |= [%V2, V3] _|_ [%dsdp_entropy.Dk_a inputs, V1, 
+                                 dsdp_entropy.U1 inputs, U2, U3, R2, R3].
+  by rewrite inde_RV_sym.
+(* We need: [%V2, V3] _|_ [%V1, [%U2, U3, R2, R3]]
+   The structure [%V1, [%U2, U3, R2, R3]] is a specific grouping.
+   
+   Use inde_RV_comp to project [%Dk_a, V1, U1, U2, U3, R2, R3] to [%V1, [%U2, U3, R2, R3]] *)
+pose proj := (fun x : (Alice.-key Dec msg * msg * msg * msg * msg * msg * msg) =>
+                let '(_, v1, _, u2, u3, r2, r3) := x in (v1, (u2, u3, r2, r3))).
+have Hcomp := @inde_RV_comp _ _ P _ _ _ _
+  [%dsdp_entropy.Dk_a inputs, V1, dsdp_entropy.U1 inputs, U2, U3, R2, R3]
+  [%V2, V3] proj idfun.
+have Hsym2 : P |= [%dsdp_entropy.Dk_a inputs, V1, dsdp_entropy.U1 inputs, 
+                   U2, U3, R2, R3] _|_ [%V2, V3].
+  by rewrite inde_RV_sym.
+have Hres := Hcomp Hsym2.
+rewrite /comp_RV /= in Hres.
+(* Hres should be: proj `o [%...] _|_ [%V2, V3] = [%V1, [%U2,U3,R2,R3]] _|_ [%V2, V3] *)
+have Hfinal : P |= [%V2, V3] _|_ [%V1, [%U2, U3, R2, R3]].
+  by rewrite inde_RV_sym.
+exact Hfinal.
+Qed.
+
+(* Main lemma: D3 is independent of V1 *)
+Lemma D3_indep_V1 : P |= D3 _|_ V1.
+Proof.
+(* Strategy: 
+   1. mixing_rule: X _|_ [%Y, W] /\ Y _|_ W => [%X, W] _|_ Y
+   2. With X=[%V2,V3], Y=V1, W=[%U2,U3,R2,R3], get [%[%V2,V3], [%U2,U3,R2,R3]] _|_ V1
+   3. D3 = f([%V2,V3], [%U2,U3,R2,R3]) for some f
+   4. Apply inde_RV_comp *)
+
+have HV2V3_V1_W : P |= [%V2, V3] _|_ [%V1, [%U2, U3, R2, R3]].
+  exact: V2V3_indep_V1_randoms_structured.
+
+have HV1_randoms : P |= V1 _|_ [%U2, U3, R2, R3].
+  exact: V1_indep_U2U3R2R3.
+
+(* Apply mixing_rule *)
+have Hjoint : P |= [% [%V2, V3], [%U2, U3, R2, R3] ] _|_ V1.
+  apply/cinde_RV_unit.
+  apply (mixing_rule (X:=[%V2, V3]) (Y:=V1) (Z:=unit_RV P) (W:=[%U2, U3, R2, R3])).
+  split.
+  - exact/cinde_RV_unit/HV2V3_V1_W.
+  - exact/cinde_RV_unit/HV1_randoms.
+
+(* D3 = (V3*U3 + R3) + (V2*U2 + R2) is a function of the pair of pairs *)
+(* Define f : (msg*msg) * (msg*msg*msg*msg) -> msg *)
+pose f := (fun x : ((msg * msg) * (msg * msg * msg * msg)) =>
+             let '((v2, v3), (u2, u3, r2, r3)) := x in
+             (v3 * u3 + r3 + (v2 * u2 + r2))%R).
+
+(* Apply inde_RV_comp: f `o [%[%V2,V3], [%U2,U3,R2,R3]] _|_ V1 *)
+have Hcomp := @inde_RV_comp _ _ P _ _ _ _
+  [% [%V2, V3], [%U2, U3, R2, R3] ] V1 f idfun Hjoint.
+
+(* Show that f `o [%[%V2,V3], [%U2,U3,R2,R3]] = D3 *)
+rewrite /comp_RV /= in Hcomp.
+
+(* The goal should now be V3 \* U3 \+ R3 \+ (V2 \* U2 \+ R2) _|_ V1 *)
+rewrite /D3 /VU3R /VU3 /D2 /VU2.
+
+exact Hcomp.
+Qed.
 
 (* Joint independence: [%Dk_c, V3] is independent of V1 *)
 Hypothesis Dk_c_V3_indep_V1 : P |= [%Dk_c, V3] _|_ V1.
@@ -780,20 +942,13 @@ Qed.
 Theorem CharlieView_indep_V1_proven : P |= CharlieView _|_ V1.
 Proof.
 rewrite /CharlieView.
-Show.
 apply cinde_RV_unit.
-Show.
 apply (mixing_rule (X:=[%Dk_c, V3]) (Y:=V1) (Z:=unit_RV P) (W:=E_charlie_d3)).
-Show.
 split.
-Show.
 - apply cinde_RV_unit.
-  Show.
   exact Dk_c_V3_indep_V1_E.
 - apply cinde_RV_unit.
-  Show.
   rewrite inde_RV_sym.
-  Show.
   exact E_charlie_d3_indep_V1.
 Qed.
 
@@ -876,14 +1031,15 @@ Hypothesis R2_indep_VU2_VU3R_V2 : P |= R2 _|_ [% VU2, [%VU3R, V2]].
 Hypothesis Dk_c_V3_indep_V2_E : P |= [%Dk_c, V3] _|_ [%V2, E_charlie_d3].
 
 (* For V1 independence (V1 not in CharlieView) *)
-Hypothesis D3_indep_V1 : P |= D3 _|_ V1.
+(* D3_indep_V1 is now proven within charlie_security_independence *)
+Hypothesis Dk_c_V3_indep_V1 : P |= [%Dk_c, V3] _|_ V1.
 Hypothesis Dk_c_V3_indep_V1_E : P |= [%Dk_c, V3] _|_ [%V1, E_charlie_d3].
 
 (* Derived: CharlieView is independent of V1 and V2.
    Uses proven theorems from charlie_security_independence section. *)
 Let CharlieView_indep_V1 : P |= CharlieView _|_ V1 :=
   @CharlieView_indep_V1_proven R T P p_minus_2 q_minus_2 inputs
-    D3_indep_V1 Dk_c_V3_indep_V1_E.
+    Dk_c_V3_indep_V1_E.
 
 Let CharlieView_indep_V2 : P |= CharlieView _|_ V2 :=
   @CharlieView_indep_V2_proven R T P p_minus_2 q_minus_2 inputs

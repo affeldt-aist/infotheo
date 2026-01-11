@@ -675,7 +675,12 @@ Record dsdp_random_inputs :=
 
     (* Alice's private input V1 is independent of her random protocol values.
        This models that V1 is Alice's pre-existing secret, while U1, U2, U3, R2, R3
-       are freshly generated random values for the protocol. *)
+       are freshly generated random values for the protocol.
+       
+       This assumption requires Alice to be a semi-honest party: she follows
+       the protocol correctly by generating random values independently of her
+       private input. A malicious Alice could correlate her random choices
+       with V1 to leak information. *)
     alice_V1_indep_randoms : P |= V1 _|_ [%U1, U2, U3, R2, R3];
 
     pV1_unif : `p_ V1 = fdist_uniform card_msg;
