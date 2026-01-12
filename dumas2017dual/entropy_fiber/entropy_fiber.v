@@ -79,7 +79,6 @@ End abstract_fibers.
 
 (* ========================================================================== *)
 (* General pointwise conditional entropy over arbitrary sets                  *)
-(* This section provides lemmas that do NOT require Y = f `o X.               *)
 (* ========================================================================== *)
 
 Section general_pointwise_entropy.

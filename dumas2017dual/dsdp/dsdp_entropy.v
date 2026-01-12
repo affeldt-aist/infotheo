@@ -4,7 +4,8 @@ From mathcomp Require Import Rstruct ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption entropy_fiber.
-Require Import dsdp_program dsdp_extra dsdp_algebra.
+Require Import entropy_fiber_zpq.  (* General entropy framework for Z/pqZ *)
+Require Import dsdp_program dsdp_extra.
 Require Import fiber_zpq.
 
 Import GRing.Theory.
@@ -155,7 +156,9 @@ Required lemmas:
 (* Abbreviation for [%V1, U1, U2, U3] - the inputs independent of VarRV *)
 Let InputRV : {RV P -> (msg * msg * msg * msg)} := [%V1, U1, U2, U3].
 
-(* Helper 1: Joint probability [%VarRV, InputRV] factors by independence *)
+(* Helper 1: Joint probability [%VarRV, InputRV] factors by independence 
+   Note: This is a thin wrapper around inde_RV_sym + inde_RV definition.
+   Could be inlined as: rewrite inde_RV_sym /inde_RV /=. *)
 Lemma joint_factors_by_inde :
   P |= InputRV _|_ VarRV ->
   forall v1 u1 u2 u3 v2 v3,
@@ -174,7 +177,9 @@ move=> /(_ (v2, v3) (v1, u1, u2, u3)).
 by [].
 Qed.
 
-(* Helper 2: Uniform VarRV gives probability (m²)^-1 *)
+(* Helper 2: Uniform VarRV gives probability (m²)^-1 
+   Note: This is a thin wrapper around dist_of_RVE + fdist_uniformE.
+   Could be inlined as: rewrite -dist_of_RVE Hunif fdist_uniformE card_msg_pair. *)
 Lemma uniform_VarRV_prob :
   `p_ VarRV = fdist_uniform card_msg_pair ->
   forall v2 v3, `Pr[VarRV = (v2, v3)] = (m ^ 2)%:R^-1 :> R.

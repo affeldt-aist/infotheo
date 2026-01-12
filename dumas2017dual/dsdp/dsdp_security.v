@@ -5,7 +5,7 @@ Require Import rouche_capelli.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption.
-Require Import dsdp_program dsdp_extra dsdp_algebra dsdp_entropy.
+Require Import dsdp_program dsdp_extra dsdp_entropy.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -22,16 +22,13 @@ Import Num.Theory.
 (******************************************************************************)
 
 (******************************************************************************)
-(* Security Analysis: Connecting Algebraic and Information-Theoretic Views   *)
+(* Security Analysis: Information-Theoretic View of DSDP Protocol             *)
 (*                                                                            *)
-(* This file bridges two perspectives on DSDP protocol security:              *)
+(* This file provides security analysis from information-theoretic view:      *)
 (*                                                                            *)
-(* 1. ALGEBRAIC (dsdp_algebra.v):                                             *)
+(* INFORMATION-THEORETIC (dsdp_entropy.v):                                    *)
 (*    - Linear constraint: s = u1*v1 + u2*v2 + u3*v3                          *)
 (*    - Solution pairs form affine subspace of size m = p*q                   *)
-(*    - Matrix rank and kernel dimension determine degrees of freedom         *)
-(*                                                                            *)
-(* 2. INFORMATION-THEORETIC (dsdp_entropy.v):                                 *)
 (*    - Conditional entropy: H(V2,V3 | V1,U1,U2,U3,S) = log(m)                *)
 (*    - Uniform distribution over solution pairs maximizes entropy            *)
 (*    - Independence properties ensure no information leakage                 *)
