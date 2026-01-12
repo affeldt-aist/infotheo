@@ -5,7 +5,8 @@ Require Import rouche_capelli.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption.
-Require Import dsdp_program dsdp_extra dsdp_entropy.
+Require Import extra_algebra extra_proba extra_entropy.
+Require Import dsdp_program dsdp_entropy.
 
 Import GRing.Theory.
 Import Num.Theory.

@@ -2,7 +2,8 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid dsdp_extra.
+Require Import proba jfdist_cond entropy graphoid.
+Require Import extra_algebra extra_proba extra_entropy.
 
 Import GRing.Theory.
 Import Num.Theory.
