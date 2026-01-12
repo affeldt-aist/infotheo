@@ -156,41 +156,7 @@ Required lemmas:
 (* Abbreviation for [%V1, U1, U2, U3] - the inputs independent of VarRV *)
 Let InputRV : {RV P -> (msg * msg * msg * msg)} := [%V1, U1, U2, U3].
 
-(* Helper 1: Joint probability [%VarRV, InputRV] factors by independence 
-   Note: This is a thin wrapper around inde_RV_sym + inde_RV definition.
-   Could be inlined as: rewrite inde_RV_sym /inde_RV /=. *)
-Lemma joint_factors_by_inde :
-  P |= InputRV _|_ VarRV ->
-  forall v1 u1 u2 u3 v2 v3,
-    `Pr[[%VarRV, InputRV] = ((v2, v3), (v1, u1, u2, u3))] =
-    `Pr[VarRV = (v2, v3)] * `Pr[InputRV = (v1, u1, u2, u3)].
-Proof.
-(* Goal: joint factors using independence *)
-move=> Hinde v1 u1 u2 u3 v2 v3.
-(* Use independence symmetry: InputRV _|_ VarRV -> VarRV _|_ InputRV *)
-have Hinde_sym: P |= VarRV _|_ InputRV.
-  by apply/inde_RV_sym.
-(* Apply independence definition *)
-move: Hinde_sym.
-rewrite /inde_RV.
-move=> /(_ (v2, v3) (v1, u1, u2, u3)).
-by [].
-Qed.
-
-(* Helper 2: Uniform VarRV gives probability (m²)^-1 
-   Note: This is a thin wrapper around dist_of_RVE + fdist_uniformE.
-   Could be inlined as: rewrite -dist_of_RVE Hunif fdist_uniformE card_msg_pair. *)
-Lemma uniform_VarRV_prob :
-  `p_ VarRV = fdist_uniform card_msg_pair ->
-  forall v2 v3, `Pr[VarRV = (v2, v3)] = (m ^ 2)%:R^-1 :> R.
-Proof.
-(* Goal: uniform distribution gives 1/m² *)
-move=> Hunif v2 v3.
-rewrite -dist_of_RVE Hunif fdist_uniformE.
-by rewrite card_msg_pair.
-Qed.
-
-(* Helper 3: The joint [%VarRV, CondRV] probability equals [%VarRV, InputRV]
+(* The joint [%VarRV, CondRV] probability equals [%VarRV, InputRV]
    when (v2,v3) is in the fiber (constraint is satisfied) *)
 Lemma joint_VarRV_CondRV_eq_InputRV (v1 u1 u2 u3 s v2 v3 : msg) :
   (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
@@ -311,8 +277,9 @@ transitivity (\sum_(vv in dsdp_fiber_full_zpq u1 u2 u3 v1 s)
               (m ^ 2)%:R^-1 * `Pr[InputRV = (v1, u1, u2, u3)]).
   apply: eq_bigr => [[v2' v3']] Hin.
   rewrite (joint_VarRV_CondRV_eq_InputRV Hin).
-  rewrite (joint_factors_by_inde Hinde).
-  rewrite (uniform_VarRV_prob Hunif).
+  have Hinde_sym: P |= VarRV _|_ InputRV by rewrite inde_RV_sym.
+  rewrite (Hinde_sym (v2', v3') (v1, u1, u2, u3)).
+  rewrite -dist_of_RVE Hunif fdist_uniformE card_msg_pair.
   by [].
 
 (* Step 4: Factor out constants *)
@@ -385,12 +352,13 @@ have HInputRV_neq0: `Pr[InputRV = (v1, u1, u2, u3)] != 0.
   move/eqP => [Hv1' Hu1' Hu2' Hu3' _].
   by apply/eqP; rewrite /= -Hv1' -Hu1' -Hu2' -Hu3'.
 
-(* Step 4: Compute numerator using helpers *)
+(* Step 4: Compute numerator *)
 have Hnum: `Pr[[%VarRV, CondRV] = ((v2, v3), (v1, u1, u2, u3, s))] =
            (m ^ 2)%:R^-1 * `Pr[InputRV = (v1, u1, u2, u3)].
   rewrite (joint_VarRV_CondRV_eq_InputRV Hin_fiber).
-  rewrite (joint_factors_by_inde Hinde).
-  rewrite (uniform_VarRV_prob Hunif).
+  have Hinde_sym: P |= VarRV _|_ InputRV by rewrite inde_RV_sym.
+  rewrite (Hinde_sym (v2, v3) (v1, u1, u2, u3)).
+  rewrite -dist_of_RVE Hunif fdist_uniformE card_msg_pair.
   by [].
 
 (* Step 5: Compute denominator using helper *)
