@@ -33,7 +33,7 @@ depends: [
   | "coq-hierarchy-builder" { >= "1.10.0"} & "coq-elpi" { >= "3.0.0"} )
   "coq-mathcomp-algebra-tactics" { >= "1.2.6" }
   "coq-interval" { >= "4.10.0"}
-  "rocq-robot-rocq" { >= "0.3.0" }
+  "rocq-robot-rocq" { >= "0.3.1" }
 ]
 
 tags: [
