@@ -77,7 +77,7 @@ Required lemmas:
 ===================================
 *)
 
-Section linear_fiber_zpq.
+Section linear_fiber.
 
 Variables (p_minus_2 q_minus_2 : nat).
 Local Notation p := p_minus_2.+2.
@@ -101,11 +101,11 @@ by rewrite (leq_trans Hp_gt1) // leq_pmulr.
 Qed.
 
 (* Linear functional over Z/pqZ: dot product u · v *)
-Definition linear_functional_zpq (u : 'rV[msg]_n) (v : 'rV[msg]_n) : msg :=
+Definition linear_functional (u : 'rV[msg]_n) (v : 'rV[msg]_n) : msg :=
   u *d v.
 
 (* Generalized fiber: solutions to u · v = target over Z/m *)
-Definition linear_fiber_zpq (u : 'rV[msg]_n) (target : msg) :
+Definition linear_fiber (u : 'rV[msg]_n) (target : msg) :
   {set 'rV[msg]_n} :=
   [set v : 'rV[msg]_n | u *d v == target].
 
@@ -139,7 +139,7 @@ Qed.
 
 (*
   ==========================================================================
-  Helper lemmas for linear_fiber_zpq_card
+  Helper lemmas for linear_fiber_card
   ==========================================================================
   
   Strategy: Use bijection between 'rV[msg]_n and (msg * 'rV[msg]_n.-1)
@@ -148,7 +148,7 @@ Qed.
   such that u · v = target. This v_i = (target - Σ_{j≠i} u_j*v_j) / u_i.
   
   We construct the bijection in two steps:
-  1. fiber_zpq ≅ msg via projection to non-pivot coordinates + solving for pivot
+  1. fiber ≅ msg via projection to non-pivot coordinates + solving for pivot
   2. Actually, simpler: show |fiber| = m^(n-1) directly via injection/surjection
   
   Alternative approach (simpler for Coq):
@@ -220,7 +220,7 @@ Definition make_fiber_elem (u : 'rV[msg]_n) (target : msg) (i : 'I_n)
 Lemma make_fiber_elemP (u : 'rV[msg]_n) (target : msg) (i : 'I_n)
   (free : 'I_n -> msg) :
   u ord0 i \is a GRing.unit ->
-  make_fiber_elem u target i free \in linear_fiber_zpq u target.
+  make_fiber_elem u target i free \in linear_fiber u target.
 Proof.
 move=> Hui_unit.
 rewrite inE /make_fiber_elem.
@@ -253,8 +253,8 @@ Qed.
 Lemma fiber_elem_inj (u : 'rV[msg]_n) (target : msg) (i : 'I_n)
   (v1 v2 : 'rV[msg]_n) :
   u ord0 i \is a GRing.unit ->
-  v1 \in linear_fiber_zpq u target ->
-  v2 \in linear_fiber_zpq u target ->
+  v1 \in linear_fiber u target ->
+  v2 \in linear_fiber u target ->
   (forall j, j != i -> v1 ord0 j = v2 ord0 j) ->
   v1 = v2.
 Proof.
@@ -365,9 +365,9 @@ Let mk_fiber (u : 'rV[msg]_n) (target : msg) (i : 'I_n)
   make_fiber_elem u target i f.
 
 (* The fiber {v | u·v = target} equals the image of mk_fiber over ker_eval *)
-Let linear_fiber_zpq_imsetE (u : 'rV[msg]_n) (target : msg) (i : 'I_n) :
+Let linear_fiber_imsetE (u : 'rV[msg]_n) (target : msg) (i : 'I_n) :
   u ord0 i \is a GRing.unit ->
-  linear_fiber_zpq u target = mk_fiber u target i @: ker_eval i.
+  linear_fiber u target = mk_fiber u target i @: ker_eval i.
 Proof.
 move=> Hui_unit.
 apply/setP => v.
@@ -378,18 +378,18 @@ apply/idP/imsetP.
   pose f := [ffun j => if j == i then 0 else v ord0 j] : {ffun 'I_n -> msg}.
   exists f.
   + by rewrite inE ffunE eqxx.
-  + have Hmk_in: mk_fiber u target i f \in linear_fiber_zpq u target.
+  + have Hmk_in: mk_fiber u target i f \in linear_fiber u target.
       by apply: make_fiber_elemP.
-    have Hv': v \in linear_fiber_zpq u target by rewrite inE.
+    have Hv': v \in linear_fiber u target by rewrite inE.
     have Hsame: forall j, j != i -> v ord0 j = (mk_fiber u target i f) ord0 j.
       move=> j Hji.
       by rewrite /mk_fiber /make_fiber_elem mxE (negbTE Hji) ffunE (negbTE Hji).
     exact: (fiber_elem_inj Hui_unit Hv' Hmk_in Hsame).
 - (* v = mk_fiber f for f in ker_eval -> v in fiber *)
   move=> [f Hf ->].
-  have Hgoal: mk_fiber u target i f \in linear_fiber_zpq u target.
+  have Hgoal: mk_fiber u target i f \in linear_fiber u target.
     by apply: make_fiber_elemP.
-  by move: Hgoal; rewrite /linear_fiber_zpq !inE.
+  by move: Hgoal; rewrite /linear_fiber !inE.
 Qed.
 
 (* mk_fiber is injective on ker_eval *)
@@ -401,9 +401,9 @@ move=> Hui_unit f1 f2 Hf1 Hf2 Heq.
 apply/ffunP => j.
 case: (altP (j =P i)) => [->|Hji].
 + by move: Hf1 Hf2; rewrite !inE => /eqP -> /eqP ->.
-+ have Hv1: mk_fiber u target i f1 \in linear_fiber_zpq u target
++ have Hv1: mk_fiber u target i f1 \in linear_fiber u target
     by exact: make_fiber_elemP.
-  have Hv2: mk_fiber u target i f2 \in linear_fiber_zpq u target
+  have Hv2: mk_fiber u target i f2 \in linear_fiber u target
     by exact: make_fiber_elemP.
   have Hfree: forall k, k != i -> (mk_fiber u target i f1) ord0 k =
                                     (mk_fiber u target i f2) ord0 k.
@@ -416,14 +416,14 @@ Qed.
   Main cardinality theorem for generalized linear fiber.
   
   When u has a unit component at index i:
-    |linear_fiber_zpq u target| = m^(n-1)
+    |linear_fiber u target| = m^(n-1)
 *)
-Lemma linear_fiber_zpq_card (u : 'rV[msg]_n) (target : msg) (i : 'I_n) :
+Lemma linear_fiber_card (u : 'rV[msg]_n) (target : msg) (i : 'I_n) :
   u ord0 i \is a GRing.unit ->
-  #|linear_fiber_zpq u target| = (m ^ n.-1)%N.
+  #|linear_fiber u target| = (m ^ n.-1)%N.
 Proof.
 move=> Hui_unit.
-rewrite (@linear_fiber_zpq_imsetE u target i Hui_unit).
+rewrite (@linear_fiber_imsetE u target i Hui_unit).
 rewrite (card_in_imset (@mk_fiber_inj u target i Hui_unit)).
 exact: ffun_fix_coord_card.
 Qed.
@@ -456,7 +456,7 @@ rewrite -/(coprime u q) coprime_sym prime_coprime //.
 by rewrite gtnNdvd // ltnW.
 Qed.
 
-End linear_fiber_zpq.
+End linear_fiber.
 
 
 (* ========================================================================== *)
@@ -467,11 +467,11 @@ End linear_fiber_zpq.
   This section provides the interface for dsdp_entropy.v which uses pairs
   (v2, v3) : msg × msg rather than row vectors 'rV[msg]_2.
   
-  The 2D fiber cardinality is derived from the general linear_fiber_zpq_card
+  The 2D fiber cardinality is derived from the general linear_fiber_card
   theorem by establishing a bijection between 'rV[msg]_2 and msg × msg.
 *)
 
-Section fiber_zpq_2d.
+Section fiber_2d.
 
 Variables (p_minus_2 q_minus_2 : nat).
 Local Notation p := p_minus_2.+2.
@@ -496,7 +496,7 @@ Qed.
 (*
 === MATHEMATICAL PROOF STRATEGY ===
 
-Goal: Derive fiber_zpq_pair_card from linear_fiber_zpq_card
+Goal: Derive linear_fiber_2d_card from linear_fiber_card
 
 Step 1: Establish bijection between msg × msg and 'rV[msg]_2
   - pair_to_row : msg × msg → 'rV[msg]_2
@@ -506,13 +506,13 @@ Step 1: Establish bijection between msg × msg and 'rV[msg]_2
 Step 2: Show constraint equations correspond
   - For u = (u2, u3) as row vector, v = (v2, v3) as row vector:
     u *d v = u2 * v2 + u3 * v3
-  - This matches the fiber_zpq_pair constraint
+  - This matches the linear_fiber_2d constraint
 
-Step 3: Show fiber_zpq_pair = image of linear_fiber_zpq under row_to_pair
+Step 3: Show linear_fiber_2d = image of linear_fiber under row_to_pair
   - The bijection preserves the constraint
 
 Step 4: Use bijection to transfer cardinality
-  - #|fiber_zpq_pair| = #|linear_fiber_zpq| = m^(2-1) = m
+  - #|linear_fiber_2d| = #|linear_fiber| = m^(2-1) = m
 
 ===================================
 *)
@@ -563,31 +563,31 @@ Qed.
 (* ========================================================================== *)
 
 (* Fiber over pairs: solutions to u2*v2 + u3*v3 = target *)
-(* Local definition - only used to derive fiber_zpq_pair_card *)
-Let fiber_zpq_pair (u2 u3 target : msg) : {set msg * msg} :=
+(* Exported Definition for use in dsdp_entropy.v *)
+Definition linear_fiber_2d (u2 u3 target : msg) : {set msg * msg} :=
   [set vv : msg * msg | (u2 * vv.1 + u3 * vv.2 == target)%R].
 
-(* fiber_zpq_pair is the image of linear_fiber_zpq under row_to_pair *)
-(* Local lemma - only used to derive fiber_zpq_pair_card *)
-Let fiber_zpq_pair_eq (u2 u3 target : msg) :
-  fiber_zpq_pair u2 u3 target = 
-    row_to_pair @: linear_fiber_zpq (pair_to_row (u2, u3)) target.
+(* linear_fiber_2d is the image of linear_fiber under row_to_pair *)
+(* Local lemma - only used to derive linear_fiber_2d_card *)
+Let linear_fiber_2d_eq (u2 u3 target : msg) :
+  linear_fiber_2d u2 u3 target = 
+    row_to_pair @: linear_fiber (pair_to_row (u2, u3)) target.
 Proof.
 apply/setP => vv.
 rewrite inE.
 apply/idP/imsetP.
-- (* vv in fiber_zpq_pair →
-     exists v in linear_fiber_zpq with vv = row_to_pair v *)
+- (* vv in linear_fiber_2d →
+     exists v in linear_fiber with vv = row_to_pair v *)
   move=> /eqP Hconstr.
   exists (pair_to_row vv).
-  + (* pair_to_row vv in linear_fiber_zpq *)
+  + (* pair_to_row vv in linear_fiber *)
     rewrite inE.
     rewrite dotmul_pair_eq.
     by apply/eqP.
   + (* vv = row_to_pair (pair_to_row vv) *)
     by rewrite row_to_pairK.
-- (* exists v in linear_fiber_zpq with vv = row_to_pair v →
-     vv in fiber_zpq_pair *)
+- (* exists v in linear_fiber with vv = row_to_pair v →
+     vv in linear_fiber_2d *)
   move=> [v Hv ->].
   move: Hv; rewrite inE => /eqP Hdot.
   apply/eqP.
@@ -604,14 +604,14 @@ Qed.
 (*
   Main result: 2D fiber cardinality = m
   
-  Derived from linear_fiber_zpq_card by:
+  Derived from linear_fiber_card by:
   1. u3 < min(p,q) implies u3 is a unit (at index ord_max)
-  2. linear_fiber_zpq_card gives |linear_fiber_zpq| = m^(2-1) = m
-  3. Bijection preserves cardinality: |fiber_zpq_pair| = |linear_fiber_zpq|
+  2. linear_fiber_card gives |linear_fiber| = m^(2-1) = m
+  3. Bijection preserves cardinality: |linear_fiber_2d| = |linear_fiber|
 *)
-Lemma fiber_zpq_pair_card (u2 u3 target : msg) :
+Lemma linear_fiber_2d_card (u2 u3 target : msg) :
   (0 < u3)%N -> (u3 < minn p q)%N ->
-  #|fiber_zpq_pair u2 u3 target| = m.
+  #|linear_fiber_2d u2 u3 target| = m.
 Proof.
 move=> Hu3_pos Hu3_lt.
 (* u3 is coprime to m, hence a unit *)
@@ -622,19 +622,19 @@ have Hu3_unit: u3 \is a GRing.unit.
 (* pair_to_row (u2, u3) has u3 at position ord_max *)
 have Hcoef_ord_max: pair_to_row (u2, u3) ord0 ord_max = u3.
   by rewrite /pair_to_row mxE.
-(* Apply linear_fiber_zpq_card with pivot index ord_max *)
+(* Apply linear_fiber_card with pivot index ord_max *)
 have Hcoef_unit: pair_to_row (u2, u3) ord0 ord_max \is a GRing.unit.
   by rewrite Hcoef_ord_max.
-have Hlinear_card: #|linear_fiber_zpq (pair_to_row (u2, u3)) target| = m.
-  have := linear_fiber_zpq_card prime_p prime_q target Hcoef_unit.
+have Hlinear_card: #|linear_fiber (pair_to_row (u2, u3)) target| = m.
+  have := linear_fiber_card prime_p prime_q target Hcoef_unit.
   by rewrite /= expn1.
 (* Use bijection to transfer cardinality *)
-rewrite fiber_zpq_pair_eq.
+rewrite linear_fiber_2d_eq.
 rewrite card_imset; last exact: row_to_pair_inj.
 by rewrite Hlinear_card.
 Qed.
 
-End fiber_zpq_2d.
+End fiber_2d.
 
 (* ========================================================================== *)
 (*            Connection between CRT (Z/pqZ) and Field (F_m) approaches       *)

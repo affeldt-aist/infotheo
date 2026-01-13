@@ -7,7 +7,7 @@ Require Import smc_proba homomorphic_encryption entropy_fiber.
 Require Import entropy_fiber_zpq.  (* General entropy framework for Z/pqZ *)
 Require Import extra_algebra extra_proba extra_entropy.
 Require Import dsdp_program.
-Require Import fiber_zpq.
+Require Import linear_fiber_zpq.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -55,7 +55,7 @@ Reserved Notation "u ^h w" (at level 40).
   Security condition: U3 < min(p,q) ensures U3 is invertible in both
   Z/p and Z/q (since it can't be divisible by either prime).
 *)
-Section dsdp_entropy_zpq.
+Section dsdp_entropy.
 
 Context {R : realType}.
 Variables (p_minus_2 q_minus_2 : nat).
@@ -68,15 +68,10 @@ Local Notation m := (p * q).
 (* Use Zp ring structure for composite modulus arithmetic *)
 Local Notation msg := 'Z_m.
 
-(* Fiber over composite modulus: solutions to u2*v2 + u3*v3 = target in Z/pqZ *)
-(* Note: This is the same as fiber_zpq_pair in fiber_zpq.v,
-   kept local for clarity *)
-Let dsdp_fiber_zpq (u2 u3 target : msg) : {set msg * msg} :=
-  [set vv : msg * msg | (u2 * vv.1 + u3 * vv.2 == target)%R].
-
-(* Fiber from full constraint: s - u1*v1 = u2*v2 + u3*v3 *)
-Definition dsdp_fiber_full_zpq (u1 u2 u3 v1 s : msg) : {set msg * msg} :=
-  dsdp_fiber_zpq u2 u3 (s - u1 * v1)%R.
+(* Fiber from full constraint: s - u1*v1 = u2*v2 + u3*v3.
+   Uses linear_fiber_2d from linear_fiber_zpq.v for the generic 2D linear fiber. *)
+Definition dsdp_fiber (u1 u2 u3 v1 s : msg) : {set msg * msg} :=
+  linear_fiber_2d u2 u3 (s - u1 * v1)%R.
 
 Variable T : finType.
 Variable P : R.-fdist T.
@@ -91,17 +86,17 @@ Proof. by rewrite card_ord Zp_cast. Qed.
 Let card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
 Proof. by rewrite card_prod !card_msg expnS expn1. Qed.
 
-Definition satisfies_constraint_zpq (cond : msg * msg * msg * msg * msg)
+Definition dsdp_constraint (cond : msg * msg * msg * msg * msg)
   (var : msg * msg) : Prop :=
   let '(v1, u1, u2, u3, s) := cond in
   let '(v2, v3) := var in
   (s - u1 * v1 = u2 * v2 + u3 * v3)%R.
 
 Hypothesis constraint_holds :
-  forall t, satisfies_constraint_zpq (CondRV t) (VarRV t).
+  forall t, dsdp_constraint (CondRV t) (VarRV t).
 
-(* 
-   Security condition for fiber_zpq_pair_card:
+(*
+   Security condition for linear_fiber_2d_card:
    - (0 < u3)%N: u3 is positive
    - (u3 < minn p q)%N: u3 < min(p,q)
    
@@ -112,7 +107,7 @@ Hypothesis constraint_holds :
    section hypotheses to make dependencies clear.
 *)
 
-(* Fiber cardinality follows from fiber_zpq_pair_card in fiber_zpq.v *)
+(* Fiber cardinality follows from linear_fiber_2d_card in linear_fiber_zpq.v *)
 
 (* Cryptographic assumptions for DSDP security:
    1. VarRV = (V2, V3) is uniformly distributed over msg × msg
@@ -122,288 +117,99 @@ Hypothesis VarRV_uniform : `p_ VarRV = fdist_uniform card_msg_pair.
 Hypothesis VarRV_indep_inputs : P |= [%V1, U1, U2, U3] _|_ VarRV.
 
 (* ========================================================================= *)
-(*         Section: Uniform over solutions from joint uniform prior          *)
+(*    Instantiation of entropy_fiber_zpq for DSDP constraint structure       *)
 (* ========================================================================= *)
-
-Section uniform_from_joint_uniform.
-
-(*
-=== MATHEMATICAL PROOF STRATEGY ===
-
-Statement: 
-  Given VarRV is uniform over msg×msg with 1/m² and independent of [V1,U1,U2,U3],
-  for any (v2,v3) in the fiber, the conditional probability equals 1/|fiber|.
-
-Why it's true:
-  1. Conditional probability = Pr[joint] / Pr[condition]
-  2. Numerator: Pr[VarRV=(v2,v3), CondRV=cond] 
-     Since constraint determines S from (v1,u1,u2,u3,v2,v3), this equals:
-     Pr[VarRV=(v2,v3), [%V1,U1,U2,U3]=(v1,u1,u2,u3)]
-     By independence: = Pr[VarRV=(v2,v3)] × Pr[[%V1,U1,U2,U3]=(v1,u1,u2,u3)]
-     By uniform: = (m²)^-1 × Pr[[%V1,U1,U2,U3]=(v1,u1,u2,u3)]
-  3. Denominator: Pr[CondRV=cond] = sum over fiber of numerator-type terms
-     = |fiber| × (m²)^-1 × Pr[[%V1,U1,U2,U3]=(v1,u1,u2,u3)]
-  4. Result: Numerator / Denominator = 1 / |fiber|
-
-Required lemmas:
-  - cpr_eqE: conditional probability as quotient
-  - inde_RV_sym: independence symmetry  
-  - pfwd1E, pfwd1_pairA, etc.: joint probability manipulation
-  - fdist_uniformE: uniform distribution gives 1/card
-
-===================================
-*)
 
 (* Abbreviation for [%V1, U1, U2, U3] - the inputs independent of VarRV *)
 Let InputRV : {RV P -> (msg * msg * msg * msg)} := [%V1, U1, U2, U3].
 
-(* The joint [%VarRV, CondRV] probability equals [%VarRV, InputRV]
-   when (v2,v3) is in the fiber (constraint is satisfied) *)
-Lemma joint_VarRV_CondRV_eq_InputRV (v1 u1 u2 u3 s v2 v3 : msg) :
-  (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
-  `Pr[[%VarRV, CondRV] = ((v2, v3), (v1, u1, u2, u3, s))] =
-  `Pr[[%VarRV, InputRV] = ((v2, v3), (v1, u1, u2, u3))].
+(* DSDP fiber function: maps condition tuple to fiber set *)
+Let dsdp_fiber_fn (cond : msg * msg * msg * msg * msg) : {set msg * msg} :=
+  let '(v1, u1, u2, u3, s) := cond in dsdp_fiber u1 u2 u3 v1 s.
+
+(* DSDP projection: extracts input part from condition *)
+Let dsdp_proj_input (cond : msg * msg * msg * msg * msg) : msg * msg * msg * msg :=
+  let '(v1, u1, u2, u3, _) := cond in (v1, u1, u2, u3).
+
+(* Prerequisite 1: VarRV is always in the fiber of CondRV *)
+Let constraint_fiber_dsdp : forall t, VarRV t \in dsdp_fiber_fn (CondRV t).
 Proof.
-(* Goal: joint probabilities are equal when constraint holds *)
-move=> Hin_fiber.
+move=> t.
+rewrite /dsdp_fiber_fn /dsdp_fiber /linear_fiber_2d inE /=.
+apply/eqP.
+move: (constraint_holds t).
+by rewrite /dsdp_constraint /CondRV /VarRV /=.
+Qed.
+
+(* Prerequisite 2: InputRV is the projection of CondRV *)
+Let InputRV_proj_dsdp : forall t, InputRV t = dsdp_proj_input (CondRV t).
+Proof. by move=> t. Qed.
+
+(* Prerequisite 3: Joint probability relation - DSDP-specific.
+   The joint [%VarRV, CondRV] probability equals [%VarRV, InputRV]
+   when (v2,v3) is in the fiber (constraint is satisfied).
+   This captures that S is determined by the constraint. *)
+Let joint_eq_input_dsdp :
+  forall (cond : msg * msg * msg * msg * msg) (var : msg * msg),
+    var \in dsdp_fiber_fn cond ->
+    `Pr[[%VarRV, CondRV] = (var, cond)] =
+    `Pr[[%VarRV, InputRV] = (var, dsdp_proj_input cond)].
+Proof.
+move=> [[[[v1 u1] u2] u3] s] [v2 v3] /= Hin_fiber.
 (* Both sides count the same events because S is determined by the constraint *)
 rewrite !pfwd1E.
 congr Pr.
 apply/setP => t0.
 rewrite !inE /= !xpair_eqE.
-(* LHS: [&& VarRV_eq, InputRV_eq & S_eq] 
-   RHS: [&& VarRV_eq, (V1&U1&U2)_eq & U3_eq]
-   The constraint determines S, so LHS <-> RHS *)
 apply/idP/idP => H.
 - (* LHS -> RHS: drop S and rearrange *)
   move/and3P: H => [Hvar Hinput Hs].
-  (* Hinput is ((V1 == v1) && (U1 == u1) && (U2 == u2)) && (U3 == u3) *)
   move/andP: Hinput => [Hinput3 Hu3].
-  (* Hinput3 is ((V1 == v1) && (U1 == u1)) && (U2 == u2) *)
   move/andP: Hinput3 => [Hinput2 Hu2].
-  (* Hinput2 is (V1 == v1) && (U1 == u1) *)
   move/andP: Hinput2 => [Hv1 Hu1].
   apply/and3P.
   split => //.
-  (* Rebuild V1&U1&U2 *)
   by rewrite Hv1 Hu1 Hu2.
 - (* RHS -> LHS: derive S=s from constraint *)
   move/and3P: H => [Hvar Hinput3 Hu3].
-  (* Hinput3 is ((V1 == v1) && (U1 == u1)) && (U2 == u2) *)
   move/andP: Hinput3 => [Hinput2 Hu2].
   move/andP: Hinput2 => [Hv1 Hu1].
   apply/and3P.
   split => //.
-  + (* Reconstruct V1&U1&U2&U3 *)
-    by rewrite Hv1 Hu1 Hu2 Hu3.
+  + by rewrite Hv1 Hu1 Hu2 Hu3.
   + (* S t0 = s follows from the constraint *)
     move/andP: Hvar => [/eqP Hv2_eq /eqP Hv3_eq].
     move/eqP: Hv1 => Hv1_eq.
     move/eqP: Hu1 => Hu1_eq.
     move/eqP: Hu2 => Hu2_eq.
     move/eqP: Hu3 => Hu3_eq.
-    (* From constraint_holds: S t0 - U1 t0 * V1 t0 = U2 t0 * V2 t0 + U3 t0 * V3 t0 *)
     move: (constraint_holds t0).
-    rewrite /satisfies_constraint_zpq /CondRV /VarRV /=.
+    rewrite /dsdp_constraint /CondRV /VarRV /=.
     rewrite Hv1_eq Hu1_eq Hu2_eq Hu3_eq Hv2_eq Hv3_eq.
     move=> Hconstr.
-    (* Hin_fiber: u2*v2 + u3*v3 = s - u1*v1 *)
     move: Hin_fiber.
-    rewrite /dsdp_fiber_full_zpq /dsdp_fiber_zpq inE /=.
+    rewrite /dsdp_fiber_fn /dsdp_fiber /linear_fiber_2d inE /=.
     move=> /eqP Hfiber_eq.
     apply/eqP.
-    (* S t0 = s: from S t0 - u1*v1 = u2*v2 + u3*v3 = s - u1*v1 *)
     have Heq: S t0 - u1 * v1 = s - u1 * v1.
       by rewrite Hconstr Hfiber_eq.
-    (* Add u1*v1 to both sides: S t0 - u1*v1 + u1*v1 = s - u1*v1 + u1*v1 *)
-    (* i.e., S t0 = s *)
     by move: Heq => /(f_equal (fun x => x + u1 * v1)); rewrite !subrK.
 Qed.
 
-(* Helper 4: Denominator computation - sum over fiber *)
-Lemma cond_prob_denom (v1 u1 u2 u3 s : msg) :
-  P |= InputRV _|_ VarRV ->
-  `p_ VarRV = fdist_uniform card_msg_pair ->
-  `Pr[InputRV = (v1, u1, u2, u3)] != 0 ->
-  `Pr[CondRV = (v1, u1, u2, u3, s)] =
-  #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|%:R * (m ^ 2)%:R^-1 *
-  `Pr[InputRV = (v1, u1, u2, u3)].
-Proof.
-(* Goal: Pr[CondRV=cond] = |fiber| × (m²)^-1 × Pr[InputRV=...] *)
-move=> Hinde Hunif HInputRV_neq0.
-
-(* Step 1: Marginalize Pr[CondRV] = Σ_vv Pr[VarRV=vv, CondRV=...] *)
-(* Use the standard marginalization: Pr[Y = y] = Σ_x Pr[X=x, Y=y] *)
-have Hmargin: `Pr[CondRV = (v1, u1, u2, u3, s)] =
-  \sum_(vv : msg * msg) `Pr[[%VarRV, CondRV] = (vv, (v1, u1, u2, u3, s))].
-  (* Rewrite RHS using pfwd1_pairC to match standard form *)
-  have ->: \sum_(vv : msg * msg) `Pr[[%VarRV, CondRV] = (vv, (v1, u1, u2, u3, s))] =
-           \sum_(vv : msg * msg) `Pr[[%CondRV, VarRV] = ((v1, u1, u2, u3, s), vv)].
-    apply: eq_bigr => vv _.
-    by rewrite pfwd1_pairC.
-  (* Now use PrX_fstRV with CondRV as first component *)
-  by rewrite -(@PrX_fstRV _ _ _ _ P CondRV VarRV).
-
-rewrite Hmargin.
-
-(* Step 2: Split sum - only fiber elements contribute *)
-rewrite (bigID (fun vv => vv \in dsdp_fiber_full_zpq u1 u2 u3 v1 s)) /=.
-
-(* Terms outside fiber are 0 *)
-have Hzero: \sum_(vv | vv \notin dsdp_fiber_full_zpq u1 u2 u3 v1 s)
-            `Pr[[%VarRV, CondRV] = (vv, (v1, u1, u2, u3, s))] = 0.
-  apply: big1 => [[v2' v3']] Hnotin.
-  (* Use pfwd1_eq0 with proof that value is not in image *)
-  rewrite pfwd1_eq0 //.
-  (* Goal: (v2', v3', cond) \notin fin_img [%VarRV, CondRV] *)
-  rewrite mem_undup.
-  apply/mapP.
-  (* Assume there exists t0 with [%VarRV,CondRV] t0 = (v2',v3',cond), derive contradiction *)
-  move=> [t0 _ Heq].
-  move: Heq => [Hv2' Hv3' Hv1' Hu1' Hu2' Hu3' Hs'].
-  (* From constraint: S t0 - U1*V1 = U2*V2 + U3*V3 *)
-  move: (constraint_holds t0).
-  rewrite /satisfies_constraint_zpq /CondRV /VarRV /=.
-  (* Substitute: v2' = V2 t0, etc. using -Hx' *)
-  rewrite -Hv1' -Hu1' -Hu2' -Hu3' -Hv2' -Hv3' -Hs'.
-  move=> Hconstr.
-  (* Hconstr: s - u1*v1 = u2*v2' + u3*v3' means (v2',v3') is in fiber *)
-  move/negP: Hnotin; apply.
-  rewrite /dsdp_fiber_full_zpq /dsdp_fiber_zpq inE /=.
-  by apply/eqP; rewrite -Hconstr.
-rewrite Hzero addr0.
-
-(* Step 3: Each fiber term = (m²)^-1 × Pr[InputRV] *)
-transitivity (\sum_(vv in dsdp_fiber_full_zpq u1 u2 u3 v1 s)
-              (m ^ 2)%:R^-1 * `Pr[InputRV = (v1, u1, u2, u3)]).
-  apply: eq_bigr => [[v2' v3']] Hin.
-  rewrite (joint_VarRV_CondRV_eq_InputRV Hin).
-  have Hinde_sym: P |= VarRV _|_ InputRV by rewrite inde_RV_sym.
-  rewrite (Hinde_sym (v2', v3') (v1, u1, u2, u3)).
-  rewrite -dist_of_RVE Hunif fdist_uniformE card_msg_pair.
-  by [].
-
-(* Step 4: Factor out constants *)
-rewrite big_const iter_addr addr0.
-by ring.
-Qed.
-
-(** Main bridge lemma: derive uniform-over-solutions from joint-uniform prior
-    and independence.
-    
-    Mathematical reasoning:
-    - Assumption: (V2,V3) is uniform over msg×msg with distribution 1/m²
-    - Assumption: (V2,V3) is independent of (V1,U1,U2,U3)
-    - The constraint S = u1*v1 + u2*v2 + u3*v3 determines S given the others
-    
-    For (v2,v3) in the fiber {(v2',v3') | u2*v2' + u3*v3' = s - u1*v1}:
-    
-    Numerator: Pr[(V2,V3)=(v2,v3) ∧ (V1,U1,U2,U3)=(v1,u1,u2,u3)]
-             = Pr[(V2,V3)=(v2,v3)] × Pr[(V1,U1,U2,U3)=(v1,u1,u2,u3)]  (indep)
-             = (1/m²) × Pr[(V1,U1,U2,U3)=(v1,u1,u2,u3)]
-    
-    Denominator: Pr[CondRV=(v1,u1,u2,u3,s)]
-               = Σ_{(v2',v3') ∈ fiber} (1/m²) × Pr[(V1,U1,U2,U3)=...]
-               = |fiber|/m² × Pr[(V1,U1,U2,U3)=(v1,u1,u2,u3)]
-    
-    Result: Numerator/Denominator = 1/|fiber|
-*)
-Lemma dsdp_uniform_over_solutions_from_joint_uniform :
-  `p_ VarRV = fdist_uniform card_msg_pair ->
-  P |= [%V1, U1, U2, U3] _|_ VarRV ->
-  forall t v1 u1 u2 u3 s,
-    U1 t = u1 -> U2 t = u2 -> U3 t = u3 ->
-    V1 t = v1 -> S t = s ->
-    (* The conditioning event must have positive probability for 
-       the conditional probability to be well-defined *)
-    `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
-    forall v2 v3,
-      (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
-      `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] =
-      (#|dsdp_fiber_full_zpq u1 u2 u3 v1 s|)%:R^-1.
-Proof.
-(* Goal: Pr[VarRV=(v2,v3) | CondRV=cond] = |fiber|^-1 *)
-move=> Hunif Hinde t v1 u1 u2 u3 s HU1 HU2 HU3 HV1 HS HCond_neq0 v2 v3 Hin_fiber.
-(* Step 1: Expand conditional probability as quotient *)
-rewrite cpr_eqE.
-(* Goal: Pr[[%VarRV, CondRV] = ...] / Pr[CondRV = ...] = |fiber|^-1 *)
-
-(* Step 2: Check fiber is non-empty (t witnesses this) *)
-have Hfiber_nempty: (0 < #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|)%N.
-  apply/card_gt0P.
-  exists (v2, v3).
-  exact: Hin_fiber.
-
-(* Step 3: Compute InputRV probability - need non-zero *)
-(* From HCond_neq0: Pr[CondRV = (v1,u1,u2,u3,s)] != 0, 
-   we derive Pr[InputRV = (v1,u1,u2,u3)] != 0 since the InputRV event
-   is a marginalization over S values. *)
-have HInputRV_neq0: `Pr[InputRV = (v1, u1, u2, u3)] != 0.
-  (* From HCond_neq0, there exists t' with CondRV t' = cond and P t' > 0 *)
-  move/pfwd1_neq0: HCond_neq0 => [t' [Ht'_cond Ht'_pos]].
-  (* Ht'_cond: t' \in CondRV @^-1 (v1,u1,u2,u3,s), i.e., CondRV t' = (v1,u1,u2,u3,s) *)
-  (* This means InputRV t' = (v1,u1,u2,u3) *)
-  apply/pfwd1_neq0.
-  exists t'.
-  split => //.
-  (* t' \in InputRV @^-1 (v1, u1, u2, u3) *)
-  move: Ht'_cond.
-  rewrite !inE.
-  (* Goal: CondRV t' == (v1,u1,u2,u3,s) -> InputRV t' == (v1,u1,u2,u3) *)
-  move/eqP => [Hv1' Hu1' Hu2' Hu3' _].
-  by apply/eqP; rewrite /= -Hv1' -Hu1' -Hu2' -Hu3'.
-
-(* Step 4: Compute numerator *)
-have Hnum: `Pr[[%VarRV, CondRV] = ((v2, v3), (v1, u1, u2, u3, s))] =
-           (m ^ 2)%:R^-1 * `Pr[InputRV = (v1, u1, u2, u3)].
-  rewrite (joint_VarRV_CondRV_eq_InputRV Hin_fiber).
-  have Hinde_sym: P |= VarRV _|_ InputRV by rewrite inde_RV_sym.
-  rewrite (Hinde_sym (v2, v3) (v1, u1, u2, u3)).
-  rewrite -dist_of_RVE Hunif fdist_uniformE card_msg_pair.
-  by [].
-
-(* Step 5: Compute denominator using helper *)
-have Hdenom: `Pr[CondRV = (v1, u1, u2, u3, s)] =
-             #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|%:R * (m ^ 2)%:R^-1 *
-             `Pr[InputRV = (v1, u1, u2, u3)].
-  by apply: cond_prob_denom.
-
-(* Step 6: Substitute and simplify *)
-rewrite Hnum Hdenom.
-(* Goal: (m²)^-1 * Pr[InputRV] / (|fiber| * (m²)^-1 * Pr[InputRV]) = |fiber|^-1 *)
-field.
-(* Need to show denominators are non-zero:
-   [&& fiber_card != 0, q != 0, p != 0 & Pr[InputRV] != 0] *)
-apply/and4P.
-split.
-- (* |fiber| != 0 *)
-  by rewrite pnatr_eq0 -lt0n.
-- (* 2 + q_minus_2%:R = q%:R != 0 since q >= 2 *)
-  rewrite -natrD.
-  by rewrite pnatr_eq0.
-- (* 2 + p_minus_2%:R = p%:R != 0 since p >= 2 *)
-  rewrite -natrD.
-  by rewrite pnatr_eq0.
-- (* Pr[InputRV] != 0 *)
-  exact: HInputRV_neq0.
-Qed.
-
-End uniform_from_joint_uniform.
-
 (* Fiber cardinality for full constraint *)
-Lemma dsdp_fiber_full_zpq_card (u1 u2 u3 v1 s : msg) :
+Lemma dsdp_fiber_card (u1 u2 u3 v1 s : msg) :
   (0 < u3)%N -> (u3 < minn p q)%N ->
-  #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
+  #|dsdp_fiber u1 u2 u3 v1 s| = m.
 Proof.
 move=> Hu3_pos Hu3_lt.
-rewrite /dsdp_fiber_full_zpq /dsdp_fiber_zpq.
-exact: (fiber_zpq_pair_card prime_p prime_q).
+rewrite /dsdp_fiber /linear_fiber_2d.
+exact: (linear_fiber_2d_card prime_p prime_q).
 Qed.
 
 (* Non-solutions have zero probability *)
-Lemma dsdp_non_solution_zero_prob_zpq (u1 u2 u3 v1 s : msg) (v2 v3 : msg) :
+Lemma Pr_dsdp_nosol_eq0 (u1 u2 u3 v1 s : msg) (v2 v3 : msg) :
   `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
-  (v2, v3) \notin dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
+  (v2, v3) \notin dsdp_fiber u1 u2 u3 v1 s ->
   `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] = 0.
 Proof.
 move=> Hcond_pos Hnot_solution.
@@ -412,92 +218,80 @@ set constraint := fun (conds : msg * msg * msg * msg * msg)
   (vals : msg * msg) =>
   let '(v1, u1, u2, u3, s) := conds in
   let '(v2, v3) := vals in
-  (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s.
+  (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s.
 have Hconstraint: forall t, constraint (CondRV t) (VarRV t).
   move=> t.
   rewrite /constraint /=.
-  rewrite /dsdp_fiber_full_zpq /dsdp_fiber_zpq inE /=.
+  rewrite /dsdp_fiber /linear_fiber_2d inE /=.
   apply/eqP.
   (* constraint_holds gives: s - u1*v1 = u2*v2 + u3*v3 *)
   (* We need: u2*v2 + u3*v3 = s - u1*v1 *)
   move: (constraint_holds t).
-  rewrite /satisfies_constraint_zpq /CondRV /VarRV /=.
+  rewrite /dsdp_constraint /CondRV /VarRV /=.
   by move=> ->.
 by rewrite (cond_prob_zero_outside_constraint Hconstraint Hcond_pos).
 Qed.
 
-(* Solutions have uniform probability *)
-Lemma dsdp_solution_uniform_prob_zpq (u1 u2 u3 v1 s : msg) (v2 v3 : msg) :
+(* Solutions have uniform probability.
+   Instantiates cPr_uniform_fiber from entropy_fiber_zpq.v with DSDP structure. *)
+Lemma Pr_dsdp_sol_uniform (u1 u2 u3 v1 s : msg) (v2 v3 : msg) :
   (0 < u3)%N -> (u3 < minn p q)%N ->
   `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
-  (v2, v3) \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
+  (v2, v3) \in dsdp_fiber u1 u2 u3 v1 s ->
   `Pr[ VarRV = (v2, v3) | CondRV = (v1, u1, u2, u3, s) ] = m%:R^-1.
 Proof.
 move=> Hu3_pos Hu3_lt Hcond_pos Hin.
-(* From dsdp_uniform_over_solutions_from_joint_uniform and fiber cardinality *)
-have Hcard: #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
-  by apply: dsdp_fiber_full_zpq_card.
-(* Get witness from conditioning event being non-zero *)
-move/pfwd1_neq0: (Hcond_pos) => [t [Ht _]].
-move: Ht; rewrite inE => /eqP [HV1 HU1 HU2 HU3 HS].
-rewrite (dsdp_uniform_over_solutions_from_joint_uniform 
-           VarRV_uniform VarRV_indep_inputs HU1 HU2 HU3 HV1 HS Hcond_pos Hin).
-by rewrite Hcard.
+(* Fiber cardinality = m *)
+have Hcard: #|dsdp_fiber u1 u2 u3 v1 s| = m.
+  by apply: dsdp_fiber_card.
+(* Apply cPr_uniform_fiber from entropy_fiber_zpq.v.
+   The card_msg_pair parameter is now implicit and accepts any proof. *)
+have Hcpr := @cPr_uniform_fiber R p_minus_2 q_minus_2
+               T P VarRV (msg * msg * msg * msg)%type InputRV
+               (msg * msg * msg * msg * msg)%type CondRV
+               dsdp_fiber_fn dsdp_proj_input
+               constraint_fiber_dsdp InputRV_proj_dsdp
+               card_msg_pair VarRV_uniform VarRV_indep_inputs
+               joint_eq_input_dsdp
+               (v1, u1, u2, u3, s) (v2, v3) Hcond_pos Hin.
+by rewrite Hcpr /= Hcard.
 Qed.
 
-(* Single-point conditional entropy: H[VarRV | CondRV = (v1,u1,u2,u3,s)]
-   = log(m).
-   Shows that for each fixed conditioning value, the conditional entropy
-   equals log(m). This applies the general fiber entropy framework to DSDP:
-   - Fiber = {(v2,v3) | u2*v2 + u3*v3 = s - u1*v1} has cardinality m
-   - Uniform distribution over fiber implies entropy = log(m)
-*)
-Lemma dsdp_entropy_uniform_subset_zpq (u1 u2 u3 v1 s : msg) :
-  `Pr[ CondRV = (v1, u1, u2, u3, s)] != 0 ->
-  (0 < u3)%N -> (u3 < minn p q)%N ->
-  (forall pair : msg * msg,
-    pair \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
-    `Pr[ VarRV = pair | CondRV = (v1, u1, u2, u3, s) ] = m%:R^-1) ->
-  (forall pair : msg * msg,
-    pair \notin dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
-    `Pr[ VarRV = pair | CondRV = (v1, u1, u2, u3, s) ] = 0) ->
-  `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] = log (m%:R : R).
-Proof.
-move=> Hcond_pos Hu3_pos Hu3_lt Hsol_unif Hnonsol_zero.
-(* Use the general centropy1_uniform_over_set lemma *)
-have card_m : #|dsdp_fiber_full_zpq u1 u2 u3 v1 s| = m.
-  by apply: dsdp_fiber_full_zpq_card.
-(* Adapt uniform hypothesis to use fiber cardinality *)
-have Hsol_unif': forall pair : msg * msg,
-    pair \in dsdp_fiber_full_zpq u1 u2 u3 v1 s ->
-    `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 
-    #|dsdp_fiber_full_zpq u1 u2 u3 v1 s|%:R^-1.
-  by move=> pair Hin; rewrite (Hsol_unif pair Hin) card_m.
-(* Apply general lemma *)
-rewrite (@centropy1_uniform_over_set R T P _ _ VarRV CondRV
-           (dsdp_fiber_full_zpq u1 u2 u3 v1 s) (v1, u1, u2, u3, s)
-           Hcond_pos Hsol_unif' Hnonsol_zero); first by rewrite card_m.
-(* Prove fiber cardinality is positive: m = p*q > 0 since p, q are primes *)
-by rewrite card_m muln_gt0 prime_gt0 // prime_gt0.
-Qed.
-
-(* Helper: Each conditioning value gives entropy log(m) *)
-Lemma dsdp_centropy1_uniform_zpq (v1 u1 u2 u3 s : msg) :
+(* Helper: Each conditioning value gives entropy log(m).
+   Uses centropy1_uniform_over_set directly with DSDP-specific probability lemmas. *)
+Lemma dsdp_centropy1_uniform (v1 u1 u2 u3 s : msg) :
   (0 < u3)%N -> (u3 < minn p q)%N ->
   `Pr[CondRV = (v1, u1, u2, u3, s)] != 0 ->
   `H[ VarRV | CondRV = (v1, u1, u2, u3, s) ] = log (m%:R : R).
 Proof.
 move=> Hu3_pos Hu3_lt Hcond_pos.
-apply: dsdp_entropy_uniform_subset_zpq => //.
-  move=> [v2 v3] Hpair.
-  exact: dsdp_solution_uniform_prob_zpq.
-move=> [v2 v3] Hpair.
-exact: dsdp_non_solution_zero_prob_zpq.
+(* Fiber cardinality = m *)
+have card_m : #|dsdp_fiber u1 u2 u3 v1 s| = m.
+  by apply: dsdp_fiber_card.
+(* Build uniform hypothesis using Pr_dsdp_sol_uniform *)
+have Hsol_unif: forall pair : msg * msg,
+    pair \in dsdp_fiber u1 u2 u3 v1 s ->
+    `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 
+    #|dsdp_fiber u1 u2 u3 v1 s|%:R^-1.
+  move=> [v2 v3] Hin.
+  by rewrite (Pr_dsdp_sol_uniform Hu3_pos Hu3_lt Hcond_pos Hin) card_m.
+(* Build zero-outside hypothesis using Pr_dsdp_nosol_eq0 *)
+have Hnonsol_zero: forall pair : msg * msg,
+    pair \notin dsdp_fiber u1 u2 u3 v1 s ->
+    `Pr[VarRV = pair | CondRV = (v1, u1, u2, u3, s)] = 0.
+  move=> [v2 v3] Hnotin.
+  exact: Pr_dsdp_nosol_eq0.
+(* Apply general lemma *)
+rewrite (@centropy1_uniform_over_set R T P _ _ VarRV CondRV
+           (dsdp_fiber u1 u2 u3 v1 s) (v1, u1, u2, u3, s)
+           Hcond_pos Hsol_unif Hnonsol_zero); first by rewrite card_m.
+(* Prove fiber cardinality is positive: m = p*q > 0 since p, q are primes *)
+by rewrite card_m muln_gt0 prime_gt0 // prime_gt0.
 Qed.
 
 (* Main entropy result: H(V2, V3 | Alice's view) = log(pq) *)
 (* This establishes that Alice learns nothing beyond the constraint. *)
-Theorem dsdp_centropy_uniform_zpq :
+Theorem dsdp_centropy_uniform :
   (forall t, (0 < U3 t)%N) ->
   (forall t, (U3 t < minn p q)%N) ->
   `H(VarRV | CondRV) = log (m%:R : R).
@@ -524,12 +318,12 @@ transitivity (\sum_(a : msg * msg * msg * msg * msg)
     move: Ht; rewrite inE => /eqP Ht.
     have HU3t : U3 t = u3 by case: Ht => _ _ _ ->.
     by rewrite -HU3t; apply: HU3_lt.
-  by rewrite (dsdp_centropy1_uniform_zpq Hu3_pos Hu3_lt Hcond_pos).
+  by rewrite (dsdp_centropy1_uniform Hu3_pos Hu3_lt Hcond_pos).
 under eq_bigr do rewrite mulrC.
 by rewrite -big_distrr /= sum_pfwd1 mulr1.
 Qed.
 
-Section dsdp_var_entropy_zpq.
+Section dsdp_var_entropy.
 
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.
@@ -553,7 +347,7 @@ Qed.
    The security argument (privacy_by_bonded_leakage at end of file) shows
    that H(V2,V3 | AliceView) = H(V2 | AliceView), i.e., knowing V3 given
    the constraint adds no information beyond knowing V2. *)
-Lemma dsdp_var_entropy_zpq :
+Lemma dsdp_var_entropy :
   `p_VarRV = fdist_uniform card_msg_pair ->
   `H `p_VarRV = log (m%:R * m%:R : R).
 Proof.
@@ -562,9 +356,9 @@ rewrite entropy_uniform card_prod !card_msg.
 by rewrite natrM.
 Qed.
 
-End dsdp_var_entropy_zpq.
+End dsdp_var_entropy.
 
-End dsdp_entropy_zpq.
+End dsdp_entropy.
 
 
 (* For finite field (F_m) approach, see dsdp_entropy_field.v *)
@@ -618,7 +412,7 @@ Let k x : data := inr x.
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
 
-(* Note: Trace-related entropy lemmas (DSDP_RV_zpq, AliceTraces,
+(* Note: Trace-related entropy lemmas (dsdp_RV, AliceTraces,
    centropy_AliceTraces_AliceView) are defined in dsdp_entropy_trace.v
    for Z/pqZ analysis. For F_m based trace analysis, see
    dsdp_entropy_field.v. *)
@@ -900,7 +694,7 @@ Section bonded_leakage_privacy.
    For Z/pqZ (composite modulus m = p*q):
    - Invertibility condition: 0 < u3 < min(p,q) ensures u3 is coprime to m
    - Fiber cardinality: |{(v2,v3) | u2*v2 + u3*v3 = target}| = m
-   - Proved directly in fiber_zpq.v using bijection argument
+   - Proved directly in linear_fiber_zpq.v using bijection argument
    
    Key insight: The entropy relationship
 
@@ -909,7 +703,7 @@ Section bonded_leakage_privacy.
    holds because V3 adds no additional entropy once V2 and the constraint
    are known. This is a consequence of the constraint structure itself.
    
-   See dsdp_entropy_zpq section for Z/pqZ entropy analysis.
+   See dsdp_entropy section for Z/pqZ entropy analysis.
    See dsdp_entropy_field.v for comparison with prime field F_m approach.
 *)
 

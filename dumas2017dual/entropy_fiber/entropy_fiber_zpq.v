@@ -41,7 +41,7 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 
-Section fiber_entropy_zpq.
+Section fiber_entropy.
 
 Context {R : realType}.
 Variables (p_minus_2 q_minus_2 : nat).
@@ -75,12 +75,10 @@ Hypothesis constraint_fiber : forall t, VarRV t \in fiber (CondRV t).
 (* InputRV is the projection of CondRV *)
 Hypothesis InputRV_proj : forall t, InputRV t = proj_input (CondRV t).
 
-(* Cardinality constants *)
-Let card_msg : #|msg| = m.
-Proof. by rewrite card_ord Zp_cast. Qed.
-
-Let card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
-Proof. by rewrite card_prod !card_msg expnS expn1. Qed.
+(* Cardinality proof - provided as parameter so callers can use any proof.
+   Design note: Using Variable instead of Let ensures the exported lemmas
+   accept any proof of this cardinality equality, not a specific proof term. *)
+Variable card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
 
 (* Assumptions: VarRV is uniform and independent of InputRV *)
 Hypothesis VarRV_uniform : `p_ VarRV = fdist_uniform card_msg_pair.
@@ -264,4 +262,4 @@ Qed.
 
 End conditional_probability.
 
-End fiber_entropy_zpq.
+End fiber_entropy.

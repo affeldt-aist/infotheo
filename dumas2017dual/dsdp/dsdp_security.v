@@ -41,7 +41,7 @@ Import Num.Theory.
 (*                                                                            *)
 (* Z/pqZ APPROACH: Uses composite modulus m = p*q directly via CRT. The       *)
 (* fiber cardinality |{(v2,v3) : u2*v2 + u3*v3 = target}| = m is proven       *)
-(* in fiber_zpq.v using CRT decomposition.
+(* in linear_fiber_zpq.v using CRT decomposition.
    Security condition 0 < U3 < min(p,q) *)
 (* ensures U3 is coprime to m, hence invertible. See notes/ for details.      *)
 (*                                                                            *)
@@ -133,7 +133,7 @@ Let VarRV : {RV P -> (msg * msg)} := [%V2, V3].
 
 (* Use Z/pqZ definitions from dsdp_entropy for constraint and fiber *)
 Hypothesis constraint_holds :
-  forall t, satisfies_constraint_zpq (CondRV t) (VarRV t).
+  forall t, dsdp_constraint (CondRV t) (VarRV t).
 
 (* U3 must be coprime to m for invertibility in Z/pqZ *)
 Hypothesis U3_coprime_m : forall t, coprime (val (U3 t)) m.
@@ -143,7 +143,7 @@ Hypothesis U3_coprime_m : forall t, coprime (val (U3 t)) m.
    2. VarRV is independent of the inputs (V1, U1, U2, U3)
    These are standard assumptions in secure multi-party computation.
    Note: We use dsdp_entropy.card_msg_pair_subproof to match the
-   parameter expected by dsdp_centropy_uniform_zpq. *)
+   parameter expected by dsdp_centropy_uniform. *)
 Hypothesis VarRV_uniform : 
   `p_ VarRV = fdist_uniform (dsdp_entropy.card_msg_pair_subproof p_minus_2 q_minus_2).
 Hypothesis VarRV_indep_inputs : P |= [%V1, U1, U2, U3] _|_ VarRV.
@@ -199,11 +199,11 @@ Theorem dsdp_constraint_centropy_eqlogm :
 Proof.
 (* Goal: `H(VarRV | CondRV) = log (m%:R : R)
    where VarRV = [% V2, V3], CondRV = [% V1, U1, U2, U3, S] *)
-(* Apply dsdp_centropy_uniform_zpq from dsdp_entropy.v with all section
+(* Apply dsdp_centropy_uniform from dsdp_entropy.v with all section
    params. The new structure uses VarRV_uniform and VarRV_indep_inputs
    instead of the old uniform_over_solutions hypothesis. *)
-apply: dsdp_centropy_uniform_zpq.
-(* === Section parameters for dsdp_entropy_zpq === *)
+apply: dsdp_centropy_uniform.
+(* === Section parameters for dsdp_entropy === *)
 - exact: prime_p.
 - exact: prime_q.
 - exact: constraint_holds.

@@ -16,7 +16,7 @@ Import Num.Theory.
 (* over composite modulus Z/pqZ (Benaloh cryptosystem).                       *)
 (*                                                                            *)
 (* Key results:                                                               *)
-(*   - dsdp_traces_zpq: Protocol trace structure for Z/pqZ                    *)
+(*   - dsdp_traces: Protocol trace structure for Z/pqZ                        *)
 (*   - centropy_AliceTraces_AliceView: H(v|AliceTraces) = H(v|AliceView)       *)
 (*                                                                            *)
 (* These lemmas establish that conditioning on protocol traces equals         *)
@@ -41,7 +41,7 @@ Local Definition R := Rdefinitions.R.
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
-Section dsdp_traces_zpq.
+Section dsdp_traces.
 
 (* Z/pqZ parameters - composite modulus for Benaloh cryptosystem *)
 Variables (p_minus_2 q_minus_2 : nat).
@@ -93,7 +93,7 @@ Let dk_b : pkey := (Bob, Dec, k_b).
 Let dk_c : pkey := (Charlie, Dec, k_c). 
 
 (* Protocol traces for Z/pqZ - same structure as F_m version but with 'Z_m *)
-Definition dsdp_traces_zpq : dsdp_tracesT :=
+Definition dsdp_traces : dsdp_tracesT :=
   [tuple
      [bseq d (v3 * u3 + r3 + (v2 * u2 + r2) - r2 - r3 + u1 * v1);
            e (E alice (v3 * u3 + r3 + (v2 * u2 + r2)));
@@ -105,7 +105,7 @@ Definition dsdp_traces_zpq : dsdp_tracesT :=
      [bseq e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2))); d v3; k dk_c]].
 
 (* Protocol correctness: the final result S satisfies S = u1*v1 + u2*v2 + u3*v3 *)
-Definition is_dsdp_zpq (trs : dsdp_tracesT) :=
+Definition is_dsdp_trace (trs : dsdp_tracesT) :=
   let '(s, u3', u2', u1', v1') :=
     if tnth trs 0 is Bseq [:: inl (inl s); _; _; _; _; _;
                            inl (inl u3'); inl (inl u2'); inl (inl u1');
@@ -119,11 +119,11 @@ Definition is_dsdp_zpq (trs : dsdp_tracesT) :=
     then (v3') else (0) in
   s = v3' * u3' + v2' * u2' + v1' * u1'.
 
-Lemma dsdp_is_correct_zpq:
-  is_dsdp_zpq dsdp_traces_zpq.
-Proof. rewrite /is_dsdp_zpq /dsdp_traces_zpq /=. ring. Qed.
+Lemma dsdp_correct:
+  is_dsdp_trace dsdp_traces.
+Proof. rewrite /is_dsdp_trace /dsdp_traces /=. ring. Qed.
 
-End dsdp_traces_zpq.
+End dsdp_traces.
 
 (******************************************************************************)
 (* Trace-based Entropy Analysis                                               *)
@@ -199,20 +199,20 @@ Let AliceView : {RV P -> alice_view_valuesT} :=
   [% Dk_a, S, V1, U1, U2, U3, R2, R3, E_alice_d3, E_charlie_v3, E_bob_v2].
 
 (* Uncurry function for trace construction *)
-Definition dsdp_uncurry_zpq (o: Alice.-key Dec msg * Bob.-key Dec msg *
+Definition dsdp_uncurry (o: Alice.-key Dec msg * Bob.-key Dec msg *
   Charlie.-key Dec msg * msg * msg * msg * msg * msg * msg * msg * msg)
   : dsdp_tracesT :=
   let '(dk_a, dk_b, dk_c, v1, v2, v3, u1, u2, u3, r2, r3) := o in
-  dsdp_traces_zpq dk_a.2 dk_b.2 dk_c.2 v1 v2 v3 u1 u2 u3 r2 r3.
+  dsdp_traces dk_a.2 dk_b.2 dk_c.2 v1 v2 v3 u1 u2 u3 r2 r3.
 
 (* Protocol trace as random variable *)
-Definition DSDP_RV_zpq : {RV P -> dsdp_tracesT} :=
-  dsdp_uncurry_zpq `o
+Definition dsdp_RV : {RV P -> dsdp_tracesT} :=
+  dsdp_uncurry `o
   [% Dk_a, Dk_b, Dk_c, V1, V2, V3, U1, U2, U3, R2, R3].
 
 (* Alice's trace: first component of protocol traces *)
 Let AliceTraces : {RV P -> dsdp_traceT} :=
-  (fun t => tnth t 0) `o DSDP_RV_zpq.
+  (fun t => tnth t 0) `o dsdp_RV.
 
 (* Reconstruct trace from Alice's view *)
 Let AliceTraces_values_from_view
@@ -231,8 +231,8 @@ Lemma AliceTraces_from_viewP :
   AliceTraces = AliceTraces_values_from_view `o AliceView.
 Proof.
 apply: boolp.funext => x /=.
-rewrite /AliceTraces /DSDP_RV_zpq /comp_RV /dsdp_uncurry_zpq
-        /dsdp_traces_zpq /=.
+rewrite /AliceTraces /dsdp_RV /comp_RV /dsdp_uncurry
+        /dsdp_traces /=.
 rewrite /AliceView /AliceTraces_values_from_view /=.
 rewrite tnth0 /=.
 by case: Dk_a => t.
@@ -295,7 +295,7 @@ Qed.
 
 (* Bob's trace: element 1 of dsdp_traces *)
 Let BobTraces : {RV P -> dsdp_traceT} :=
-  (fun t => tnth t 1) `o DSDP_RV_zpq.
+  (fun t => tnth t 1) `o dsdp_RV.
 
 (* Encrypted values Bob receives *)
 Let E_charlie_vur3 : {RV P -> Charlie.-enc msg} := E' charlie `o (VU3 \+ R3).
@@ -322,8 +322,8 @@ Lemma BobTraces_from_viewP :
   BobTraces = BobTraces_values_from_view `o BobView.
 Proof.
 apply: boolp.funext => x /=.
-rewrite /BobTraces /DSDP_RV_zpq /comp_RV /dsdp_uncurry_zpq
-        /dsdp_traces_zpq /=.
+rewrite /BobTraces /dsdp_RV /comp_RV /dsdp_uncurry
+        /dsdp_traces /=.
 rewrite /BobView /BobTraces_values_from_view /=.
 by case: Dk_b => t.
 Qed.
@@ -377,7 +377,7 @@ Qed.
 
 (* Charlie's trace: element 2 of dsdp_traces *)
 Let CharlieTraces : {RV P -> dsdp_traceT} :=
-  (fun t => tnth t 2) `o DSDP_RV_zpq.
+  (fun t => tnth t 2) `o dsdp_RV.
 
 (* Encrypted value Charlie receives - the aggregate D3 = v3*u3+r3+(v2*u2+r2) *)
 Let E_charlie_d3 : {RV P -> Charlie.-enc msg} := E' charlie `o D3.
@@ -402,8 +402,8 @@ Lemma CharlieTraces_from_viewP :
   CharlieTraces = CharlieTraces_values_from_view `o CharlieView.
 Proof.
 apply: boolp.funext => x /=.
-rewrite /CharlieTraces /DSDP_RV_zpq /comp_RV /dsdp_uncurry_zpq
-        /dsdp_traces_zpq /=.
+rewrite /CharlieTraces /dsdp_RV /comp_RV /dsdp_uncurry
+        /dsdp_traces /=.
 rewrite /CharlieView /CharlieTraces_values_from_view /=.
 by case: Dk_c => t.
 Qed.
