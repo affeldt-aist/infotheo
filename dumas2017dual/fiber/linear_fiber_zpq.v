@@ -109,34 +109,6 @@ Definition linear_fiber (u : 'rV[msg]_n) (target : msg) :
   {set 'rV[msg]_n} :=
   [set v : 'rV[msg]_n | u *d v == target].
 
-(* Condition: some component of u is a unit (invertible in Z/m) *)
-Definition has_unit_component (u : 'rV[msg]_n) : Prop :=
-  exists i : 'I_n, u ord0 i \is a GRing.unit.
-
-(* Stronger condition specific to Z/pq: some component < min(p,q) and > 0 *)
-Definition has_small_component (u : 'rV[msg]_n) : Prop :=
-  exists i : 'I_n, (0 < u ord0 i)%N /\ (u ord0 i < minn p q)%N.
-
-(* Small component implies unit component *)
-Lemma small_component_unit (u : 'rV[msg]_n) :
-  has_small_component u -> has_unit_component u.
-Proof.
-move=> [i [Hpos Hlt]].
-exists i.
-have Hcoprime: coprime (nat_of_ord (u ord0 i)) m.
-  rewrite /coprime.
-  have Hu_lt_p: (u ord0 i < p)%N.
-    by apply: (leq_trans (n := minn p q)); [exact: Hlt | exact: geq_minl].
-  have Hu_lt_q: (u ord0 i < q)%N.
-    by apply: (leq_trans (n := minn p q)); [exact: Hlt | exact: geq_minr].
-  rewrite Gauss_gcdl //.
-    rewrite -/(coprime (u ord0 i) p) coprime_sym prime_coprime //.
-    by rewrite gtnNdvd // ltnW.
-  rewrite -/(coprime (u ord0 i) q) coprime_sym prime_coprime //.
-  by rewrite gtnNdvd // ltnW.
-exact: (coprime_Zp_unit m_gt1 Hcoprime).
-Qed.
-
 (*
   ==========================================================================
   Helper lemmas for linear_fiber_card

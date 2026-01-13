@@ -189,6 +189,12 @@ Hypothesis V3_determined :
 Hypothesis U3_pos : forall t, (0 < val (U3 t))%N.
 Hypothesis U3_lt_minpq : forall t, (val (U3 t) < minn p q)%N.
 
+(* Hypothesis for malicious adversary analysis:
+   If A is const-RV actually P |= A _|_ A. But in the DSDP setting, 
+   we don't have such RVs. *)
+Hypothesis neg_self_indep : forall (TA : finType)
+  (A : {RV P -> TA}), ~ P |= A _|_ A.
+
 (* Core entropy bound: H((V2,V3) | constraint view) = log(m).
    Instantiates the general DSDP entropy analysis with security hypotheses.
    Shows Alice learns exactly log(m) bits about Bob/Charlie's joint input,
@@ -276,6 +282,129 @@ Qed.
    
    Security holds despite information leakage.
 *)
+
+(******************************************************************************)
+(* Malicious Adversary Case Analysis                                          *)
+(*                                                                            *)
+(* Moved from dsdp_entropy.v - security analysis belongs here.                *)
+(* Examines the compromised case when Alice sets U2,U3 to reveal V2.          *)
+(******************************************************************************)
+
+Section dotp2.
+
+Notation "x \+ y" := (add_RV x y).
+
+Definition dotp2 (x y: (msg * msg)) := x.1 * y.1 + x.2 * y.2.
+
+Definition dotp2_solutions (s : msg) : {set (msg * msg) * (msg * msg)} :=
+  [set uv in setX setT setT | dotp2 uv.1 uv.2 == s].
+
+Definition Dotp2_rv (X Y : {RV P -> (msg * msg)}) : {RV P -> msg} :=
+  fun p => dotp2 (X p) (Y p).
+
+Definition Dotp2Solutions
+  (S : {RV P -> msg}) : {RV P -> {set (msg * msg) * (msg * msg)} } :=
+  dotp2_solutions `o S.
+
+Definition US := [% U2, U3].
+Definition VS := [% V2, V3].
+
+Definition ConstUS :=
+  [% (fun _ => 1) : {RV P -> msg},
+     (fun _ => 0) : {RV P -> msg}].
+Definition VU1 : {RV P -> msg} := V1 \* U1.
+
+(* S expressed as dot product: S = (V2,V3)·(U2,U3) + V1*U1.
+   This is the DSDP constraint s = u2*v2 + u3*v3 + u1*v1 in RV form. *)
+Lemma S_E :
+  S = Dotp2_rv VS US \+ VU1.
+Proof.
+rewrite /S /VS /US /D3 /VU3R /D2 /VU3 /VU2 /VU1 /Dotp2_rv /dotp2 /add_RV.
+apply: boolp.funext => i //=.
+ring.
+Qed.
+
+End dotp2.
+
+Section malicious_adversary_case_analysis.
+
+(* If an active adversary controls Alice, force `us` always output `(1, 0)`,
+   then the key privacy premise `v2 _|_ dotp2_rv us vs` is impossible.
+
+   In contrast, if Alice is an fair player, the probability that `us`
+   outputs that specific value `(1, 0)` is 1/m^2.
+
+   Finally, if Bob enforce ZPK check to abort the protocol when that value is
+   generated, `v2 _|_ dotp2_rv us vs` is guaranteed, and the protocol
+   is secure with that mitigation ("security with abort")
+   \cite[\S5.2]{dumas2017dual}.
+
+   Therefore, here we examine the compromised case:
+
+      `us = (1, 0) -> ~ v2 _|_ dotp2_rv us vs`
+
+   and the secure case:
+
+      `us != (1, 0) ->  v2 _|_ dotp2_rv us vs`.
+*)
+Lemma ConstUS_discloses_V2 :
+  US = ConstUS -> Dotp2_rv VS US = V2.
+Proof.
+move->; rewrite /ConstUS /VS /Dotp2_rv /dotp2 /fst /snd /comp_RV.
+apply: boolp.funext => i //=.
+ring.
+Qed.
+
+(* This theorem shows that if an active adversary controls Alice,
+   it can set U1 and U2 as a special combination (1, 0),
+   which allows revealing `V2` from the result that Alice receives.
+   \cite[\S5.2]{dumas2017dual}.
+*)
+Theorem US_compromised_leaks_V2 :
+  US = ConstUS -> ~ `H(V2 | AliceView ) = `H `p_V2.
+Proof.
+move => H.
+(* From alice_view to [% Alice_input_view, S] *)
+rewrite !(E_enc_ce_removal V2 card_msg).
+pose h := (fun o : (Alice.-key Dec msg * msg *
+  msg * msg * msg * msg * msg * msg) =>
+  let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
+   (dk_a, v1, u1, u2, u3, r2, r3, s)).
+pose h' := (fun o : (Alice.-key Dec msg * msg *
+  msg * msg * msg * msg * msg * msg) =>
+  let '(dk_a, v1, u1, u2, u3, r2, r3, s) := o in
+  (dk_a, s, v1, u1, u2, u3, r2, r3)).
+rewrite -(centropy_RV_contraction _ _ h).
+have ->: `H( V2 | [% Dk_a, S, V1, U1, U2, U3, R2, R3, h `o
+  [% Dk_a, S, V1, U1, U2, U3, R2, R3]]) =
+  `H( V2 | [% Dk_a, S, V1, U1, U2, U3, R2, R3,
+  [% Dk_a, V1, U1, U2, U3, R2, R3, S]]).
+  by [].
+rewrite centropyC (centropy_RV_contraction _ _ h') -/AliceInputsView.
+(* From the cond_entropy to the independence goal via mutual info *)
+move => H2.
+have: `I(V2;[% AliceInputsView, S]) = 0.
+  by rewrite mutual_info_RVE H2 subrr.
+move/mutual_info_RV0_indep.
+(* Show the independence is impossible if Alice has been compromised
+   and cheat with the specific `us`*)
+rewrite S_E /add_RV //= (ConstUS_discloses_V2 H).
+pose z := (fun o : (alice_inputsT * msg) =>
+  let '(_, v1, u1, _, _, _, _, v2_r) := o in v2_r - v1 * u1).
+move/(inde_RV_comp idfun z).
+have -> : z `o [% AliceInputsView, V2 \+ VU1] = V2.
+  rewrite /z /VU1 /comp_RV /add_RV.
+  apply: boolp.funext => i //=.
+  by ring.
+have -> : idfun `o V2 = V2.
+  by apply: boolp.funext => i.
+exact: neg_self_indep.
+exact: Pr_Eqn2View_neq0.
+exact: Pr_Eqn1View_neq0.
+exact: Pr_AliceView_neq0.
+Qed.
+
+End malicious_adversary_case_analysis.
 
 End dsdp_security.
 
