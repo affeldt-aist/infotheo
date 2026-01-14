@@ -910,52 +910,69 @@ rewrite Fp_cast // modn_small // => Heq'.
 by rewrite Heq' in Hu3_pos.
 Qed.
 
-(* CRT bijection: linear_fiber_2d bijects with fiber_Fp × fiber_Fq *)
-Lemma linear_fiber_2d_crt_bij (u2 u3 target : msg) :
-  (0 < u3)%N -> (u3 < minn p q)%N ->
-  exists f : linear_fiber_2d u2 u3 target -> 
-             fiber_Fp (proj_Fp u2) (proj_Fp u3) (proj_Fp target) *
-             fiber_Fq (proj_Fq u2) (proj_Fq u3) (proj_Fq target),
-    bijective f.
+(* 
+  CRT projection from msg pairs to field pairs.
+  Maps (v2, v3) : msg × msg to ((proj_Fp v2, proj_Fp v3), (proj_Fq v2, proj_Fq v3))
+*)
+Definition crt_proj_pair (vv : msg * msg) : ('F_p * 'F_p) * ('F_q * 'F_q) :=
+  ((proj_Fp vv.1, proj_Fp vv.2), (proj_Fq vv.1, proj_Fq vv.2)).
+
+(* CRT projection is injective *)
+Lemma crt_proj_pair_inj : injective crt_proj_pair.
 Proof.
-move=> Hu3_pos Hu3_lt.
-(* Define forward map: (v2, v3) ↦ ((proj_Fp v2, proj_Fp v3), (proj_Fq v2, proj_Fq v3)) *)
-pose f := fun (vv : linear_fiber_2d u2 u3 target) =>
-  let v := val vv in
-  (@SetSub _ _ (proj_Fp v.1, proj_Fp v.2) (constraint_proj (valP vv)).1,
-   @SetSub _ _ (proj_Fq v.1, proj_Fq v.2) (constraint_proj (valP vv)).2).
-exists f.
+move=> [v1 v2] [v1' v2'] /=.
+rewrite /crt_proj_pair /= => H.
+(* Extract component equalities using congr1 (not pattern matching) *)
+have Hp := congr1 fst H.
+have Hq := congr1 snd H.
+have /= Hp1 := congr1 fst Hp.
+have /= Hp2 := congr1 snd Hp.
+have /= Hq1 := congr1 fst Hq.
+have /= Hq2 := congr1 snd Hq.
+(* Use CRT to reconstruct msg elements *)
+have Hv1: v1 = v1' by rewrite -(crt_proj_id v1) -(crt_proj_id v1') Hp1 Hq1.
+have Hv2: v2 = v2' by rewrite -(crt_proj_id v2) -(crt_proj_id v2') Hp2 Hq2.
+by rewrite Hv1 Hv2.
+Qed.
+
+(* Projection maps linear_fiber_2d into the product of field fibers *)
+Lemma crt_proj_pair_fiber (u2 u3 target : msg) (vv : msg * msg) :
+  vv \in linear_fiber_2d u2 u3 target ->
+  crt_proj_pair vv \in 
+    setX (fiber_Fp (proj_Fp u2) (proj_Fp u3) (proj_Fp target))
+         (fiber_Fq (proj_Fq u2) (proj_Fq u3) (proj_Fq target)).
+Proof.
+rewrite inE => /eqP Hconstr.
+rewrite inE.
+apply/andP; split; rewrite inE; apply/eqP.
+- by rewrite /crt_proj_pair /= -!proj_Fp_mul -proj_Fp_add Hconstr.
+- by rewrite /crt_proj_pair /= -!proj_Fq_mul -proj_Fq_add Hconstr.
+Qed.
+
+(* CRT reconstruction maps field fiber product into linear_fiber_2d *)
+Lemma crt_pair_fiber (u2 u3 target : msg) (pp : 'F_p * 'F_p) (qq : 'F_q * 'F_q) :
+  pp \in fiber_Fp (proj_Fp u2) (proj_Fp u3) (proj_Fp target) ->
+  qq \in fiber_Fq (proj_Fq u2) (proj_Fq u3) (proj_Fq target) ->
+  crt_pair pp qq \in linear_fiber_2d u2 u3 target.
+Proof.
+rewrite !inE => /eqP Hp /eqP Hq.
+apply/eqP.
+exact: constraint_crt Hp Hq.
+Qed.
+
+(* Projection is surjective onto the product of field fibers *)
+Lemma crt_proj_pair_surj (u2 u3 target : msg) (ppqq : ('F_p * 'F_p) * ('F_q * 'F_q)) :
+  ppqq \in setX (fiber_Fp (proj_Fp u2) (proj_Fp u3) (proj_Fp target))
+                (fiber_Fq (proj_Fq u2) (proj_Fq u3) (proj_Fq target)) ->
+  exists vv, vv \in linear_fiber_2d u2 u3 target /\ crt_proj_pair vv = ppqq.
+Proof.
+case: ppqq => pp qq.
+rewrite inE => /andP [/= Hpp /= Hqq].
+exists (crt_pair pp qq).
 split.
-- (* Injective *)
-  move=> [[v1 v2] Hv] [[v1' v2'] Hv'] /= [Hp Hq].
-  apply/val_inj => /=.
-  move: Hp Hq => /val_inj /= [Hp1 Hp2] /val_inj /= [Hq1 Hq2].
-  (* v1 = v1' because proj_Fp v1 = proj_Fp v1' and proj_Fq v1 = proj_Fq v1' *)
-  have Hv1: v1 = v1'.
-    rewrite -(crt_proj_id v1) -(crt_proj_id v1').
-    by rewrite Hp1 Hq1.
-  have Hv2: v2 = v2'.
-    rewrite -(crt_proj_id v2) -(crt_proj_id v2').
-    by rewrite Hp2 Hq2.
-  by rewrite Hv1 Hv2.
-- (* Surjective *)
-  move=> [[pp Hpp] [qq Hqq]].
-  (* Reconstruct (v2, v3) from (pp, qq) via CRT *)
-  pose vv := crt_pair pp qq.
-  have Hvv: vv \in linear_fiber_2d u2 u3 target.
-    rewrite inE /=.
-    apply/eqP.
-    apply: constraint_crt.
-    + move: Hpp; rewrite inE => /eqP.
-      by rewrite /vv /crt_pair /= !proj_Fp_crt.
-    + move: Hqq; rewrite inE => /eqP.
-      by rewrite /vv /crt_pair /= !proj_Fq_crt.
-  exists (SetSub Hvv).
-  apply/eqP.
-  rewrite xpair_eqE.
-  apply/andP; split; apply/eqP; apply/val_inj => /=.
-  + by rewrite /vv /crt_pair /= !proj_Fp_crt.
-  + by rewrite /vv /crt_pair /= !proj_Fq_crt.
+- exact (crt_pair_fiber Hpp Hqq).
+- rewrite /crt_proj_pair /crt_pair /= !proj_Fp_crt !proj_Fq_crt.
+  by rewrite -!surjective_pairing.
 Qed.
 
 (* Main result: 2D fiber cardinality via CRT *)
@@ -966,19 +983,32 @@ Proof.
 move=> Hu3_pos Hu3_lt.
 (* u3 < p implies proj_Fp u3 ≠ 0 *)
 have Hu3_lt_p: (val u3 < p)%N.
-  by apply: leq_ltn_trans Hu3_lt (geq_minl _ _).
+  by apply: (leq_trans Hu3_lt); apply: geq_minl.
 have Hu3_neq0_Fp := proj_Fp_neq0 Hu3_pos Hu3_lt_p.
 (* u3 < q implies proj_Fq u3 ≠ 0 *)
 have Hu3_lt_q: (val u3 < q)%N.
-  by apply: leq_ltn_trans Hu3_lt (geq_minr _ _).
+  by apply: (leq_trans Hu3_lt); apply: geq_minr.
 have Hu3_neq0_Fq := proj_Fq_neq0 Hu3_pos Hu3_lt_q.
 (* Field fiber cardinalities via count_affine_solutions_rank1 from rouche_capelli.v *)
-have Hcard_Fp := fiber_Fp_card Hu3_neq0_Fp.
-have Hcard_Fq := fiber_Fq_card Hu3_neq0_Fq.
-(* CRT bijection gives product of cardinalities *)
-have [f Hf] := linear_fiber_2d_crt_bij Hu3_pos Hu3_lt.
-rewrite (bij_eq_card Hf).
-by rewrite card_prod Hcard_Fp Hcard_Fq.
+have Hcard_Fp := fiber_Fp_card (proj_Fp u2) (proj_Fp target) Hu3_neq0_Fp.
+have Hcard_Fq := fiber_Fq_card (proj_Fq u2) (proj_Fq target) Hu3_neq0_Fq.
+(* Image of linear_fiber_2d under crt_proj_pair equals field fiber product *)
+set Fp_fib := fiber_Fp (proj_Fp u2) (proj_Fp u3) (proj_Fp target).
+set Fq_fib := fiber_Fq (proj_Fq u2) (proj_Fq u3) (proj_Fq target).
+have Himg: [set crt_proj_pair vv | vv in linear_fiber_2d u2 u3 target] = setX Fp_fib Fq_fib.
+  apply/setP => ppqq.
+  apply/imsetP/idP.
+  + move=> [vv Hvv ->].
+    exact: crt_proj_pair_fiber.
+  + move=> Hppqq.
+    have [vv [Hvv Heq]] := crt_proj_pair_surj Hppqq.
+    by exists vv.
+(* Use card_in_imset with injectivity *)
+rewrite -(card_in_imset (D := linear_fiber_2d u2 u3 target) (f := crt_proj_pair)).
+  rewrite Himg cardsX.
+  by rewrite Hcard_Fp Hcard_Fq.
+(* crt_proj_pair is injective on any domain *)
+by move=> x y _ _; apply: crt_proj_pair_inj.
 Qed.
 
 End fiber_2d.
