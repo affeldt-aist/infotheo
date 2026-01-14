@@ -6,6 +6,7 @@ From robot Require Import euclidean.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
 Require Import extra_algebra extra_proba extra_entropy entropy_fiber.
+Require Import rouche_capelli.  (* For count_affine_solutions_rank1 *)
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -439,8 +440,10 @@ End linear_fiber.
   This section provides the interface for dsdp_entropy.v which uses pairs
   (v2, v3) : msg × msg rather than row vectors 'rV[msg]_2.
   
-  The 2D fiber cardinality is derived from the general linear_fiber_card
-  theorem by establishing a bijection between 'rV[msg]_2 and msg × msg.
+  Main result: linear_fiber_2d_card proves |{(v2,v3) | u2*v2+u3*v3=s}| = m.
+  
+  CRT Projections (proj_Fp, proj_Fq) are provided for applying field-based
+  theorems (rouche_capelli.v) to ring problems via CRT decomposition.
 *)
 
 Section fiber_2d.
@@ -461,33 +464,47 @@ have Hq_gt0: (0 < q)%N by exact: prime_gt0.
 by rewrite (leq_trans Hp_gt1) // leq_pmulr.
 Qed.
 
+Let p_gt1 : (1 < p)%N := prime_gt1 prime_p.
+Let q_gt1 : (1 < q)%N := prime_gt1 prime_q.
+
+(* ========================================================================== *)
+(*  CRT Projections: Z/(pq)Z → F_p and Z/(pq)Z → F_q                          *)
+(* ========================================================================== *)
+
+(* Project from 'Z_m to 'F_p by taking value mod p *)
+Definition proj_Fp (x : msg) : 'F_p := inZp (val x).
+
+(* Project from 'Z_m to 'F_q by taking value mod q *)
+Definition proj_Fq (x : msg) : 'F_q := inZp (val x).
+
+(* Projections are ring homomorphisms *)
+Lemma proj_Fp_add (x y : msg) : proj_Fp (x + y)%R = (proj_Fp x + proj_Fp y)%R.
+Proof.
+rewrite /proj_Fp; apply/eqP; rewrite eqE /= !Fp_cast //.
+by rewrite modn_dvdm ?modnDm // Zp_cast // dvdn_mulr.
+Qed.
+
+Lemma proj_Fp_mul (x y : msg) : proj_Fp (x * y)%R = (proj_Fp x * proj_Fp y)%R.
+Proof.
+rewrite /proj_Fp; apply/eqP; rewrite eqE /= !Fp_cast //.
+by rewrite modn_dvdm ?modnMm // Zp_cast // dvdn_mulr.
+Qed.
+
+Lemma proj_Fq_add (x y : msg) : proj_Fq (x + y)%R = (proj_Fq x + proj_Fq y)%R.
+Proof.
+rewrite /proj_Fq; apply/eqP; rewrite eqE /= !Fp_cast //.
+by rewrite modn_dvdm ?modnDm // Zp_cast // dvdn_mull.
+Qed.
+
+Lemma proj_Fq_mul (x y : msg) : proj_Fq (x * y)%R = (proj_Fq x * proj_Fq y)%R.
+Proof.
+rewrite /proj_Fq; apply/eqP; rewrite eqE /= !Fp_cast //.
+by rewrite modn_dvdm ?modnMm // Zp_cast // dvdn_mull.
+Qed.
+
 (* ========================================================================== *)
 (*  Bijection between msg × msg and 'rV[msg]_2                                *)
 (* ========================================================================== *)
-
-(*
-=== MATHEMATICAL PROOF STRATEGY ===
-
-Goal: Derive linear_fiber_2d_card from linear_fiber_card
-
-Step 1: Establish bijection between msg × msg and 'rV[msg]_2
-  - pair_to_row : msg × msg → 'rV[msg]_2
-  - row_to_pair : 'rV[msg]_2 → msg × msg
-  - These are mutual inverses
-
-Step 2: Show constraint equations correspond
-  - For u = (u2, u3) as row vector, v = (v2, v3) as row vector:
-    u *d v = u2 * v2 + u3 * v3
-  - This matches the linear_fiber_2d constraint
-
-Step 3: Show linear_fiber_2d = image of linear_fiber under row_to_pair
-  - The bijection preserves the constraint
-
-Step 4: Use bijection to transfer cardinality
-  - #|linear_fiber_2d| = #|linear_fiber| = m^(2-1) = m
-
-===================================
-*)
 
 (* Convert pair to row vector *)
 Let pair_to_row (vv : msg * msg) : 'rV[msg]_2 :=

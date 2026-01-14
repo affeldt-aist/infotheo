@@ -206,13 +206,13 @@ Definition dsdp_uncurry (o: Alice.-key Dec msg * Bob.-key Dec msg *
   dsdp_traces dk_a.2 dk_b.2 dk_c.2 v1 v2 v3 u1 u2 u3 r2 r3.
 
 (* Protocol trace as random variable *)
-Definition dsdp_RV : {RV P -> dsdp_tracesT} :=
+Definition DSDP_RV : {RV P -> dsdp_tracesT} :=
   dsdp_uncurry `o
   [% Dk_a, Dk_b, Dk_c, V1, V2, V3, U1, U2, U3, R2, R3].
 
 (* Alice's trace: first component of protocol traces *)
 Let AliceTraces : {RV P -> dsdp_traceT} :=
-  (fun t => tnth t 0) `o dsdp_RV.
+  (fun t => tnth t 0) `o DSDP_RV.
 
 (* Reconstruct trace from Alice's view *)
 Let AliceTraces_values_from_view
@@ -231,7 +231,7 @@ Lemma AliceTraces_from_viewP :
   AliceTraces = AliceTraces_values_from_view `o AliceView.
 Proof.
 apply: boolp.funext => x /=.
-rewrite /AliceTraces /dsdp_RV /comp_RV /dsdp_uncurry
+rewrite /AliceTraces /DSDP_RV /comp_RV /dsdp_uncurry
         /dsdp_traces /=.
 rewrite /AliceView /AliceTraces_values_from_view /=.
 rewrite tnth0 /=.
@@ -295,7 +295,7 @@ Qed.
 
 (* Bob's trace: element 1 of dsdp_traces *)
 Let BobTraces : {RV P -> dsdp_traceT} :=
-  (fun t => tnth t 1) `o dsdp_RV.
+  (fun t => tnth t 1) `o DSDP_RV.
 
 (* Encrypted values Bob receives *)
 Let E_charlie_vur3 : {RV P -> Charlie.-enc msg} := E' charlie `o (VU3 \+ R3).
@@ -322,7 +322,7 @@ Lemma BobTraces_from_viewP :
   BobTraces = BobTraces_values_from_view `o BobView.
 Proof.
 apply: boolp.funext => x /=.
-rewrite /BobTraces /dsdp_RV /comp_RV /dsdp_uncurry
+rewrite /BobTraces /DSDP_RV /comp_RV /dsdp_uncurry
         /dsdp_traces /=.
 rewrite /BobView /BobTraces_values_from_view /=.
 by case: Dk_b => t.
@@ -377,7 +377,7 @@ Qed.
 
 (* Charlie's trace: element 2 of dsdp_traces *)
 Let CharlieTraces : {RV P -> dsdp_traceT} :=
-  (fun t => tnth t 2) `o dsdp_RV.
+  (fun t => tnth t 2) `o DSDP_RV.
 
 (* Encrypted value Charlie receives - the aggregate D3 = v3*u3+r3+(v2*u2+r2) *)
 Let E_charlie_d3 : {RV P -> Charlie.-enc msg} := E' charlie `o D3.
@@ -402,7 +402,7 @@ Lemma CharlieTraces_from_viewP :
   CharlieTraces = CharlieTraces_values_from_view `o CharlieView.
 Proof.
 apply: boolp.funext => x /=.
-rewrite /CharlieTraces /dsdp_RV /comp_RV /dsdp_uncurry
+rewrite /CharlieTraces /DSDP_RV /comp_RV /dsdp_uncurry
         /dsdp_traces /=.
 rewrite /CharlieView /CharlieTraces_values_from_view /=.
 by case: Dk_c => t.

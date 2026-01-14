@@ -412,7 +412,7 @@ Let k x : data := inr x.
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
 
-(* Note: Trace-related entropy lemmas (dsdp_RV, AliceTraces,
+(* Note: Trace-related entropy lemmas (DSDP_RV, AliceTraces,
    centropy_AliceTraces_AliceView) are defined in dsdp_entropy_trace.v
    for Z/pqZ analysis. For F_m based trace analysis, see
    dsdp_entropy_field.v. *)

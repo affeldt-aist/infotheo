@@ -16,16 +16,16 @@ dumas2017dual/
 │   ├── entropy_fiber.v           # Abstract fiber entropy framework
 │   └── entropy_fiber_zpq.v       # Entropy framework for Z/pqZ (rings)
 │
-├── zpq/                           # Layer 3: Z/pqZ fiber cardinality (parallel)
-│   └── fiber_zpq.v               # Fiber cardinality over composite moduli
+├── fiber/                         # Layer 3: Z/pqZ fiber cardinality
+│   └── linear_fiber_zpq.v        # Fiber cardinality over composite moduli
+│                                  # Includes CRT projections to F_p, F_q
 │
 └── dsdp/                          # Layer 4: DSDP protocol-specific
    ├── dsdp_program.v            # Protocol execution model
    ├── dsdp_entropy.v            # DSDP entropy analysis
+   ├── dsdp_entropy_trace.v      # Trace-based entropy analysis
    └── dsdp_security.v           # Main security theorems
 ```
-
-**Note (2026-01-12):** Field-based files (`entropy_linear_fiber.v`, `dsdp_algebra.v`) were removed as field analysis is out of scope. The architecture now uses a single ring-based path via Z/pqZ.
 
 ## Dependency Hierarchy
 
@@ -39,12 +39,12 @@ dumas2017dual/
                                  │
                       ┌──────────┴──────────┐
                       │                     │
-        ┌─────────────▼─────────┐  ┌────────▼──────────────┐
-        │ Layer 3: fiber_zpq.v  │  │ entropy_fiber_zpq.v   │
-        │ (fiber cardinality)   │  │ (entropy framework)   │
-        └─────────────┬─────────┘  └────────┬──────────────┘
-                      │                     │
-                      └──────────┬──────────┘
+        ┌─────────────▼─────────────┐  ┌────▼──────────────────┐
+        │ Layer 3: linear_fiber_zpq │  │ entropy_fiber_zpq.v   │
+        │ (fiber card + CRT proj)   │  │ (entropy framework)   │
+        └─────────────┬─────────────┘  └────────┬──────────────┘
+                      │                         │
+                      └──────────┬──────────────┘
                                  │
                     ┌────────────▼──────────────────┐
                     │   Layer 2: Abstract Fibers    │
@@ -65,6 +65,9 @@ dumas2017dual/
                     │   (infotheo core libraries)   │
                     └───────────────────────────────┘
 ```
+
+**Note:** `linear_fiber_zpq.v` imports `rouche_capelli.v` and provides CRT projections
+(`proj_Fp`, `proj_Fq`) for applying field-based theorems to ring problems.
 
 ## Layer Descriptions
 
@@ -112,23 +115,22 @@ This layer has two parallel modules, both depending only on Layer 2:
 | `Pr_cond_fiber_marginE` | Pr[CondRV=c] = \|fiber(c)\| × (m²)^-1 × Pr[InputRV=proj(c)] |
 | `cPr_uniform_fiber` | Pr[VarRV=v \| CondRV=c] = \|fiber(c)\|^-1 from uniform prior |
 
-#### fiber_zpq.v - Fiber Cardinality
+#### linear_fiber_zpq.v - Fiber Cardinality
 
 **Purpose:** Handle fiber cardinality over composite moduli Z/(pq)Z where p, q are primes.
 
-**Key Challenge:** In Z/pqZ, not all elements are units, so the standard field-based fiber counting doesn't directly apply.
-
 **Key Concepts:**
 - **Small component:** An element u < min(p,q) is coprime to pq, hence a unit
-- **Pivot solve:** Given u·v = target with u a unit, solve for one coordinate
+- **CRT Projections:** `proj_Fp`, `proj_Fq` project Z/(pq)Z → F_p, F_q for applying field theorems
 
 **Key Lemmas:**
 
 | Lemma | Statement |
 |-------|-----------|
 | `lt_minpq_coprime` | u < min(p,q) ⟹ gcd(u, pq) = 1 |
-| `linear_fiber_zpq_card` | \|{v \| u·v = s}\| = m^(n-1) when u has a unit component |
-| `fiber_zpq_pair_card` | 2D fiber cardinality = m for small coefficients |
+| `linear_fiber_card` | \|{v \| u·v = s}\| = m^(n-1) when u has a unit component |
+| `linear_fiber_2d_card` | 2D fiber cardinality = m for small coefficients |
+| `proj_Fp_add`, `proj_Fp_mul` | CRT projections are ring homomorphisms |
 
 ### Layer 4: DSDP Protocol (`dsdp/`)
 
@@ -176,38 +178,15 @@ Each lemma should have a comment explaining:
 - Why it's needed (its role in the overall proof)
 - How it relates to other lemmas (wrappers, specializations)
 
-## Design Evolution
-
-### 2026-01-12: Simplification to Ring-Only Architecture
-
-**Original Design:** The formalization had two parallel paths:
-- **Field path:** `entropy_linear_fiber.v` → `dsdp_algebra.v` (for prime field 'F_m)
-- **Ring path:** `fiber_zpq.v` → `dsdp_entropy.v` (for composite Z/pqZ)
-
-**Current Design:** Simplified to single ring-based path:
-- **Ring path only:** `entropy_fiber_zpq.v` → `fiber_zpq.v` → `dsdp_entropy.v`
-
-**Rationale:** Field-based analysis was out of scope for the DSDP formalization. The protocol operates over composite modulus Z/pqZ (ring), not prime field. Removing unused field-based files (~755 lines) clarifies the architecture and reduces maintenance burden.
-
-**Key insight:** `fiber_zpq.v` and `entropy_fiber_zpq.v` are **parallel at Layer 3**, not hierarchical. Both depend only on Layer 2 (`entropy_fiber.v`), and Layer 4 (`dsdp_entropy.v`) imports both.
-
-**Changes Made:**
-- Created `entropy_fiber_zpq.v` with general entropy lemmas for Z/pqZ
-- Deleted `entropy_linear_fiber.v` (field-based, ~540 lines)
-- Deleted `dsdp_algebra.v` (field-based, ~215 lines)
-- Updated `dsdp_entropy.v` and `dsdp_security.v` imports
-
 ## File Statistics
 
-| Layer | Files | Lemmas | Lines |
-|-------|-------|--------|-------|
-| 1 (lib) | 4 | 52 | ~2000 |
-| 2 (entropy_fiber) | 1 | ~12 | ~400 |
-| 3 (parallel: zpq + entropy_fiber_zpq) | 2 | ~17 | ~850 |
-| 4 (dsdp) | 3 | ~40 | ~2100 |
-| **Total** | **10** | **~121** | **~5350** |
-
-*Note: Statistics updated 2026-01-12 after removing `entropy_linear_fiber.v` (~540 lines), `dsdp_algebra.v` (~215 lines), and `dsdp_extra.v` (~77 lines, refactored into `extra_entropy.v`).*
+| Layer | Files | Description |
+|-------|-------|-------------|
+| 1 (lib) | 4 | extra_algebra, extra_proba, extra_entropy, rouche_capelli |
+| 2 (entropy_fiber) | 1 | entropy_fiber.v |
+| 3 (fiber + entropy_zpq) | 2 | linear_fiber_zpq.v, entropy_fiber_zpq.v |
+| 4 (dsdp) | 4 | dsdp_program, dsdp_entropy, dsdp_entropy_trace, dsdp_security |
+| **Total** | **11** | |
 
 ## Homomorphic Encryption Layer
 
