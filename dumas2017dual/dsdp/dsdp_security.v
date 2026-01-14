@@ -205,18 +205,17 @@ Theorem dsdp_constraint_centropy_eqlogm :
 Proof.
 (* Goal: `H(VarRV | CondRV) = log (m%:R : R)
    where VarRV = [% V2, V3], CondRV = [% V1, U1, U2, U3, S] *)
-(* Apply dsdp_centropy_uniform from dsdp_entropy.v with all section
-   params. The new structure uses VarRV_uniform and VarRV_indep_inputs
-   instead of the old uniform_over_solutions hypothesis. *)
-apply: dsdp_centropy_uniform.
-(* === Section parameters for dsdp_entropy === *)
-- exact: prime_p.
-- exact: prime_q.
-- exact: constraint_holds.
-- exact: VarRV_uniform.
-- exact: VarRV_indep_inputs.
-- exact: U3_pos.
-- exact: U3_lt_minpq.
+(* Apply dsdp_centropy_uniform from dsdp_entropy.v.
+   Must provide all section parameters explicitly. *)
+apply dsdp_centropy_uniform.
+- exact prime_p.
+- exact prime_q.
+- exact coprime_pq.
+- exact constraint_holds.
+- exact VarRV_uniform.
+- exact VarRV_indep_inputs.
+- exact U3_pos.
+- exact U3_lt_minpq.
 Qed.
 
 (* V3 is determined by V2 and CondRV, so joint entropy equals single.
