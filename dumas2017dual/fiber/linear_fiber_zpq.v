@@ -502,6 +502,243 @@ rewrite /proj_Fq; apply/eqP; rewrite eqE /= !Fp_cast //.
 by rewrite modn_dvdm ?modnMm // Zp_cast // dvdn_mull.
 Qed.
 
+(* Fiber over F_p: solutions to u2*v2 + u3*v3 = target *)
+Definition fiber_Fp (u2 u3 target : 'F_p) : {set 'F_p * 'F_p} :=
+  [set vv : 'F_p * 'F_p | u2 * vv.1 + u3 * vv.2 == target].
+
+(* Fiber over F_q *)
+Definition fiber_Fq (u2 u3 target : 'F_q) : {set 'F_q * 'F_q} :=
+  [set vv : 'F_q * 'F_q | u2 * vv.1 + u3 * vv.2 == target].
+
+(* Field fiber cardinality via count_affine_solutions_rank1 from rouche_capelli.v *)
+Lemma fiber_Fp_card (u2 u3 target : 'F_p) :
+  u3 != 0 -> #|fiber_Fp u2 u3 target| = p.
+Proof.
+move=> Hu3; rewrite /fiber_Fp.
+by rewrite count_affine_solutions_rank1 // card_Fp.
+Qed.
+
+Lemma fiber_Fq_card (u2 u3 target : 'F_q) :
+  u3 != 0 -> #|fiber_Fq u2 u3 target| = q.
+Proof.
+move=> Hu3; rewrite /fiber_Fq.
+by rewrite count_affine_solutions_rank1 // card_Fp.
+Qed.
+
+(* ========================================================================== *)
+(*  CRT Helper Lemmas for Dependent Type Handling                             *)
+(* ========================================================================== *)
+
+(*
+  These helpers do rewrites involving Fp_cast/Zp_cast on pure nats,
+  avoiding dependent type errors that occur when 'F_p or 'F_q variables
+  are in scope.
+*)
+
+(* Modulus conversion: (Zp_trunc (pdiv p)).+2 = p *)
+Let p_eq : (Zp_trunc (pdiv p)).+2 = p.
+Proof. by rewrite Fp_cast // prime_gt1. Qed.
+
+Let q_eq : (Zp_trunc (pdiv q)).+2 = q.
+Proof. by rewrite Fp_cast // prime_gt1. Qed.
+
+(* Pure nat helpers for modulus conversion *)
+Let Zp_modn_p (n : nat) : (n %% (Zp_trunc (pdiv p)).+2 = n %% p)%N.
+Proof. by rewrite p_eq. Qed.
+
+Let Zp_modn_q (n : nat) : (n %% (Zp_trunc (pdiv q)).+2 = n %% q)%N.
+Proof. by rewrite q_eq. Qed.
+
+(* Pure nat helpers for bound conversion *)
+Lemma Fp_bound_gen (n : nat) : (n < (Zp_trunc (pdiv p)).+2)%N -> (n < p)%N.
+Proof. by rewrite p_eq. Qed.
+
+Lemma Fq_bound_gen (n : nat) : (n < (Zp_trunc (pdiv q)).+2)%N -> (n < q)%N.
+Proof. by rewrite q_eq. Qed.
+
+(* Derived bounds for field elements *)
+Lemma val_Fp_lt_p (x : 'F_p) : (val x < p)%N.
+Proof. exact: Fp_bound_gen (ltn_ord x). Qed.
+
+Lemma val_Fq_lt_q (x : 'F_q) : (val x < q)%N.
+Proof. exact: Fq_bound_gen (ltn_ord x). Qed.
+
+(* Helper for msg bound - avoids dependent type issues *)
+Let Zm_bound_gen (n : nat) : (n < (Zp_trunc m).+2)%N -> (n < m)%N.
+Proof. by rewrite Zp_cast. Qed.
+
+Lemma val_msg_lt_m (x : msg) : (val x < m)%N.
+Proof. exact: Zm_bound_gen (ltn_ord x). Qed.
+
+(* ========================================================================== *)
+(*  CRT Reconstruction: F_p × F_q → Z/(pq)Z                                   *)
+(* ========================================================================== *)
+
+(* Reconstruct element from field projections using chinese remainder *)
+Definition crt_elem (xp : 'F_p) (xq : 'F_q) : msg :=
+  inZp (chinese p q (val xp) (val xq)).
+
+(* Reconstruct pair from field pairs *)
+Definition crt_pair (pp : 'F_p * 'F_p) (qq : 'F_q * 'F_q) : msg * msg :=
+  (crt_elem pp.1 qq.1, crt_elem pp.2 qq.2).
+
+(* Pure nat helper for chinese projection *)
+Lemma chinese_proj_p (vp vq : nat) :
+  (vp < p)%N -> (chinese p q vp vq %% p = vp)%N.
+Proof. by move=> Hvp; rewrite chinese_modl // modn_small. Qed.
+
+Lemma chinese_proj_q (vp vq : nat) :
+  (vq < q)%N -> (chinese p q vp vq %% q = vq)%N.
+Proof. by move=> Hvq; rewrite chinese_modr // modn_small. Qed.
+
+(* ========================================================================== *)
+(*  Projection-Reconstruction Lemmas                                          *)
+(* ========================================================================== *)
+
+(* proj_Fp (crt_elem xp xq) = xp *)
+Lemma proj_Fp_crt (xp : 'F_p) (xq : 'F_q) : proj_Fp (crt_elem xp xq) = xp.
+Proof.
+apply/val_inj.
+rewrite /proj_Fp /crt_elem /=.
+rewrite modn_dvdm; last by rewrite p_eq Zp_cast // dvdn_mulr.
+rewrite Zp_modn_p.
+rewrite chinese_proj_p //.
+exact: val_Fp_lt_p.
+Qed.
+
+(* proj_Fq (crt_elem xp xq) = xq *)
+Lemma proj_Fq_crt (xp : 'F_p) (xq : 'F_q) : proj_Fq (crt_elem xp xq) = xq.
+Proof.
+apply/val_inj.
+rewrite /proj_Fq /crt_elem /=.
+rewrite modn_dvdm; last by rewrite q_eq Zp_cast // dvdn_mull.
+rewrite Zp_modn_q.
+rewrite chinese_proj_q //.
+exact: val_Fq_lt_q.
+Qed.
+
+(* Helper: inner Zp_trunc m = m *)
+Let Zm_modn_m (n : nat) : (n %% (Zp_trunc m).+2 = n %% m)%N.
+Proof. by rewrite Zp_cast. Qed.
+
+(* crt_elem (proj_Fp x) (proj_Fq x) = x *)
+Lemma crt_proj_id (x : msg) : crt_elem (proj_Fp x) (proj_Fq x) = x.
+Proof.
+apply/val_inj.
+rewrite /crt_elem /proj_Fp /proj_Fq /=.
+rewrite !Zp_modn_p !Zp_modn_q Zm_modn_m.
+have Hx_lt := val_msg_lt_m x.
+(* Goal: chinese p q (x %% p) (x %% q) %% m = x *)
+(* Use chinese_mod: x = chinese p q (x %% p) (x %% q) %[mod m] *)
+apply/eqP.
+rewrite eq_sym -chinese_mod //.
+by rewrite modn_small.
+Qed.
+
+(* Helper: from modular chinese equality over m, extract p-component equality *)
+Lemma chinese_mod_inj_p (xp xp' : 'F_p) (xq xq' : 'F_q) :
+  chinese p q (val xp) (val xq) = chinese p q (val xp') (val xq') %[mod m] ->
+  xp = xp'.
+Proof.
+move=> /eqP Hmod.
+apply/val_inj.
+have Hl := chinese_modl coprime_pq (val xp) (val xq).
+have Hr := chinese_modl coprime_pq (val xp') (val xq').
+have Hp: (chinese p q (val xp) (val xq) %% p = chinese p q (val xp') (val xq') %% p)%N.
+  have: (chinese p q (val xp) (val xq) %% m %% p = chinese p q (val xp') (val xq') %% m %% p)%N.
+    by rewrite (eqP Hmod).
+  by rewrite !modn_dvdm // dvdn_mulr.
+move/eqP: Hl; move/eqP: Hr.
+rewrite -{}Hp => /eqP Hr /eqP Hl.
+have Heq: (val xp %% p = val xp' %% p)%N by rewrite -Hl -Hr.
+have Hxp := val_Fp_lt_p xp.
+have Hxp' := val_Fp_lt_p xp'.
+by rewrite !modn_small in Heq.
+Qed.
+
+(* Helper: from modular chinese equality over m, extract q-component equality *)
+Lemma chinese_mod_inj_q (xp xp' : 'F_p) (xq xq' : 'F_q) :
+  chinese p q (val xp) (val xq) = chinese p q (val xp') (val xq') %[mod m] ->
+  xq = xq'.
+Proof.
+move=> /eqP Hmod.
+apply/val_inj.
+have Hl := chinese_modr coprime_pq (val xp) (val xq).
+have Hr := chinese_modr coprime_pq (val xp') (val xq').
+have Hq: (chinese p q (val xp) (val xq) %% q = chinese p q (val xp') (val xq') %% q)%N.
+  have: (chinese p q (val xp) (val xq) %% m %% q = chinese p q (val xp') (val xq') %% m %% q)%N.
+    by rewrite (eqP Hmod).
+  by rewrite !modn_dvdm // dvdn_mull.
+move/eqP: Hl; move/eqP: Hr.
+rewrite -{}Hq => /eqP Hr /eqP Hl.
+have Heq: (val xq %% q = val xq' %% q)%N by rewrite -Hl -Hr.
+have Hxq := val_Fq_lt_q xq.
+have Hxq' := val_Fq_lt_q xq'.
+by rewrite !modn_small in Heq.
+Qed.
+
+(* Helper: convert modular equality from (Zp_trunc m).+2 to m - no dependent types in signature *)
+Let eqmod_Zp_m (a b : nat) :
+  a = b %[mod (Zp_trunc m).+2] -> a = b %[mod m].
+Proof. by rewrite Zp_cast. Qed.
+
+(* crt_pair is injective *)
+Lemma crt_pair_inj (pp pp' : 'F_p * 'F_p) (qq qq' : 'F_q * 'F_q) :
+  crt_pair pp qq = crt_pair pp' qq' -> pp = pp' /\ qq = qq'.
+Proof.
+rewrite /crt_pair.
+(* Pattern matching on pair equality gives modular equalities on chinese values *)
+case => H1 H2.
+(* H1: chinese p q pp.1 qq.1 = chinese p q pp'.1 qq'.1 %[mod (Zp_trunc m).+2] *)
+(* H2: chinese p q pp.2 qq.2 = chinese p q pp'.2 qq'.2 %[mod (Zp_trunc m).+2] *)
+(* Convert (Zp_trunc m).+2 to m using the helper *)
+have H1' := eqmod_Zp_m H1.
+have H2' := eqmod_Zp_m H2.
+(* Extract component equalities *)
+have Hp1 := chinese_mod_inj_p H1'.
+have Hp2 := chinese_mod_inj_p H2'.
+have Hq1 := chinese_mod_inj_q H1'.
+have Hq2 := chinese_mod_inj_q H2'.
+(* Reconstruct pair equalities *)
+split.
+- by rewrite (surjective_pairing pp) (surjective_pairing pp') Hp1 Hp2.
+- by rewrite (surjective_pairing qq) (surjective_pairing qq') Hq1 Hq2.
+Qed.
+
+(* ========================================================================== *)
+(*  Constraint Correspondence                                                 *)
+(* ========================================================================== *)
+
+(* Constraint in Z_m implies constraints in F_p and F_q *)
+Lemma constraint_proj (u2 u3 target : msg) (vv : msg * msg) :
+  u2 * vv.1 + u3 * vv.2 = target ->
+  (proj_Fp u2 * proj_Fp vv.1 + proj_Fp u3 * proj_Fp vv.2 = proj_Fp target) /\
+  (proj_Fq u2 * proj_Fq vv.1 + proj_Fq u3 * proj_Fq vv.2 = proj_Fq target).
+Proof.
+move=> Hconstr.
+split.
+- by rewrite -!proj_Fp_mul -proj_Fp_add Hconstr.
+- by rewrite -!proj_Fq_mul -proj_Fq_add Hconstr.
+Qed.
+
+(* Constraints in F_p and F_q imply constraint in Z_m *)
+Lemma constraint_crt (u2 u3 target : msg) (pp : 'F_p * 'F_p) (qq : 'F_q * 'F_q) :
+  proj_Fp u2 * pp.1 + proj_Fp u3 * pp.2 = proj_Fp target ->
+  proj_Fq u2 * qq.1 + proj_Fq u3 * qq.2 = proj_Fq target ->
+  u2 * (crt_pair pp qq).1 + u3 * (crt_pair pp qq).2 = target.
+Proof.
+move=> Hp Hq.
+(* Show projections are equal, then use CRT reconstruction *)
+have HprojFp: proj_Fp (u2 * (crt_pair pp qq).1 + u3 * (crt_pair pp qq).2) = proj_Fp target.
+  by rewrite proj_Fp_add !proj_Fp_mul /crt_pair /= !proj_Fp_crt.
+have HprojFq: proj_Fq (u2 * (crt_pair pp qq).1 + u3 * (crt_pair pp qq).2) = proj_Fq target.
+  by rewrite proj_Fq_add !proj_Fq_mul /crt_pair /= !proj_Fq_crt.
+(* Both sides have same projections, so by CRT they're equal *)
+rewrite -(crt_proj_id target).
+rewrite -(crt_proj_id (u2 * (crt_pair pp qq).1 + u3 * (crt_pair pp qq).2)).
+by rewrite HprojFp HprojFq.
+Qed.
+
 (* ========================================================================== *)
 (*  Bijection between msg × msg and 'rV[msg]_2                                *)
 (* ========================================================================== *)
@@ -587,18 +824,18 @@ apply/idP/imsetP.
 Qed.
 
 (* ========================================================================== *)
-(*  Main result: fiber cardinality via general theorem                        *)
+(*  Main result: fiber cardinality (bijection approach)                       *)
 (* ========================================================================== *)
 
 (*
-  Main result: 2D fiber cardinality = m
+  Bijection approach: 2D fiber cardinality = m
   
   Derived from linear_fiber_card by:
   1. u3 < min(p,q) implies u3 is a unit (at index ord_max)
   2. linear_fiber_card gives |linear_fiber| = m^(2-1) = m
   3. Bijection preserves cardinality: |linear_fiber_2d| = |linear_fiber|
 *)
-Lemma linear_fiber_2d_card (u2 u3 target : msg) :
+Lemma linear_fiber_2d_card_bij (u2 u3 target : msg) :
   (0 < u3)%N -> (u3 < minn p q)%N ->
   #|linear_fiber_2d u2 u3 target| = m.
 Proof.
@@ -621,6 +858,127 @@ have Hlinear_card: #|linear_fiber (pair_to_row (u2, u3)) target| = m.
 rewrite linear_fiber_2d_eq.
 rewrite card_imset; last exact: row_to_pair_inj.
 by rewrite Hlinear_card.
+Qed.
+
+(* ========================================================================== *)
+(*  Main result: fiber cardinality (CRT approach via rouche_capelli.v)        *)
+(* ========================================================================== *)
+
+(*
+  CRT approach: 2D fiber cardinality = m = p × q
+  
+  Uses Chinese Remainder Theorem to decompose:
+    Z/(pq)Z ≅ Z/pZ × Z/qZ  (as rings)
+  
+  The constraint u2*v2 + u3*v3 = target over Z/pqZ decomposes into:
+    - (u2 mod p)*(v2 mod p) + (u3 mod p)*(v3 mod p) = (target mod p)  over F_p
+    - (u2 mod q)*(v2 mod q) + (u3 mod q)*(v3 mod q) = (target mod q)  over F_q
+  
+  By CRT bijection: |linear_fiber_2d| = |fiber_Fp| × |fiber_Fq|
+  
+  By rouche_capelli.v (count_affine_solutions_rank1):
+    |fiber_Fp| = p  (when proj_Fp u3 ≠ 0)
+    |fiber_Fq| = q  (when proj_Fq u3 ≠ 0)
+  
+  Since u3 < min(p,q), we have proj_Fp u3 ≠ 0 and proj_Fq u3 ≠ 0.
+  Therefore: |linear_fiber_2d| = p × q = m
+*)
+
+(* Helper: u3 < p implies proj_Fp u3 ≠ 0 *)
+Lemma proj_Fp_neq0 (u3 : msg) :
+  (0 < u3)%N -> (val u3 < p)%N -> proj_Fp u3 != 0%R.
+Proof.
+move=> Hu3_pos Hu3_lt_p.
+rewrite /proj_Fp.
+apply/eqP => Heq.
+have /val_eqP /= Hval := Heq.
+move/eqP: Hval.
+rewrite Fp_cast // modn_small // => Heq'.
+by rewrite Heq' in Hu3_pos.
+Qed.
+
+(* Helper: u3 < q implies proj_Fq u3 ≠ 0 *)
+Lemma proj_Fq_neq0 (u3 : msg) :
+  (0 < u3)%N -> (val u3 < q)%N -> proj_Fq u3 != 0%R.
+Proof.
+move=> Hu3_pos Hu3_lt_q.
+rewrite /proj_Fq.
+apply/eqP => Heq.
+have /val_eqP /= Hval := Heq.
+move/eqP: Hval.
+rewrite Fp_cast // modn_small // => Heq'.
+by rewrite Heq' in Hu3_pos.
+Qed.
+
+(* CRT bijection: linear_fiber_2d bijects with fiber_Fp × fiber_Fq *)
+Lemma linear_fiber_2d_crt_bij (u2 u3 target : msg) :
+  (0 < u3)%N -> (u3 < minn p q)%N ->
+  exists f : linear_fiber_2d u2 u3 target -> 
+             fiber_Fp (proj_Fp u2) (proj_Fp u3) (proj_Fp target) *
+             fiber_Fq (proj_Fq u2) (proj_Fq u3) (proj_Fq target),
+    bijective f.
+Proof.
+move=> Hu3_pos Hu3_lt.
+(* Define forward map: (v2, v3) ↦ ((proj_Fp v2, proj_Fp v3), (proj_Fq v2, proj_Fq v3)) *)
+pose f := fun (vv : linear_fiber_2d u2 u3 target) =>
+  let v := val vv in
+  (@SetSub _ _ (proj_Fp v.1, proj_Fp v.2) (constraint_proj (valP vv)).1,
+   @SetSub _ _ (proj_Fq v.1, proj_Fq v.2) (constraint_proj (valP vv)).2).
+exists f.
+split.
+- (* Injective *)
+  move=> [[v1 v2] Hv] [[v1' v2'] Hv'] /= [Hp Hq].
+  apply/val_inj => /=.
+  move: Hp Hq => /val_inj /= [Hp1 Hp2] /val_inj /= [Hq1 Hq2].
+  (* v1 = v1' because proj_Fp v1 = proj_Fp v1' and proj_Fq v1 = proj_Fq v1' *)
+  have Hv1: v1 = v1'.
+    rewrite -(crt_proj_id v1) -(crt_proj_id v1').
+    by rewrite Hp1 Hq1.
+  have Hv2: v2 = v2'.
+    rewrite -(crt_proj_id v2) -(crt_proj_id v2').
+    by rewrite Hp2 Hq2.
+  by rewrite Hv1 Hv2.
+- (* Surjective *)
+  move=> [[pp Hpp] [qq Hqq]].
+  (* Reconstruct (v2, v3) from (pp, qq) via CRT *)
+  pose vv := crt_pair pp qq.
+  have Hvv: vv \in linear_fiber_2d u2 u3 target.
+    rewrite inE /=.
+    apply/eqP.
+    apply: constraint_crt.
+    + move: Hpp; rewrite inE => /eqP.
+      by rewrite /vv /crt_pair /= !proj_Fp_crt.
+    + move: Hqq; rewrite inE => /eqP.
+      by rewrite /vv /crt_pair /= !proj_Fq_crt.
+  exists (SetSub Hvv).
+  apply/eqP.
+  rewrite xpair_eqE.
+  apply/andP; split; apply/eqP; apply/val_inj => /=.
+  + by rewrite /vv /crt_pair /= !proj_Fp_crt.
+  + by rewrite /vv /crt_pair /= !proj_Fq_crt.
+Qed.
+
+(* Main result: 2D fiber cardinality via CRT *)
+Lemma linear_fiber_2d_card (u2 u3 target : msg) :
+  (0 < u3)%N -> (u3 < minn p q)%N ->
+  #|linear_fiber_2d u2 u3 target| = m.
+Proof.
+move=> Hu3_pos Hu3_lt.
+(* u3 < p implies proj_Fp u3 ≠ 0 *)
+have Hu3_lt_p: (val u3 < p)%N.
+  by apply: leq_ltn_trans Hu3_lt (geq_minl _ _).
+have Hu3_neq0_Fp := proj_Fp_neq0 Hu3_pos Hu3_lt_p.
+(* u3 < q implies proj_Fq u3 ≠ 0 *)
+have Hu3_lt_q: (val u3 < q)%N.
+  by apply: leq_ltn_trans Hu3_lt (geq_minr _ _).
+have Hu3_neq0_Fq := proj_Fq_neq0 Hu3_pos Hu3_lt_q.
+(* Field fiber cardinalities via count_affine_solutions_rank1 from rouche_capelli.v *)
+have Hcard_Fp := fiber_Fp_card Hu3_neq0_Fp.
+have Hcard_Fq := fiber_Fq_card Hu3_neq0_Fq.
+(* CRT bijection gives product of cardinalities *)
+have [f Hf] := linear_fiber_2d_crt_bij Hu3_pos Hu3_lt.
+rewrite (bij_eq_card Hf).
+by rewrite card_prod Hcard_Fp Hcard_Fq.
 Qed.
 
 End fiber_2d.
