@@ -1,21 +1,23 @@
 (******************************************************************************)
 (*                                                                            *)
-(* Homomorphic Encryption Module Signature                                    *)
+(* Homomorphic Encryption HB Structure                                        *)
 (*                                                                            *)
-(* This file defines HE_SIG, the module type for additively homomorphic       *)
-(* encryption schemes.                                                        *)
+(* This file defines HE_types and isHE, the Hierarchy Builder structure for   *)
+(* additively homomorphic encryption schemes.                                 *)
 (*                                                                            *)
 (* == Architecture ==                                                         *)
 (*                                                                            *)
-(*   HE_SIG provides:                                                         *)
-(*     - enc : msg -> rand -> ct       (encryption)                           *)
-(*     - Emul : ct -> ct -> ct         (homomorphic addition)                 *)
-(*     - Epow : ct -> msg -> ct        (homomorphic scalar multiplication)    *)
+(*   HE_types bundles three types:                                            *)
+(*     - he_msg : finComNzRingType    (message space)                         *)
+(*     - he_ct : finType              (ciphertext space)                      *)
+(*     - he_rand : Type               (randomness type)                       *)
 (*                                                                            *)
-(*   Party_HE(HE_SIG) adds party labels:                                      *)
-(*     - penc = (party * ct)           (party-labeled ciphertext)             *)
-(*     - E : party -> msg -> penc      (party-labeled encryption)             *)
-(*     - D : pkey -> penc -> option msg (decryption)                          *)
+(*   isHE mixin provides operations:                                          *)
+(*     - he_enc : msg -> rand -> ct       (encryption)                        *)
+(*     - he_Emul : ct -> ct -> ct         (homomorphic addition)              *)
+(*     - he_Epow : ct -> msg -> ct        (homomorphic scalar multiplication) *)
+(*                                                                            *)
+(*   HE structure bundles HE_types with isHE mixin.                           *)
 (*                                                                            *)
 (* == Implementations ==                                                      *)
 (*                                                                            *)
@@ -37,33 +39,28 @@ Import Prenex Implicits.
 Local Open Scope ring_scope.
 
 (* ========================================================================== *)
-(*                     Homomorphic Encryption Module Signature                 *)
+(*                     Homomorphic Encryption HB Structure                     *)
 (* ========================================================================== *)
 
-Module Type HE_SIG.
-  (* Message space: finite commutative non-zero ring *)
-  Parameter msg : finComNzRingType.
-  
-  (* Ciphertext space: finite type for probability distributions *)
-  Parameter ct : finType.
-  
-  (* Randomness type for probabilistic encryption *)
-  Parameter rand : Type.
-  
-  (* Encryption function *)
-  Parameter enc : msg -> rand -> ct.
-  
-  (* Homomorphic addition on ciphertexts: Emul(E(m1), E(m2)) = E(m1 + m2) *)
-  Parameter Emul : ct -> ct -> ct.
-  
-  (* Homomorphic scalar multiplication: Epow(E(m1), m2) = E(m1 * m2) *)
-  Parameter Epow : ct -> msg -> ct.
-  
-  (* Homomorphic properties *)
-  Axiom Emul_hom : forall (m1 m2 : msg) (r1 r2 : rand),
-    exists r : rand, Emul (enc m1 r1) (enc m2 r2) = enc (m1 + m2) r.
-  
-  Axiom Epow_hom : forall (m1 m2 : msg) (r : rand),
-    exists r' : rand, Epow (enc m1 r) m2 = enc (m1 * m2) r'.
-  
-End HE_SIG.
+(* Record bundling the three HE types *)
+Record HE_types := MkHE {
+  he_msg : finComNzRingType ;
+  he_ct : finType ;
+  he_rand : Type
+}.
+
+(* HB mixin for homomorphic encryption operations *)
+HB.mixin Record isHE (T : HE_types) := {
+  he_enc : he_msg T -> he_rand T -> he_ct T ;
+  he_Emul : he_ct T -> he_ct T -> he_ct T ;
+  he_Epow : he_ct T -> he_msg T -> he_ct T ;
+  he_Emul_eq_add : forall (m1 m2 : he_msg T) (r1 r2 : he_rand T),
+    exists r : he_rand T, 
+      he_Emul (he_enc m1 r1) (he_enc m2 r2) = he_enc (m1 + m2) r ;
+  he_Epow_eq_mul : forall (m1 m2 : he_msg T) (r : he_rand T),
+    exists r' : he_rand T, 
+      he_Epow (he_enc m1 r) m2 = he_enc (m1 * m2) r'
+}.
+
+#[short(type=HE_scheme)]
+HB.structure Definition HE := { T of isHE T }.

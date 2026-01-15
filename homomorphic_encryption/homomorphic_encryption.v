@@ -7,19 +7,9 @@
 (*                                                                            *)
 (* == Architecture ==                                                         *)
 (*                                                                            *)
-(*   Section he_ideal (backward compatible, used by dsdp)                     *)
-(*   ≈ Party_Ideal_HE(Ideal_HE(msg))                                          *)
-(*                          |                                                 *)
-(*                          v uses                                            *)
-(*   Party_Ideal_HE (party labels + Ideal_HE)                                 *)
-(*   - enc = (party * ct)                                                     *)
-(*   - E, D, Emul, Epow with party labels                                     *)
-(*                          |                                                 *)
-(*                          v wraps                                           *)
-(*   HE_SIG (abstract interface in he_sig.v)                                  *)
-(*   - msg, ct, rand, enc                                                     *)
-(*   - Emul : ct -> ct -> ct                                                  *)
-(*   - Epow : ct -> msg -> ct                                                 *)
+(*   HE structure (defined in he_sig.v using Hierarchy Builder)               *)
+(*   - HE_types bundles: he_msg, he_ct, he_rand                               *)
+(*   - isHE mixin: he_enc, he_Emul, he_Epow + homomorphism properties         *)
 (*          /              |               \                                  *)
 (*         v               v                v                                 *)
 (*   Ideal_HE         Benaloh_HE       Paillier_HE                            *)
@@ -27,19 +17,22 @@
 (*   Emul = +         Emul = *         Emul = *                               *)
 (*   Epow = *         Epow = ^+        Epow = ^+                              *)
 (*                                                                            *)
+(*   Party_Ideal_HE (party labels for ideal model)                            *)
+(*   - enc = (party * msg)                                                    *)
+(*   - E, D, Emul, Epow with party labels                                     *)
+(*                                                                            *)
 (* == This File ==                                                            *)
 (*                                                                            *)
-(*   Ideal_HE module      - implements HE_SIG with ct = msg                   *)
-(*   Party_Ideal_HE       - wraps Ideal_HE with party labels                  *)
-(*   Section he_ideal     - backward-compatible interface for dsdp            *)
+(*   Section Ideal_HE     - HB instance with ct = msg                         *)
+(*   Section Party_Ideal_HE - party-labeled interface for dsdp                *)
 (*   party, key types     - protocol participant and key types                *)
 (*   p.-enc, p.-key types - type-level party tagging for entropy proofs       *)
 (*                                                                            *)
 (* == Related Files ==                                                        *)
 (*                                                                            *)
-(*   he_sig.v                          - HE_SIG module signature              *)
-(*   benaloh1994/benaloh_he_instance.v - Benaloh_HE functor                   *)
-(*   paillier1999/paillier_he_instance.v - Paillier_HE functor                *)
+(*   he_sig.v                          - HE HB structure definition           *)
+(*   benaloh1994/benaloh_he_instance.v - Benaloh_HE HB instance               *)
+(*   paillier1999/paillier_he_instance.v - Paillier_HE HB instance            *)
 (*                                                                            *)
 (******************************************************************************)
 
@@ -156,92 +149,47 @@ HB.instance Definition _ := isFinite.Build key key_enumP.
 End key_def.
 
 (* ========================================================================== *)
-(*                         Ideal HE (implements HE_SIG)                        *)
+(*                         Ideal HE (HB Instance)                              *)
 (* ========================================================================== *)
 
 (* Ideal_HE: Identity encryption where ct = msg.
-   Used as base for Party_HE to create the party-labeled ideal model. *)
+   Used as base for Party_Ideal_HE to create the party-labeled ideal model. *)
 
-Module Type Ideal_Params.
-  Parameter M : finComNzRingType.
-End Ideal_Params.
+Section Ideal_HE.
 
-Module Ideal_HE (P : Ideal_Params) <: HE_SIG.
-  
-  Definition msg : finComNzRingType := P.M.
-  Definition ct : finType := P.M.  (* Identity: ciphertext = message *)
-  Definition rand : Type := unit.  (* Deterministic encryption *)
-  
-  Definition enc (m : msg) (_ : rand) : ct := m.  (* Identity function *)
-  
-  (* Homomorphic addition: ring addition since ct = msg *)
-  Definition Emul (c1 c2 : ct) : ct := c1 + c2.
-  
-  (* Homomorphic scalar multiplication: ring multiplication *)
-  Definition Epow (c : ct) (m : msg) : ct := c * m.
-  
-  Lemma Emul_hom : forall (m1 m2 : msg) (r1 r2 : rand),
-    exists r : rand, Emul (enc m1 r1) (enc m2 r2) = enc (m1 + m2) r.
-  Proof. by move=> m1 m2 r1 r2; exists tt. Qed.
-  
-  Lemma Epow_hom : forall (m1 m2 : msg) (r : rand),
-    exists r' : rand, Epow (enc m1 r) m2 = enc (m1 * m2) r'.
-  Proof. by move=> m1 m2 r; exists tt. Qed.
+Variable M : finComNzRingType.
+
+Definition Ideal_HE_types : HE_types := MkHE M M unit.
+
+Definition ideal_enc (m : M) (_ : unit) : M := m.
+Definition ideal_Emul (c1 c2 : M) : M := c1 + c2.
+Definition ideal_Epow (c : M) (m : M) : M := c * m.
+
+Lemma ideal_Emul_eq_add : forall (m1 m2 : M) (r1 r2 : unit),
+  exists r : unit, ideal_Emul (ideal_enc m1 r1) (ideal_enc m2 r2) = ideal_enc (m1 + m2) r.
+Proof. by move=> m1 m2 r1 r2; exists tt. Qed.
+
+Lemma ideal_Epow_eq_mul : forall (m1 m2 : M) (r : unit),
+  exists r' : unit, ideal_Epow (ideal_enc m1 r) m2 = ideal_enc (m1 * m2) r'.
+Proof. by move=> m1 m2 r; exists tt. Qed.
+
+HB.instance Definition Ideal_HE_isHE : isHE Ideal_HE_types := 
+  @isHE.phant_Build Ideal_HE_types ideal_enc ideal_Emul ideal_Epow 
+    ideal_Emul_eq_add ideal_Epow_eq_mul.
 
 End Ideal_HE.
 
 (* ========================================================================== *)
-(*              Party-Labeled Ideal HE (uses Ideal_HE internally)              *)
+(*                   Party-Labeled Ideal HE (Section-based)                    *)
 (* ========================================================================== *)
 
-(* Party_Ideal_HE builds on Ideal_HE to add party labels.
-   This is the concrete implementation of what Section he_ideal provides.
+(* Party_Ideal_HE provides party-labeled encryption for the ideal model.
+   This is the main interface used by dsdp files for protocol proofs.
    
    For concrete HE (Benaloh, Paillier), party labeling would need
    additional handling of randomness and decryption. *)
 
-Module Party_Ideal_HE (P : Ideal_Params).
-
-  Module IHE := Ideal_HE P.
-  
-  Parameter party : finType.
-  
-  (* Party-labeled ciphertext: ct = msg for ideal *)
-  Definition enc := (party * IHE.ct)%type.
-  Definition pkey := (party * key * IHE.msg)%type.
-  
-  (* Encryption with party label (deterministic since Ideal_HE uses unit rand) *)
-  Definition E (i : party) (m : IHE.msg) : enc := (i, IHE.enc m tt).
-  Definition K (i : party) (k : key) (m : IHE.msg) : pkey := (i, k, m).
-  
-  (* Decryption - trivial since ct = msg *)
-  Definition D (dk : pkey) (e : enc) : option IHE.msg :=
-    match dk, e with
-    | (i, k, _), (j, c) => if (i == j) && (k == Dec) then Some c else None
-    end.
-  
-  (* Homomorphic operations lifted from Ideal_HE *)
-  Definition Emul (e1 e2 : enc) : enc := 
-    match e1, e2 with
-    | (i1, c1), (i2, c2) => 
-        if i1 == i2 then (i1, IHE.Emul c1 c2) else (i1, IHE.enc 0 tt)
-    end.
-  
-  Definition Epow (e : enc) (m : IHE.msg) : enc :=
-    match e with
-    | (i, c) => (i, IHE.Epow c m)
-    end.
-
-End Party_Ideal_HE.
-
-(* ========================================================================== *)
-(*               Section he_ideal (backward compatible interface)              *)
-(* ========================================================================== *)
-
-(* This section provides the same interface as before for dsdp files.
-   Conceptually: Section he_ideal ≈ Party_HE(Ideal_HE(msg)) *)
-
-Section he_ideal.
+Section Party_Ideal_HE.
 
 Variable party : finType.
 Variable msg : finComNzRingType.
@@ -267,7 +215,7 @@ Definition Epow (e : enc) (m2 : msg) : enc :=
   | (i, m1) => E i (m1 * m2)
   end.
 
-End he_ideal.
+End Party_Ideal_HE.
 
 Section party_key_def.
 
