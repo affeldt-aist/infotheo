@@ -112,13 +112,13 @@ Definition uncurry_dom_pair
 
 Let avg := avg_dom_pair.
 
-Let avg1 x y : avg 1%:pr x y = x.
+Let avg1 x y : avg 1%:i01 x y = x.
 Proof. by rewrite /avg; case x => x0 H /=; exact/boolp.eq_exist/conv1. Qed.
 
 Let avgI p x : avg p x x = x.
 Proof. by rewrite /avg; case x => x0 H /=; exact/boolp.eq_exist/convmm. Qed.
 
-Let avgC p x y : avg p x y = avg (Prob.p p).~%:pr y x.
+Let avgC p x y : avg p x y = avg p%:num.~%:i01 y x.
 Proof. by rewrite /avg; exact/boolp.eq_exist/convC. Qed.
 
 Let avgA p q x y z :
@@ -139,10 +139,11 @@ Lemma convex_div : convex_function (uncurry_dom_pair (@div R A)).
 Proof.
 move=> [x Hx] [y Hy] p /=; rewrite /uncurry_dom_pair /=.
 rewrite /convex_function_at/= avgRE 2!big_distrr /= -big_split /= /div.
-have [->|p0] := eqVneq p 0%:pr.
+have [->|p0] := eqVneq p 0%:i01.
   apply/eqW/eq_bigr=> a _ /=.
   by rewrite !conv0 mul0r add0r onem0 mul1r.
-have [/onem_eq0 /val_inj ->|t0] := eqVneq (Prob.p p).~ 0.
+have [/onem_eq0 p1|t0] := eqVneq p%:num.~ 0.
+  rewrite (_ : p = 1%:i01)//; last by apply/val_inj.
   apply/eqW/eq_bigr=> a _ /=.
   by rewrite !conv1 mul1r onem1 mul0r addr0.
 have quv (q u v : R) : q != 0 -> q * u / (q * v) = u / v.
@@ -163,7 +164,7 @@ have [x2a0|x2a0] := eqVneq (x.2 a) 0.
   apply/eqW; rewrite !(mulrA, mulr0, mul0r, add0r); congr (_ * _ * ln _ * _).
   by rewrite quv.
 set h : {fdist A} -> {fdist A} -> {ffun 'I_2 -> R} := fun p1 p2 => [ffun i =>
-  [eta (fun=> 0) with ord0 |-> Prob.p p * p1 a, lift ord0 ord0 |-> (Prob.p p).~ * p2 a] i].
+  [eta (fun=> 0) with ord0 |-> p%:num * p1 a, lift ord0 ord0 |-> p%:num.~ * p2 a] i].
 have hdom : h x.1 y.1 `<< h x.2 y.2.
   apply/dominatesP => i; rewrite /h /= !ffunE; case: ifPn => _ /eqP.
     by rewrite mulf_eq0 (negPf x2a0) orbF => /eqP ->; rewrite mul0r.
@@ -173,7 +174,7 @@ have h0 p1 p2 : [forall i, 0 <= h p1 p2 i].
   apply/forallP=> ?; rewrite /h /= ffunE.
   case: ifPn => [_ | _]; first exact/mulr_ge0.
   case: ifPn => [_ |]; last by move=>*; exact: lexx.
-  by apply/mulr_ge0 => //; exact/onem_ge0/prob_le1.
+  by apply/mulr_ge0 => //; exact/onem_ge0/le1.
 have h01 (x0 : 'I_2) : 0 <= h x.1 y.1 x0.
   rewrite /= /h ffunE/=; case: ifPn => _; first exact: mulr_ge0.
   by case: ifPn => // _; exact: mulr_ge0.
@@ -310,17 +311,17 @@ rewrite 2!big_distrr -big_split /=; apply: eq_bigr => a _.
 rewrite !fdistX2 !fdist_fstE !mulrN -opprD; congr (- _).
 rewrite !big_distrr -big_split /=; apply: eq_bigr => b _.
 rewrite !big_distrl !big_distrr -big_split /=; apply: eq_bigr => b0 _.
-rewrite !fdist_prodE /= fdist_convE /= !(mulrA (Prob.p t)) !(mulrA (Prob.p t).~).
-have [Hp|Hp] := eqVneq (Prob.p t * p a) 0.
+rewrite !fdist_prodE /= fdist_convE /= !(mulrA t%:num) !(mulrA t%:num.~).
+have [Hp|Hp] := eqVneq (t%:num * p a) 0.
   rewrite Hp ?(add0R,mul0R).
-  have [->|/eqP Hq] := eqVneq ((Prob.p t).~ * q a) 0.
+  have [->|/eqP Hq] := eqVneq (t%:num.~ * q a) 0.
     by rewrite ?(mul0r,add0r).
   rewrite jcPr_fdistX_prod /=; last first.
     by rewrite fdist_convE Hp add0r.
   rewrite !mul0r !add0r; congr (_ * _).
   rewrite jcPr_fdistX_prod//; apply/eqP; move/eqP: Hq; apply: contraNN.
   by move/eqP->; rewrite mulr0.
-have [Hq|Hq] := eqVneq ((Prob.p t).~ * q a) 0.
+have [Hq|Hq] := eqVneq (t%:num.~ * q a) 0.
   rewrite Hq !(mul0r,addr0).
   rewrite jcPr_fdistX_prod; last first.
     by rewrite fdist_convE Hq addr0; apply/eqP.

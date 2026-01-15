@@ -42,7 +42,7 @@ Proof.
 move=> /= x y p Hx Hy.
 rewrite /concave_function_at /convex_function_at.
 rewrite !inE in Hx Hy.
-have Hln := concave_ln (i01_of_prob p) Hx Hy.
+have Hln := concave_ln p Hx Hy.
 rewrite !mc_convRE in Hln.
 rewrite conv_leoppD leoppP /= /log /Log /=.
 rewrite [in X in X <= _]avgRE !mulrA -mulrDl -avgRE.

@@ -2,7 +2,7 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg ssrnum.
-From mathcomp Require Import finmap.
+From mathcomp Require Import interval_inference finmap.
 From mathcomp Require Import unstable mathcomp_extra.
 From mathcomp Require Import classical_sets boolp cardinality reals Rstruct.
 From mathcomp Require ereal topology esum measure probability.
@@ -404,7 +404,7 @@ Qed.
 (*TODO Local Close Scope reals_ext_scope.*)
 
 Definition FSDist_prob (C : choiceType) (d : R.-dist C) (x : C) : {prob R} :=
-  Eval hnf in Prob.mk_ (andb_true_intro (conj (FSDist.ge0 d x) (FSDist.le1 d x))).
+  Eval hnf in Prob.mk (andb_true_intro (conj (FSDist.ge0 d x) (FSDist.le1 d x))).
 Canonical FSDist_prob.
 
 Definition fsdistjoin A (D : R.-dist (R.-dist A)) : R.-dist A :=
@@ -593,8 +593,8 @@ Variables (A : choiceType) (p : {prob R}) (d1 d2 : R.-dist A).
 Local Open Scope convex_scope.
 
 Let D : {fset A} :=
-  if p == 0%:pr then finsupp d2
-  else if p == 1%:pr then finsupp d1
+  if p == 0%:i01 then finsupp d2
+  else if p == 1%:i01 then finsupp d1
        else finsupp d1 `|` finsupp d2.
 
 Let f := [fsfun a in D => (d1 a : R^o) <| p |> d2 a | 0].
@@ -669,16 +669,16 @@ Implicit Types (p q : {prob R}) (a b c : R.-dist A).
 
 Local Notation "x <| p |> y" := (fsdist_conv p x y) : fsdist_scope.
 
-Let conv0 a b : a <| 0%:pr |> b = b.
+Let conv0 a b : a <| 0%:i01 |> b = b.
 Proof. by apply/fsdist_ext => ?; rewrite fsdist_convE conv0. Qed.
 
-Let conv1 a b : a <| 1%:pr |> b = a.
+Let conv1 a b : a <| 1%:i01 |> b = a.
 Proof. by apply/fsdist_ext => ?; rewrite fsdist_convE conv1. Qed.
 
 Let convmm p : idempotent_op (fun x y => x <| p |> y : R.-dist A).
 Proof. by move=> d; apply/fsdist_ext => ?; rewrite fsdist_convE convmm. Qed.
 
-Let convC p a b : a <| p |> b = b <| (Prob.p p).~%:pr |> a.
+Let convC p a b : a <| p |> b = b <| p%:num.~%:i01 |> a.
 Proof. by apply/fsdist_ext => ?; rewrite 2!fsdist_convE convC. Qed.
 
 Let convA p q a b c :
@@ -699,14 +699,14 @@ Implicit Types (p : {prob R}) (a b c : R.-dist A).
 Local Open Scope convex_scope.
 
 Lemma finsupp_conv_subr a b p :
-  p != 0%:pr -> finsupp a `<=` finsupp (a <|p|> b).
+  p != 0%:i01 -> finsupp a `<=` finsupp (a <|p|> b).
 Proof.
 move=> p0; rewrite /conv supp_fsdist_conv' (negPf p0).
 by case: ifP=> ?; [exact: fsubset_refl | exact: fsubsetUl].
 Qed.
 
 Lemma finsupp_conv_subl a b p :
-  p != 1%:pr -> finsupp b `<=` finsupp (a <|p|> b).
+  p != 1%:i01 -> finsupp b `<=` finsupp (a <|p|> b).
 Proof.
 move=> p1; rewrite convC; apply: finsupp_conv_subr.
 apply: contra p1 => /eqP/(congr1 val) /= /onem_eq0 p1.
@@ -717,8 +717,8 @@ Lemma fsdist_conv_bind_left_distr (B : choiceType) p a b (f : A -> R.-dist B) :
   (a <| p |> b) >>= f = (a >>= f) <| p |> (b >>= f).
 Proof.
 apply/fsdist_ext => b0 /=; rewrite fsdistbindE fsdist_convE.
-have [->|p0] := eqVneq p 0%:pr; first by rewrite 2!conv0 fsdistbindE.
-have [->|p1] := eqVneq p 1%:pr; first by rewrite 2!conv1 fsdistbindE.
+have [->|p0] := eqVneq p 0%:i01; first by rewrite 2!conv0 fsdistbindE.
+have [->|p1] := eqVneq p 1%:i01; first by rewrite 2!conv1 fsdistbindE.
 under eq_bigr do rewrite fsdist_convE avgRE mulrDl -!mulrA.
 rewrite big_split -2!big_distrr /=.
 by rewrite -!fsdistbindEwiden // ?finsupp_conv_subl ?finsupp_conv_subr.
@@ -734,7 +734,7 @@ apply: eq_bigr=> a0 _; rewrite fsdist_convE avgRE/=.
 by rewrite !(mulrCA _ (m a0)) -mulrDr.
 Qed.
 
-Lemma supp_fsdist_conv p (p0 : p != 0%:pr) (p1 : p != 1%:pr) a b :
+Lemma supp_fsdist_conv p (p0 : p != 0%:i01) (p1 : p != 1%:i01) a b :
   finsupp (a <|p|> b) = finsupp a `|` finsupp b.
 Proof. by rewrite supp_fsdist_conv' (negPf p0) (negPf p1). Qed.
 
@@ -867,9 +867,9 @@ Qed.
 Lemma Convn_of_fsdist_affine : affine Convn_of_fsdist.
 Proof.
 move=> p x y.
-have [->|pn0] := eqVneq p 0%:pr; first by rewrite !conv0.
-have [->|pn1] := eqVneq p 1%:pr; first by rewrite !conv1.
-have opn0 : (Prob.p p).~ != 0 by apply/onem_neq0.
+have [->|pn0] := eqVneq p 0%:i01; first by rewrite !conv0.
+have [->|pn1] := eqVneq p 1%:i01; first by rewrite !conv1.
+have opn0 : p%:num.~ != 0 by apply/onem_neq0.
 apply: (S1_inj R); rewrite affine_conv/= !S1_Convn_finType ssum_seq_finsuppE.
 under [LHS]eq_bigr do rewrite fsdist_scalept_conv.
 rewrite big_seq_fsetE big_scalept_conv_split /=.
