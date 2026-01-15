@@ -49,6 +49,7 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
+Local Open Scope proc_scope.
 
 Section proof.
 
@@ -76,9 +77,10 @@ Let rb := sa *d sb - ra.
 Let t := xa' *d xb + rb - yb.
 Let ya := t - xb' *d sa + ra.
 
+(* With fuel-indexed proc, the result has aproc (packed processes) *)
 Lemma smc_scalar_product_ok :
-  smc_scalar_product dotproduct sa sb ra yb xa xb 11 =
-  ([:: Finish; Finish; Finish],
+  smc_scalar_product dotproduct sa sb ra yb xa xb smc_max_fuel =
+  ([:: pack Finish; pack Finish; pack Finish],
    [:: [:: one ya;
            one t;
            vec xb';
@@ -95,6 +97,11 @@ Lemma smc_scalar_product_ok :
            vec sb;
            vec sa]
    ]).
+Proof. reflexivity. Qed.
+
+(* With fuel equal to sum_fuel, evaluation reaches a final state *)
+Lemma smc_scalar_product_terminates :
+  all_final (smc_scalar_product dotproduct sa sb ra yb xa xb smc_max_fuel).1.
 Proof. reflexivity. Qed.
 
 Lemma smc_scalar_product_traces_ok :
@@ -233,7 +240,7 @@ Let data := (sum TX VX).
 Let one x : data := inl x.
 Let vec x : data := inr x.
 
-Let alice_traces_from_view xs : 11.-bseq _ :=
+Let alice_traces_from_view xs : smc_max_fuel.-bseq _ :=
   let '(x1, s1, r1, x2', t, y1) := xs in
   [bseq one y1; one t; vec x2'; one r1; vec s1; vec x1].
 
@@ -261,7 +268,7 @@ transitivity (`H(x2 | [% alice_traces, [%x1, s1, r1, x2', t, y1]])).
 by rewrite alice_traces_ok centropyC centropy_RV_contraction.
 Qed.
 
-Let bob_traces_from_view xs : 11.-bseq _ :=
+Let bob_traces_from_view xs : smc_max_fuel.-bseq _ :=
   let '(x2, s2, x1', r2, y2) := xs in
   [:: one y2; vec x1'; one r2; vec s2; one y2; vec x2].
 
@@ -277,7 +284,7 @@ Lemma bob_traces_entropy :
   `H(x1 | bob_traces) = `H(x1 | [%x2, s2, x1', r2, y2]).
 Proof.
 transitivity (`H(x1 | [% bob_traces, [%x2, s2, x1', r2, y2]])).
-  pose f (xs : 11.-bseq data) :=
+  pose f (xs : smc_max_fuel.-bseq data) :=
     if xs is Bseq [:: inl y2; inr x1'; inl r2;
                       inr s2; inl _; inr x2] _
     then (x2, s2, x1', r2, y2)

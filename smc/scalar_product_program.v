@@ -42,6 +42,7 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
+Local Open Scope proc_scope.
 
 Section scalar_product.
 Variable m : nat.
@@ -58,12 +59,14 @@ Definition data := (TX + VX)%type.
 Definition one x : data := inl x.
 Definition vec x : data := inr x.
 
-Definition Recv_one frm f : proc data :=
+(* Recv wrappers for fuel-indexed proc type *)
+Definition Recv_one {n} frm (f : TX -> proc data n) : proc data n.+1 :=
   Recv frm (fun x => if x is inl v then f v else Fail).
-Definition Recv_vec frm f : proc data :=
+Definition Recv_vec {n} frm (f : VX -> proc data n) : proc data n.+1 :=
   Recv frm (fun x => if x is inr v then f v else Fail).
 
-Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
+(* Fuel is automatically inferred via _ *)
+Definition pcoserv (sa sb: VX) (ra : TX) : proc data _ :=
   Init (vec sa) (
   Init (vec sb) (
   Init (one ra) (
@@ -72,7 +75,7 @@ Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
   Send bob (vec sb) (
   Send bob (one (sa *d sb - ra)) Finish)))))).
 
-Definition palice (xa : VX) : proc data :=
+Definition palice (xa : VX) : proc data _ :=
   Init (vec xa) (
   Recv_vec coserv (fun sa =>
   Recv_one coserv (fun ra =>
@@ -81,7 +84,7 @@ Definition palice (xa : VX) : proc data :=
   Recv_one bob (fun t =>
   Ret (one (t - (xb' *d sa) + ra)))))))).
 
-Definition pbob (xb : VX) (yb : TX) : proc data :=
+Definition pbob (xb : VX) (yb : TX) : proc data _ :=
   Init (vec xb) (
   Init (one yb) (
   Recv_vec coserv (fun sb =>
@@ -93,31 +96,27 @@ Definition pbob (xb : VX) (yb : TX) : proc data :=
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 
-Definition smc_scalar_product h :=
-  (interp h [:: palice xa; pbob xb yb; pcoserv sa sb ra] [::[::];[::];[::]]).
+(* Pack processes into aproc list *)
+Definition smc_procs : seq (aproc data) :=
+  [:: pack (palice xa); pack (pbob xb yb); pack (pcoserv sa sb ra)].
 
-Goal (smc_scalar_product 11).2 = ([::]).
-cbv -[GRing.add GRing.opp GRing.Ring.sort (*Equality.eqtype_hasDecEq_mixin*) ].
-Undo 1.
-rewrite /smc_scalar_product.
-rewrite (lock (11 : nat)) /=.
-rewrite -lock (lock (10 : nat)) /=.
-rewrite -lock (lock (9 : nat)) /=.
-rewrite -lock (lock (8 : nat)) /=.
-rewrite -lock (lock (7 : nat)) /=.
-rewrite -lock (lock (6 : nat)) /=.
-rewrite -lock (lock (5 : nat)) /=.
-rewrite -lock (lock (4 : nat)) /=.
-rewrite -lock (lock (3 : nat)) /=.
-rewrite -lock (lock (2 : nat)) /=.
-rewrite -lock (lock (1 : nat)) /=.
-rewrite -lock (lock (0 : nat)) /=.
-Abort.
+Definition smc_scalar_product h :=
+  interp h smc_procs (nseq 3 [::]).
+
+(* Fuel bound computed from program structure: 8 + 9 + 8 = 25
+   - palice: 8 (Init + 2*Recv + Send + 2*Recv + Ret=2)
+   - pbob: 9 (2*Init + 2*Recv + Recv + Send + Send + Ret=2)
+   - pcoserv: 8 (3*Init + 4*Send + Finish=1) *)
+Definition smc_max_fuel : nat := 25.
+
+(* Verify the computed fuel matches *)
+Lemma smc_max_fuel_ok : smc_max_fuel = [> smc_procs].
+Proof. reflexivity. Qed.
 
 Definition smc_scalar_product_traces :=
-  interp_traces 11 [:: palice xa; pbob xb yb; pcoserv sa sb ra].
+  interp_traces [> smc_procs] smc_procs.
 
-Definition smc_scalar_product_tracesT := 11.-bseq data.
+Definition smc_scalar_product_tracesT := smc_max_fuel.-bseq data.
 
 Definition smc_scalar_product_party_tracesT :=
   3.-tuple smc_scalar_product_tracesT.

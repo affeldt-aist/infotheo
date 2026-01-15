@@ -34,6 +34,7 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
+Local Open Scope proc_scope.
 
 Local Definition R := Rdefinitions.R.
 
@@ -64,13 +65,13 @@ Definition d x : data := inl (inl x).
 Definition e x : data := inl (inr x).
 Definition k x : data := inr x.
 
-(* Specialized receive operations - same as in dsdp_program_alt_syntax *)
-Definition Recv_dec frm pkey f : proc data :=
+(* Specialized receive operations - fuel-indexed *)
+Definition Recv_dec {n} frm pkey (f : msg -> proc data n) : proc data n.+1 :=
   Recv frm (fun x => if x is inl (inr v) then
                        if D pkey v is Some v' then f v' else Fail
                      else Fail).
 
-Definition Recv_enc frm f : proc data :=
+Definition Recv_enc {n} frm (f : enc -> proc data n) : proc data n.+1 :=
   Recv frm (fun x => if x is inl (inr v) then f v else Fail).
 
 (* Import program definitions from dsdp_program_alt_syntax.
@@ -109,14 +110,26 @@ Let dk_a : pkey := (Alice, Dec, k_a).
 Let dk_b : pkey := (Bob, Dec, k_b). 
 Let dk_c : pkey := (Charlie, Dec, k_c). 
 
-Definition dsdp h :=
-  (interp h [:: palice dk_a v1 u1 u2 u3 r2 r3; pbob dk_b v2; pcharlie dk_c v3] [::[::];[::];[::]]).
+(* Pack processes into aproc list *)
+Definition dsdp_procs : seq (aproc data) :=
+  [:: pack (palice dk_a v1 u1 u2 u3 r2 r3); pack (pbob dk_b v2); pack (pcharlie dk_c v3)].
 
-(* Protocol execution result: running dsdp for 15 steps produces the expected
+Definition dsdp h :=
+  interp h dsdp_procs (nseq 3 [::]).
+
+(* Fuel bound computed from program structure:
+   - palice: 14, pbob: 7, pcharlie: 6, Total: 27 *)
+Definition dsdp_max_fuel : nat := 27.
+
+(* Verify the computed fuel matches *)
+Lemma dsdp_max_fuel_ok : dsdp_max_fuel = [> dsdp_procs].
+Proof. reflexivity. Qed.
+
+(* Protocol execution result: running dsdp with computed fuel produces the expected
    final state with all parties finished and their respective traces. *)
 Lemma dsdp_ok :
-  dsdp 15 = 
-  ([:: Finish; Finish; Finish],
+  dsdp [> dsdp_procs] = 
+  ([:: pack Finish; pack Finish; pack Finish],
    [:: [:: d (v3 * u3 + r3 + (v2 * u2 + r2) - r2 - r3 + u1 * v1);
            e (E alice (v3 * u3 + r3 + (v2 * u2 + r2))); 
            e (E charlie v3);
@@ -128,15 +141,16 @@ Lemma dsdp_ok :
   ]).
 Proof. reflexivity. Qed.
 
-(* Fuel for the interpreter != size of tuple we need
-   But it must be sized as the number of fuel.
-*)
-Notation dsdp_traceT := (15.-bseq data).
+(* With fuel equal to sum_fuel, evaluation reaches a final state *)
+Lemma dsdp_terminates :
+  all_final (dsdp [> dsdp_procs]).1.
+Proof. reflexivity. Qed.
+
+Notation dsdp_traceT := (dsdp_max_fuel.-bseq data).
 Notation dsdp_tracesT := (3.-tuple dsdp_traceT).
 
 Definition dsdp_traces : dsdp_tracesT :=
-  interp_traces 15 [:: palice dk_a v1 u1 u2 u3 r2 r3;
-    pbob dk_b v2; pcharlie dk_c v3].
+  interp_traces dsdp_max_fuel dsdp_procs.
 
 Definition is_dsdp (trs : dsdp_tracesT) :=
   let '(s, u3, u2, u1, v1) :=

@@ -88,15 +88,16 @@ Definition one x : data := inl x.
 Definition vec x : data := inr x.
 
 (* Local wrappers for proc constructors to work around ssreflect syntax *)
-Definition PInit (x : data) (p : proc data) : proc data := Init x p.
-Definition PSend (n : nat) (x : data) (p : proc data) : proc data := Send n x p.
-Definition PRecv (n : nat) (f : data -> proc data) : proc data := Recv n f.
-Definition PRet (x : data) : proc data := Ret x.
+(* Now fuel-indexed *)
+Definition PInit {n} (x : data) (p : proc data n) : proc data n.+1 := Init x p.
+Definition PSend {n} (party : nat) (x : data) (p : proc data n) : proc data n.+1 := Send party x p.
+Definition PRecv {n} (party : nat) (f : data -> proc data n) : proc data n.+1 := Recv party f.
+Definition PRet (x : data) : proc data 2 := Ret x.
 
-(* Specialized receive operations *)
-Definition Recv_one frm f : proc data :=
+(* Specialized receive operations - fuel-indexed *)
+Definition Recv_one {n} frm (f : TX -> proc data n) : proc data n.+1 :=
   Recv frm (fun x => if x is inl v then f v else Fail).
-Definition Recv_vec frm f : proc data :=
+Definition Recv_vec {n} frm (f : VX -> proc data n) : proc data n.+1 :=
   Recv frm (fun x => if x is inr v then f v else Fail).
 
 (** * Data wrapper shorthand notations *)
@@ -242,7 +243,8 @@ Notation "x" := x (in custom smc at level 0, x ident).
 (******************************************************************************)
 
 (* Commodity server's protocol - Unicode version *)
-Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
+(* Fuel automatically inferred *)
+Definition pcoserv (sa sb: VX) (ra : TX) : proc data _ :=
   {| Init &sa　&sb　!ra ·
      Send⟨alice⟩ &sa ·
      Send⟨alice⟩ !ra ·
@@ -251,7 +253,7 @@ Definition pcoserv (sa sb: VX) (ra : TX) : proc data :=
      Finish |}.
 
 (* Alice's protocol - Unicode version *)
-Definition palice (xa : VX) : proc data :=
+Definition palice (xa : VX) : proc data _ :=
   {| Init &xa ·
      Recv_vec⟨coserv⟩ λ sa ·
      Recv_one⟨coserv⟩ λ ra ·
@@ -261,7 +263,7 @@ Definition palice (xa : VX) : proc data :=
      Ret !(t - (xb' *d sa) + ra) |}.
 
 (* Bob's protocol - Unicode version *)
-Definition pbob (xb : VX) (yb : TX) : proc data :=
+Definition pbob (xb : VX) (yb : TX) : proc data _ :=
   {| Init &xb　!yb ·
      Recv_vec⟨coserv⟩ λ sb ·
      Recv_one⟨coserv⟩ λ rb ·
@@ -275,7 +277,7 @@ Definition pbob (xb : VX) (yb : TX) : proc data :=
 (******************************************************************************)
 
 (* Commodity server's protocol - ASCII version *)
-Definition pcoserv_ascii (sa sb: VX) (ra : TX) : proc data :=
+Definition pcoserv_ascii (sa sb: VX) (ra : TX) : proc data _ :=
   {| Init (&sa, &sb, !ra) ;
      Send<alice> &sa ;
      Send<alice> !ra ;
@@ -284,7 +286,7 @@ Definition pcoserv_ascii (sa sb: VX) (ra : TX) : proc data :=
      Finish |}.
 
 (* Alice's protocol - ASCII version *)
-Definition palice_ascii (xa : VX) : proc data :=
+Definition palice_ascii (xa : VX) : proc data _ :=
   {| Init &xa ;
      Recv_vec<coserv> fun sa =>
      Recv_one<coserv> fun ra =>
@@ -294,7 +296,7 @@ Definition palice_ascii (xa : VX) : proc data :=
      Ret !(t - (xb' *d sa) + ra) |}.
 
 (* Bob's protocol - ASCII version *)
-Definition pbob_ascii (xb : VX) (yb : TX) : proc data :=
+Definition pbob_ascii (xb : VX) (yb : TX) : proc data _ :=
   {| Init (&xb, !yb) ;
      Recv_vec<coserv> fun sb =>
      Recv_one<coserv> fun rb =>

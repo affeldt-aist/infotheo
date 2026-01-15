@@ -96,11 +96,11 @@ Definition d x : data := inl (inl x).
 Definition e x : data := inl (inr x).
 Definition k x : data := inr x.
 
-(* Local wrappers for proc constructors to work around ssreflect syntax *)
-Definition PInit (x : data) (p : proc data) : proc data := Init x p.
-Definition PSend (n : nat) (x : data) (p : proc data) : proc data := Send n x p.
-Definition PRecv (n : nat) (f : data -> proc data) : proc data := Recv n f.
-Definition PRet (x : data) : proc data := Ret x.
+(* Local wrappers for proc constructors - fuel-indexed *)
+Definition PInit {n} (x : data) (p : proc data n) : proc data n.+1 := Init x p.
+Definition PSend {n} (party : nat) (x : data) (p : proc data n) : proc data n.+1 := Send party x p.
+Definition PRecv {n} (party : nat) (f : data -> proc data n) : proc data n.+1 := Recv party f.
+Definition PRet (x : data) : proc data 2 := Ret x.
 
 (** * Data wrapper shorthand notations *)
 
@@ -198,14 +198,14 @@ Notation "'Recv⟨' p '⟩' 'fun' x '=>' P" := (PRecv n(p) (fun x => P))
 
 (** * Specialized Recv operations *)
 
-(* Recv_dec: receive encrypted, decrypt with key, continue with decrypted value *)
-Definition Recv_dec frm pkey f : proc data :=
+(* Recv_dec: receive encrypted, decrypt with key, continue with decrypted value - fuel-indexed *)
+Definition Recv_dec {n} frm pkey (f : msg -> proc data n) : proc data n.+1 :=
   Recv frm (fun x => if x is inl (inr v) then
                        if D pkey v is Some v' then f v' else Fail
                      else Fail).
 
-(* Recv_enc: receive encrypted (cannot decrypt), do HE computation *)
-Definition Recv_enc frm f : proc data :=
+(* Recv_enc: receive encrypted (cannot decrypt), do HE computation - fuel-indexed *)
+Definition Recv_enc {n} frm (f : enc -> proc data n) : proc data n.+1 :=
   Recv frm (fun x => if x is inl (inr v) then f v else Fail).
 
 (* Recv_dec notation - ASCII angle brackets, implicit n(...) *)
@@ -269,8 +269,8 @@ Notation "x" := x (in custom dsdp at level 0, x ident).
 (** * DSDP Protocol Programs - Unicode Version                                *)
 (******************************************************************************)
 
-(* Bob's protocol - Unicode version *)
-Definition pbob (dk : pkey)(v2 : msg) : proc data :=
+(* Bob's protocol - Unicode version, fuel auto-inferred *)
+Definition pbob (dk : pkey)(v2 : msg) : proc data _ :=
   {| Init #dk　&v2 ·
      Send⟨alice⟩ $(E bob v2) ·
      Recv_dec⟨alice⟩ dk λ d2 ·
@@ -279,7 +279,7 @@ Definition pbob (dk : pkey)(v2 : msg) : proc data :=
      Finish |}.
 
 (* Charlie's protocol - Unicode version *)
-Definition pcharlie (dk : pkey)(v3 : msg) : proc data :=
+Definition pcharlie (dk : pkey)(v3 : msg) : proc data _ :=
   {| Init #dk　&v3 ·
      Send⟨alice⟩ $(E charlie v3) ·
      Recv_dec⟨bob⟩ dk λ d3 ·
@@ -287,7 +287,7 @@ Definition pcharlie (dk : pkey)(v3 : msg) : proc data :=
      Finish |}.
 
 (* Alice's protocol - Unicode version *)
-Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data :=
+Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data _ :=
   {| Init #dk　&v1　&u1　&u2　&u3　&r2　&r3 ·
      Recv_enc⟨bob⟩ λ c2 ·
      Recv_enc⟨charlie⟩ λ c3 ·
@@ -301,7 +301,7 @@ Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data :=
 (******************************************************************************)
 
 (* Bob's protocol - ASCII version *)
-Definition pbob_ascii (dk : pkey)(v2 : msg) : proc data :=
+Definition pbob_ascii (dk : pkey)(v2 : msg) : proc data _ :=
   {| Init (#dk, &v2) ;
      Send<alice> $(E bob v2) ;
      Recv_dec<alice> dk fun d2 =>
@@ -310,7 +310,7 @@ Definition pbob_ascii (dk : pkey)(v2 : msg) : proc data :=
      Finish |}.
 
 (* Charlie's protocol - ASCII version *)
-Definition pcharlie_ascii (dk : pkey)(v3 : msg) : proc data :=
+Definition pcharlie_ascii (dk : pkey)(v3 : msg) : proc data _ :=
   {| Init (#dk, &v3) ;
      Send<alice> $(E charlie v3) ;
      Recv_dec<bob> dk fun d3 =>
@@ -318,7 +318,7 @@ Definition pcharlie_ascii (dk : pkey)(v3 : msg) : proc data :=
      Finish |}.
 
 (* Alice's protocol - ASCII version *)
-Definition palice_ascii (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data :=
+Definition palice_ascii (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data _ :=
   {| Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
      Recv_enc<bob> fun c2 =>
      Recv_enc<charlie> fun c3 =>
