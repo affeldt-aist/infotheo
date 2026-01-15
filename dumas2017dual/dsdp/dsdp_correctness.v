@@ -4,7 +4,7 @@ From mathcomp Require Import Rstruct ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption.
-Require Import dsdp_program_alt_syntax.
+Require Import dsdp_program dsdp_program_alt_syntax.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -79,6 +79,28 @@ Definition Recv_enc frm f : proc data :=
 Let pbob := @dsdp_program_alt_syntax.pbob m_minus_2.
 Let pcharlie := @dsdp_program_alt_syntax.pcharlie m_minus_2.
 Let palice := @dsdp_program_alt_syntax.palice m_minus_2.
+
+(* Import original program definitions from dsdp_program for comparison *)
+Let pbob_orig := @dsdp_program.pbob m_minus_2.
+Let pcharlie_orig := @dsdp_program.pcharlie m_minus_2.
+Let palice_orig := @dsdp_program.palice m_minus_2.
+
+(******************************************************************************)
+(** * Cross-file equivalence: dsdp_program = dsdp_program_alt_syntax          *)
+(******************************************************************************)
+
+(* Verify that the alt_syntax programs are definitionally equal to the original *)
+Lemma pbob_cross_eq dk v : pbob dk v = pbob_orig dk v.
+Proof. reflexivity. Qed.
+
+Lemma pcharlie_cross_eq dk v : pcharlie dk v = pcharlie_orig dk v.
+Proof. reflexivity. Qed.
+
+Lemma palice_cross_eq dk v1' u1' u2' u3' r2' r3' : 
+  palice dk v1' u1' u2' u3' r2' r3' = palice_orig dk v1' u1' u2' u3' r2' r3'.
+Proof. reflexivity. Qed.
+
+(******************************************************************************)
 
 Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
 
