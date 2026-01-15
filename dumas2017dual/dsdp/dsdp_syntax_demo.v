@@ -35,7 +35,7 @@ Unset Strict Implicit.
 
 (** * Minimal proc type (self-contained for demo) *)
 
-Section ProcType.
+Section proc_type.
 Variable data : Type.
 
 Inductive proc : Type :=
@@ -46,7 +46,7 @@ Inductive proc : Type :=
   | PFinish : proc
   | PFail : proc.
 
-End ProcType.
+End proc_type.
 
 Arguments PFinish {data}.
 Arguments PFail {data}.
@@ -169,9 +169,17 @@ Notation "'Init' x '　' .. '　' y · P" := (PInit x .. (PInit y P) ..)
   (in custom dsdp at level 85, 
    x constr at level 0, y constr at level 0,
    P custom dsdp at level 85, right associativity).
+Notation "'Init' x '　' .. '　' y ; P" := (PInit x .. (PInit y P) ..)
+  (in custom dsdp at level 85, 
+   x constr at level 0, y constr at level 0,
+   P custom dsdp at level 85, right associativity).
 
 (* Style 2: Using tuple-like syntax Init (x, y, z) · P *)
 Notation "'Init' '(' x ',' .. ',' y ')' · P" := (PInit x .. (PInit y P) ..)
+  (in custom dsdp at level 85,
+   x constr at level 0, y constr at level 0,
+   P custom dsdp at level 85, right associativity).
+Notation "'Init' '(' x ',' .. ',' y ')' ; P" := (PInit x .. (PInit y P) ..)
   (in custom dsdp at level 85,
    x constr at level 0, y constr at level 0,
    P custom dsdp at level 85, right associativity).
@@ -184,12 +192,52 @@ Notation "'Init' '(' x ',' .. ',' y ')' · P" := (PInit x .. (PInit y P) ..)
 
 Notation "x" := x (in custom dsdp at level 0, x ident).
 
+(******************************************************************************)
+(** * ASCII Fallback Notations (semicolon instead of middle dot)              *)
+(******************************************************************************)
+
+(* Single Init - ASCII semicolon *)
+Notation "'Init' x ; P" := (PInit x P)
+  (in custom dsdp at level 85, x constr at level 0,
+   P custom dsdp at level 85, right associativity).
+
+(* Send - ASCII angle brackets with semicolon *)
+Notation "'Send<' n '>' v ; P" := (PSend n v P)
+  (in custom dsdp at level 85, n constr at level 0, v constr at level 0,
+   P custom dsdp at level 85, right associativity).
+
+(* Send - Unicode angle brackets with semicolon *)
+Notation "'Send⟨' n '⟩' v ; P" := (PSend n v P)
+  (in custom dsdp at level 85, n constr at level 0, v constr at level 0,
+   P custom dsdp at level 85, right associativity).
+
+(* Recv - ASCII angle brackets with semicolon *)
+Notation "'Recv<' n '>' 'λ' x ; P" := (PRecv n (fun x => P))
+  (in custom dsdp at level 85, n constr at level 0, x name,
+   P custom dsdp at level 85, right associativity).
+
+(* Recv - Unicode angle brackets with semicolon *)
+Notation "'Recv⟨' n '⟩' 'λ' x ; P" := (PRecv n (fun x => P))
+  (in custom dsdp at level 85, n constr at level 0, x name,
+   P custom dsdp at level 85, right associativity).
+
+(* Recv_dec - ASCII with semicolon *)
+Notation "'Recv_dec<' n '>' dec dk 'λ' x ; P" := (PRecv_dec dec n dk (fun x => P))
+  (in custom dsdp at level 85, n constr at level 0,
+   dec constr at level 0, dk constr at level 0, x name,
+   P custom dsdp at level 85, right associativity).
+
+(* Recv_enc - ASCII with semicolon *)
+Notation "'Recv_enc<' n '>' 'λ' x ; P" := (PRecv_enc n (fun x => P))
+  (in custom dsdp at level 85, n constr at level 0, x name,
+   P custom dsdp at level 85, right associativity).
+
 
 (******************************************************************************)
 (** * TESTS                                                                   *)
 (******************************************************************************)
 
-Section Tests.
+Section tests.
 
 Variable data : Type.
 Variables (v1 v2 v3 : data).
@@ -247,13 +295,13 @@ Proof. reflexivity. Qed.
 Lemma test_recv_lambda_eq : test_recv_lambda = PRecv 0 (fun x => PRet x).
 Proof. reflexivity. Qed.
 
-End Tests.
+End tests.
 
 (******************************************************************************)
 (** * Tests for Recv_dec and Recv_enc                                         *)
 (******************************************************************************)
 
-Section RecvDecEncTests.
+Section recv_dec_enc_tests.
 
 Variable data : Type.
 Variable decrypt : data -> data -> option data.
@@ -284,13 +332,13 @@ Proof. reflexivity. Qed.
 Lemma test_recv_enc_eq : test_recv_enc = PRecv 0 (fun x => PRet x).
 Proof. reflexivity. Qed.
 
-End RecvDecEncTests.
+End recv_dec_enc_tests.
 
 (******************************************************************************)
 (** * Tests for data wrapper shorthand notations                              *)
 (******************************************************************************)
 
-Section WrapperTests.
+Section wrapper_tests.
 
 (** Test data wrapper shorthand notations: #x -> (k x), *'x -> (d x), $x -> (e x)
     
@@ -342,13 +390,13 @@ Proof. reflexivity. Qed.
 Lemma test_enc_wrapper_eq : test_enc_wrapper = PInit (e_wrap a) PFinish.
 Proof. reflexivity. Qed.
 
-End WrapperTests.
+End wrapper_tests.
 
 (******************************************************************************)
 (** * Example: Simple Two-Party Protocol                                      *)
 (******************************************************************************)
 
-Section TwoPartyExample.
+Section two_party_example.
 
 Variable msg : Type.
 Variable secret : msg.
@@ -370,45 +418,127 @@ Lemma partyB_structure :
   partyB = PRecv 0 (fun x => PSend 0 x PFinish).
 Proof. reflexivity. Qed.
 
-End TwoPartyExample.
+End two_party_example.
+
+(******************************************************************************)
+(** * Comparison: Unicode vs ASCII Syntax                                     *)
+(******************************************************************************)
+
+Section unicode_vs_ascii.
+
+Variable T : Type.
+Variables (dk v1 v2 v3 a b : T).
+
+(* Local wrapper definitions for demo *)
+Definition kw (x : T) : T := x.
+Definition dw (x : T) : T := x.
+Definition ew (x : T) : T := x.
+
+Local Notation "# x" := (kw x) (at level 0, x at level 0).
+Local Notation "& x" := (dw x) (at level 0, x at level 0).
+Local Notation "$ x" := (ew x) (at level 0, x at level 0).
+
+(*--------------------------------------------------------------------------*)
+(* Unicode Version - prettier, paper-like                                    *)
+(*   · = middle dot (Option+Shift+9 on macOS)                                *)
+(*   λ = lambda                                                              *)
+(*   ⟨⟩ = angle brackets                                                     *)
+(*   　 = full-width space (CJK input)                                        *)
+(*--------------------------------------------------------------------------*)
+
+Definition example_unicode : proc T :=
+  {| Init #dk　&v1　&v2 ·
+     Send⟨1⟩ $a ·
+     Recv⟨2⟩ λ x ·
+     Send⟨1⟩ $b ·
+     Finish |}.
+
+(*--------------------------------------------------------------------------*)
+(* ASCII Version - portable, no special characters needed                    *)
+(*   ; = semicolon (replaces ·)                                              *)
+(*   fun x => = function (replaces λ x ·)                                    *)
+(*   <> = angle brackets (replaces ⟨⟩)                                       *)
+(*   (x, y, z) = tuple (replaces 　 full-width space)                         *)
+(*--------------------------------------------------------------------------*)
+
+Definition example_ascii : proc T :=
+  {| Init (#dk, &v1, &v2) ;
+     Send<1> $a ;
+     Recv<2> fun x =>
+     Send<1> $b ;
+     Finish |}.
+
+(* Both versions produce identical terms *)
+Lemma unicode_ascii_eq : example_unicode = example_ascii.
+Proof. reflexivity. Qed.
+
+(*--------------------------------------------------------------------------*)
+(* Mixed Usage - you can mix ASCII and Unicode in the same program           *)
+(*--------------------------------------------------------------------------*)
+
+Definition example_mixed : proc T :=
+  {| Init (#dk, &v1, &v2) ;      (* ASCII tuple and semicolon *)
+     Send⟨1⟩ $a ·                (* Unicode brackets and dot *)
+     Recv<2> λ x ;               (* ASCII brackets, Unicode lambda, ASCII semi *)
+     Send<1> $b ·                (* ASCII brackets, Unicode dot *)
+     Finish |}.
+
+(* Mixed usage also produces the same term *)
+Lemma mixed_eq : example_mixed = example_unicode.
+Proof. reflexivity. Qed.
+
+End unicode_vs_ascii.
 
 (******************************************************************************)
 (** * Summary of Available Syntax                                             *)
 (******************************************************************************)
 
 (*
-   {| ... |}                  - Enter custom dsdp syntax
-   PROC ... END               - Keyword alternative delimiter
+   Unicode vs ASCII Fallback Table:
+   +-----------------+------------------+----------------------------------+
+   | Unicode         | ASCII Fallback   | Description                      |
+   +-----------------+------------------+----------------------------------+
+   | ·               | ;                | Sequencing operator              |
+   | λ x ·           | fun x =>         | Lambda binder                    |
+   | ⟨n⟩             | <n>              | Party angle brackets             |
+   | x　y　z          | (x, y, z)        | Multi-var Init separator         |
+   +-----------------+------------------+----------------------------------+
    
-   Init x · P                 - Initialize one variable, continue with P
-   Init x　y　z · P           - Initialize multiple vars (　= U+3000 full-width space)
-   Init (x, y, z) · P         - Initialize multiple vars (tuple style)
+   Delimiters:
+     {| ... |}                  - Enter custom dsdp syntax
+     PROC ... END               - Keyword alternative delimiter
    
-   Send<n> v · P              - Send value v to party n (ASCII)
-   Send⟨n⟩ v · P              - Send value v to party n (Unicode)
+   Init (one or more variables):
+     Init x · P                 - Initialize one variable
+     Init x　y　z · P           - Multiple vars (　= U+3000 full-width space)
+     Init (x, y, z) · P         - Multiple vars (tuple style) - ASCII friendly
+     Init x ; P                 - ASCII: semicolon instead of middle dot
    
-   Recv<n> λ x · P            - Receive from party n (ASCII)
-   Recv⟨n⟩ λ x · P            - Receive from party n (Unicode)
-   Recv<n> fun x => P         - Alternative syntax using fun
+   Send:
+     Send<n> v · P              - ASCII angle brackets
+     Send⟨n⟩ v · P              - Unicode angle brackets
+     Send<n> v ; P              - ASCII semicolon
    
-   Recv_dec<n> D dk λ x · P   - Receive encrypted, decrypt with D and key dk
-   Recv_dec⟨n⟩ D dk λ x · P   - Unicode variant
-   Recv_enc<n> λ x · P        - Receive encrypted (no decryption)
-   Recv_enc⟨n⟩ λ x · P        - Unicode variant
+   Recv:
+     Recv<n> λ x · P            - ASCII brackets, Unicode lambda/dot
+     Recv⟨n⟩ λ x · P            - Unicode brackets/lambda/dot
+     Recv<n> fun x => P         - Pure ASCII version
    
-   Ret v                      - Return value v
-   Finish                     - Terminate successfully
-   Fail                       - Terminate with failure
+   Recv_dec/Recv_enc:
+     Recv_dec<n> D dk λ x · P   - ASCII brackets
+     Recv_dec⟨n⟩ D dk λ x · P   - Unicode brackets
+     Recv_dec<n> D dk fun x => P - Pure ASCII
+     (same patterns for Recv_enc)
    
-   x                          - Variable reference (idents in scope)
+   Terminal:
+     Ret v                      - Return value v
+     Finish                     - Terminate successfully
+     Fail                       - Terminate with failure
    
-   Data wrapper shorthand (defined as regular Coq notations):
-     #x                       - (k x) key wrapper
-     &x                       - (d x) data/message wrapper  
-     $x                       - (e x) encrypted wrapper
-   
-   Note: For complex Coq expressions, use section variables or 
-         let-bindings defined outside the custom syntax block.
+   Data wrapper shorthand (regular Coq notations):
+     #x                         - (k x) key wrapper
+     &x                         - (d x) data/message wrapper  
+     $x                         - (e x) encrypted wrapper
 *)
 
 Print test_combined.

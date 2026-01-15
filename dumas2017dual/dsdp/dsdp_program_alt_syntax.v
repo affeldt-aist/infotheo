@@ -266,10 +266,10 @@ Notation "'Recv_enc⟨' p '⟩' 'fun' x '=>' P" := (Recv_enc n(p) (fun x => P))
 Notation "x" := x (in custom dsdp at level 0, x ident).
 
 (******************************************************************************)
-(** * DSDP Protocol Programs                                                  *)
+(** * DSDP Protocol Programs - Unicode Version                                *)
 (******************************************************************************)
 
-(* Bob's protocol *)
+(* Bob's protocol - Unicode version *)
 Definition pbob (dk : pkey)(v2 : msg) : proc data :=
   {| Init #dk　&v2 ·
      Send⟨alice⟩ $(E bob v2) ·
@@ -278,7 +278,7 @@ Definition pbob (dk : pkey)(v2 : msg) : proc data :=
      Send⟨charlie⟩ $(a3 *h (E charlie d2)) ·
      Finish |}.
 
-(* Charlie's protocol *)
+(* Charlie's protocol - Unicode version *)
 Definition pcharlie (dk : pkey)(v3 : msg) : proc data :=
   {| Init #dk　&v3 ·
      Send⟨alice⟩ $(E charlie v3) ·
@@ -286,7 +286,7 @@ Definition pcharlie (dk : pkey)(v3 : msg) : proc data :=
      Send⟨alice⟩ $(E alice d3) ·
      Finish |}.
 
-(* Alice's protocol - inline the let expressions since custom syntax doesn't support let *)
+(* Alice's protocol - Unicode version *)
 Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data :=
   {| Init #dk　&v1　&u1　&u2　&u3　&r2　&r3 ·
      Recv_enc⟨bob⟩ λ c2 ·
@@ -295,6 +295,48 @@ Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data :=
      Send⟨bob⟩ $(c3 ^h u3 *h (E charlie r3)) ·
      Recv_dec⟨charlie⟩ dk λ g ·
      Ret &(g - r2 - r3 + u1 * v1) |}.
+
+(******************************************************************************)
+(** * DSDP Protocol Programs - ASCII Version                                  *)
+(******************************************************************************)
+
+(* Bob's protocol - ASCII version *)
+Definition pbob_ascii (dk : pkey)(v2 : msg) : proc data :=
+  {| Init (#dk, &v2) ;
+     Send<alice> $(E bob v2) ;
+     Recv_dec<alice> dk fun d2 =>
+     Recv_enc<alice> fun a3 =>
+     Send<charlie> $(a3 *h (E charlie d2)) ;
+     Finish |}.
+
+(* Charlie's protocol - ASCII version *)
+Definition pcharlie_ascii (dk : pkey)(v3 : msg) : proc data :=
+  {| Init (#dk, &v3) ;
+     Send<alice> $(E charlie v3) ;
+     Recv_dec<bob> dk fun d3 =>
+     Send<alice> $(E alice d3) ;
+     Finish |}.
+
+(* Alice's protocol - ASCII version *)
+Definition palice_ascii (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data :=
+  {| Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
+     Recv_enc<bob> fun c2 =>
+     Recv_enc<charlie> fun c3 =>
+     Send<bob> $(c2 ^h u2 *h (E bob r2)) ;
+     Send<bob> $(c3 ^h u3 *h (E charlie r3)) ;
+     Recv_dec<charlie> dk fun g =>
+     Ret &(g - r2 - r3 + u1 * v1) |}.
+
+(* Verify ASCII and Unicode versions are equivalent *)
+Lemma pbob_ascii_eq dk v2 : pbob dk v2 = pbob_ascii dk v2.
+Proof. reflexivity. Qed.
+
+Lemma pcharlie_ascii_eq dk v3 : pcharlie dk v3 = pcharlie_ascii dk v3.
+Proof. reflexivity. Qed.
+
+Lemma palice_ascii_eq dk v1 u1 u2 u3 r2 r3 : 
+  palice dk v1 u1 u2 u3 r2 r3 = palice_ascii dk v1 u1 u2 u3 r2 r3.
+Proof. reflexivity. Qed.
 
 (******************************************************************************)
 (** * Equivalence with original definitions                                   *)
