@@ -240,20 +240,6 @@ rewrite (entropy_sum_split Hsol_unif Hnonsol_zero).
 exact: entropy_uniform_set.
 Qed.
 
-(** Uniform prior implies uniform posterior on fibers.
-    Note: fdist_uniform requires a proof that #|A| = n.+1 (successor form) *)
-Lemma uniform_prior_cond_uniform_fiber
-  (card_dom : nat) (Hcard : #|DomainT| = card_dom.+1) (c : CodomainT) :
-  `p_ X = fdist_uniform Hcard ->
-  `Pr[Y = c] != 0 ->
-  let fiber_c := fiber f c in
-  (forall x, x \in fiber_c ->
-    `Pr[X = x | Y = c] = #|fiber_c|%:R ^-1) /\
-  (forall x, x \notin fiber_c ->
-    `Pr[X = x | Y = c] = 0).
-Proof.
-Admitted.
-
 End fiber_entropy.
 
 Section constant_fiber_size.
