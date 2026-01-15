@@ -13,7 +13,7 @@ Import Num.Theory.
 (* Entropy Framework for Fibers over Composite Modulus Z/pqZ                  *)
 (*                                                                            *)
 (* This file provides general entropy lemmas for reasoning about conditional  *)
-(* probabilities and entropy when random variables are constrained by linear  *)
+(* probabilities and entropy when random variables are constrained by         *)
 (* equations over the ring Z/(pq)Z where p, q are distinct primes.            *)
 (*                                                                            *)
 (* Parallel to the abstract entropy_fiber.v but specialized for the ring      *)

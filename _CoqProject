@@ -111,7 +111,7 @@ dumas2017dual/lib/extra_entropy.v
 dumas2017dual/lib/rouche_capelli.v
 dumas2017dual/entropy_fiber/entropy_fiber.v
 dumas2017dual/entropy_fiber/entropy_fiber_zpq.v
-dumas2017dual/fiber/linear_fiber_zpq.v
+dumas2017dual/entropy_fiber/linear_fiber_zpq.v
 dumas2017dual/dsdp/dsdp_program.v
 dumas2017dual/dsdp/dsdp_entropy_trace.v
 dumas2017dual/dsdp/dsdp_entropy.v

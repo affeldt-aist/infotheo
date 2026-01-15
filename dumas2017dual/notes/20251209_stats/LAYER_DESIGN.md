@@ -12,13 +12,11 @@ dumas2017dual/
 │   ├── extra_entropy.v           # Entropy sum, cond. independence, zero entropy
 │   └── rouche_capelli.v          # Linear system solution counting (Rouché-Capelli)
 │
-├── entropy_fiber/                 # Layers 2-3: Abstract + Z/pqZ fiber entropy
+├── entropy_fiber/                # Layers 2-3: Abstract + Z/pqZ fiber entropy
 │   ├── entropy_fiber.v           # Abstract fiber entropy framework
-│   └── entropy_fiber_zpq.v       # Entropy framework for Z/pqZ (rings)
-│
-├── fiber/                         # Layer 3: Z/pqZ fiber cardinality
+│   └── entropy_fiber_zpq.v       # The same framework but for Z/pqZ (rings)
 │   └── linear_fiber_zpq.v        # Fiber cardinality over composite moduli
-│                                  # Includes CRT projections to F_p, F_q
+│                                 # Includes CRT projections to F_p, F_q
 │
 └── dsdp/                          # Layer 4: DSDP protocol-specific
    ├── dsdp_program.v            # Protocol execution model
