@@ -110,7 +110,8 @@ Definition Nup (x : R) := `| Num.floor x |.+1.
 Lemma Nup_gt x : x < (Nup x)%:R.
 Proof.
 apply: (lt_le_trans (floorD1_gt x)).
-by rewrite /Nup -intrD1 -natr1 lerD // natr_absz ler_int ler_norm.
+rewrite /Nup [leLHS](_ : _ = (Num.Def.floor x)%:~R + 1%:~R) ?intrD1//.
+by rewrite -natr1 lerD // natr_absz ler_int ler_norm.
 Qed.
 
 Definition JTS_1_bound :=
