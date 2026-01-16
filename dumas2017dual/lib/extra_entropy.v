@@ -40,10 +40,10 @@ Context {R : realType}.
 
 (* Entropy sum over a subset with uniform probability *)
 Lemma entropy_sum_split (A : finType) 
-  (S : pred A) (p : R) (prob : A -> R) :
-  (forall a, S a -> prob a = p) ->
-  (forall a, ~~ S a -> prob a = 0) ->
-  (- \sum_(a : A) prob a * log (prob a)) = (- \sum_(a : A | S a) p * log p).
+  (S : pred A) (p : R) (pmf : A -> R) :
+  (forall a, S a -> pmf a = p) ->
+  (forall a, ~~ S a -> pmf a = 0) ->
+  (- \sum_(a : A) pmf a * log (pmf a)) = (- \sum_(a : A | S a) p * log p).
 Proof.
 move=> Hin Hout.
 rewrite (bigID S) /=.

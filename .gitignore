@@ -4,6 +4,8 @@
 *.v.d
 *.glob
 *~
+\#*\#
+.#*
 Makefile.conf
 *.aux
 
@@ -17,3 +19,10 @@ Makefile.coq.conf
 
 # Nix overlays
 .nix/coq-overlays/
+
+# Extracted files
+extraction/sumprod.ml
+extraction/sumprod.mli
+
+# Cache
+.nra.cache
