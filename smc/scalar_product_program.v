@@ -96,9 +96,9 @@ Definition pbob (xb : VX) (yb : TX) : proc data _ :=
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 
-(* Pack processes into aproc list *)
+(* Pack processes into aproc list using [procs ...] notation *)
 Definition smc_procs : seq (aproc data) :=
-  [:: pack (palice xa); pack (pbob xb yb); pack (pcoserv sa sb ra)].
+  [procs palice xa; pbob xb yb; pcoserv sa sb ra].
 
 Definition smc_scalar_product h :=
   interp h smc_procs (nseq 3 [::]).

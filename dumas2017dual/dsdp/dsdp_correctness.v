@@ -110,9 +110,9 @@ Let dk_a : pkey := (Alice, Dec, k_a).
 Let dk_b : pkey := (Bob, Dec, k_b). 
 Let dk_c : pkey := (Charlie, Dec, k_c). 
 
-(* Pack processes into aproc list *)
+(* Pack processes into aproc list using [procs ...] notation *)
 Definition dsdp_procs : seq (aproc data) :=
-  [:: pack (palice dk_a v1 u1 u2 u3 r2 r3); pack (pbob dk_b v2); pack (pcharlie dk_c v3)].
+  [procs palice dk_a v1 u1 u2 u3 r2 r3; pbob dk_b v2; pcharlie dk_c v3].
 
 Definition dsdp h :=
   interp h dsdp_procs (nseq 3 [::]).
