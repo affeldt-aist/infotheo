@@ -1,0 +1,41 @@
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.bbl
+*.blg
+*.nav
+*.snm
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+
+# Generated PDF files
+*.pdf
+
+# LaTeX temporary files
+*.dvi
+*.ps
+*.idx
+*.ilg
+*.ind
+*.lof
+*.lot
+*.thm
+*.bcf
+*.run.xml
+
+# Editor backup files
+*~
+*.swp
+*.swo
+.*.swp
+.*.swo
+
+# macOS
+.DS_Store
+
+
+
+
