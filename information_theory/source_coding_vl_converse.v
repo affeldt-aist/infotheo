@@ -781,7 +781,7 @@ apply: (@le_trans _ _ ((x ^ 2 / 2 - 1) * eps * n%:R)); last first.
   rewrite lerBlDr.
   rewrite (le_trans (ltW (floorD1_gt _)))//.
   rewrite natr_absz.
-  rewrite [leRHS](_ : _ = (`|floor (expR (m' eps))| + 1)%:~R) -?intrD1//.
+  rewrite [leRHS](_ : _ = (`|floor (expR (m' eps))| + 1)%:~R); last by rewrite intrD1.
   by rewrite ler_int lerD2r ler_norm.
 rewrite logM//; last exact: mpos.
 rewrite -(ler_pM2r ln2_gt0).
