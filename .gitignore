@@ -7,13 +7,13 @@
 Makefile.conf
 *.aux
 
-# Generated build files
+# Build system
 .Makefile.coq.d
 Makefile.coq
 Makefile.coq.conf
 
-# Editor/IDE
+# IDE
 .vscode/
 
-# Nix
+# Nix overlays
 .nix/coq-overlays/
