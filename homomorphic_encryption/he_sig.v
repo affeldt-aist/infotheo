@@ -55,9 +55,8 @@ HB.mixin Record isHE (T : HE_types) := {
   he_enc : he_msg T -> he_rand T -> he_ct T ;
   he_Emul : he_ct T -> he_ct T -> he_ct T ;
   he_Epow : he_ct T -> he_msg T -> he_ct T ;
-  (* Coercion from message to nat for exponentiation *)
+  (* Conversion to nat for use in r ^+ he_msg_nat m2 *)
   he_msg_nat : he_msg T -> nat ;
-  (* Concrete randomness properties *)
   he_Emul_eq_add : forall (m1 m2 : he_msg T) (r1 r2 : he_rand T),
     he_Emul (he_enc m1 r1) (he_enc m2 r2) = he_enc (m1 + m2) (r1 * r2) ;
   he_Epow_eq_mul : forall (m1 m2 : he_msg T) (r : he_rand T),
