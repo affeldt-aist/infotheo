@@ -1,32 +1,35 @@
 (******************************************************************************)
 (*                                                                            *)
-(* Homomorphic Encryption: Ideal Model and Party-Labeled Types                *)
+(* Homomorphic Encryption: Party-Labeled Types                                *)
 (*                                                                            *)
-(* This file provides the idealized HE model for protocol proofs and the      *)
-(* party-labeled encryption types used by dumas2017dual/dsdp/.                *)
+(* This file provides party-labeled encryption types for protocol proofs,     *)
+(* used by dumas2017dual/dsdp/.                                               *)
 (*                                                                            *)
 (* == Architecture ==                                                         *)
 (*                                                                            *)
 (*   HE structure (defined in he_sig.v using Hierarchy Builder)               *)
 (*   - HE_types bundles: he_msg, he_ct, he_rand                               *)
-(*   - isHE mixin: he_enc, he_Emul, he_Epow + homomorphism properties         *)
-(*          /              |               \                                  *)
-(*         v               v                v                                 *)
-(*   Ideal_HE         Benaloh_HE       Paillier_HE                            *)
-(*   ct = msg         ct = 'Z_n        ct = 'Z_{n²}                           *)
-(*   Emul = +         Emul = *         Emul = *                               *)
-(*   Epow = *         Epow = ^+        Epow = ^+                              *)
+(*   - isHE mixin: he_enc, he_Emul, he_Epow + concrete randomness properties  *)
+(*                     |               \                                      *)
+(*                     v                v                                     *)
+(*               Benaloh_HE       Paillier_HE                                 *)
+(*               ct = 'Z_n        ct = 'Z_{n²}                                *)
+(*               Emul = *         Emul = *                                    *)
+(*               Epow = ^+        Epow = ^+                                   *)
 (*                                                                            *)
-(*   Party_Ideal_HE (party labels for ideal model)                            *)
-(*   - enc = (party * msg)                                                    *)
-(*   - E, D, Emul, Epow with party labels                                     *)
+(*   Party-labeled versions (this file):                                      *)
+(*   - Party_Enc_Types: enc = (party * msg), idealized model for DSDP proofs  *)
+(*   - Party_Benaloh_HE: enc = (party * 'Z_n), concrete Benaloh encryption    *)
+(*   - Party_Paillier_HE: enc = (party * 'Z_{n²}), concrete Paillier          *)
+(*   - E, D, Emul, Epow operations with party labels                          *)
 (*                                                                            *)
 (* == This File ==                                                            *)
 (*                                                                            *)
-(*   Section Ideal_HE     - HB instance with ct = msg                         *)
-(*   Section Party_Ideal_HE - party-labeled interface for dsdp                *)
-(*   party, key types     - protocol participant and key types                *)
-(*   p.-enc, p.-key types - type-level party tagging for entropy proofs       *)
+(*   party, key types       - protocol participant and key types              *)
+(*   Party_Enc_Types        - idealized enc = (party * msg) for DSDP proofs   *)
+(*   Party_Benaloh_HE       - party-labeled Benaloh encryption                *)
+(*   Party_Paillier_HE      - party-labeled Paillier encryption               *)
+(*   p.-enc, p.-key types   - type-level party tagging for entropy proofs     *)
 (*                                                                            *)
 (* == Related Files ==                                                        *)
 (*                                                                            *)
@@ -63,6 +66,8 @@ Reserved Notation "u ^h w" (at level 40).
 
 (* HE_SIG module signature is defined in he_sig.v *)
 From infotheo Require Export homomorphic_encryption.he_sig.
+From infotheo Require Import homomorphic_encryption.benaloh1994.benaloh_enc.
+From infotheo Require Import homomorphic_encryption.paillier1999.paillier_enc.
 
 (* ========================================================================== *)
 (*                          Party and Type Definitions                         *)
@@ -149,47 +154,17 @@ HB.instance Definition _ := isFinite.Build key key_enumP.
 End key_def.
 
 (* ========================================================================== *)
-(*                         Ideal HE (HB Instance)                              *)
+(*                   Party-Labeled Encryption Types (for DSDP)                 *)
 (* ========================================================================== *)
 
-(* Ideal_HE: Identity encryption where ct = msg.
-   Used as base for Party_Ideal_HE to create the party-labeled ideal model. *)
+(* This section provides the basic party-labeled encryption types and operations
+   used by the DSDP protocol proofs. This is an idealized model where
+   enc = (party * msg), enabling information-theoretic proofs with the
+   E_enc_unif and E_enc_inde axioms.
 
-Section Ideal_HE.
+   For concrete encryption (Benaloh, Paillier), see sections below. *)
 
-Variable M : finComNzRingType.
-
-Definition Ideal_HE_types : HE_types := MkHE M M unit.
-
-Definition ideal_enc (m : M) (_ : unit) : M := m.
-Definition ideal_Emul (c1 c2 : M) : M := c1 + c2.
-Definition ideal_Epow (c : M) (m : M) : M := c * m.
-
-Lemma ideal_Emul_eq_add : forall (m1 m2 : M) (r1 r2 : unit),
-  exists r : unit, ideal_Emul (ideal_enc m1 r1) (ideal_enc m2 r2) = ideal_enc (m1 + m2) r.
-Proof. by move=> m1 m2 r1 r2; exists tt. Qed.
-
-Lemma ideal_Epow_eq_mul : forall (m1 m2 : M) (r : unit),
-  exists r' : unit, ideal_Epow (ideal_enc m1 r) m2 = ideal_enc (m1 * m2) r'.
-Proof. by move=> m1 m2 r; exists tt. Qed.
-
-HB.instance Definition Ideal_HE_isHE : isHE Ideal_HE_types := 
-  @isHE.phant_Build Ideal_HE_types ideal_enc ideal_Emul ideal_Epow 
-    ideal_Emul_eq_add ideal_Epow_eq_mul.
-
-End Ideal_HE.
-
-(* ========================================================================== *)
-(*                   Party-Labeled Ideal HE (Section-based)                    *)
-(* ========================================================================== *)
-
-(* Party_Ideal_HE provides party-labeled encryption for the ideal model.
-   This is the main interface used by dsdp files for protocol proofs.
-   
-   For concrete HE (Benaloh, Paillier), party labeling would need
-   additional handling of randomness and decryption. *)
-
-Section Party_Ideal_HE.
+Section Party_Enc_Types.
 
 Variable party : finType.
 Variable msg : finComNzRingType.
@@ -215,7 +190,106 @@ Definition Epow (e : enc) (m2 : msg) : enc :=
   | (i, m1) => E i (m1 * m2)
   end.
 
-End Party_Ideal_HE.
+End Party_Enc_Types.
+
+(* ========================================================================== *)
+(*                   Party-Labeled Benaloh HE (Section-based)                  *)
+(* ========================================================================== *)
+
+Section Party_Benaloh_HE.
+
+Variable party : finType.
+Variables (n r : nat).
+Hypothesis n_gt1 : (1 < n)%N.
+Hypothesis r_gt1 : (1 < r)%N.
+Variable y : 'Z_n.
+(* y_order_r ensures y is an r-th root of unity in Z_n.
+   This is required for the homomorphic properties:
+   - enc_mul_dist: E(m1,u1) * E(m2,u2) = E(m1+m2, u1*u2)
+   - enc_exp_dist: E(m,u)^k = E(m*k, u^k)
+   Without this, y^(m1+m2) != y^m1 * y^m2 in general. *)
+Hypothesis y_order_r : y ^+ r = 1.
+
+Definition benaloh_enc_party := (party * 'Z_n)%type.  (* party * ciphertext *)
+Definition benaloh_pkey := (party * key * 'Z_r)%type.
+
+(* E creates a party-labeled encryption.
+   To use a different HE instance (e.g., Paillier), replace benaloh_enc
+   with paillier_enc and adjust the type parameters accordingly:
+     Definition E (p : party) (m : 'Z_n) (r : 'Z_n2) : enc := 
+       (p, paillier_enc g m r).
+   The key difference is the message/randomness spaces. *)
+Definition E_benaloh (p : party) (m : 'Z_r) (u : 'Z_n) : benaloh_enc_party := 
+  (p, benaloh_enc y m u).
+
+Definition K_benaloh (p : party) (k : key) (m : 'Z_r) : benaloh_pkey := (p, k, m).
+
+Definition D_benaloh (dk : benaloh_pkey) (e : benaloh_enc_party) : option 'Z_r :=
+  match dk, e with
+  | (i, k, _), (j, _) => if (i == j) && (k == Dec) then None else None
+    (* Note: Benaloh decryption requires discrete log, not implemented here *)
+  end.
+
+Definition Emul_benaloh (e1 e2 : benaloh_enc_party) : benaloh_enc_party := 
+  match (e1, e2) with
+  | ((p1, c1), (p2, c2)) => if p1 == p2 then (p1, c1 * c2) else (p1, 1)
+  end.
+
+Definition Epow_benaloh (e : benaloh_enc_party) (m : 'Z_r) : benaloh_enc_party :=
+  match e with
+  | (p, c) => (p, c ^+ (m : nat))
+  end.
+
+End Party_Benaloh_HE.
+
+(* ========================================================================== *)
+(*                   Party-Labeled Paillier HE (Section-based)                 *)
+(* ========================================================================== *)
+
+Section Party_Paillier_HE.
+
+Variable party : finType.
+Variable n : nat.
+Hypothesis n_gt1 : (1 < n)%N.
+Let n2 := (n * n)%N.
+Variable g : 'Z_n2.
+(* g_order_n ensures g is an n-th root of unity in Z_{n^2}.
+   This is required for the homomorphic properties:
+   - enc_mul_dist: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2)
+   - enc_exp_dist: E(m,r)^k = E(m*k, r^k)
+   Without this, g^(m1+m2) != g^m1 * g^m2 in general. *)
+Hypothesis g_order_n : g ^+ n = 1.
+
+Definition paillier_enc_party := (party * 'Z_n2)%type.  (* party * ciphertext *)
+Definition paillier_pkey := (party * key * 'Z_n)%type.
+
+(* E creates a party-labeled Paillier encryption.
+   Compared to Benaloh:
+   - Message space: 'Z_n (vs 'Z_r for Benaloh)
+   - Ciphertext/randomness space: 'Z_{n^2} (vs 'Z_n for Benaloh)
+   - Generator: g with g^n = 1 (vs y with y^r = 1 for Benaloh) *)
+Definition E_paillier (p : party) (m : 'Z_n) (r : 'Z_n2) : paillier_enc_party := 
+  (p, paillier_enc g m r).
+
+Definition K_paillier (p : party) (k : key) (m : 'Z_n) : paillier_pkey := (p, k, m).
+
+Definition D_paillier (dk : paillier_pkey) (e : paillier_enc_party) : option 'Z_n :=
+  match dk, e with
+  | (i, k, _), (j, _) => if (i == j) && (k == Dec) then None else None
+    (* Note: Paillier decryption requires private key (lambda, mu), not implemented here *)
+  end.
+
+Definition Emul_paillier (e1 e2 : paillier_enc_party) : paillier_enc_party := 
+  match (e1, e2) with
+  | ((p1, c1), (p2, c2)) => if p1 == p2 then (p1, c1 * c2) else (p1, 1)
+  end.
+
+Definition Epow_paillier (e : paillier_enc_party) (m : 'Z_n) : paillier_enc_party :=
+  match e with
+  | (p, c) => (p, c ^+ (m : nat))
+  end.
+
+End Party_Paillier_HE.
 
 Section party_key_def.
 
