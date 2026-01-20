@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption dsdp_program.
+Require Import smc_proba homomorphic_encryption dsdp_interface dsdp_program.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -75,12 +75,21 @@ Section dsdp.
 (* Parameterize by a Party_HE_scheme instance *)
 Variable PHE : Party_HE_scheme.
 
+(* Use standard DSDP interface for data types *)
+Let DI := Standard_DSDP_Interface PHE.
+
 (* Extract types from the scheme *)
 Let partyT := phe_party PHE.
 Let msg := phe_msg PHE.
 Let rand := phe_rand PHE.
 Let enc := phe_enc PHE.
 Let pkey := phe_pkey PHE.
+
+(* Data type and constructors from interface *)
+Let data := di_data DI.
+Let d := di_d DI.
+Let e := di_e DI.
+Let k := di_k DI.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
 Let E := @phe_E PHE.
@@ -99,11 +108,6 @@ Variable charlie : partyT.
 
 (* Party to nat mapping for Send/Recv indices *)
 Variable pn : partyT -> nat.
-
-Definition data := (msg + enc + pkey)%type.
-Definition d x : data := inl (inl x).
-Definition e x : data := inl (inr x).
-Definition k x : data := inr x.
 
 (* Local wrappers for proc constructors - fuel-indexed *)
 Definition PInit {n} (x : data) (p : proc data n) : proc data n.+1 := Init x p.
@@ -205,15 +209,10 @@ Notation "'Recv⟨' p '⟩' 'fun' x '=>' P" := (PRecv (pn p) (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 
-(** * Specialized Recv operations *)
+(** * Specialized Recv operations from interface *)
 
-(* Extract enc from data *)
-Definition from_enc (x : data) : option enc :=
-  if x is inl (inr v) then Some v else None.
-
-(* Use parameterized Recv operations from dsdp_program *)
-Definition Recv_dec {n} := @Recv_dec_param msg enc pkey D data from_enc n.
-Definition Recv_enc {n} := @Recv_enc_param enc data from_enc n.
+Let Recv_dec {n} := @di_Recv_dec PHE DI n.
+Let Recv_enc {n} := @di_Recv_enc PHE DI n.
 
 (* Recv_dec notation - ASCII angle brackets *)
 Notation "'Recv_dec<' p '>' dk 'λ' x · P" := (Recv_dec (pn p) dk (fun x => P))

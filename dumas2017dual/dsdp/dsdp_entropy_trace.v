@@ -3,7 +3,7 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap matrix lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption.
+Require Import smc_proba homomorphic_encryption dsdp_interface.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -46,12 +46,21 @@ Section dsdp_traces.
 (* Parameterize by a Party_HE_scheme instance *)
 Variable PHE : Party_HE_scheme.
 
+(* Use standard DSDP interface for data types *)
+Let DI := Standard_DSDP_Interface PHE.
+
 (* Extract types from the scheme *)
 Let partyT := phe_party PHE.
 Let msg := phe_msg PHE.
 Let rand := phe_rand PHE.
 Let enc := phe_enc PHE.
 Let pkey := phe_pkey PHE.
+
+(* Data type and constructors from interface *)
+Let data := di_data DI.
+Let d := di_d DI.
+Let e := di_e DI.
+Let k := di_k DI.
 
 (* HE operations from the scheme *)
 Let E := @phe_E PHE.
@@ -67,11 +76,6 @@ Notation "u ^h w" := (Epow u w).
 Variable alice : partyT.
 Variable bob : partyT.
 Variable charlie : partyT.
-
-Definition data := (msg + enc + pkey)%type.
-Definition d x : data := inl (inl x).
-Definition e x : data := inl (inr x).
-Definition k x : data := inr x.
 
 (* Trace types for DSDP protocol *)
 Notation dsdp_traceT := (15.-bseq data).
@@ -125,12 +129,21 @@ Section trace_entropy_analysis.
 (* Parameterize by a Party_HE_scheme instance *)
 Variable PHE : Party_HE_scheme.
 
+(* Use standard DSDP interface for data types *)
+Let DI := Standard_DSDP_Interface PHE.
+
 (* Extract types from the scheme *)
 Let partyT := phe_party PHE.
 Let msg := phe_msg PHE.
 Let rand := phe_rand PHE.
 Let enc := phe_enc PHE.
 Let pkey := phe_pkey PHE.
+
+(* Data type and constructors from interface *)
+Let data := di_data DI.
+Let d := di_d DI.
+Let e := di_e DI.
+Let k := di_k DI.
 
 (* HE operations from the scheme *)
 Let E := @phe_E PHE.
@@ -143,11 +156,6 @@ Let Epow := @phe_Epow PHE.
 Variable alice : partyT.
 Variable bob : partyT.
 Variable charlie : partyT.
-
-Let data := (msg + enc + pkey)%type.
-Let d x : data := inl (inl x).
-Let e x : data := inl (inr x).
-Let k x : data := inr x.
 
 Notation dsdp_traceT := (15.-bseq data).
 Notation dsdp_tracesT := (3.-tuple dsdp_traceT).

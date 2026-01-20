@@ -4,6 +4,7 @@ From mathcomp Require Import Rstruct ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption.
+Require Import dsdp_interface.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -36,36 +37,13 @@ Local Definition R := Rdefinitions.R.
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
-(* ========================================================================== *)
-(* Parameterized Recv operations - defined once, reused in all sections       *)
-(* ========================================================================== *)
-
-(* Recv_dec: receive encrypted value, decrypt with key, continue with decrypted value *)
-Definition Recv_dec_param {msg enc pkey : Type}
-  (D : pkey -> enc -> option msg)
-  (data : Type) (from_enc : data -> option enc)
-  {n} (frm : nat) (dk : pkey) (f : msg -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => match from_enc x with
-                     | Some v => match D dk v with
-                                 | Some v' => f v'
-                                 | None => Fail
-                                 end
-                     | None => Fail
-                     end).
-
-(* Recv_enc: receive encrypted value (cannot decrypt), do HE computation *)
-Definition Recv_enc_param {enc : Type}
-  (data : Type) (from_enc : data -> option enc)
-  {n} (frm : nat) (f : enc -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => match from_enc x with
-                     | Some v => f v
-                     | None => Fail
-                     end).
-
 Section dsdp.
 
 (* Parameterize by a Party_HE_scheme instance *)
 Variable PHE : Party_HE_scheme.
+
+(* Use standard DSDP interface for data types *)
+Let DI := Standard_DSDP_Interface PHE.
 
 (* Extract types from the scheme *)
 Let partyT := phe_party PHE.
@@ -73,6 +51,14 @@ Let msg := phe_msg PHE.
 Let rand := phe_rand PHE.
 Let enc := phe_enc PHE.
 Let pkey := phe_pkey PHE.
+
+(* Data type and constructors from interface *)
+Let data := di_data DI.
+Let d := di_d DI.
+Let e := di_e DI.
+Let k := di_k DI.
+Let Recv_dec {n} := @di_Recv_dec PHE DI n.
+Let Recv_enc {n} := @di_Recv_enc PHE DI n.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
 Let E := @phe_E PHE.
@@ -96,19 +82,6 @@ Variable pn : partyT -> nat.
 (* Decryption correctness: D inverts E for matching party and Dec key *)
 Hypothesis D_correct : forall p m r k,
   D (K p Dec k) (E p m r) = Some m.
-
-Definition data := (msg + enc + pkey)%type.
-Definition d x : data := inl (inl x).
-Definition e x : data := inl (inr x).
-Definition k x : data := inr x.
-
-(* Extract enc from data *)
-Definition from_enc (x : data) : option enc :=
-  if x is inl (inr v) then Some v else None.
-
-(* Instantiate parameterized Recv operations for this section *)
-Definition Recv_dec {n} := @Recv_dec_param msg enc pkey D data from_enc n.
-Definition Recv_enc {n} := @Recv_enc_param enc data from_enc n.
 
 (* Programs with fuel automatically inferred.
    Each encryption E(party, msg, rand) needs explicit randomness. *)

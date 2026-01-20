@@ -4,7 +4,7 @@ From mathcomp Require Import Rstruct ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
 Require Import smc_proba homomorphic_encryption.
-Require Import dsdp_program dsdp_program_alt_syntax.
+Require Import dsdp_interface dsdp_program dsdp_program_alt_syntax.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -43,12 +43,23 @@ Section dsdp_correctness.
 (* Parameterize by a Party_HE_scheme instance *)
 Variable PHE : Party_HE_scheme.
 
+(* Use standard DSDP interface for data types *)
+Let DI := Standard_DSDP_Interface PHE.
+
 (* Extract types from the scheme *)
 Let partyT := phe_party PHE.
 Let msg := phe_msg PHE.
 Let rand := phe_rand PHE.
 Let enc := phe_enc PHE.
 Let pkey := phe_pkey PHE.
+
+(* Data type and constructors from interface *)
+Let data := di_data DI.
+Let d := di_d DI.
+Let e := di_e DI.
+Let k := di_k DI.
+Let Recv_dec {n} := @di_Recv_dec PHE DI n.
+Let Recv_enc {n} := @di_Recv_enc PHE DI n.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
 Let E := @phe_E PHE.
@@ -71,19 +82,6 @@ Variable pn : partyT -> nat.
 (* Decryption correctness: D inverts E for matching party and Dec key *)
 Hypothesis D_correct : forall p m r k,
   D (K p Dec k) (E p m r) = Some m.
-
-Definition data := (msg + enc + pkey)%type.
-Definition d x : data := inl (inl x).
-Definition e x : data := inl (inr x).
-Definition k x : data := inr x.
-
-(* Extract enc from data *)
-Definition from_enc (x : data) : option enc :=
-  if x is inl (inr v) then Some v else None.
-
-(* Use parameterized Recv operations from dsdp_program *)
-Definition Recv_dec {n} := @Recv_dec_param msg enc pkey D data from_enc n.
-Definition Recv_enc {n} := @Recv_enc_param enc data from_enc n.
 
 (* Note: Program definitions now include randomness parameters.
    Since both files are parameterized by the same PHE/alice/bob/charlie/pn,
