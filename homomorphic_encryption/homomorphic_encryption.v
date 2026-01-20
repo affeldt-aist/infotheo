@@ -346,6 +346,15 @@ Axiom E_enc_inde : forall (A B : finType) (p : party)
    judge if B is (p.-enc A) or not?
 *)
 
+(*
+  "Ciphertext conditioning removal":
+  if `E` is a fresh encryption value (uniform over `p.-enc B` and independent
+  from everything else), then conditioning on `E` does not change the
+  conditional entropy of `Z` given `X`.
+  The hypothesis `(forall x e, Pr[[X,E]=(x,e)] != 0)` is a technical condition
+  to make all the conditional probabilities `Pr[ Z=c | [X,E]=(x,e) ]` well-defined
+  in the cpr/centropy lemmas used below.
+*)
 Lemma E_enc_ce_removal (A B C : finType) (p : party)
   (X : {RV P -> A})(E : {RV P -> p.-enc B})(Z : {RV P -> C})(n : nat):
   #|B| = n.+1 -> (forall x e, `Pr[ [%X, E] = (x, e)] != 0) ->
@@ -377,3 +386,22 @@ exact: Hpr.
 Qed.
 
 End enc_lemmas.
+
+(*
+  Methodology note (two-layer justification for HE-based SMC proofs)
+
+  This development uses homomorphic encryption through an *idealized* interface:
+  ciphertext random variables are postulated to be (1) uniform over the ciphertext
+  type and (2) independent of all other random variables (see `E_enc_unif`,
+  `E_enc_inde`). Under these information-theoretic axioms we can carry out clean
+  Shannon-entropy calculations (e.g. dropping fresh ciphertexts from conditioning
+  as in `E_enc_ce_removal`) to prove protocol-level secrecy/correctness
+  properties.
+
+  Computational HE security is accounted for in a *second layer* (not in this
+  file): one proves a refinement/realization theorem showing that a concrete HE
+  scheme (with computational indistinguishability guarantees) implements the
+  ideal interface up to negligible error. This keeps protocol reasoning modular:
+  the SMC argument is proved once for the ideal primitive, and separately linked
+  to concrete assumptions via a standard reduction.
+*)
