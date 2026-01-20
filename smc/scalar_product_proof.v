@@ -77,6 +77,8 @@ Let rb := sa *d sb - ra.
 Let t := xa' *d xb + rb - yb.
 Let ya := t - xb' *d sa + ra.
 
+Let smc_scalar_product_procs := smc_procs dotproduct sa sb ra yb xa xb.
+
 (* With fuel-indexed proc, the result has aproc (packed processes) *)
 Lemma smc_scalar_product_ok :
   smc_scalar_product dotproduct sa sb ra yb xa xb smc_max_fuel =
@@ -101,7 +103,8 @@ Proof. reflexivity. Qed.
 
 (* With fuel equal to sum_fuel, evaluation reaches a final state *)
 Lemma smc_scalar_product_terminates :
-  all_final (smc_scalar_product dotproduct sa sb ra yb xa xb smc_max_fuel).1.
+  all_final (smc_scalar_product dotproduct sa sb ra yb xa xb
+    [> smc_scalar_product_procs]).1.
 Proof. reflexivity. Qed.
 
 Lemma smc_scalar_product_traces_ok :
