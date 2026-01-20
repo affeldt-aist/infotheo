@@ -404,6 +404,11 @@ Proof. by rewrite card_prod !card_msg expnS expn1. Qed.
 Let enc := enc party msg.
 Let pkey := pkey party msg.
 
+(* Define concrete party values for use with E' and encryption *)
+Let alice : party := Alice.
+Let bob : party := Bob.
+Let charlie : party := Charlie.
+
 Let data := (msg + enc + pkey)%type.
 Let d x : data := inl (inl x).
 Let e x : data := inl (inr x).

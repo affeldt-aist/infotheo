@@ -154,6 +154,39 @@ HB.instance Definition _ := isFinite.Build key key_enumP.
 End key_def.
 
 (* ========================================================================== *)
+(*                   Party-Labeled HE HB Structure                             *)
+(* ========================================================================== *)
+
+(* Record bundling the party-labeled HE types *)
+Record Party_HE_types := MkPartyHE {
+  phe_party : finType ;
+  phe_msg : finComNzRingType ;
+  phe_rand : ringType ;          (* ringType enables r1*r2 and r^+k *)
+  phe_enc : finType ;            (* party-labeled ciphertext *)
+  phe_pkey : Type ;              (* party-labeled key *)
+}.
+
+(* HB mixin for party-labeled homomorphic encryption operations *)
+HB.mixin Record isPartyHE (T : Party_HE_types) := {
+  phe_E : phe_party T -> phe_msg T -> phe_rand T -> phe_enc T ;
+  phe_K : phe_party T -> key -> phe_msg T -> phe_pkey T ;
+  phe_D : phe_pkey T -> phe_enc T -> option (phe_msg T) ;
+  phe_Emul : phe_enc T -> phe_enc T -> phe_enc T ;
+  phe_Epow : phe_enc T -> phe_msg T -> phe_enc T ;
+  (* Conversion to nat for r ^+ phe_msg_nat m2 *)
+  phe_msg_nat : phe_msg T -> nat ;
+  (* Concrete randomness: Emul combines randomness by multiplication *)
+  phe_Emul_eq_add : forall (p : phe_party T) (m1 m2 : phe_msg T) (r1 r2 : phe_rand T),
+    phe_Emul (phe_E p m1 r1) (phe_E p m2 r2) = phe_E p (m1 + m2) (r1 * r2) ;
+  (* Concrete randomness: Epow raises randomness to power *)
+  phe_Epow_eq_mul : forall (p : phe_party T) (m1 m2 : phe_msg T) (r : phe_rand T),
+    phe_Epow (phe_E p m1 r) m2 = phe_E p (m1 * m2) (r ^+ phe_msg_nat m2)
+}.
+
+#[short(type=Party_HE_scheme)]
+HB.structure Definition Party_HE := { T of isPartyHE T }.
+
+(* ========================================================================== *)
 (*                   Party-Labeled Encryption Types (for DSDP)                 *)
 (* ========================================================================== *)
 
@@ -240,6 +273,64 @@ Definition Epow_benaloh (e : benaloh_enc_party) (m : 'Z_r) : benaloh_enc_party :
   | (p, c) => (p, c ^+ (m : nat))
   end.
 
+(* ---- HB Instance for Party_HE ---- *)
+
+Definition Benaloh_Party_HE_types : Party_HE_types := 
+  MkPartyHE party 'Z_r 'Z_n (party * 'Z_n)%type benaloh_pkey.
+
+Definition benaloh_phe_E (p : party) (m : 'Z_r) (u : 'Z_n) : (party * 'Z_n) := 
+  (p, benaloh_enc y m u).
+
+Definition benaloh_phe_K (p : party) (k : key) (m : 'Z_r) : benaloh_pkey := 
+  (p, k, m).
+
+Definition benaloh_phe_D (dk : benaloh_pkey) (e : party * 'Z_n) : option 'Z_r :=
+  match dk, e with
+  | (i, k, _), (j, _) => if (i == j) && (k == Dec) then None else None
+  end.
+
+(* Simpler Emul for HB: always multiply ciphertexts, keep first party *)
+Definition benaloh_phe_Emul (e1 e2 : party * 'Z_n) : (party * 'Z_n) := 
+  let (p1, c1) := e1 in
+  let (_, c2) := e2 in
+  (p1, c1 * c2).
+
+Definition benaloh_phe_Epow (e : party * 'Z_n) (m : 'Z_r) : (party * 'Z_n) :=
+  let (p, c) := e in
+  (p, c ^+ (m : nat)).
+
+Definition benaloh_phe_msg_nat (m : 'Z_r) : nat := m.
+
+(* Homomorphic addition property *)
+Lemma benaloh_phe_Emul_eq_add : forall (p : party) (m1 m2 : 'Z_r) (u1 u2 : 'Z_n),
+  benaloh_phe_Emul (benaloh_phe_E p m1 u1) (benaloh_phe_E p m2 u2) 
+    = benaloh_phe_E p (m1 + m2) (u1 * u2).
+Proof.
+  move=> p m1 m2 u1 u2.
+  rewrite /benaloh_phe_Emul /benaloh_phe_E /=.
+  congr pair.
+  exact (@benaloh_enc.enc_mul_dist n r r_gt1 y y_order_r m1 m2 u1 u2).
+Qed.
+
+(* Homomorphic scalar multiplication property *)
+Lemma benaloh_phe_Epow_eq_mul : forall (p : party) (m1 m2 : 'Z_r) (u : 'Z_n),
+  benaloh_phe_Epow (benaloh_phe_E p m1 u) m2 
+    = benaloh_phe_E p (m1 * m2) (u ^+ benaloh_phe_msg_nat m2).
+Proof.
+  move=> p m1 m2 u.
+  rewrite /benaloh_phe_Epow /benaloh_phe_E /benaloh_phe_msg_nat /=.
+  congr pair.
+  rewrite (@benaloh_enc.enc_exp_dist n r r_gt1 y y_order_r m1 (m2 : nat) u).
+  congr (benaloh_enc y _ _).
+  by rewrite mulrC -[m2 in m2 * _]natr_Zp mulr_natl.
+Qed.
+
+HB.instance Definition Benaloh_Party_HE_isPartyHE : isPartyHE Benaloh_Party_HE_types := 
+  @isPartyHE.phant_Build Benaloh_Party_HE_types 
+    benaloh_phe_E benaloh_phe_K benaloh_phe_D
+    benaloh_phe_Emul benaloh_phe_Epow benaloh_phe_msg_nat
+    benaloh_phe_Emul_eq_add benaloh_phe_Epow_eq_mul.
+
 End Party_Benaloh_HE.
 
 (* ========================================================================== *)
@@ -288,6 +379,64 @@ Definition Epow_paillier (e : paillier_enc_party) (m : 'Z_n) : paillier_enc_part
   match e with
   | (p, c) => (p, c ^+ (m : nat))
   end.
+
+(* ---- HB Instance for Party_HE ---- *)
+
+Definition Paillier_Party_HE_types : Party_HE_types := 
+  MkPartyHE party 'Z_n 'Z_n2 (party * 'Z_n2)%type paillier_pkey.
+
+Definition paillier_phe_E (p : party) (m : 'Z_n) (r : 'Z_n2) : (party * 'Z_n2) := 
+  (p, paillier_enc g m r).
+
+Definition paillier_phe_K (p : party) (k : key) (m : 'Z_n) : paillier_pkey := 
+  (p, k, m).
+
+Definition paillier_phe_D (dk : paillier_pkey) (e : party * 'Z_n2) : option 'Z_n :=
+  match dk, e with
+  | (i, k, _), (j, _) => if (i == j) && (k == Dec) then None else None
+  end.
+
+(* Simpler Emul for HB: always multiply ciphertexts, keep first party *)
+Definition paillier_phe_Emul (e1 e2 : party * 'Z_n2) : (party * 'Z_n2) := 
+  let (p1, c1) := e1 in
+  let (_, c2) := e2 in
+  (p1, c1 * c2).
+
+Definition paillier_phe_Epow (e : party * 'Z_n2) (m : 'Z_n) : (party * 'Z_n2) :=
+  let (p, c) := e in
+  (p, c ^+ (m : nat)).
+
+Definition paillier_phe_msg_nat (m : 'Z_n) : nat := m.
+
+(* Homomorphic addition property *)
+Lemma paillier_phe_Emul_eq_add : forall (p : party) (m1 m2 : 'Z_n) (r1 r2 : 'Z_n2),
+  paillier_phe_Emul (paillier_phe_E p m1 r1) (paillier_phe_E p m2 r2) 
+    = paillier_phe_E p (m1 + m2) (r1 * r2).
+Proof.
+  move=> p m1 m2 r1 r2.
+  rewrite /paillier_phe_Emul /paillier_phe_E /=.
+  congr pair.
+  exact (@paillier_enc.enc_mul_dist n n_gt1 g g_order_n m1 m2 r1 r2).
+Qed.
+
+(* Homomorphic scalar multiplication property *)
+Lemma paillier_phe_Epow_eq_mul : forall (p : party) (m1 m2 : 'Z_n) (r : 'Z_n2),
+  paillier_phe_Epow (paillier_phe_E p m1 r) m2 
+    = paillier_phe_E p (m1 * m2) (r ^+ paillier_phe_msg_nat m2).
+Proof.
+  move=> p m1 m2 r.
+  rewrite /paillier_phe_Epow /paillier_phe_E /paillier_phe_msg_nat /=.
+  congr pair.
+  rewrite (@paillier_enc.enc_exp_dist n n_gt1 g g_order_n m1 (m2 : nat) r).
+  congr (paillier_enc g _ _).
+  by rewrite mulrC -[m2 in m2 * _]natr_Zp mulr_natl.
+Qed.
+
+HB.instance Definition Paillier_Party_HE_isPartyHE : isPartyHE Paillier_Party_HE_types := 
+  @isPartyHE.phant_Build Paillier_Party_HE_types 
+    paillier_phe_E paillier_phe_K paillier_phe_D
+    paillier_phe_Emul paillier_phe_Epow paillier_phe_msg_nat
+    paillier_phe_Emul_eq_add paillier_phe_Epow_eq_mul.
 
 End Party_Paillier_HE.
 

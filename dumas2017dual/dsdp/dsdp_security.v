@@ -87,6 +87,11 @@ Qed.
 Let card_msg : #|msg| = m.
 Proof. by rewrite card_ord Zp_cast. Qed.
 
+(* Define concrete party values for use with E' and encryption *)
+Let alice : party := Alice.
+Let bob : party := Bob.
+Let charlie : party := Charlie.
+
 (* Use dsdp_random_inputs record to enable reuse of alice_view_to_cond *)
 Variable inputs : dsdp_random_inputs P p_minus_2 q_minus_2.
 
@@ -430,6 +435,11 @@ Hypothesis coprime_pq : coprime p q.
 Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
 
+(* Define concrete party values for use with E' and encryption *)
+Let alice : party := Alice.
+Let bob : party := Bob.
+Let charlie : party := Charlie.
+
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.
 Proof.
@@ -687,6 +697,11 @@ Hypothesis coprime_pq : coprime p q.
 Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
 
+(* Define concrete party values for use with E' and encryption *)
+Let alice : party := Alice.
+Let bob : party := Bob.
+Let charlie : party := Charlie.
+
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.
 Proof.
@@ -840,6 +855,11 @@ Hypothesis prime_q : prime q.
 Hypothesis coprime_pq : coprime p q.
 Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
+
+(* Define concrete party values for use with E' and encryption *)
+Let alice : party := Alice.
+Let bob : party := Bob.
+Let charlie : party := Charlie.
 
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.
@@ -1359,6 +1379,11 @@ Hypothesis prime_q : prime q.
 Hypothesis coprime_pq : coprime p q.
 Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
+
+(* Define concrete party values for use with E' and encryption *)
+Let alice : party := Alice.
+Let bob : party := Bob.
+Let charlie : party := Charlie.
 
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.

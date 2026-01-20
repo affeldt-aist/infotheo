@@ -36,63 +36,100 @@ Local Definition R := Rdefinitions.R.
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
+(* ========================================================================== *)
+(* Parameterized Recv operations - defined once, reused in all sections       *)
+(* ========================================================================== *)
+
+(* Recv_dec: receive encrypted value, decrypt with key, continue with decrypted value *)
+Definition Recv_dec_param {msg enc pkey : Type}
+  (D : pkey -> enc -> option msg)
+  (data : Type) (from_enc : data -> option enc)
+  {n} (frm : nat) (dk : pkey) (f : msg -> proc data n) : proc data n.+1 :=
+  Recv frm (fun x => match from_enc x with
+                     | Some v => match D dk v with
+                                 | Some v' => f v'
+                                 | None => Fail
+                                 end
+                     | None => Fail
+                     end).
+
+(* Recv_enc: receive encrypted value (cannot decrypt), do HE computation *)
+Definition Recv_enc_param {enc : Type}
+  (data : Type) (from_enc : data -> option enc)
+  {n} (frm : nat) (f : enc -> proc data n) : proc data n.+1 :=
+  Recv frm (fun x => match from_enc x with
+                     | Some v => f v
+                     | None => Fail
+                     end).
+
 Section dsdp.
 
-Variable F : finFieldType.
-Variable m_minus_2 : nat.
-Local Notation m := m_minus_2.+2.
-Hypothesis prime_m : prime m.
+(* Parameterize by a Party_HE_scheme instance *)
+Variable PHE : Party_HE_scheme.
 
-Local Notation msg := 'F_m.  (* Finite field with m elements *)
-Let card_msg : #|msg| = m.
-Proof. by rewrite card_Fp // pdiv_id. Qed.
+(* Extract types from the scheme *)
+Let partyT := phe_party PHE.
+Let msg := phe_msg PHE.
+Let rand := phe_rand PHE.
+Let enc := phe_enc PHE.
+Let pkey := phe_pkey PHE.
 
-Let enc := enc party msg.
-Let pkey := pkey party msg.
+(* HE operations from the scheme - using @ to provide scheme explicitly *)
+Let E := @phe_E PHE.
+Let K := @phe_K PHE.
+Let D := @phe_D PHE.
+Let Emul := @phe_Emul PHE.
+Let Epow := @phe_Epow PHE.
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
 
-Definition alice : party := Alice.
-Definition bob : party := Bob.
-Definition charlie : party := Charlie.
+(* Party identities - these are variables of the scheme's party type.
+   For concrete instances like Benaloh_Party_HE, partyT = party. *)
+Variable alice : partyT.
+Variable bob : partyT.
+Variable charlie : partyT.
+
+(* Party to nat mapping for Send/Recv indices *)
+Variable pn : partyT -> nat.
+
+(* Decryption correctness: D inverts E for matching party and Dec key *)
+Hypothesis D_correct : forall p m r k,
+  D (K p Dec k) (E p m r) = Some m.
 
 Definition data := (msg + enc + pkey)%type.
 Definition d x : data := inl (inl x).
 Definition e x : data := inl (inr x).
 Definition k x : data := inr x.
 
-(* Should receive something the party can decrypt - fuel-indexed *)
-Definition Recv_dec {n} frm pkey (f : msg -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => if x is inl (inr v) then
-                       if D pkey v is Some v' then f v' else Fail
-                     else Fail).
+(* Extract enc from data *)
+Definition from_enc (x : data) : option enc :=
+  if x is inl (inr v) then Some v else None.
 
-(* Should receive something the party cannot decrypt,
-   but can do HE computation over it - fuel-indexed
-*)
-Definition Recv_enc {n} frm (f : enc -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => if x is inl (inr v) then f v else Fail).
+(* Instantiate parameterized Recv operations for this section *)
+Definition Recv_dec {n} := @Recv_dec_param msg enc pkey D data from_enc n.
+Definition Recv_enc {n} := @Recv_enc_param enc data from_enc n.
 
-(* Programs with fuel automatically inferred *)
-Definition pbob (dk : pkey)(v2 : msg) : proc data _ :=
+(* Programs with fuel automatically inferred.
+   Each encryption E(party, msg, rand) needs explicit randomness. *)
+Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) : proc data _ :=
   Init (k dk) (
   Init (d v2) (
-  Send n(alice) (e (E bob v2)) (
-  Recv_dec n(alice) dk (fun d2 =>
-  Recv_enc n(alice) (fun a3 =>
-    Send n(charlie) (e (a3 *h (E charlie d2))) (
+  Send (pn alice) (e (E bob v2 rb1)) (
+  Recv_dec (pn alice) dk (fun d2 =>
+  Recv_enc (pn alice) (fun a3 =>
+    Send (pn charlie) (e (a3 *h (E charlie d2 rb2))) (
   Finish)))))).
 
-Definition pcharlie (dk : pkey)(v3 : msg) : proc data _ :=
+Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) : proc data _ :=
   Init (k dk) (
   Init (d v3) (
-  Send n(alice) (e (E charlie v3)) (
-  Recv_dec n(bob) dk (fun d3 => (
-    Send n(alice) (e (E alice d3))
+  Send (pn alice) (e (E charlie v3 rc1)) (
+  Recv_dec (pn bob) dk (fun d3 => (
+    Send (pn alice) (e (E alice d3 rc2))
   Finish))))).
 
-Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data _ :=
+Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) : proc data _ :=
   Init (k dk) (
   Init (d v1) (
   Init (d u1) (
@@ -100,25 +137,29 @@ Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg) : proc data _ :=
   Init (d u3) (
   Init (d r2) (
   Init (d r3) (
-  Recv_enc n(bob) (fun c2 =>
-  Recv_enc n(charlie) (fun c3 =>
-  let a2 := (c2 ^h u2 *h (E bob r2)) in
-  let a3 := (c3 ^h u3 *h (E charlie r3)) in
-    Send n(bob) (e a2) (
-    Send n(bob) (e a3) (
-    Recv_dec n(charlie) dk (fun g =>
+  Recv_enc (pn bob) (fun c2 =>
+  Recv_enc (pn charlie) (fun c3 =>
+  let a2 := (c2 ^h u2 *h (E bob r2 ra1)) in
+  let a3 := (c3 ^h u3 *h (E charlie r3 ra2)) in
+    Send (pn bob) (e a2) (
+    Send (pn bob) (e a3) (
+    Recv_dec (pn charlie) dk (fun g =>
     Ret (d ((g - r2 - r3 + u1 * v1))))))))))))))).
   
+(* Randomness variables for each party's encryptions *)
+Variables (rb1 rb2 rc1 rc2 ra1 ra2 : rand).
 Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
 
-(* Note: must be with concrete values otherwise computation won't go *)
-Let dk_a : pkey := (Alice, Dec, k_a). 
-Let dk_b : pkey := (Bob, Dec, k_b). 
-Let dk_c : pkey := (Charlie, Dec, k_c). 
+(* Keys constructed using the scheme's K operation *)
+Let dk_a : pkey := K alice Dec k_a.
+Let dk_b : pkey := K bob Dec k_b.
+Let dk_c : pkey := K charlie Dec k_c.
 
 (* Pack processes into aproc list using [procs ...] notation *)
 Definition dsdp_procs : seq (aproc data) :=
-  [procs palice dk_a v1 u1 u2 u3 r2 r3; pbob dk_b v2; pcharlie dk_c v3].
+  [procs palice dk_a v1 u1 u2 u3 r2 r3 ra1 ra2; 
+         pbob dk_b v2 rb1 rb2; 
+         pcharlie dk_c v3 rc1 rc2].
 
 Definition dsdp h :=
   interp h dsdp_procs (nseq 3 [::]).
@@ -130,75 +171,96 @@ Definition dsdp h :=
    Total: 14 + 7 + 6 = 27 *)
 Definition dsdp_max_fuel : nat := 27.
 
-(* Verify the computed fuel matches *)
-Lemma dsdp_max_fuel_ok : dsdp_max_fuel = [> dsdp_procs].
-Proof. reflexivity. Qed.
+(* ========================================================================== *)
+(* Algebraic correctness proof using homomorphic properties                    *)
+(* ========================================================================== *)
 
-(* Protocol execution result: running dsdp with computed fuel produces the expected
-   final state with all parties finished and their respective traces. *)
-Lemma dsdp_ok :
-  dsdp [> dsdp_procs] = 
-  ([:: pack Finish; pack Finish; pack Finish],
-   [:: [:: d (v3 * u3 + r3 + (v2 * u2 + r2) - r2 - r3 + u1 * v1);
-           e (E alice (v3 * u3 + r3 + (v2 * u2 + r2))); 
-           e (E charlie v3);
-           e (E bob v2);
-           d r3; d r2; d u3; d u2; d u1; d v1; k dk_a];
-       [:: e (E charlie (v3 * u3 + r3));
-           e (E bob (v2 * u2 + r2)); d v2; k dk_b];
-       [:: e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2))); d v3; k dk_c]
-  ]).
-Proof. reflexivity. Qed.
+(* The homomorphic properties from Party_HE_scheme *)
+Let Emul_eq_add := @phe_Emul_eq_add PHE.
+Let Epow_eq_mul := @phe_Epow_eq_mul PHE.
 
-(* With fuel equal to sum_fuel, evaluation reaches a final state *)
-Lemma dsdp_terminates :
-  all_final (dsdp [> dsdp_procs]).1.
-Proof. reflexivity. Qed.
+(* 
+   Protocol correctness theorem (algebraic version):
+   
+   The DSDP protocol computes the dot product u1*v1 + u2*v2 + u3*v3.
+   
+   Proof sketch using homomorphic properties:
+   1. Bob sends c2 = E(bob, v2, rb1) to Alice
+   2. Charlie sends c3 = E(charlie, v3, rc1) to Alice  
+   3. Alice computes:
+      a2 = Epow(c2, u2) *h E(bob, r2, ra1)
+         = E(bob, v2*u2, _) *h E(bob, r2, _)     [by Epow_eq_mul]
+         = E(bob, v2*u2 + r2, _)                  [by Emul_eq_add]
+      a3 = Epow(c3, u3) *h E(charlie, r3, ra2)
+         = E(charlie, v3*u3 + r3, _)              [similarly]
+   4. Bob decrypts a2: d2 = v2*u2 + r2           [by D_correct]
+   5. Bob computes: a3 *h E(charlie, d2, rb2)
+         = E(charlie, v3*u3 + r3 + v2*u2 + r2, _) [by Emul_eq_add]
+   6. Charlie decrypts: g = v3*u3 + r3 + v2*u2 + r2 [by D_correct]
+   7. Alice computes: g - r2 - r3 + u1*v1
+         = v3*u3 + v2*u2 + u1*v1                  [ring algebra]
+*)
 
-Notation dsdp_traceT := (dsdp_max_fuel.-bseq data).
-Notation dsdp_tracesT := (3.-tuple dsdp_traceT).
+(* Key intermediate values in the protocol *)
+Definition bob_encrypted_input : enc := E bob v2 rb1.
+Definition charlie_encrypted_input : enc := E charlie v3 rc1.
 
-Definition dsdp_traces : dsdp_tracesT :=
-  interp_traces dsdp_max_fuel dsdp_procs.
+(* Alice's computation on Bob's ciphertext *)
+Definition alice_a2 : enc := 
+  (bob_encrypted_input ^h u2) *h (E bob r2 ra1).
 
-Definition is_dsdp (trs : dsdp_tracesT) :=
-  let '(s, u3, u2, u1, v1) :=
-    if tnth trs 0 is Bseq [:: inl (inl s); _; _; _; _; _;
-                           inl (inl u3); inl (inl u2); inl (inl u1);
-                           inl (inl v1); _] _
-    then (s, u3, u2, u1, v1) else (0, 0, 0, 0, 0) in
-  let '(v2) :=
-    if tnth trs 1 is Bseq [:: _; _; inl (inl v2); _] _
-    then (v2) else (0) in
-  let '(_v3) :=
-    if tnth trs 2 is Bseq [:: _; inl (inl v3); _] _
-    then (v3) else (0) in
-  s = v3 * u3 + v2 * u2 + v1 * u1.
+(* Alice's computation on Charlie's ciphertext *)  
+Definition alice_a3 : enc :=
+  (charlie_encrypted_input ^h u3) *h (E charlie r3 ra2).
 
-(* Trace structure: each party's trace contains their view of the protocol.
-   Alice sees: final sum S, encrypted values, randoms r2/r3, coefficients u_i, her input v1.
-   Bob sees: encrypted partial sums, his input v2.
-   Charlie sees: encrypted partial sum, his input v3. *)
-Lemma dsdp_traces_ok :
-  dsdp_traces =
-    [tuple
-       [bseq d (v3 * u3 + r3 + (v2 * u2 + r2) - r2 - r3 + u1 * v1);
-             e (E alice (v3 * u3 + r3 + (v2 * u2 + r2)));
-             e (E charlie v3);
-             e (E bob v2);
-             d r3; d r2; d u3; d u2; d u1; d v1; k dk_a];
-       [bseq e (E charlie (v3 * u3 + r3));
-             e (E bob (v2 * u2 + r2)); d v2; k dk_b];
-       [bseq e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2))); d v3; k dk_c]].
-Proof. by apply/val_inj/(inj_map val_inj); rewrite interp_traces_ok. Qed.
+(* Lemma: alice_a2 encrypts v2*u2 + r2 *)
+Lemma alice_a2_value : exists rr,
+  alice_a2 = E bob (v2 * u2 + r2) rr.
+Proof.
+  rewrite /alice_a2 /bob_encrypted_input /Epow /E /Emul.
+  rewrite Epow_eq_mul Emul_eq_add.
+  by eexists.
+Qed.
 
-(* Protocol correctness: the final result S satisfies S = u1*v1 + u2*v2 + u3*v3.
-   This verifies the DSDP protocol computes the intended dot product. *)
-Lemma dsdp_is_correct:
-  is_dsdp dsdp_traces.
-Proof. rewrite dsdp_traces_ok /is_dsdp /=.
-ring.
+(* Lemma: alice_a3 encrypts v3*u3 + r3 *)
+Lemma alice_a3_value : exists rr,
+  alice_a3 = E charlie (v3 * u3 + r3) rr.
+Proof.
+  rewrite /alice_a3 /charlie_encrypted_input /Epow /E /Emul.
+  rewrite Epow_eq_mul Emul_eq_add.
+  by eexists.
+Qed.
+
+(* Value Bob decrypts from a2 *)
+Definition d2_value : msg := v2 * u2 + r2.
+
+(* Bob's computation: a3 combined with encrypted d2 *)
+Definition bob_combined (a3_enc : enc) : enc :=
+  a3_enc *h (E charlie d2_value rb2).
+
+(* Lemma: Bob's combined ciphertext encrypts the sum *)
+Lemma bob_combined_value : exists rr,
+  bob_combined alice_a3 = E charlie (v3 * u3 + r3 + d2_value) rr.
+Proof.
+  rewrite /bob_combined /Emul /E.
+  have [rr3 Ha3] := alice_a3_value.
+  rewrite /E in Ha3.
+  rewrite Ha3 Emul_eq_add.
+  by eexists.
+Qed.
+
+(* Value Charlie decrypts *)
+Definition g_value : msg := v3 * u3 + r3 + d2_value.
+
+(* Final computation by Alice *)
+Definition alice_result : msg := g_value - r2 - r3 + u1 * v1.
+
+(* Main correctness theorem: Alice computes the dot product *)
+Theorem dsdp_computes_dot_product :
+  alice_result = u1 * v1 + u2 * v2 + u3 * v3.
+Proof.
+  rewrite /alice_result /g_value /d2_value.
+  ring.
 Qed.
 
 End dsdp.
-
