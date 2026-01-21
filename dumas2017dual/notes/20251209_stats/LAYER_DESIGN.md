@@ -19,9 +19,13 @@ dumas2017dual/
 │                                 # Includes CRT projections to F_p, F_q
 │
 └── dsdp/                          # Layer 4: DSDP protocol-specific
-   ├── dsdp_program.v            # Protocol execution model
+   ├── dsdp_interface.v          # Abstract DSDP interface (parameterized by Party_HE)
+   ├── dsdp_program.v            # Protocol execution model (core syntax)
+   ├── dsdp_program_alt_syntax.v # Protocol programs with paper-like custom syntax
+   ├── dsdp_correctness.v        # Algebraic correctness lemmas (pulled here)
    ├── dsdp_entropy.v            # DSDP entropy analysis
    ├── dsdp_entropy_trace.v      # Trace-based entropy analysis
+   ├── dsdp_syntax_demo.v        # Small demo/tutorial for the custom syntax
    └── dsdp_security.v           # Main security theorems
 ```
 
@@ -32,7 +36,11 @@ dumas2017dual/
                     │         Layer 4: DSDP           │
                     │  dsdp_security.v                │
                     │  dsdp_entropy.v                 │
+                    │  dsdp_entropy_trace.v           │
+                    │  dsdp_correctness.v             │
                     │  dsdp_program.v                 │
+                    │  dsdp_program_alt_syntax.v      │
+                    │  dsdp_interface.v               │
                     └────────────┬────────────────────┘
                                  │
                       ┌──────────┴──────────┐
@@ -136,10 +144,16 @@ This layer has two parallel modules, both depending only on Layer 2:
 
 | File | Content |
 |------|---------|
-| `dsdp_extra.v` | Auxiliary definitions for DSDP |
-| `dsdp_program.v` | Protocol execution model, trace structure |
+| `dsdp_interface.v` | DSDP interface parameterized by any `Party_HE_scheme` (HE types + operations) |
+| `dsdp_program.v` | Protocol execution model (core syntax) |
+| `dsdp_program_alt_syntax.v` | Same programs with custom “paper-like” syntax (custom entries / unicode-friendly) |
+| `dsdp_correctness.v` | **Correctness lemmas** for the program layer (homomorphic-algebraic reasoning) |
 | `dsdp_entropy.v` | Main entropy analysis: H(V2,V3 \| AliceView) |
+| `dsdp_entropy_trace.v` | Trace-level definitions/lemmas used to structure the entropy proofs |
+| `dsdp_syntax_demo.v` | Small demo/tutorial showcasing the alternative syntax |
 | `dsdp_security.v` | Top-level security theorem |
+
+**Note:** Protocol-level correctness facts that used to be scattered near the program definitions are now consolidated in `dsdp_correctness.v` so that the entropy/security layers can import a single correctness API.
 
 **Key Results:**
 
@@ -183,70 +197,123 @@ Each lemma should have a comment explaining:
 | 1 (lib) | 4 | extra_algebra, extra_proba, extra_entropy, rouche_capelli |
 | 2 (entropy_fiber) | 1 | entropy_fiber.v |
 | 3 (fiber + entropy_zpq) | 2 | linear_fiber_zpq.v, entropy_fiber_zpq.v |
-| 4 (dsdp) | 4 | dsdp_program, dsdp_entropy, dsdp_entropy_trace, dsdp_security |
-| **Total** | **11** | |
+| 4 (dsdp) | 8 | dsdp_interface, dsdp_program, dsdp_program_alt_syntax, dsdp_correctness, dsdp_entropy, dsdp_entropy_trace, dsdp_syntax_demo, dsdp_security |
+| **Total** | **15** | |
 
 ## Homomorphic Encryption Layer
 
-The `homomorphic_encryption/` directory provides a layered architecture for homomorphic encryption:
+The `homomorphic_encryption/` directory has been refactored into an HB-style hierarchy for **party-labeled additive homomorphic encryption**. The shape matches the paper’s presentation:
 
+- **Carrier types**: `Party_HE_types`
+- **Operations + laws**: `isPartyHE`
+- **Structure**: `Party_HE_scheme`
+- **Concrete instances**: `Benaloh_PHE`, `Paillier_PHE` (registered as instances)
+- **DSDP interface**: `DSDP_Interface` parameterized by any `Party_HE_scheme`
+- **Standard implementation**: `Standard_DI` (implements `DSDP_Interface`)
+- **Programs**: written against the interface, so they can be reused across HE instances
+
+```latex
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.8cm and 1.2cm,
+  every node/.style={font=\small},
+  typebox/.style={
+    rectangle, draw, rounded corners=2pt,
+    minimum width=2.4cm, minimum height=0.7cm,
+    fill=gray!10
+  },
+  mixinbox/.style={
+    rectangle, draw, rounded corners=2pt,
+    minimum width=2.4cm, minimum height=0.7cm,
+    fill=blue!10
+  },
+  structbox/.style={
+    rectangle, draw, thick, rounded corners=3pt,
+    minimum width=3.0cm, minimum height=0.8cm,
+    fill=green!15
+  },
+  instbox/.style={
+    rectangle, draw, rounded corners=2pt,
+    minimum width=2.2cm, minimum height=0.7cm,
+    fill=orange!20
+  },
+  ifacebox/.style={
+    rectangle, draw, rounded corners=2pt,
+    minimum width=3.0cm, minimum height=0.7cm,
+    fill=yellow!20
+  },
+  progbox/.style={
+    rectangle, draw, thick, rounded corners=3pt,
+    minimum width=3.5cm, minimum height=0.8cm,
+    fill=purple!15
+  },
+  arr/.style={-{Stealth[length=2mm]}, thick},
+  darr/.style={-{Stealth[length=2mm]}, dashed}
+]
+
+% Bottom layer: HB building blocks
+\node[typebox] (types) {\texttt{Party\_HE\_types}};
+\node[mixinbox, right=of types] (mixin) {\texttt{isPartyHE}};
+
+% Middle-bottom: HB structure
+\node[structbox, above=1.0cm of $(types)!0.5!(mixin)$] (scheme)
+  {\texttt{Party\_HE\_scheme}};
+
+% Concrete instantiations
+\node[instbox, above left=0.6cm and -0.2cm of scheme] (benaloh)
+  {\texttt{Benaloh\_PHE}};
+\node[instbox, above right=0.6cm and -0.2cm of scheme] (paillier)
+  {\texttt{Paillier\_PHE}};
+
+% Interface layer
+\node[ifacebox, above=2.0cm of scheme] (iface) {\texttt{DSDP\_Interface}};
+\node[ifacebox, right=1.5cm of iface, minimum width=2.6cm] (stdiface)
+  {\texttt{Standard\_DI}};
+
+% Top: Protocol programs
+\node[progbox, above=1.0cm of $(iface)!0.5!(stdiface)$] (progs)
+  {Protocol programs};
+
+% Arrows: HB composition
+\draw[arr] (types) -- (scheme);
+\draw[arr] (mixin) -- (scheme);
+
+% Arrows: instantiation
+\draw[arr] (scheme) -- (benaloh);
+\draw[arr] (scheme) -- (paillier);
+
+% Arrows: parameterization
+\draw[darr] (benaloh) -- (iface);
+\draw[darr] (paillier) -- (iface);
+\draw[arr] (iface) -- (stdiface) node[midway, above, font=\scriptsize] {implement};
+
+% Arrows: to programs
+\draw[arr] (iface) -- (progs);
+\draw[arr] (stdiface) -- (progs);
+
+% Labels
+\node[right=0.3cm of mixin, font=\scriptsize, text=gray] {operations and laws};
+\node[left=0.3cm of types, font=\scriptsize, text=gray] {carrier types};
+
+\end{tikzpicture}
+\caption{Hierarchy of the party-labeled AHE formalization. The
+  \texttt{Party\_HE\_types} record provides carrier types
+  (party, message, randomness, ciphertext, key), while the
+  \texttt{isPartyHE} mixin supplies encryption and homomorphic
+  operations together with their equational laws. The
+  \hb{} structure \texttt{Party\_HE\_scheme} combines both.
+  Concrete instantiations (Benaloh, Paillier) register as instances.
+  The \texttt{DSDP\_Interface} is parameterized by any
+  \texttt{Party\_HE\_scheme}, and protocol programs use the
+  standard implementation \texttt{Standard\_DI}.
+  Solid arrows denote composition or instantiation;
+  dashed arrows denote parameterization.}
+\label{fig:phe-hierarchy}
+\end{figure}
 ```
-  Section he_ideal (backward compatible, used by dsdp)
-  ≈ Party_Ideal_HE(Ideal_HE(msg))
-                      |
-                      v uses
-  Party_Ideal_HE (party labels + Ideal_HE)
-  - enc = (party * ct)
-  - E, D, Emul, Epow with party labels
-                      |
-                      v wraps
-  HE_SIG (abstract interface in he_sig.v)
-  - msg, ct, rand, enc
-  - Emul : ct -> ct -> ct
-  - Epow : ct -> msg -> ct
-        /              |               \
-       v               v                v
-  Ideal_HE         Benaloh_HE       Paillier_HE
-  ct = msg         ct = 'Z_n        ct = 'Z_{n²}
-  Emul = +         Emul = *         Emul = *
-  Epow = *         Epow = ^+        Epow = ^+
-```
 
-**Files:**
-
-| File | Description |
-|------|-------------|
-| `he_sig.v` | `HE_SIG` module signature: abstract HE interface |
-| `homomorphic_encryption.v` | `Ideal_HE`, `Party_Ideal_HE`, `Section he_ideal`, party/key types |
-| `benaloh1994/benaloh_he_instance.v` | `Benaloh_HE` functor implementing `HE_SIG` |
-| `paillier1999/paillier_he_instance.v` | `Paillier_HE` functor implementing `HE_SIG` |
-
-**Key Components (from `homomorphic_encryption.v`):**
-
-| Component | Description |
-|-----------|-------------|
-| `party` | Finite type for protocol participants (Alice, Bob, Charlie) |
-| `key` | Key types (Dec, Enc) for encryption/decryption |
-| `HE_SIG` | Abstract module signature with `enc`, `Emul`, `Epow` |
-| `Ideal_HE` | Implements `HE_SIG` with `ct = msg` (identity encryption) |
-| `Party_Ideal_HE` | Wraps `Ideal_HE` with party labels |
-| `Section he_ideal` | Backward-compatible interface for dsdp (E, D, Emul, Epow) |
-| `p.-enc T` | Type-level encryption label for party `p` |
-| `p.-key k T` | Type-level key label for party `p` with key type `k` |
-
-**Key Lemmas:**
-
-| Lemma | Statement |
-|-------|-----------|
-| `Emul_hom` | `Emul(enc m1, enc m2) = enc(m1 + m2)` — homomorphic addition |
-| `Epow_hom` | `Epow(enc m1, m2) = enc(m1 * m2)` — homomorphic scalar mult |
-| `card_party_key` | `#|{:p.-key k T}| = #|T|` — key types preserve cardinality |
-| `card_enc_for` | `#|{:p.-enc T}| = #|T|` — encryption types preserve cardinality |
-| `E_enc_unif` | Encryptions are uniformly distributed (axiom) |
-| `E_enc_inde` | Encryptions are independent of other random variables (axiom) |
-| `E_enc_ce_removal` | `H(Z | [%X, E]) = H(Z | X)` — encryption can be removed from conditioning |
-
-**Role in DSDP:** The `Section he_ideal` provides party-labeled encryption operations (`E`, `D`, `Emul`, `Epow`) used by dsdp protocol proofs. The semantic security axioms (`E_enc_unif`, `E_enc_inde`) allow DSDP to treat encrypted values as independent random values, which is essential for the entropy-based security analysis.
+**Role in DSDP:** Layer 4 (`dumas2017dual/dsdp/`) is parameterized by a `Party_HE_scheme` via `dsdp_interface.v`. This lets the same program/correctness development run with different party-labeled AHE instances (e.g. Benaloh/Paillier), while keeping the higher-level entropy/security arguments modular.
 
 ## Related Documents
 
