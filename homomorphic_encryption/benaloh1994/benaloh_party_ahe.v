@@ -25,6 +25,7 @@
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp ssrfun.
+From mathcomp Require Import cyclic.  (* For Euler_exp_totient *)
 From infotheo Require Import homomorphic_encryption.ahe_types.
 From infotheo Require Import homomorphic_encryption.ahe_enc_dec.
 From infotheo Require Import homomorphic_encryption.ahe_homo_ops.
@@ -75,19 +76,88 @@ Hypothesis y_coprime_n : coprime (y : nat) n.
 
 Variable phi_div_r : nat.
 
-(* Euler's theorem: for u coprime to n, u^φ(n) = 1.
-   Here r * phi_div_r = φ(n), so u^(r * phi_div_r) = 1.
+(* r * phi_div_r = φ(n), i.e., phi_div_r = φ(n)/r.
+   This is a key parameter relationship in the Benaloh scheme. *)
+Hypothesis phi_eq_totient : r * phi_div_r = totient n.
+
+(* Euler's theorem derived from math-comp's Euler_exp_totient.
    
-   This only holds for u ∈ Z_n^* (the multiplicative group of units).
-   If u is not coprime to n (e.g., n=6, u=2), then u^φ(n) ≠ 1 mod n.
+   This only holds for u in the multiplicative group of units (coprime to n).
+   If u is not coprime to n (e.g., n=6, u=2), then u^phi(n) != 1 mod n.
    
-   In the Benaloh cryptosystem with n = p*q (product of large primes),
-   the probability of randomly choosing a non-coprime u is negligible,
-   but for mathematical soundness we require the coprimality condition.
+   The proof uses:
+   - Euler_exp_totient: coprime a n -> a ^ totient n = 1 %[mod n]
+   - unit_Zp_expg: for units, val (u ^+ k) = inZp (val u ^ k)
+   - phi_eq_totient: r * phi_div_r = totient n *)
+(* Helper: Zp_trunc n = n - 2 when n > 1, so (Zp_trunc n).+2 = n *)
+Lemma Zp_trunc_eq : (Zp_trunc n).+2 = n.
+Proof.
+  exact: Zp_cast n_gt1.
+Qed.
+
+(* Helper to avoid dependent type error: 
+   extract the modular multiplication result at the nat level.
+   We extract nat values first, then use f_equal on the product. *)
+Lemma Zn_mul_val (a b : 'Z_n) : val (a * b) = ((val a * val b) %% n)%N.
+Proof.
+  (* Extract nat values first to avoid dependent type issues *)
+  set va := val a.
+  set vb := val b.
+  (* Both moduli are equal by Zp_trunc_eq *)
+  have Hmod : (Zp_trunc n).+2 = n := Zp_trunc_eq.
+  (* Compute LHS: val (a * b) = ((va * vb) %% (Zp_trunc n).+2)%N *)
+  have Hlhs : val (a * b) = ((va * vb) %% (Zp_trunc n).+2)%N by [].
+  (* Rewrite and use modulus equality *)
+  rewrite Hlhs Hmod.
+  (* Goal: va * vb = va * vb %[mod n] *)
+  (* The %[mod n] notation: x = y %[mod m] means x %% m = y %% m *)
+  (* So (va * vb) %% n = (va * vb) %% n, which is trivially true *)
+  by apply/eqP; rewrite eqxx.
+Qed.
+
+(* Helper: ring exponentiation in 'Z_n equals modular exponentiation.
+   For u : 'Z_n, val (u ^+ k) = (val u) ^ k %% n *)
+Lemma Zn_ring_expn (u : 'Z_n) k : val (u ^+ k) = ((val u) ^ k %% n)%N.
+Proof.
+  elim: k => [|k IHk].
+  - (* Base case: k = 0 *)
+    rewrite expr0 expn0.
+    (* val 1 = 1 %% n *)
+    rewrite modn_small //.
+  - (* Inductive case: k = k.+1 *)
+    rewrite exprS expnS.
+    (* val (u * u ^+ k) = (val u * val u ^ k)%N %% n *)
+    rewrite Zn_mul_val.
+    (* ((val u * val (u ^+ k)) %% n)%N = ((val u * val u ^ k) %% n)%N *)
+    rewrite IHk.
+    (* ((val u * (val u ^ k %% n)) %% n)%N = ((val u * val u ^ k) %% n)%N *)
+    by rewrite modnMmr.
+Qed.
+
+(* Euler's theorem for 'Z_n: u^φ(n) = 1 when gcd(u,n) = 1.
    
-   Math-comp provides: Euler_exp_totient (coprime a n -> a ^ totient n = 1 %[mod n])
-   in solvable/cyclic.v *)
-Hypothesis euler_property : forall (u : 'Z_n), coprime (u : nat) n -> u ^+ (r * phi_div_r) = 1.
+   We use mathcomp's Euler_exp_totient from the cyclic library:
+     Euler_exp_totient : coprime a n -> a ^ totient n = 1 %[mod n]
+   
+   The proof bridges two representations:
+   - Ring exponentiation in 'Z_n: u ^+ k (returns element of 'Z_n)
+   - Modular arithmetic on nat: u ^ k %% n (returns nat)
+   
+   Key steps:
+   1. Rewrite exponent: r * phi_div_r = totient n (by phi_eq_totient)
+   2. Apply Euler_exp_totient to get: (u:nat) ^ totient n = 1 %[mod n]
+   3. Use Zn_ring_expn to convert ring exp to modular exp
+   4. Conclude via modular arithmetic equality *)
+Lemma euler_property (u : 'Z_n) : coprime (u : nat) n -> u ^+ (r * phi_div_r) = 1.
+Proof.
+  move=> u_coprime.
+  have ->: (r * phi_div_r)%N = totient n by exact: phi_eq_totient.
+  have euler := Euler_exp_totient u_coprime.
+  apply/val_inj.
+  rewrite Zn_ring_expn /=.
+  rewrite euler.
+  by rewrite Zp_trunc_eq modn_small.
+Qed.
 
 (* ========================================================================== *)
 (*                   Randomness Coprimality Assumption                         *)
