@@ -67,24 +67,67 @@ Hypothesis g_order_n : g ^+ n = 1.
    1. λ = lcm(p-1, q-1) where n = p·q (Carmichael function)
    2. μ = L(g^λ mod n²)^(-1) mod n
    3. c^λ removes randomness: (g^m * r^n)^λ = g^(m·λ) (since r^(n·λ) = 1)
-   4. L(g^(m·λ)) · μ extracts m
-   
-   We parameterize by lambda and mu with their key properties. *)
+   4. L(g^(m·λ)) · μ extracts m *)
 
 Variable lambda : nat.
-Variable mu : 'Z_n.
 
 (* Carmichael's theorem: r^(n·λ) = 1 in Z*_{n²} *)
 Hypothesis carmichael_property : forall (r : 'Z_n2), r ^+ (n * lambda) = 1.
 
-(* The L-function: L(x) = (x-1)/n maps Z_{n²} to Z_n.
-   We model it abstractly with its key property. *)
-Variable L_func : 'Z_n2 -> 'Z_n.
+(* ========================================================================== *)
+(*                   L-function Definition                                     *)
+(* ========================================================================== *)
 
-(* L-function property: L(g^(m·λ)) · μ = m (mod n) for messages m.
-   This encodes the full decryption formula correctness. *)
-Hypothesis L_decrypt_correct : forall (m : 'Z_n),
+(* The L-function: L(x) = (x-1)/n maps Z_{n²} to Z_n.
+   For x = 1 + k·n (mod n²), we have L(x) = k (mod n).
+   
+   Mathematical justification:
+   - For standard Paillier g = 1 + n, binomial theorem gives:
+       (1+n)^k = 1 + k·n + C(k,2)·n² + ... = 1 + k·n (mod n²)
+   - So g^k - 1 = k·n (mod n²)
+   - L(g^k) = (g^k - 1)/n = k (mod n)
+   
+   The division by n is exact when the input is in the subgroup 
+   {1 + k·n : k ∈ Z} ⊂ Z*_{n²}. *)
+Definition L_func (x : 'Z_n2) : 'Z_n :=
+  inZp (((x : nat) - 1) %/ n)%N.
+
+(* μ is the modular inverse of λ in Z_n *)
+Variable mu : 'Z_n.
+
+(* Key property: L(g^k) extracts k mod n.
+   
+   Proof sketch (requires detailed modular arithmetic):
+   1. g = 1 + n in Z_{n²}
+   2. g^k = (1+n)^k = 1 + k·n (mod n²) by binomial theorem
+   3. (g^k - 1) / n = k (exact integer division)
+   4. k mod n gives the result in Z_n
+   
+   We state this as a hypothesis since the full proof requires
+   establishing the binomial expansion for 'Z_n2 arithmetic. *)
+Hypothesis L_of_g_power : forall (k : nat), L_func (g ^+ k) = inZp k.
+
+(* μ satisfies: λ · μ = 1 (mod n), i.e., μ = λ^(-1) mod n *)
+Hypothesis lambda_mu_inverse : (inZp lambda : 'Z_n) * mu = 1.
+
+(* Decryption correctness: L(g^(m·λ)) · μ = m
+   
+   Key MathComp lemmas used:
+   - Zp_nat : n%:R = inZp n
+   - natrM  : (m * n)%:R = m%:R * n%:R
+   - natr_Zp: (x : nat)%:R = x  for x : 'Z_n *)
+Lemma L_decrypt_correct (m : 'Z_n) :
   L_func (g ^+ ((m : nat) * lambda)) * mu = m.
+Proof.
+  rewrite L_of_g_power.
+  rewrite -(@Zp_nat (Zp_trunc n) ((m : nat) * lambda)).
+  rewrite natrM.
+  rewrite (natr_Zp m).
+  rewrite -mulrA.
+  rewrite (@Zp_nat (Zp_trunc n) lambda).
+  rewrite lambda_mu_inverse mulr1.
+  reflexivity.
+Qed.
 
 (* ========================================================================== *)
 (*                   Paillier Decryption                                       *)
@@ -99,13 +142,9 @@ Lemma ciphertext_reduction (m : 'Z_n) (r : 'Z_n2) :
   (paillier_enc g m r) ^+ lambda = g ^+ ((m : nat) * lambda).
 Proof.
   rewrite /paillier_enc.
-  (* Goal: (g ^+ m * r ^+ n) ^+ lambda = g ^+ (m * lambda) *)
   rewrite exprMn_comm; last by apply mulrC.
-  (* Goal: g ^+ m ^+ lambda * (r ^+ n) ^+ lambda = g ^+ (m * lambda) *)
   rewrite -!exprM.
-  (* Goal: g ^+ (m * lambda) * r ^+ (n * lambda) = g ^+ (m * lambda) *)
   rewrite carmichael_property.
-  (* Goal: g ^+ (m * lambda) * 1 = g ^+ (m * lambda) *)
   rewrite mulr1.
   reflexivity.
 Qed.
