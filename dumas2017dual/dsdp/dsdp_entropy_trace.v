@@ -43,8 +43,8 @@ Reserved Notation "u ^h w" (at level 40).
 
 Section dsdp_traces.
 
-(* Parameterize by a Party_HE_scheme instance *)
-Variable PHE : Party_HE_scheme.
+(* Parameterize by a Party_AHE_scheme instance *)
+Variable PHE : Party_AHE_scheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface PHE.
@@ -66,8 +66,8 @@ Let k := di_k DI.
 Let E := @phe_E PHE.
 Let K := @phe_K PHE.
 Let D := @phe_D PHE.
-Let Emul := @phe_Emul PHE.
-Let Epow := @phe_Epow PHE.
+Let Emul := @pahe_Emul PHE.
+Let Epow := @pahe_Epow PHE.
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
@@ -116,7 +116,7 @@ End dsdp_traces.
 (*                                                                            *)
 (* NOTE: The trace-based entropy analysis relied on the idealized encryption  *)
 (* model where enc = (party * msg) and E' is deterministic. With the new      *)
-(* Party_HE_scheme interface where encryption requires randomness, the        *)
+(* Party_AHE_scheme interface where encryption requires randomness, the       *)
 (* trace structure becomes more complex.                                      *)
 (*                                                                            *)
 (* The entropy equivalence lemmas (centropy_AliceTraces_AliceView, etc.)      *)
@@ -126,8 +126,8 @@ End dsdp_traces.
 
 Section trace_entropy_analysis.
 
-(* Parameterize by a Party_HE_scheme instance *)
-Variable PHE : Party_HE_scheme.
+(* Parameterize by a Party_AHE_scheme instance *)
+Variable PHE : Party_AHE_scheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface PHE.
@@ -149,8 +149,8 @@ Let k := di_k DI.
 Let E := @phe_E PHE.
 Let K := @phe_K PHE.
 Let D := @phe_D PHE.
-Let Emul := @phe_Emul PHE.
-Let Epow := @phe_Epow PHE.
+Let Emul := @pahe_Emul PHE.
+Let Epow := @pahe_Epow PHE.
 
 (* Party identities *)
 Variable alice : partyT.

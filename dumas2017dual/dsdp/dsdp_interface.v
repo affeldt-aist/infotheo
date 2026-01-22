@@ -62,7 +62,7 @@ Definition Recv_enc_param {enc : Type}
 (** Parameterized record bundling all DSDP data operations.
     This eliminates the need to repeat data/d/e/k/from_enc/Recv_dec/Recv_enc
     definitions in every DSDP file. *)
-Record DSDP_Interface (PHE : Party_HE_scheme) := MkDSDP_Interface {
+Record DSDP_Interface (PHE : Party_AHE_scheme) := MkDSDP_Interface {
   (* The carrier data type *)
   di_data : Type ;
   
@@ -97,7 +97,7 @@ Arguments di_Recv_enc {PHE} _ {n} _ _.
 
 Section Standard_DSDP_Interface.
 
-Variable PHE : Party_HE_scheme.
+Variable PHE : Party_AHE_scheme.
 
 Let msg := phe_msg PHE.
 Let enc := phe_enc PHE.
@@ -140,7 +140,7 @@ End Standard_DSDP_Interface.
 
 Section Standard_Interface_Properties.
 
-Variable PHE : Party_HE_scheme.
+Variable PHE : Party_AHE_scheme.
 Let DI := Standard_DSDP_Interface PHE.
 
 Lemma std_from_enc_e (x : phe_enc PHE) : 

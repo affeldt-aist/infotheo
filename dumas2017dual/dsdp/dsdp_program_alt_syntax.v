@@ -72,8 +72,8 @@ Local Open Scope dsdp_scope.
 
 Section dsdp.
 
-(* Parameterize by a Party_HE_scheme instance *)
-Variable PHE : Party_HE_scheme.
+(* Parameterize by a Party_AHE_scheme instance *)
+Variable PHE : Party_AHE_scheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface PHE.
@@ -95,8 +95,8 @@ Let k := di_k DI.
 Let E := @phe_E PHE.
 Let K := @phe_K PHE.
 Let D := @phe_D PHE.
-Let Emul := @phe_Emul PHE.
-Let Epow := @phe_Epow PHE.
+Let Emul := @pahe_Emul PHE.
+Let Epow := @pahe_Epow PHE.
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).

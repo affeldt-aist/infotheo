@@ -40,8 +40,8 @@ Local Definition R := Rdefinitions.R.
 
 Section dsdp_correctness.
 
-(* Parameterize by a Party_HE_scheme instance *)
-Variable PHE : Party_HE_scheme.
+(* Parameterize by a Party_AHE_scheme instance *)
+Variable PHE : Party_AHE_scheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface PHE.
@@ -65,8 +65,8 @@ Let Recv_enc {n} := @di_Recv_enc PHE DI n.
 Let E := @phe_E PHE.
 Let K := @phe_K PHE.
 Let D := @phe_D PHE.
-Let Emul := @phe_Emul PHE.
-Let Epow := @phe_Epow PHE.
+Let Emul := @pahe_Emul PHE.
+Let Epow := @pahe_Epow PHE.
 
 Notation "u *h w" := (Emul u w) (at level 40).
 Notation "u ^h w" := (Epow u w) (at level 40).
@@ -93,16 +93,16 @@ Hypothesis D_correct : forall p m r k,
 
 (* Both dsdp_program.v and dsdp_program_alt_syntax.v define the same programs
    (with same signatures and semantics) when instantiated with the same 
-   Party_HE_scheme and party variables. The equivalence can be verified 
+   Party_AHE_scheme and party variables. The equivalence can be verified 
    by checking definitions match after section instantiation. *)
 
 (******************************************************************************)
 (** * Algebraic Correctness Proof                                              *)
 (******************************************************************************)
 
-(* The homomorphic properties from Party_HE_scheme *)
-Let Emul_eq_add := @phe_Emul_eq_add PHE.
-Let Epow_eq_mul := @phe_Epow_eq_mul PHE.
+(* The homomorphic properties from Party_AHE_scheme *)
+Let Emul_eq_add := @pahe_Emul_addE PHE.
+Let Epow_eq_mul := @pahe_Epow_mulM PHE.
 
 (* Message and randomness variables *)
 Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
