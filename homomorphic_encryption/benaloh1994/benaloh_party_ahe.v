@@ -281,8 +281,6 @@ Definition benaloh_phe_D (dk : benaloh_pkey) (e : party * 'Z_n) : option 'Z_r :=
     if (i == j) && (k == Dec) then Some (benaloh_decrypt c) else None
   end.
 
-Definition benaloh_phe_msg_nat (m : 'Z_r) : nat := m.
-
 (* Decryption correctness - proved using the Benaloh decryption algorithm.
    Uses rand_coprime_n assumption: randomness is a unit in Z_n. *)
 Lemma benaloh_phe_dec_correct : forall (p : party) (m : 'Z_r) (u : 'Z_n) (sk : 'Z_r),
@@ -301,7 +299,7 @@ Qed.
 
 HB.instance Definition Benaloh_isPartyHE_EncDec : isPartyHE_EncDec Benaloh_Party_HE_types := 
   @isPartyHE_EncDec.Build Benaloh_Party_HE_types 
-    benaloh_phe_E benaloh_phe_K benaloh_phe_D benaloh_phe_msg_nat
+    benaloh_phe_E benaloh_phe_K benaloh_phe_D
     benaloh_phe_dec_correct.
 
 (* ========================================================================== *)
@@ -319,23 +317,26 @@ Definition benaloh_pahe_Epow (e : party * 'Z_n) (m : 'Z_r) : (party * 'Z_n) :=
   let (p, c) := e in
   (p, c ^+ (m : nat)).
 
+(* Randomness exponentiation by message: r ^^ m *)
+Definition benaloh_pahe_rand_pow (u : 'Z_n) (m : 'Z_r) : 'Z_n := u ^+ (m : nat).
+
 (* -------------------------------------------------------------------------- *)
 (*  Local notations for compact {morph} syntax                                *)
 (* -------------------------------------------------------------------------- *)
 (* These notations make the morphism statements readable:
-   {morph E_ p : x y / x +mr y >-> x *E y}
+   {morph E[ p ] : x y / x +mr y >-> x *E y}
    expands to:
    morphism_2 (phe_E_curry Benaloh_Party_HE_types p)
               (msg_rand_add Benaloh_Party_HE_types)
               benaloh_pahe_Emul *)
 Local Notation BT := Benaloh_Party_HE_types.
-Local Notation "E_ p" := (phe_E_curry BT p) (at level 10).
+Local Notation "E[ p ]" := (phe_E_curry BT p) (at level 10, p at level 9).
 Local Notation "x +mr y" := (msg_rand_add BT x y) (at level 50, left associativity).
 Local Notation "x *E y" := (benaloh_pahe_Emul x y) (at level 40, left associativity).
 
-(* Additive homomorphism proof using {morph} notation *)
+(* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) *)
 Lemma benaloh_pahe_Emul_addM : forall (p : party),
-  {morph E_ p : x y / x +mr y >-> x *E y}.
+  {morph E[ p ] : x y / x +mr y >-> x *E y}.
 Proof.
   move=> p [m1 u1] [m2 u2].
   rewrite /phe_E_curry /msg_rand_add /benaloh_pahe_Emul /=.
@@ -348,10 +349,10 @@ Qed.
 (* Scalar multiplication homomorphism proof *)
 Lemma benaloh_pahe_Epow_mulM : forall (p : party) (m1 m2 : 'Z_r) (u : 'Z_n),
   benaloh_pahe_Epow (benaloh_phe_E p m1 u) m2 
-    = benaloh_phe_E p (m1 * m2) (u ^+ benaloh_phe_msg_nat m2).
+    = benaloh_phe_E p (m1 * m2) (benaloh_pahe_rand_pow u m2).
 Proof.
   move=> p m1 m2 u.
-  rewrite /benaloh_pahe_Epow /benaloh_phe_E /benaloh_phe_msg_nat /=.
+  rewrite /benaloh_pahe_Epow /benaloh_phe_E /benaloh_pahe_rand_pow /=.
   congr pair.
   rewrite (@benaloh_enc.enc_exp_dist n r r_gt1 y y_order_r m1 (m2 : nat) u).
   congr (benaloh_enc y _ _).
@@ -364,7 +365,7 @@ Qed.
 
 HB.instance Definition Benaloh_isPartyAHE_HomoOps : isPartyAHE_HomoOps Benaloh_Party_HE_types := 
   @isPartyAHE_HomoOps.Build Benaloh_Party_HE_types 
-    benaloh_pahe_Emul benaloh_pahe_Epow
+    benaloh_pahe_Emul benaloh_pahe_Epow benaloh_pahe_rand_pow
     benaloh_pahe_Emul_addM benaloh_pahe_Epow_mulM.
 
 (* ========================================================================== *)

@@ -12,13 +12,14 @@
 (*                                                                            *)
 (* == Operations ==                                                           *)
 (*                                                                            *)
-(*   pahe_Emul : enc -> enc -> enc     (homomorphic addition via mult)        *)
-(*   pahe_Epow : enc -> msg -> enc     (homomorphic scalar mult via power)    *)
+(*   pahe_Emul     : enc -> enc -> enc     (homomorphic addition via mult)    *)
+(*   pahe_Epow     : enc -> msg -> enc     (homomorphic scalar mult via pow)  *)
+(*   pahe_rand_pow : rand -> msg -> rand   (randomness exponentiation by msg) *)
 (*                                                                            *)
 (* == Properties (using mathcomp's morphism_2) ==                             *)
 (*                                                                            *)
 (*   pahe_Emul_addM : morphism_2 (phe_E_curry p) msg_rand_add pahe_Emul       *)
-(*   pahe_Epow_mulM : Epow(E(p,m1,r), m2) = E(p, m1*m2, r^(m2:nat))           *)
+(*   pahe_Epow_mulM : Epow(E(p,m1,r), m2) = E(p, m1*m2, rand_pow r m2)        *)
 (*                                                                            *)
 (* == Helper Definitions ==                                                   *)
 (*                                                                            *)
@@ -81,6 +82,11 @@ HB.mixin Record isPartyAHE_HomoOps (T : Party_HE_types) of isPartyHE_EncDec T :=
   (* Homomorphic scalar multiplication: ciphertext power = plaintext scalar mult *)
   pahe_Epow : phe_enc T -> phe_msg T -> phe_enc T ;
   
+  (* Randomness exponentiation by message: r ^^ m
+     Abstracts the operation of raising randomness to a message power.
+     For concrete schemes, this is typically r ^+ (m : nat). *)
+  pahe_rand_pow : phe_rand T -> phe_msg T -> phe_rand T ;
+  
   (* Additive homomorphism using mathcomp's morphism_2:
      For each party p, phe_E_curry p is a morphism from 
      (msg*rand, msg_rand_add) to (enc, pahe_Emul).
@@ -92,9 +98,9 @@ HB.mixin Record isPartyAHE_HomoOps (T : Party_HE_types) of isPartyHE_EncDec T :=
     morphism_2 (phe_E_curry T p) (msg_rand_add T) pahe_Emul ;
     
   (* Scalar multiplication homomorphism:
-     Epow(E(p,m1,r), m2) = E(p, m1*m2, r^(m2:nat)) *)
+     Epow(E(p,m1,r), m2) = E(p, m1*m2, r ^^ m2) *)
   pahe_Epow_mulM : forall (p : phe_party T) (m1 m2 : phe_msg T) (r : phe_rand T),
-    pahe_Epow (phe_E p m1 r) m2 = phe_E p (m1 * m2) (r ^+ phe_msg_nat m2)
+    pahe_Epow (phe_E p m1 r) m2 = phe_E p (m1 * m2) (pahe_rand_pow r m2)
 }.
 
 #[short(type=Party_AHE_HomoOps_scheme)]

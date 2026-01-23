@@ -189,8 +189,6 @@ Definition paillier_phe_D (dk : paillier_pkey) (e : party * 'Z_n2) : option 'Z_n
     if (i == j) && (k == Dec) then Some (paillier_decrypt c) else None
   end.
 
-Definition paillier_phe_msg_nat (m : 'Z_n) : nat := m.
-
 (* Decryption correctness - proved using the Paillier decryption algorithm *)
 Lemma paillier_phe_dec_correct : forall (p : party) (m : 'Z_n) (r : 'Z_n2) (sk : 'Z_n),
   paillier_phe_D (paillier_phe_K p Dec sk) (paillier_phe_E p m r) = Some m.
@@ -208,7 +206,7 @@ Qed.
 
 HB.instance Definition Paillier_isPartyHE_EncDec : isPartyHE_EncDec Paillier_Party_HE_types := 
   @isPartyHE_EncDec.Build Paillier_Party_HE_types 
-    paillier_phe_E paillier_phe_K paillier_phe_D paillier_phe_msg_nat
+    paillier_phe_E paillier_phe_K paillier_phe_D
     paillier_phe_dec_correct.
 
 (* ========================================================================== *)
@@ -226,23 +224,26 @@ Definition paillier_pahe_Epow (e : party * 'Z_n2) (m : 'Z_n) : (party * 'Z_n2) :
   let (p, c) := e in
   (p, c ^+ (m : nat)).
 
+(* Randomness exponentiation by message: r ^^ m *)
+Definition paillier_pahe_rand_pow (r : 'Z_n2) (m : 'Z_n) : 'Z_n2 := r ^+ (m : nat).
+
 (* -------------------------------------------------------------------------- *)
 (*  Local notations for compact {morph} syntax                                *)
 (* -------------------------------------------------------------------------- *)
 (* These notations make the morphism statements readable:
-   {morph E_ p : x y / x +mr y >-> x *E y}
+   {morph E[ p ] : x y / x +mr y >-> x *E y}
    expands to:
    morphism_2 (phe_E_curry Paillier_Party_HE_types p)
               (msg_rand_add Paillier_Party_HE_types)
               paillier_pahe_Emul *)
 Local Notation PT := Paillier_Party_HE_types.
-Local Notation "E_ p" := (phe_E_curry PT p) (at level 10).
+Local Notation "E[ p ]" := (phe_E_curry PT p) (at level 10, p at level 9).
 Local Notation "x +mr y" := (msg_rand_add PT x y) (at level 50, left associativity).
 Local Notation "x *E y" := (paillier_pahe_Emul x y) (at level 40, left associativity).
 
-(* Additive homomorphism proof using {morph} notation *)
+(* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) *)
 Lemma paillier_pahe_Emul_addM : forall (p : party),
-  {morph E_ p : x y / x +mr y >-> x *E y}.
+  {morph E[ p ] : x y / x +mr y >-> x *E y}.
 Proof.
   move=> p [m1 r1] [m2 r2].
   rewrite /phe_E_curry /msg_rand_add /paillier_pahe_Emul /=.
@@ -255,10 +256,10 @@ Qed.
 (* Scalar multiplication homomorphism proof *)
 Lemma paillier_pahe_Epow_mulM : forall (p : party) (m1 m2 : 'Z_n) (r : 'Z_n2),
   paillier_pahe_Epow (paillier_phe_E p m1 r) m2 
-    = paillier_phe_E p (m1 * m2) (r ^+ paillier_phe_msg_nat m2).
+    = paillier_phe_E p (m1 * m2) (paillier_pahe_rand_pow r m2).
 Proof.
   move=> p m1 m2 r.
-  rewrite /paillier_pahe_Epow /paillier_phe_E /paillier_phe_msg_nat /=.
+  rewrite /paillier_pahe_Epow /paillier_phe_E /paillier_pahe_rand_pow /=.
   congr pair.
   rewrite (@paillier_enc.enc_exp_dist n n_gt1 g g_order_n m1 (m2 : nat) r).
   congr (paillier_enc g _ _).
@@ -271,7 +272,7 @@ Qed.
 
 HB.instance Definition Paillier_isPartyAHE_HomoOps : isPartyAHE_HomoOps Paillier_Party_HE_types := 
   @isPartyAHE_HomoOps.Build Paillier_Party_HE_types 
-    paillier_pahe_Emul paillier_pahe_Epow
+    paillier_pahe_Emul paillier_pahe_Epow paillier_pahe_rand_pow
     paillier_pahe_Emul_addM paillier_pahe_Epow_mulM.
 
 (* ========================================================================== *)

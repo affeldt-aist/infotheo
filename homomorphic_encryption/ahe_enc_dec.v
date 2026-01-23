@@ -14,7 +14,6 @@
 (*   phe_E : party -> msg -> rand -> enc    (encryption)                      *)
 (*   phe_K : party -> key -> msg -> pkey    (key generation)                  *)
 (*   phe_D : pkey -> enc -> option msg      (decryption)                      *)
-(*   phe_msg_nat : msg -> nat               (message to nat conversion)       *)
 (*                                                                            *)
 (* == Properties ==                                                           *)
 (*                                                                            *)
@@ -56,9 +55,6 @@ HB.mixin Record isPartyHE_EncDec (T : Party_HE_types) := {
   
   (* Decryption: party key -> ciphertext -> optional message *)
   phe_D : phe_pkey T -> phe_enc T -> option (phe_msg T) ;
-  
-  (* Message to nat conversion for exponentiation r ^+ phe_msg_nat m *)
-  phe_msg_nat : phe_msg T -> nat ;
   
   (* Decryption correctness: decrypting an encryption yields the message.
      Note: For concrete instances (Benaloh, Paillier), this may require
