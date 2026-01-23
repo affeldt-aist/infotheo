@@ -82,7 +82,7 @@ Let smc_scalar_product_procs := smc_procs dotproduct sa sb ra yb xa xb.
 (* With fuel-indexed proc, the result has aproc (packed processes) *)
 Lemma smc_scalar_product_ok :
   smc_scalar_product dotproduct sa sb ra yb xa xb smc_max_fuel =
-  ([:: pack Finish; pack Finish; pack Finish],
+  ([:: Finish; Finish; Finish],
    [:: [:: one ya;
            one t;
            vec xb';

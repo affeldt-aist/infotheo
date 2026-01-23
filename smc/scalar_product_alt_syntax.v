@@ -89,16 +89,16 @@ Definition vec x : data := inr x.
 
 (* Local wrappers for proc constructors to work around ssreflect syntax *)
 (* Now fuel-indexed *)
-Definition PInit {n} (x : data) (p : proc data n) : proc data n.+1 := Init x p.
-Definition PSend {n} (party : nat) (x : data) (p : proc data n) : proc data n.+1 := Send party x p.
-Definition PRecv {n} (party : nat) (f : data -> proc data n) : proc data n.+1 := Recv party f.
-Definition PRet (x : data) : proc data 2 := Ret x.
+Definition PInit {n} (x : data) (p : sproc data n) : sproc data n.+1 := sInit x p.
+Definition PSend {n} (party : nat) (x : data) (p : sproc data n) : sproc data n.+1 := sSend party x p.
+Definition PRecv {n} (party : nat) (f : data -> sproc data n) : sproc data n.+1 := sRecv party f.
+Definition PRet (x : data) : sproc data 2 := sRet x.
 
 (* Specialized receive operations - fuel-indexed *)
-Definition Recv_one {n} frm (f : TX -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => if x is inl v then f v else Fail).
-Definition Recv_vec {n} frm (f : VX -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => if x is inr v then f v else Fail).
+Definition Recv_one {n} frm (f : TX -> sproc data n) : sproc data n.+1 :=
+  sRecv frm (fun x => if x is inl v then f v else sFail).
+Definition Recv_vec {n} frm (f : VX -> sproc data n) : sproc data n.+1 :=
+  sRecv frm (fun x => if x is inr v then f v else sFail).
 
 (** * Data wrapper shorthand notations *)
 
@@ -110,14 +110,14 @@ Notation "& x" := (vec x) (at level 0, x at level 0) : smc_scope.
 (** * Basic custom syntax notations *)
 
 (* Finish - terminal state *)
-Notation "'Finish'" := Finish (in custom smc at level 0).
+Notation "'Finish'" := sFinish (in custom smc at level 0).
 
 (* Ret - return a value *)
 Notation "'Ret' x" := (PRet x) 
   (in custom smc at level 80, x constr at level 0).
 
 (* Fail - error state *)  
-Notation "'Fail'" := Fail (in custom smc at level 0).
+Notation "'Fail'" := sFail (in custom smc at level 0).
 
 (** * Sequencing with · (middle dot) or ; (semicolon as ASCII fallback) *)
 
@@ -244,7 +244,7 @@ Notation "x" := x (in custom smc at level 0, x ident).
 
 (* Commodity server's protocol - Unicode version *)
 (* Fuel automatically inferred *)
-Definition pcoserv (sa sb: VX) (ra : TX) : proc data _ :=
+Definition pcoserv (sa sb: VX) (ra : TX) : sproc data _ :=
   {| Init &sa　&sb　!ra ·
      Send⟨alice⟩ &sa ·
      Send⟨alice⟩ !ra ·
@@ -253,7 +253,7 @@ Definition pcoserv (sa sb: VX) (ra : TX) : proc data _ :=
      Finish |}.
 
 (* Alice's protocol - Unicode version *)
-Definition palice (xa : VX) : proc data _ :=
+Definition palice (xa : VX) : sproc data _ :=
   {| Init &xa ·
      Recv_vec⟨coserv⟩ λ sa ·
      Recv_one⟨coserv⟩ λ ra ·
@@ -263,7 +263,7 @@ Definition palice (xa : VX) : proc data _ :=
      Ret !(t - (xb' *d sa) + ra) |}.
 
 (* Bob's protocol - Unicode version *)
-Definition pbob (xb : VX) (yb : TX) : proc data _ :=
+Definition pbob (xb : VX) (yb : TX) : sproc data _ :=
   {| Init &xb　!yb ·
      Recv_vec⟨coserv⟩ λ sb ·
      Recv_one⟨coserv⟩ λ rb ·
@@ -277,7 +277,7 @@ Definition pbob (xb : VX) (yb : TX) : proc data _ :=
 (******************************************************************************)
 
 (* Commodity server's protocol - ASCII version *)
-Definition pcoserv_ascii (sa sb: VX) (ra : TX) : proc data _ :=
+Definition pcoserv_ascii (sa sb: VX) (ra : TX) : sproc data _ :=
   {| Init (&sa, &sb, !ra) ;
      Send<alice> &sa ;
      Send<alice> !ra ;
@@ -286,7 +286,7 @@ Definition pcoserv_ascii (sa sb: VX) (ra : TX) : proc data _ :=
      Finish |}.
 
 (* Alice's protocol - ASCII version *)
-Definition palice_ascii (xa : VX) : proc data _ :=
+Definition palice_ascii (xa : VX) : sproc data _ :=
   {| Init &xa ;
      Recv_vec<coserv> fun sa =>
      Recv_one<coserv> fun ra =>
@@ -296,7 +296,7 @@ Definition palice_ascii (xa : VX) : proc data _ :=
      Ret !(t - (xb' *d sa) + ra) |}.
 
 (* Bob's protocol - ASCII version *)
-Definition pbob_ascii (xb : VX) (yb : TX) : proc data _ :=
+Definition pbob_ascii (xb : VX) (yb : TX) : sproc data _ :=
   {| Init (&xb, !yb) ;
      Recv_vec<coserv> fun sb =>
      Recv_one<coserv> fun rb =>
@@ -325,7 +325,7 @@ Local Close Scope smc_scope.
 Lemma pcoserv_eq sa sb ra : pcoserv sa sb ra = 
   PInit (vec sa) (PInit (vec sb) (PInit (one ra)
     (PSend alice (vec sa) (PSend alice (one ra)
-      (PSend bob (vec sb) (PSend bob (one (sa *d sb - ra)) Finish)))))).
+      (PSend bob (vec sb) (PSend bob (one (sa *d sb - ra)) sFinish)))))).
 Proof. reflexivity. Qed.
 
 (* Verify palice expands correctly *)

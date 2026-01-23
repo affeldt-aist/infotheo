@@ -44,61 +44,79 @@ Section interp.
 Variable data : Type.
 
 (* Fuel-indexed process type: fuel is computed by type inference *)
-Inductive proc : nat -> Type :=
-  | Init : forall n, data -> proc n -> proc n.+1
-  | Send : forall n, nat -> data -> proc n -> proc n.+1
-  | Recv : forall n, nat -> (data -> proc n) -> proc n.+1
-  | Ret : data -> proc 2
-  | Finish : proc 1
-  | Fail : forall n, proc n.
+Inductive sproc : nat -> Type :=
+  | sInit : forall n, data -> sproc n -> sproc n.+1
+  | sSend : forall n, nat -> data -> sproc n -> sproc n.+1
+  | sRecv : forall n, nat -> (data -> sproc n) -> sproc n.+1
+  | sRet : data -> sproc 2
+  | sFinish : sproc 1
+  | sFail : forall n, sproc n.
 
 (* Existential wrapper for heterogeneous process lists *)
-Definition aproc := { n : nat & proc n }.
+Definition aproc := {n: nat & sproc n}.
+
+(* Dynamic version *)
+Inductive proc :=
+  | Init : data -> proc -> proc
+  | Send : nat -> data -> proc -> proc
+  | Recv : nat -> (data -> proc) -> proc
+  | Ret : data -> proc
+  | Finish : proc
+  | Fail : proc.
+
+Fixpoint as_proc n (p : sproc n) :=
+  match p with
+  | sInit m x p => Init x (as_proc p)
+  | sSend m i x p => Send i x (as_proc p)
+  | sRecv m i p => Recv i (fun x => as_proc (p x))
+  | sRet x => Ret x
+  | sFinish => Finish
+  | sFail _ => Fail
+  end.
 
 (* Extract fuel from packed process *)
 Definition get_fuel (p : aproc) : nat := projT1 p.
 
 (* Extract process from packed process *)
-Definition get_proc (p : aproc) : proc (get_fuel p) := projT2 p.
+Definition get_sproc (p : aproc) : sproc (get_fuel p) := projT2 p.
+Definition get_proc (p : aproc) := as_proc (get_sproc p).
 
 (* Pack a process into aproc *)
-Definition pack {n} (p : proc n) : aproc := existT _ n p.
+Definition pack {n} (p : sproc n) : aproc := existT _ n p.
 
 (* Default packed process (Fail at fuel 0) *)
-Definition default_aproc : aproc := pack (@Fail 0).
+Definition default_aproc : aproc := pack (@sFail 0).
 
 (* Compute sum of all fuels - used as interpreter fuel *)
 Definition sum_fuel (ps : seq aproc) : nat := 
   foldr (fun p acc => get_fuel p + acc) 0 ps.
 
-(* Step function for aproc *)
-Definition step (ps : seq aproc) (trace : seq data) (i : nat) :=
-  let p := nth default_aproc ps i in
+(* Step function for normal proc *)
+Definition step (ps : seq proc) (trace : seq data) (i : nat) :=
+  let p := nth Fail ps i in
   let nop := (p, trace, false) in
-  match get_proc p in proc n return (aproc * seq data * bool) with
-  | @Recv n frm f =>
-      match get_proc (nth default_aproc ps frm) in proc m 
-            return (aproc * seq data * bool) with
-      | @Send m dst v next => 
-          if dst == i then (pack (f v), v::trace, true) else nop
+  match p with
+  | Recv frm f =>
+      match nth Fail ps frm with
+      | Send dst v next => 
+          if dst == i then (f v, v::trace, true) else nop
       | _ => nop
       end
-  | @Send n dst w next =>
-      match get_proc (nth default_aproc ps dst) in proc m
-            return (aproc * seq data * bool) with
-      | @Recv m frm f =>
-          if frm == i then (pack next, trace, true) else nop
+  | Send dst w next =>
+      match nth Fail ps dst with
+      | Recv frm f =>
+          if frm == i then (next, trace, true) else nop
       | _ => nop
       end
-  | @Init n d next =>
-      (pack next, d::trace, true)
+  | Init d next =>
+      (next, d::trace, true)
   | Ret d =>
-      (pack Finish, d :: trace, true)
+      (Finish, d :: trace, true)
   | Finish => nop
-  | @Fail n => nop
+  | Fail => nop
   end.
 
-Fixpoint interp h (ps : seq aproc) (traces : seq (seq data)) :=
+Fixpoint interp h (ps : seq proc) (traces : seq (seq data)) :=
   if h is h.+1 then
     let ps_trs' := [seq step ps (nth [::] traces i) i
                    | i <- iota 0 (size ps)] in
@@ -128,7 +146,6 @@ Lemma map_extract n m A B (l : lens n m) (f : A -> B) v :
   map_tuple f (extract l v) = extract l (map_tuple f v).
 Proof. by apply: eq_from_tnth => i; rewrite !tnth_map. Qed.
 
-(*
 Inductive rred {n} : forall {m},lens n m ->
       m.-tuple proc -> m.-tuple proc -> m.-tuple (seq data) -> Prop :=
   | rinit i x p : rred [tuple i] [tuple Init x p] [tuple p] [tuple [:: x]]
@@ -308,21 +325,28 @@ case Hpi: (ps !_ i) => [x p | j x p | j p | x ||].
   + exact: Hpss.
 (* remaining cases are similar, but we need to find a shorted way *)
 Abort.
-*)
 End interp.
 
 Arguments Finish {data}.
-Arguments Fail {data n}.
-Arguments Init {data n}.
-Arguments Send {data n}.
-Arguments Recv {data n}.
+Arguments Fail {data}.
+Arguments Init {data}.
+Arguments Send {data}.
+Arguments Recv {data}.
+Arguments get_proc {data}.
+
+Arguments as_proc {data n}.
 Arguments pack {data n}.
+Arguments sFinish {data}.
+Arguments sFail {data n}.
+Arguments sInit {data n}.
+Arguments sSend {data n}.
+Arguments sRecv {data n}.
 
 Section traces.
 Variable data : eqType.
 Local Open Scope nat_scope.
 
-Lemma size_traces h (procs : seq (aproc data)) :
+Lemma size_traces h (procs : seq (proc data)) :
   forall s, s \in (run_interp h procs).2 -> size s <= h.
 Proof.
 clear.
@@ -353,17 +377,17 @@ have Hsz : size (nth [::] traces i) < k - h.
   by rewrite leqNgt.
 set p := nth _ _ _.
 (* Case on process type - 6 constructors: Init, Send, Recv, Ret, Finish, Fail *)
-case: (get_proc p) => [n1 d1 p1|n1 dst1 d1 p1|n1 frm1 f1|d1||n1] /=.
+case: p => [d1 p1|dst1 d1 p1|frm1 f1|d1||] /=.
 (* Init: s = d1 :: nth... -> size s <= k - h *)
 - by move=> ->; exact Hsz.
 (* Send: nested match on destination *)
 - move=> ->.
-  case: (get_proc _) => [n2 d2 p2|n2 dst2 d2 p2|n2 frm2 f2|d2||n2] /=;
+  case: nth => [d2 p2|dst2 d2 p2|frm2 f2|d2||] /=;
     try exact (ltnW Hsz).
   by case: ifP => _ /=; exact (ltnW Hsz).
 (* Recv: nested match on source *)
 - move=> ->.
-  case: (get_proc _) => [n2 d2 p2|n2 dst2 d2 p2|n2 frm2 f2|d2||n2] /=;
+  case: nth => [d2 p2|dst2 d2 p2|frm2 f2|d2||] /=;
     try exact (ltnW Hsz).
   by case: ifP => _ /=; [exact Hsz | exact (ltnW Hsz)].
 (* Ret: s = d1 :: nth... -> size s <= k - h *)
@@ -374,7 +398,7 @@ case: (get_proc p) => [n1 d1 p1|n1 dst1 d1 p1|n1 frm1 f1|d1||n1] /=.
 - by move=> ->; exact (ltnW Hsz).
 Qed.
 
-Lemma size_interp h (procs : seq (aproc data)) (traces : seq (seq data)) :
+Lemma size_interp h (procs : seq (proc data)) (traces : seq (seq data)) :
   size procs = size traces ->
   size (interp h procs traces).1 = size procs /\
   size (interp h procs traces).2 = size procs.
@@ -390,7 +414,7 @@ move=> -> ->.
 by rewrite !size_map size_iota.
 Qed.
 
-Lemma size_traces_nth h (procs : seq (aproc data)) (i : 'I_(size procs)) :
+Lemma size_traces_nth h (procs : seq (proc data)) (i : 'I_(size procs)) :
   (size (nth [::] (run_interp h procs).2 i) <= h)%N.
 Proof.
 by apply/size_traces/mem_nth; rewrite (size_interp _ _).2 // size_nseq.
@@ -431,15 +455,15 @@ Section termination.
 Variable data : Type.
 
 (* Check if a process is in a final state (Finish or Fail) *)
-Definition is_final (p : aproc data) : bool :=
-  match get_proc p with
+Definition is_final (p : proc data) : bool :=
+  match p with
   | Finish => true
-  | @Fail _ _ => true
+  | Fail => true
   | _ => false
   end.
 
 (* Check if all processes in a list are in final states *)
-Definition all_final (ps : seq (aproc data)) : bool :=
+Definition all_final (ps : seq (proc data)) : bool :=
   all is_final ps.
 
 End termination.

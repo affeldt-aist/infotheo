@@ -60,39 +60,39 @@ Definition one x : data := inl x.
 Definition vec x : data := inr x.
 
 (* Recv wrappers for fuel-indexed proc type *)
-Definition Recv_one {n} frm (f : TX -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => if x is inl v then f v else Fail).
-Definition Recv_vec {n} frm (f : VX -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => if x is inr v then f v else Fail).
+Definition Recv_one {n} frm (f : TX -> sproc data n) : sproc data n.+1 :=
+  sRecv frm (fun x => if x is inl v then f v else sFail).
+Definition Recv_vec {n} frm (f : VX -> sproc data n) : sproc data n.+1 :=
+  sRecv frm (fun x => if x is inr v then f v else sFail).
 
 (* Fuel is automatically inferred via _ *)
-Definition pcoserv (sa sb: VX) (ra : TX) : proc data _ :=
-  Init (vec sa) (
-  Init (vec sb) (
-  Init (one ra) (
-  Send alice (vec sa) (
-  Send alice (one ra) (
-  Send bob (vec sb) (
-  Send bob (one (sa *d sb - ra)) Finish)))))).
+Definition pcoserv (sa sb: VX) (ra : TX) : sproc data _ :=
+  sInit (vec sa) (
+  sInit (vec sb) (
+  sInit (one ra) (
+  sSend alice (vec sa) (
+  sSend alice (one ra) (
+  sSend bob (vec sb) (
+  sSend bob (one (sa *d sb - ra)) sFinish)))))).
 
-Definition palice (xa : VX) : proc data _ :=
-  Init (vec xa) (
+Definition palice (xa : VX) : sproc data _ :=
+  sInit (vec xa) (
   Recv_vec coserv (fun sa =>
   Recv_one coserv (fun ra =>
-  Send bob (vec (xa + sa)) (
+  sSend bob (vec (xa + sa)) (
   Recv_vec bob (fun xb' =>
   Recv_one bob (fun t =>
-  Ret (one (t - (xb' *d sa) + ra)))))))).
+  sRet (one (t - (xb' *d sa) + ra)))))))).
 
-Definition pbob (xb : VX) (yb : TX) : proc data _ :=
-  Init (vec xb) (
-  Init (one yb) (
+Definition pbob (xb : VX) (yb : TX) : sproc data _ :=
+  sInit (vec xb) (
+  sInit (one yb) (
   Recv_vec coserv (fun sb =>
   Recv_one coserv (fun rb =>
   Recv_vec alice (fun xa' =>
   let t := xa' *d xb + rb - yb in
-    Send alice (vec (xb + sb))
-    (Send alice (one t) (Ret (one yb)))))))).
+    sSend alice (vec (xb + sb))
+    (sSend alice (one t) (sRet (one yb)))))))).
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 
@@ -101,7 +101,7 @@ Definition smc_procs : seq (aproc data) :=
   [procs palice xa; pbob xb yb; pcoserv sa sb ra].
 
 Definition smc_scalar_product h :=
-  interp h smc_procs (nseq 3 [::]).
+  interp h (map get_proc smc_procs) (nseq 3 [::]).
 
 (* Fuel bound computed from program structure: 8 + 9 + 8 = 25
    - palice: 8 (Init + 2*Recv + Send + 2*Recv + Ret=2)
@@ -114,7 +114,7 @@ Lemma smc_max_fuel_ok : smc_max_fuel = [> smc_procs].
 Proof. reflexivity. Qed.
 
 Definition smc_scalar_product_traces :=
-  interp_traces [> smc_procs] smc_procs.
+  interp_traces [> smc_procs] (map get_proc smc_procs).
 
 Definition smc_scalar_product_tracesT := smc_max_fuel.-bseq data.
 
