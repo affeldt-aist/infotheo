@@ -8,7 +8,8 @@
 (* == Architecture ==                                                         *)
 (*                                                                            *)
 (*   Party_AHE structure (defined using Hierarchy Builder):                   *)
-(*   - Party_HE_types bundles: phe_party, phe_msg, phe_rand, phe_enc, phe_pkey*)
+(*   - Party_HE_types bundles: phe_party, phe_msg, phe_rand, phe_cipher,      *)
+(*                             phe_enc, phe_pkey                              *)
 (*   - isPartyHE_EncDec mixin: phe_E, phe_D, phe_K, dec_correct               *)
 (*   - isPartyAHE_HomoOps mixin: pahe_Emul, pahe_Epow, morphism_2 properties  *)
 (*   - isPartyAHE_Algebra mixin: assoc, comm, id properties                   *)
@@ -268,12 +269,12 @@ Section enc_lemmas.
 Context {R : realType}.
 Variables (T : finType)(P : R.-fdist T).
 
-Axiom E_enc_unif : forall (T : finType) (P : R.-fdist T)
+Hypothesis E_enc_unif : forall (T : finType) (P : R.-fdist T)
  (A : finType) (p : party) (X : {RV P -> p.-enc A}) (n : nat)
  (card_A : #|A| = n.+1),
    `p_X = fdist_uniform (card_enc_for' p card_A).
 
-Axiom E_enc_inde : forall (A B : finType) (p : party)
+Hypothesis E_enc_inde : forall (A B : finType) (p : party)
   (X : {RV P -> p.-enc A}) (Y : {RV P -> B}),
   P |= X _|_ Y.
 (* TODO: what if B is (p.-enc A) ? Whether we need a way to

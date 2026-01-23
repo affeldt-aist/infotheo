@@ -167,7 +167,7 @@ Definition paillier_pkey := (party * key * 'Z_n)%type.
 (* ========================================================================== *)
 
 Definition Paillier_Party_HE_types : Party_HE_types := 
-  MkPartyHE party 'Z_n 'Z_n2 (party * 'Z_n2)%type paillier_pkey.
+  MkPartyHE party 'Z_n 'Z_n2 'Z_n2 (party * 'Z_n2)%type paillier_pkey.
 
 (* ========================================================================== *)
 (*                   Encryption/Decryption Operations                          *)
@@ -307,14 +307,16 @@ Proof.
   reflexivity.
 Qed.
 
-(* Note: Full commutativity (Emul e1 e2 = Emul e2 e1) does NOT hold because
-   the party label comes from the first argument. However, the ciphertext
-   part does commute. We prove this weaker property for reference. *)
+(* Cipher extraction: extracts the raw ciphertext without party label *)
+Definition paillier_pahe_enc_cipher (e : party * 'Z_n2) : 'Z_n2 := e.2.
+
+(* Cipher-level commutativity: the raw ciphertext part commutes *)
 Lemma paillier_pahe_Emul_comm_cipher : forall (e1 e2 : party * 'Z_n2),
-  (paillier_pahe_Emul e1 e2).2 = (paillier_pahe_Emul e2 e1).2.
+  paillier_pahe_enc_cipher (paillier_pahe_Emul e1 e2) = 
+  paillier_pahe_enc_cipher (paillier_pahe_Emul e2 e1).
 Proof.
   move=> [p1 c1] [p2 c2].
-  rewrite /paillier_pahe_Emul /=.
+  rewrite /paillier_pahe_enc_cipher /paillier_pahe_Emul /=.
   apply mulrC.
 Qed.
 
@@ -334,6 +336,7 @@ Qed.
 
 HB.instance Definition Paillier_isPartyAHE_Algebra : isPartyAHE_Algebra Paillier_Party_HE_types := 
   @isPartyAHE_Algebra.Build Paillier_Party_HE_types 
-    paillier_pahe_Emul_assoc paillier_pahe_rand_unit paillier_pahe_Emul_id.
+    paillier_pahe_Emul_assoc paillier_pahe_rand_unit paillier_pahe_Emul_id
+    paillier_pahe_enc_cipher paillier_pahe_Emul_comm_cipher.
 
 End Paillier_Party_AHE.

@@ -259,7 +259,7 @@ Definition benaloh_pkey := (party * key * 'Z_r)%type.
 (* ========================================================================== *)
 
 Definition Benaloh_Party_HE_types : Party_HE_types := 
-  MkPartyHE party 'Z_r 'Z_n (party * 'Z_n)%type benaloh_pkey.
+  MkPartyHE party 'Z_r 'Z_n 'Z_n (party * 'Z_n)%type benaloh_pkey.
 
 (* ========================================================================== *)
 (*                   Encryption/Decryption Operations                          *)
@@ -400,14 +400,16 @@ Proof.
   reflexivity.
 Qed.
 
-(* Note: Full commutativity (Emul e1 e2 = Emul e2 e1) does NOT hold because
-   the party label comes from the first argument. However, the ciphertext
-   part does commute. We prove this weaker property for reference. *)
+(* Cipher extraction: extracts the raw ciphertext without party label *)
+Definition benaloh_pahe_enc_cipher (e : party * 'Z_n) : 'Z_n := e.2.
+
+(* Cipher-level commutativity: the raw ciphertext part commutes *)
 Lemma benaloh_pahe_Emul_comm_cipher : forall (e1 e2 : party * 'Z_n),
-  (benaloh_pahe_Emul e1 e2).2 = (benaloh_pahe_Emul e2 e1).2.
+  benaloh_pahe_enc_cipher (benaloh_pahe_Emul e1 e2) = 
+  benaloh_pahe_enc_cipher (benaloh_pahe_Emul e2 e1).
 Proof.
   move=> [p1 c1] [p2 c2].
-  rewrite /benaloh_pahe_Emul /=.
+  rewrite /benaloh_pahe_enc_cipher /benaloh_pahe_Emul /=.
   apply mulrC.
 Qed.
 
@@ -427,6 +429,7 @@ Qed.
 
 HB.instance Definition Benaloh_isPartyAHE_Algebra : isPartyAHE_Algebra Benaloh_Party_HE_types := 
   @isPartyAHE_Algebra.Build Benaloh_Party_HE_types 
-    benaloh_pahe_Emul_assoc benaloh_pahe_rand_unit benaloh_pahe_Emul_id.
+    benaloh_pahe_Emul_assoc benaloh_pahe_rand_unit benaloh_pahe_Emul_id
+    benaloh_pahe_enc_cipher benaloh_pahe_Emul_comm_cipher.
 
 End Benaloh_Party_AHE.

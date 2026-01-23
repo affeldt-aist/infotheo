@@ -8,9 +8,10 @@
 (*                                                                            *)
 (* == Properties ==                                                           *)
 (*                                                                            *)
-(*   pahe_Emul_assoc : Emul(Emul(e1,e2), e3) = Emul(e1, Emul(e2,e3))          *)
-(*   pahe_Emul_comm  : Emul(e1, e2) = Emul(e2, e1)                            *)
-(*   pahe_Emul_id    : Emul(e, E(p,0,r)) = e (identity element)               *)
+(*   pahe_Emul_assoc      : Emul(Emul(e1,e2), e3) = Emul(e1, Emul(e2,e3))     *)
+(*   pahe_Emul_id         : Emul(e, E(p,0,r)) = e (identity element)          *)
+(*   pahe_enc_cipher      : phe_enc -> phe_cipher (extracts raw ciphertext)   *)
+(*   pahe_Emul_comm_cipher: cipher(Emul(e1,e2)) = cipher(Emul(e2,e1))         *)
 (*                                                                            *)
 (* == Structure ==                                                            *)
 (*                                                                            *)
@@ -51,7 +52,8 @@ Local Open Scope ring_scope.
    Note: Full commutativity (Emul e1 e2 = Emul e2 e1) is NOT required because
    party-labeled ciphertexts carry metadata that doesn't commute. The underlying
    ciphertext multiplication is commutative, but the party label comes from the
-   first argument. Implementations may prove same-party commutativity separately.
+   first argument. However, we DO require cipher-level commutativity via
+   pahe_enc_cipher projection.
    
    The identity property uses a specific "unit randomness" value rather than
    requiring E(p, 0, r) to be identity for ALL r. For most schemes:
@@ -69,7 +71,16 @@ HB.mixin Record isPartyAHE_Algebra (T : Party_AHE_HomoOps_scheme) := {
      E(p, 0, rand_unit) encrypts zero with unit randomness, yielding the
      multiplicative identity (1) in the ciphertext space. *)
   pahe_Emul_id : forall (p : phe_party T) (e : phe_enc T),
-    pahe_Emul e (phe_E p 0 pahe_rand_unit) = e
+    pahe_Emul e (phe_E p 0 pahe_rand_unit) = e ;
+  
+  (* Projection to extract the raw ciphertext without party label.
+     For (party, cipher) pairs, this extracts the cipher component. *)
+  pahe_enc_cipher : phe_enc T -> phe_cipher T ;
+  
+  (* Cipher-level commutativity: the raw ciphertext part commutes even though
+     the full party-labeled ciphertext does not (due to party label ordering). *)
+  pahe_Emul_comm_cipher : forall (e1 e2 : phe_enc T),
+    pahe_enc_cipher (pahe_Emul e1 e2) = pahe_enc_cipher (pahe_Emul e2 e1)
 }.
 
 (* ========================================================================== *)
