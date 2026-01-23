@@ -104,10 +104,8 @@ homomorphic_encryption/ahe_enc_dec.v
 homomorphic_encryption/ahe_homo_ops.v
 homomorphic_encryption/ahe_algebra.v
 homomorphic_encryption/benaloh1994/benaloh_enc.v
-homomorphic_encryption/benaloh1994/benaloh_homo.v
 homomorphic_encryption/benaloh1994/benaloh_party_ahe.v
 homomorphic_encryption/paillier1999/paillier_enc.v
-homomorphic_encryption/paillier1999/paillier_homo.v
 homomorphic_encryption/paillier1999/paillier_party_ahe.v
 homomorphic_encryption/homomorphic_encryption.v
 dumas2017dual/lib/extra_algebra.v

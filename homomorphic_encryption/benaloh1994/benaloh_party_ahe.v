@@ -319,11 +319,23 @@ Definition benaloh_pahe_Epow (e : party * 'Z_n) (m : 'Z_r) : (party * 'Z_n) :=
   let (p, c) := e in
   (p, c ^+ (m : nat)).
 
-(* Additive homomorphism proof using morphism_2 *)
+(* -------------------------------------------------------------------------- *)
+(*  Local notations for compact {morph} syntax                                *)
+(* -------------------------------------------------------------------------- *)
+(* These notations make the morphism statements readable:
+   {morph E_ p : x y / x +mr y >-> x *E y}
+   expands to:
+   morphism_2 (phe_E_curry Benaloh_Party_HE_types p)
+              (msg_rand_add Benaloh_Party_HE_types)
+              benaloh_pahe_Emul *)
+Local Notation BT := Benaloh_Party_HE_types.
+Local Notation "E_ p" := (phe_E_curry BT p) (at level 10).
+Local Notation "x +mr y" := (msg_rand_add BT x y) (at level 50, left associativity).
+Local Notation "x *E y" := (benaloh_pahe_Emul x y) (at level 40, left associativity).
+
+(* Additive homomorphism proof using {morph} notation *)
 Lemma benaloh_pahe_Emul_addM : forall (p : party),
-  morphism_2 (phe_E_curry Benaloh_Party_HE_types p) 
-             (msg_rand_add Benaloh_Party_HE_types) 
-             benaloh_pahe_Emul.
+  {morph E_ p : x y / x +mr y >-> x *E y}.
 Proof.
   move=> p [m1 u1] [m2 u2].
   rewrite /phe_E_curry /msg_rand_add /benaloh_pahe_Emul /=.

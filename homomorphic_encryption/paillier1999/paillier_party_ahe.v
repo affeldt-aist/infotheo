@@ -226,11 +226,23 @@ Definition paillier_pahe_Epow (e : party * 'Z_n2) (m : 'Z_n) : (party * 'Z_n2) :
   let (p, c) := e in
   (p, c ^+ (m : nat)).
 
-(* Additive homomorphism proof using morphism_2 *)
+(* -------------------------------------------------------------------------- *)
+(*  Local notations for compact {morph} syntax                                *)
+(* -------------------------------------------------------------------------- *)
+(* These notations make the morphism statements readable:
+   {morph E_ p : x y / x +mr y >-> x *E y}
+   expands to:
+   morphism_2 (phe_E_curry Paillier_Party_HE_types p)
+              (msg_rand_add Paillier_Party_HE_types)
+              paillier_pahe_Emul *)
+Local Notation PT := Paillier_Party_HE_types.
+Local Notation "E_ p" := (phe_E_curry PT p) (at level 10).
+Local Notation "x +mr y" := (msg_rand_add PT x y) (at level 50, left associativity).
+Local Notation "x *E y" := (paillier_pahe_Emul x y) (at level 40, left associativity).
+
+(* Additive homomorphism proof using {morph} notation *)
 Lemma paillier_pahe_Emul_addM : forall (p : party),
-  morphism_2 (phe_E_curry Paillier_Party_HE_types p) 
-             (msg_rand_add Paillier_Party_HE_types) 
-             paillier_pahe_Emul.
+  {morph E_ p : x y / x +mr y >-> x *E y}.
 Proof.
   move=> p [m1 r1] [m2 r2].
   rewrite /phe_E_curry /msg_rand_add /paillier_pahe_Emul /=.
