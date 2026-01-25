@@ -1,7 +1,7 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap.
-Require Import smc_interpreter homomorphic_encryption.
+Require Import smc_interpreter smc_session_types homomorphic_encryption.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -54,6 +54,25 @@ Definition Recv_enc_param {enc : Type}
                      | Some v => f v
                      | None => Fail
                      end).
+
+(* ========================================================================== *)
+(* Session Data Type Kind (outside section - no PHE dependency)               *)
+(* ========================================================================== *)
+
+(* Only encrypted values are communicated - single dtype suffices *)
+Inductive dsdp_dtype : Type := DT_Enc.
+
+(* Decidable equality for dsdp_dtype *)
+Definition dsdp_dtype_eqb (d1 d2 : dsdp_dtype) : bool := true.
+
+Lemma dsdp_dtype_eqP : Equality.axiom dsdp_dtype_eqb.
+Proof.
+move=> [] [].
+constructor.
+reflexivity.
+Qed.
+
+HB.instance Definition _ := hasDecEq.Build dsdp_dtype dsdp_dtype_eqP.
 
 (* ========================================================================== *)
 (* DSDP Interface Record                                                      *)
@@ -156,6 +175,68 @@ Lemma std_from_enc_k (x : phe_pkey PHE) :
 Proof. by []. Qed.
 
 End Standard_Interface_Properties.
+
+(* ========================================================================== *)
+(* Session-Typed Wrappers for DSDP                                            *)
+(* ========================================================================== *)
+
+(* Session-typed versions using sproc from smc_session_types.
+   These coexist with the proc-based wrappers above. *)
+
+Section Session_Typed_DSDP.
+
+Variable PHE : Party_AHE_scheme.
+
+Let data := std_data PHE.
+Let D := @phe_D PHE.
+
+(* Receive encrypted - pattern match data, use SFail on mismatch *)
+Definition DRecv_enc {me n env} (src : nat)
+    (f : phe_enc PHE -> @sproc dsdp_dtype data me n env)
+    : @sproc dsdp_dtype data me n.+1 (senv_recv env src DT_Enc) :=
+  SRecv src DT_Enc (fun d => 
+    match @std_from_enc PHE d with
+    | Some enc => f enc
+    | None => SFail
+    end).
+
+(* Receive encrypted and decrypt - still tracks as DT_Enc (what's on the wire) *)
+(* NOTE: D returns option msg, so need nested match for decrypt failure *)
+Definition DRecv_dec {me n env} (src : nat) (dk : phe_pkey PHE)
+    (f : phe_msg PHE -> @sproc dsdp_dtype data me n env)
+    : @sproc dsdp_dtype data me n.+1 (senv_recv env src DT_Enc) :=
+  SRecv src DT_Enc (fun d => 
+    match @std_from_enc PHE d with
+    | Some enc => match D dk enc with
+                  | Some msg => f msg
+                  | None => SFail  (* decrypt failure *)
+                  end
+    | None => SFail  (* not an encrypted value *)
+    end).
+
+(* Send encrypted - the only send variant needed *)
+Definition DPSendEnc {me n env} (party : nat) (x : phe_enc PHE)
+    (p : @sproc dsdp_dtype data me n env)
+    : @sproc dsdp_dtype data me n.+1 (senv_send env party DT_Enc) :=
+  SSend party DT_Enc (@std_e PHE x) p.
+
+(* Init/Ret wrappers - can init any data kind (msg, enc, key) *)
+(* Init doesn't affect session env since it's local storage *)
+Definition DPInit {me n env} (x : data) (p : @sproc dsdp_dtype data me n env)
+    : @sproc dsdp_dtype data me n.+1 env := 
+  SInit x p.
+
+Definition DPRet {me : nat} (x : data) : @sproc dsdp_dtype data me 2 senv_end := 
+  SRet x.
+
+End Session_Typed_DSDP.
+
+(* Arguments declarations for implicit parameters *)
+Arguments DRecv_enc {PHE me n env}.
+Arguments DRecv_dec {PHE me n env}.
+Arguments DPSendEnc {PHE me n env}.
+Arguments DPInit {PHE me n env}.
+Arguments DPRet {PHE me}.
 
 (* ========================================================================== *)
 (* Notation shortcuts for use in client files                                 *)

@@ -3,7 +3,8 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
 From mathcomp Require Import Rstruct ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption dsdp_interface dsdp_program.
+Require Import smc_proba smc_session_types homomorphic_encryption.
+Require Import dsdp_interface dsdp_program.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -106,14 +107,29 @@ Variable alice : partyT.
 Variable bob : partyT.
 Variable charlie : partyT.
 
-(* Party to nat mapping for Send/Recv indices *)
-Variable pn : partyT -> nat.
+(* Concrete party indices for session type tracking *)
+(* These must be distinct for duality verification to work with native_compute *)
+Definition alice_idx : nat := 0.
+Definition bob_idx : nat := 1.
+Definition charlie_idx : nat := 2.
 
-(* Local wrappers for proc constructors - fuel-indexed *)
-Definition PInit {n} (x : data) (p : proc data n) : proc data n.+1 := Init x p.
-Definition PSend {n} (party : nat) (x : data) (p : proc data n) : proc data n.+1 := Send party x p.
-Definition PRecv {n} (party : nat) (f : data -> proc data n) : proc data n.+1 := Recv party f.
-Definition PRet (x : data) : proc data 2 := Ret x.
+(* Local wrappers for session-typed proc constructors *)
+Let DPSendEnc' {me n env} := @DPSendEnc PHE me n env.
+Let DPInit' {me n env} := @DPInit PHE me n env.
+Let DPRet' {me} := @DPRet PHE me.
+Let DRecv_dec' {me n env} := @DRecv_dec PHE me n env.
+Let DRecv_enc' {me n env} := @DRecv_enc PHE me n env.
+
+(* Session-typed wrappers for notations *)
+Definition PInit {me n env} (x : data) (p : @sproc dsdp_dtype data me n env) 
+    : @sproc dsdp_dtype data me n.+1 env := DPInit' x p.
+Definition PSend {me n env} (party_idx : nat) (x : enc)
+    (p : @sproc dsdp_dtype data me n env)
+    : @sproc dsdp_dtype data me n.+1 (senv_send env party_idx DT_Enc) := 
+  DPSendEnc' party_idx x p.
+Definition PRet {me} (x : data) : @sproc dsdp_dtype data me 2 senv_end := DPRet' x.
+Let Recv_dec {me n env} (src_idx : nat) := DRecv_dec' src_idx.
+Let Recv_enc {me n env} (src_idx : nat) := DRecv_enc' src_idx.
 
 (** * Data wrapper shorthand notations *)
 
@@ -126,8 +142,8 @@ Notation "$ x" := (e x) (at level 0, x at level 0) : dsdp_scope.
 
 (** * Basic custom syntax notations *)
 
-(* Finish - terminal state *)
-Notation "'Finish'" := Finish (in custom dsdp at level 0).
+(* Finish - terminal state (session-typed) *)
+Notation "'Finish'" := SFinish (in custom dsdp at level 0).
 
 (* Ret - return a value *)
 Notation "'Ret' x" := (PRet x) 
@@ -167,104 +183,77 @@ Notation "'Init' x ; P" := (PInit x P)
    P custom dsdp at level 85, right associativity).
 
 
-(** * Send/Recv with pn(...) for party to nat conversion *)
+(** * Send with concrete party indices for session type tracking *)
 
 (* Send - ASCII angle brackets *)
-Notation "'Send<' p '>' x · P" := (PSend (pn p) x P)
+Notation "'Send<' p '>' x · P" := (PSend p x P)
   (in custom dsdp at level 85, p constr at level 0, x constr at level 0,
    P custom dsdp at level 85, right associativity).
-Notation "'Send<' p '>' x ; P" := (PSend (pn p) x P)
+Notation "'Send<' p '>' x ; P" := (PSend p x P)
   (in custom dsdp at level 85, p constr at level 0, x constr at level 0,
    P custom dsdp at level 85, right associativity).
 
 (* Send - Unicode angle brackets *)
-Notation "'Send⟨' p '⟩' x · P" := (PSend (pn p) x P)
+Notation "'Send⟨' p '⟩' x · P" := (PSend p x P)
   (in custom dsdp at level 85, p constr at level 0, x constr at level 0,
    P custom dsdp at level 85, right associativity).
-Notation "'Send⟨' p '⟩' x ; P" := (PSend (pn p) x P)
+Notation "'Send⟨' p '⟩' x ; P" := (PSend p x P)
   (in custom dsdp at level 85, p constr at level 0, x constr at level 0,
    P custom dsdp at level 85, right associativity).
 
-(* Recv with λ binder - ASCII angle brackets *)
-Notation "'Recv<' p '>' 'λ' x · P" := (PRecv (pn p) (fun x => P))
-  (in custom dsdp at level 85, p constr at level 0, x name,
-   P custom dsdp at level 85, right associativity).
-Notation "'Recv<' p '>' 'λ' x ; P" := (PRecv (pn p) (fun x => P))
-  (in custom dsdp at level 85, p constr at level 0, x name,
-   P custom dsdp at level 85, right associativity).
-(* Recv with fun binder - ASCII angle brackets, ASCII fallback *)
-Notation "'Recv<' p '>' 'fun' x '=>' P" := (PRecv (pn p) (fun x => P))
-  (in custom dsdp at level 85, p constr at level 0, x name,
-   P custom dsdp at level 85, right associativity).
-
-(* Recv with λ binder - Unicode angle brackets *)
-Notation "'Recv⟨' p '⟩' 'λ' x · P" := (PRecv (pn p) (fun x => P))
-  (in custom dsdp at level 85, p constr at level 0, x name,
-   P custom dsdp at level 85, right associativity).
-Notation "'Recv⟨' p '⟩' 'λ' x ; P" := (PRecv (pn p) (fun x => P))
-  (in custom dsdp at level 85, p constr at level 0, x name,
-   P custom dsdp at level 85, right associativity).
-(* Recv with fun binder - Unicode angle brackets, ASCII fallback *)
-Notation "'Recv⟨' p '⟩' 'fun' x '=>' P" := (PRecv (pn p) (fun x => P))
-  (in custom dsdp at level 85, p constr at level 0, x name,
-   P custom dsdp at level 85, right associativity).
-
-(** * Specialized Recv operations from interface *)
-
-Let Recv_dec {n} := @di_Recv_dec PHE DI n.
-Let Recv_enc {n} := @di_Recv_enc PHE DI n.
+(** * Specialized Recv operations with concrete party indices *)
 
 (* Recv_dec notation - ASCII angle brackets *)
-Notation "'Recv_dec<' p '>' dk 'λ' x · P" := (Recv_dec (pn p) dk (fun x => P))
+Notation "'Recv_dec<' p '>' dk 'λ' x · P" := (Recv_dec p dk (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, 
    dk constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
-Notation "'Recv_dec<' p '>' dk 'λ' x ; P" := (Recv_dec (pn p) dk (fun x => P))
+Notation "'Recv_dec<' p '>' dk 'λ' x ; P" := (Recv_dec p dk (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, 
    dk constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 (* Recv_dec with fun - ASCII fallback *)
-Notation "'Recv_dec<' p '>' dk 'fun' x '=>' P" := (Recv_dec (pn p) dk (fun x => P))
+Notation "'Recv_dec<' p '>' dk 'fun' x '=>' P" := (Recv_dec p dk (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, 
    dk constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 
 (* Recv_dec notation - Unicode angle brackets *)
-Notation "'Recv_dec⟨' p '⟩' dk 'λ' x · P" := (Recv_dec (pn p) dk (fun x => P))
+Notation "'Recv_dec⟨' p '⟩' dk 'λ' x · P" := (Recv_dec p dk (fun x => P))
   (in custom dsdp at level 85, p constr at level 0,
    dk constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
-Notation "'Recv_dec⟨' p '⟩' dk 'λ' x ; P" := (Recv_dec (pn p) dk (fun x => P))
+Notation "'Recv_dec⟨' p '⟩' dk 'λ' x ; P" := (Recv_dec p dk (fun x => P))
   (in custom dsdp at level 85, p constr at level 0,
    dk constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 (* Recv_dec with fun - Unicode brackets, ASCII fallback *)
-Notation "'Recv_dec⟨' p '⟩' dk 'fun' x '=>' P" := (Recv_dec (pn p) dk (fun x => P))
+Notation "'Recv_dec⟨' p '⟩' dk 'fun' x '=>' P" := (Recv_dec p dk (fun x => P))
   (in custom dsdp at level 85, p constr at level 0,
    dk constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 
 (* Recv_enc notation - ASCII angle brackets *)
-Notation "'Recv_enc<' p '>' 'λ' x · P" := (Recv_enc (pn p) (fun x => P))
+Notation "'Recv_enc<' p '>' 'λ' x · P" := (Recv_enc p (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
-Notation "'Recv_enc<' p '>' 'λ' x ; P" := (Recv_enc (pn p) (fun x => P))
+Notation "'Recv_enc<' p '>' 'λ' x ; P" := (Recv_enc p (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 (* Recv_enc with fun - ASCII fallback *)
-Notation "'Recv_enc<' p '>' 'fun' x '=>' P" := (Recv_enc (pn p) (fun x => P))
+Notation "'Recv_enc<' p '>' 'fun' x '=>' P" := (Recv_enc p (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 
 (* Recv_enc notation - Unicode angle brackets *)
-Notation "'Recv_enc⟨' p '⟩' 'λ' x · P" := (Recv_enc (pn p) (fun x => P))
+Notation "'Recv_enc⟨' p '⟩' 'λ' x · P" := (Recv_enc p (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
-Notation "'Recv_enc⟨' p '⟩' 'λ' x ; P" := (Recv_enc (pn p) (fun x => P))
+Notation "'Recv_enc⟨' p '⟩' 'λ' x ; P" := (Recv_enc p (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 (* Recv_enc with fun - Unicode brackets, ASCII fallback *)
-Notation "'Recv_enc⟨' p '⟩' 'fun' x '=>' P" := (Recv_enc (pn p) (fun x => P))
+Notation "'Recv_enc⟨' p '⟩' 'fun' x '=>' P" := (Recv_enc p (fun x => P))
   (in custom dsdp at level 85, p constr at level 0, x name,
    P custom dsdp at level 85, right associativity).
 
@@ -272,115 +261,65 @@ Notation "'Recv_enc⟨' p '⟩' 'fun' x '=>' P" := (Recv_enc (pn p) (fun x => P)
 Notation "x" := x (in custom dsdp at level 0, x ident).
 
 (******************************************************************************)
-(** * DSDP Protocol Programs - ASCII Version (Default)                        *)
+(** * DSDP Protocol Programs with Session Type Tracking                       *)
 (** * Each encryption E(party, msg, rand) needs explicit randomness.          *)
 (******************************************************************************)
 
-(* Bob's protocol - ASCII version *)
-Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) : proc data _ :=
+(* Bob's protocol - using concrete indices for session type duality *)
+Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) 
+    : @sproc dsdp_dtype data bob_idx _ _ :=
   {| Init (#dk, &v2) ;
-     Send<alice> $(E bob v2 rb1) ;
-     Recv_dec<alice> dk fun d2 =>
-     Recv_enc<alice> fun a3 =>
-     Send<charlie> $(a3 *h (E charlie d2 rb2)) ;
+     Send<alice_idx> (E bob v2 rb1) ;
+     Recv_dec<alice_idx> dk fun d2 =>
+     Recv_enc<alice_idx> fun a3 =>
+     Send<charlie_idx> (a3 *h (E charlie d2 rb2)) ;
      Finish |}.
 
-(* Charlie's protocol - ASCII version *)
-Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) : proc data _ :=
+(* Charlie's protocol *)
+Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) 
+    : @sproc dsdp_dtype data charlie_idx _ _ :=
   {| Init (#dk, &v3) ;
-     Send<alice> $(E charlie v3 rc1) ;
-     Recv_dec<bob> dk fun d3 =>
-     Send<alice> $(E alice d3 rc2) ;
+     Send<alice_idx> (E charlie v3 rc1) ;
+     Recv_dec<bob_idx> dk fun d3 =>
+     Send<alice_idx> (E alice d3 rc2) ;
      Finish |}.
 
-(* Alice's protocol - ASCII version *)
-Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) : proc data _ :=
+(* Alice's protocol *)
+Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) 
+    : @sproc dsdp_dtype data alice_idx _ _ :=
   {| Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
-     Recv_enc<bob> fun c2 =>
-     Recv_enc<charlie> fun c3 =>
-     Send<bob> $(c2 ^h u2 *h (E bob r2 ra1)) ;
-     Send<bob> $(c3 ^h u3 *h (E charlie r3 ra2)) ;
-     Recv_dec<charlie> dk fun g =>
+     Recv_enc<bob_idx> fun c2 =>
+     Recv_enc<charlie_idx> fun c3 =>
+     Send<bob_idx> (c2 ^h u2 *h (E bob r2 ra1)) ;
+     Send<bob_idx> (c3 ^h u3 *h (E charlie r3 ra2)) ;
+     Recv_dec<charlie_idx> dk fun g =>
      Ret &(g - r2 - r3 + u1 * v1) |}.
 
 (******************************************************************************)
-(** * DSDP Protocol Programs - Unicode Version                                *)
+(** * Session Type Duality Verification                                       *)
 (******************************************************************************)
 
-(* Bob's protocol - Unicode version, fuel auto-inferred *)
-Definition pbob_unicode (dk : pkey)(v2 : msg)(rb1 rb2 : rand) : proc data _ :=
-  {| Init #dk　&v2 ·
-     Send⟨alice⟩ $(E bob v2 rb1) ·
-     Recv_dec⟨alice⟩ dk λ d2 ·
-     Recv_enc⟨alice⟩ λ a3 ·
-     Send⟨charlie⟩ $(a3 *h (E charlie d2 rb2)) ·
-     Finish |}.
+Variables (dk : pkey) (v1 u1 u2 u3 r2 r3 v2 v3 : msg) (ra1 ra2 rb1 rb2 rc1 rc2 : rand).
 
-(* Charlie's protocol - Unicode version *)
-Definition pcharlie_unicode (dk : pkey)(v3 : msg)(rc1 rc2 : rand) : proc data _ :=
-  {| Init #dk　&v3 ·
-     Send⟨alice⟩ $(E charlie v3 rc1) ·
-     Recv_dec⟨bob⟩ dk λ d3 ·
-     Send⟨alice⟩ $(E alice d3 rc2) ·
-     Finish |}.
+(* Wrap in aproc for duality checking *)
+Definition aproc_alice := mk_aproc (palice dk v1 u1 u2 u3 r2 r3 ra1 ra2).
+Definition aproc_bob := mk_aproc (pbob dk v2 rb1 rb2).
+Definition aproc_charlie := mk_aproc (pcharlie dk v3 rc1 rc2).
 
-(* Alice's protocol - Unicode version *)
-Definition palice_unicode (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) : proc data _ :=
-  {| Init #dk　&v1　&u1　&u2　&u3　&r2　&r3 ·
-     Recv_enc⟨bob⟩ λ c2 ·
-     Recv_enc⟨charlie⟩ λ c3 ·
-     Send⟨bob⟩ $(c2 ^h u2 *h (E bob r2 ra1)) ·
-     Send⟨bob⟩ $(c3 ^h u3 *h (E charlie r3 ra2)) ·
-     Recv_dec⟨charlie⟩ dk λ g ·
-     Ret &(g - r2 - r3 + u1 * v1) |}.
+(* Three-party duality verification *)
+Lemma alice_bob_dual : channels_dual aproc_alice aproc_bob = true.
+Proof.
+by native_compute.
+Qed.
 
-(* Verify ASCII and Unicode versions are equivalent *)
-Lemma pbob_unicode_eq dk v2 rb1 rb2 : pbob dk v2 rb1 rb2 = pbob_unicode dk v2 rb1 rb2.
-Proof. reflexivity. Qed.
+Lemma alice_charlie_dual : channels_dual aproc_alice aproc_charlie = true.
+Proof.
+by native_compute.
+Qed.
 
-Lemma pcharlie_unicode_eq dk v3 rc1 rc2 : pcharlie dk v3 rc1 rc2 = pcharlie_unicode dk v3 rc1 rc2.
-Proof. reflexivity. Qed.
-
-Lemma palice_unicode_eq dk v1 u1 u2 u3 r2 r3 ra1 ra2 : 
-  palice dk v1 u1 u2 u3 r2 r3 ra1 ra2 = palice_unicode dk v1 u1 u2 u3 r2 r3 ra1 ra2.
-Proof. reflexivity. Qed.
-
-(******************************************************************************)
-(** * Equivalence with original definitions                                   *)
-(******************************************************************************)
-
-Local Close Scope dsdp_scope.
-
-(* Verify pbob expands to the original nested structure *)
-Lemma pbob_eq dk v2 rb1 rb2 : pbob dk v2 rb1 rb2 = 
-  PInit (k dk) (
-  PInit (d v2) (
-  PSend (pn alice) (e (E bob v2 rb1)) (
-  Recv_dec (pn alice) dk (fun d2 =>
-  Recv_enc (pn alice) (fun a3 =>
-    PSend (pn charlie) (e (a3 *h (E charlie d2 rb2))) (
-  Finish)))))).
-Proof. reflexivity. Qed.
-
-(* Verify pcharlie expands correctly *)
-Lemma pcharlie_eq dk v3 rc1 rc2 : pcharlie dk v3 rc1 rc2 = 
-  PInit (k dk) (
-  PInit (d v3) (
-  PSend (pn alice) (e (E charlie v3 rc1)) (
-  Recv_dec (pn bob) dk (fun d3 => (
-    PSend (pn alice) (e (E alice d3 rc2))
-  Finish))))).
-Proof. reflexivity. Qed.
-
-(* Verify palice expands correctly - note: let expressions are inlined *)
-Lemma palice_eq dk v1 u1 u2 u3 r2 r3 ra1 ra2 : palice dk v1 u1 u2 u3 r2 r3 ra1 ra2 = 
-  PInit (k dk) (PInit (d v1) (PInit (d u1) (PInit (d u2) (PInit (d u3) 
-  (PInit (d r2) (PInit (d r3) (Recv_enc (pn bob) (fun c2 =>
-  Recv_enc (pn charlie) (fun c3 =>
-    PSend (pn bob) (e (c2 ^h u2 *h (E bob r2 ra1)))
-   (PSend (pn bob) (e (c3 ^h u3 *h (E charlie r3 ra2)))
-   (Recv_dec (pn charlie) dk (fun g =>
-    PRet (d (g - r2 - r3 + (u1 * v1))))))))))))))).
-Proof. reflexivity. Qed.
+Lemma bob_charlie_dual : channels_dual aproc_bob aproc_charlie = true.
+Proof.
+by native_compute.
+Qed.
 
 End dsdp.
