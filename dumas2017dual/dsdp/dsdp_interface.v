@@ -37,7 +37,7 @@ Local Open Scope proc_scope.
 Definition Recv_dec_param {msg enc pkey : Type}
   (D : pkey -> enc -> option msg)
   (data : Type) (from_enc : data -> option enc)
-  {n} (frm : nat) (dk : pkey) (f : msg -> proc data n) : proc data n.+1 :=
+  (frm : nat) (dk : pkey) (f : msg -> proc data) : proc data :=
   Recv frm (fun x => match from_enc x with
                      | Some v => match D dk v with
                                  | Some v' => f v'
@@ -49,7 +49,7 @@ Definition Recv_dec_param {msg enc pkey : Type}
 (* Recv_enc: receive encrypted value (cannot decrypt), do HE computation *)
 Definition Recv_enc_param {enc : Type}
   (data : Type) (from_enc : data -> option enc)
-  {n} (frm : nat) (f : enc -> proc data n) : proc data n.+1 :=
+  (frm : nat) (f : enc -> proc data) : proc data :=
   Recv frm (fun x => match from_enc x with
                      | Some v => f v
                      | None => Fail
@@ -93,13 +93,13 @@ Record DSDP_Interface (PHE : Party_AHE_scheme) := MkDSDP_Interface {
   (* Extractor: get enc from data *)
   di_from_enc : di_data -> option (phe_enc PHE) ;
   
-  (* Specialized Recv operations *)
-  di_Recv_dec : forall {n : nat}, 
-    nat -> phe_pkey PHE -> (phe_msg PHE -> proc di_data n) -> 
-    proc di_data n.+1 ;
-  di_Recv_enc : forall {n : nat},
-    nat -> (phe_enc PHE -> proc di_data n) -> 
-    proc di_data n.+1 ;
+  (* Specialized Recv operations (proc is now unindexed) *)
+  di_Recv_dec : 
+    nat -> phe_pkey PHE -> (phe_msg PHE -> proc di_data) -> 
+    proc di_data ;
+  di_Recv_enc :
+    nat -> (phe_enc PHE -> proc di_data) -> 
+    proc di_data ;
 }.
 
 Arguments di_data {PHE} _.
@@ -107,8 +107,8 @@ Arguments di_d {PHE} _ _.
 Arguments di_e {PHE} _ _.
 Arguments di_k {PHE} _ _.
 Arguments di_from_enc {PHE} _ _.
-Arguments di_Recv_dec {PHE} _ {n} _ _ _.
-Arguments di_Recv_enc {PHE} _ {n} _ _.
+Arguments di_Recv_dec {PHE} _ _ _ _.
+Arguments di_Recv_enc {PHE} _ _ _.
 
 (* ========================================================================== *)
 (* Standard DSDP Interface using Sum Types                                    *)
@@ -132,13 +132,13 @@ Definition std_k (x : pkey) : std_data := inr x.
 Definition std_from_enc (x : std_data) : option enc :=
   if x is inl (inr v) then Some v else None.
 
-Definition std_Recv_dec {n} (frm : nat) (dk : pkey) 
-    (f : msg -> proc std_data n) : proc std_data n.+1 :=
-  @Recv_dec_param msg enc pkey D std_data std_from_enc n frm dk f.
+Definition std_Recv_dec (frm : nat) (dk : pkey) 
+    (f : msg -> proc std_data) : proc std_data :=
+  @Recv_dec_param msg enc pkey D std_data std_from_enc frm dk f.
 
-Definition std_Recv_enc {n} (frm : nat) 
-    (f : enc -> proc std_data n) : proc std_data n.+1 :=
-  @Recv_enc_param enc std_data std_from_enc n frm f.
+Definition std_Recv_enc (frm : nat) 
+    (f : enc -> proc std_data) : proc std_data :=
+  @Recv_enc_param enc std_data std_from_enc frm f.
 
 (** The canonical standard interface instance *)
 Definition Standard_DSDP_Interface : DSDP_Interface PHE := {|

@@ -9,7 +9,7 @@ Require Import smc_interpreter.
 (* Session environment is automatically inferred by Coq's unification.        *)
 (*                                                                            *)
 (* Two layers:                                                                *)
-(*   sproc me env - session-typed process (type-checked)                      *)
+(*   sproc party env - session-typed process (type-checked)                   *)
 (*   proc         - unindexed process (for interpretation)                    *)
 (*                                                                            *)
 (* Based on:                                                                  *)
@@ -72,45 +72,45 @@ Section sproc_def.
 Variable dtype : eqType.
 Variable data : Type.
 
-(* Process indexed by: which party I am (me), fuel (n), session environment (env) *)
+(* Process indexed by: which party I am (party), fuel (n), session environment (env) *)
 (* Both fuel AND session env are inferred by Coq's unification! *)
 (* Fuel is used to compute interpreter steps; erased when converting to proc *)
-Inductive sproc (me : nat) : nat -> senv dtype -> Type :=
+Inductive sproc (party : nat) : nat -> senv dtype -> Type :=
 
   (* Finish: base case, fuel=1, empty session environment *)
-  | SFinish : sproc me 1 senv_end
+  | SFinish : sproc party 1 senv_end
   
   (* Ret: returns value, fuel=2, empty session environment *)
-  | SRet : data -> sproc me 2 senv_end
+  | SRet : data -> sproc party 2 senv_end
   
   (* Init: doesn't affect session types, increments fuel *)
   | SInit : forall n env,
       data -> 
-      sproc me n env -> 
-      sproc me n.+1 env
+      sproc party n env -> 
+      sproc party n.+1 env
   
   (* Send: prepends STSend to session with dst, increments fuel *)
   | SSend : forall n env dst (dt : dtype),
       data ->
-      sproc me n env ->
-      sproc me n.+1 (senv_send env dst dt)
+      sproc party n env ->
+      sproc party n.+1 (senv_send env dst dt)
   
   (* Recv: prepends STRecv to session with src, increments fuel *)
   | SRecv : forall n env src (dt : dtype),
-      (data -> sproc me n env) ->
-      sproc me n.+1 (senv_recv env src dt)
+      (data -> sproc party n env) ->
+      sproc party n.+1 (senv_recv env src dt)
   
   (* Fail: polymorphic in fuel and env for error handling *)
-  | SFail : forall n env, sproc me n env.
+  | SFail : forall n env, sproc party n env.
 
 End sproc_def.
 
-Arguments SFinish {dtype data me}.
-Arguments SRet {dtype data me}.
-Arguments SInit {dtype data me n env}.
-Arguments SSend {dtype data me n env} dst dt.
-Arguments SRecv {dtype data me n env} src dt.
-Arguments SFail {dtype data me n env}.
+Arguments SFinish {dtype data party}.
+Arguments SRet {dtype data party}.
+Arguments SInit {dtype data party n env}.
+Arguments SSend {dtype data party n env} dst dt.
+Arguments SRecv {dtype data party n env} src dt.
+Arguments SFail {dtype data party n env}.
 
 (******************************************************************************)
 (** * Phase 1 Test: Minimal Example to Verify Unification                     *)
@@ -194,14 +194,14 @@ Check test7.
 
 (* Verify we can extract session type information *)
 Definition get_stype {dtype : eqType} {data : Type}
-    {me : nat} {n : nat} {env : senv dtype} 
-    (p : @sproc dtype data me n env) (them : nat) : stype dtype :=
+    {party : nat} {n : nat} {env : senv dtype} 
+    (p : @sproc dtype data party n env) (them : nat) : stype dtype :=
   env them.
 
 (* Extract inferred fuel from sproc *)
 Definition get_fuel {dtype : eqType} {data : Type}
-    {me : nat} {n : nat} {env : senv dtype} 
-    (p : @sproc dtype data me n env) : nat := n.
+    {party : nat} {n : nat} {env : senv dtype} 
+    (p : @sproc dtype data party n env) : nat := n.
 
 (* Check session type of test7 with party1 *)
 Eval compute in get_stype test7 party1.
@@ -257,19 +257,19 @@ Section aproc_def.
 Variable dtype : eqType.
 Variable data : Type.
 
-(* aproc: existentially wraps me, fuel, and senv so processes can be stored in lists *)
-Definition aproc : Type := { me : nat & { n : nat & { env : senv dtype & @sproc dtype data me n env }}}.
+(* aproc: existentially wraps party, fuel, and senv so processes can be stored in lists *)
+Definition aproc : Type := { party : nat & { n : nat & { env : senv dtype & @sproc dtype data party n env }}}.
 
 (* Smart constructor *)
-Definition mk_aproc {me : nat} {n : nat} {env : senv dtype} 
-    (p : @sproc dtype data me n env) : aproc :=
-  existT _ me (existT _ n (existT _ env p)).
+Definition mk_aproc {party : nat} {n : nat} {env : senv dtype} 
+    (p : @sproc dtype data party n env) : aproc :=
+  existT _ party (existT _ n (existT _ env p)).
 
 (* Accessors *)
-Definition aproc_me (ap : aproc) : nat := projT1 ap.
+Definition aproc_party (ap : aproc) : nat := projT1 ap.
 Definition aproc_fuel (ap : aproc) : nat := projT1 (projT2 ap).
 Definition aproc_env (ap : aproc) : senv dtype := projT1 (projT2 (projT2 ap)).
-Definition aproc_proc (ap : aproc) : @sproc dtype data (aproc_me ap) (aproc_fuel ap) (aproc_env ap) :=
+Definition aproc_proc (ap : aproc) : @sproc dtype data (aproc_party ap) (aproc_fuel ap) (aproc_env ap) :=
   projT2 (projT2 (projT2 ap)).
 
 (* Get session type with specific party *)
@@ -278,8 +278,8 @@ Definition aproc_stype (ap : aproc) (them : nat) : stype dtype :=
 
 End aproc_def.
 
-Arguments mk_aproc {dtype data me n env}.
-Arguments aproc_me {dtype data}.
+Arguments mk_aproc {dtype data party n env}.
+Arguments aproc_party {dtype data}.
 Arguments aproc_fuel {dtype data}.
 Arguments aproc_env {dtype data}.
 Arguments aproc_proc {dtype data}.
@@ -340,10 +340,10 @@ Definition are_dual (s1 s2 : stype dtype) : bool := s1 == dual s2.
 
 (* Check if two aprocs have dual session types for communication between them *)
 Definition channels_dual {data : Type} (ap1 ap2 : aproc dtype data) : bool :=
-  let me1 := aproc_me ap1 in
-  let me2 := aproc_me ap2 in
-  (* ap1's view of me2 should be dual to ap2's view of me1 *)
-  are_dual (aproc_stype ap1 me2) (aproc_stype ap2 me1).
+  let p1 := aproc_party ap1 in
+  let p2 := aproc_party ap2 in
+  (* ap1's view of p2 should be dual to ap2's view of p1 *)
+  are_dual (aproc_stype ap1 p2) (aproc_stype ap2 p1).
 
 End duality_check.
 
@@ -411,8 +411,8 @@ Variable dt : dtype.                  (* dtype for session tracking *)
 Variable check : data -> option T.    (* Checker: data -> option T *)
 
 (* Specialized receive: receive from src, check data, continue with typed value *)
-Definition SRecv_check {me : nat} {n : nat} {env : senv dtype} 
-    (src : nat) (f : T -> @sproc dtype data me n env) : @sproc dtype data me n.+1 (senv_recv env src dt) :=
+Definition SRecv_check {party : nat} {n : nat} {env : senv dtype} 
+    (src : nat) (f : T -> @sproc dtype data party n env) : @sproc dtype data party n.+1 (senv_recv env src dt) :=
   SRecv src dt (fun d => 
     match check d with
     | Some v => f v
@@ -421,7 +421,7 @@ Definition SRecv_check {me : nat} {n : nat} {env : senv dtype}
 
 End recv_wrappers.
 
-Arguments SRecv_check {dtype data T dt check me n env} src.
+Arguments SRecv_check {dtype data T dt check party n env} src.
 
 (* Example instantiation for scalar product data types *)
 Section recv_wrappers_example.
@@ -456,13 +456,13 @@ Definition is_vector (d : sp_data) : option VX :=
   match d with inr v => Some v | inl _ => None end.
 
 (* Specialized receivers for scalar product *)
-Definition SRecv_one {me n env} (src : nat) (f : TX -> @sproc sp_dtype sp_data me n env) 
-    : @sproc sp_dtype sp_data me n.+1 (senv_recv env src DT_One) :=
-  @SRecv_check sp_dtype sp_data TX DT_One is_scalar me n env src f.
+Definition SRecv_one {party n env} (src : nat) (f : TX -> @sproc sp_dtype sp_data party n env) 
+    : @sproc sp_dtype sp_data party n.+1 (senv_recv env src DT_One) :=
+  @SRecv_check sp_dtype sp_data TX DT_One is_scalar party n env src f.
 
-Definition SRecv_vec {me n env} (src : nat) (f : VX -> @sproc sp_dtype sp_data me n env)
-    : @sproc sp_dtype sp_data me n.+1 (senv_recv env src DT_Vec) :=
-  @SRecv_check sp_dtype sp_data VX DT_Vec is_vector me n env src f.
+Definition SRecv_vec {party n env} (src : nat) (f : VX -> @sproc sp_dtype sp_data party n env)
+    : @sproc sp_dtype sp_data party n.+1 (senv_recv env src DT_Vec) :=
+  @SRecv_check sp_dtype sp_data VX DT_Vec is_vector party n env src f.
 
 End recv_wrappers_example.
 
@@ -479,8 +479,8 @@ Variable dtype : eqType.
 
 (* Erasure: convert session-typed sproc to unindexed proc *)
 (* This erases BOTH the fuel index AND the session environment index *)
-Fixpoint erase {me : nat} {n : nat} {env : senv dtype} 
-    (p : @sproc dtype data me n env) : smc_interpreter.proc data :=
+Fixpoint erase {party : nat} {n : nat} {env : senv dtype} 
+    (p : @sproc dtype data party n env) : smc_interpreter.proc data :=
   match p with
   | SFinish => Finish
   | SRet d => Ret d
@@ -500,7 +500,7 @@ Definition erase_aprocs (aps : seq (aproc dtype data)) : seq (smc_interpreter.pr
 
 End erasure.
 
-Arguments erase {data dtype me n env}.
+Arguments erase {data dtype party n env}.
 Arguments erase_aproc {data dtype}.
 Arguments erase_aprocs {data dtype}.
 
@@ -592,8 +592,8 @@ key properties:
    sum_fuel, eliminating the need to manually specify interpreter fuel.
 
 Two-layer design:
-  - sproc me n env : session-typed with fuel (for type checking, fuel inference)
-  - proc           : unindexed process (for interpretation and relational proofs)
+  - sproc party n env : session-typed with fuel (for type checking, fuel inference)
+  - proc              : unindexed process (for interpretation and relational proofs)
 
 Usage:
   1. Define your dtype (e.g., DT_Vec | DT_One for scalar product)

@@ -57,8 +57,8 @@ Let data := di_data DI.
 Let d := di_d DI.
 Let e := di_e DI.
 Let k := di_k DI.
-Let Recv_dec {n} := @di_Recv_dec PHE DI n.
-Let Recv_enc {n} := @di_Recv_enc PHE DI n.
+Let Recv_dec := @di_Recv_dec PHE DI.
+Let Recv_enc := @di_Recv_enc PHE DI.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
 Let E := @phe_E PHE.
@@ -83,9 +83,9 @@ Variable pn : partyT -> nat.
 Hypothesis D_correct : forall p m r k,
   D (K p Dec k) (E p m r) = Some m.
 
-(* Programs with fuel automatically inferred.
+(* Programs (proc is now unindexed - no fuel parameter).
    Each encryption E(party, msg, rand) needs explicit randomness. *)
-Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) : proc data _ :=
+Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) : proc data :=
   Init (k dk) (
   Init (d v2) (
   Send (pn alice) (e (E bob v2 rb1)) (
@@ -94,7 +94,7 @@ Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) : proc data _ :=
     Send (pn charlie) (e (a3 *h (E charlie d2 rb2))) (
   Finish)))))).
 
-Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) : proc data _ :=
+Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) : proc data :=
   Init (k dk) (
   Init (d v3) (
   Send (pn alice) (e (E charlie v3 rc1)) (
@@ -102,7 +102,7 @@ Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) : proc data _ :=
     Send (pn alice) (e (E alice d3 rc2))
   Finish))))).
 
-Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) : proc data _ :=
+Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) : proc data :=
   Init (k dk) (
   Init (d v1) (
   Init (d u1) (
@@ -128,8 +128,8 @@ Let dk_a : pkey := K alice Dec k_a.
 Let dk_b : pkey := K bob Dec k_b.
 Let dk_c : pkey := K charlie Dec k_c.
 
-(* Pack processes into aproc list using [procs ...] notation *)
-Definition dsdp_procs : seq (aproc data) :=
+(* Pack processes into proc list using [procs ...] notation *)
+Definition dsdp_procs : seq (proc data) :=
   [procs palice dk_a v1 u1 u2 u3 r2 r3 ra1 ra2; 
          pbob dk_b v2 rb1 rb2; 
          pcharlie dk_c v3 rc1 rc2].

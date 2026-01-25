@@ -130,10 +130,13 @@ Proof. by native_compute. Qed.
 (** * Interpreter Integration (via Erasure)                                   *)
 (******************************************************************************)
 
-(* Pack session-typed processes into erased aproc list for interpreter *)
-(* [sprocs ...] notation erases session types and packs into smc_interpreter.aproc *)
-Definition smc_procs : seq (smc_interpreter.aproc data) :=
-  [sprocs palice xa; pbob xb yb; pcoserv sa sb ra].
+(* Session-typed processes for duality checking and fuel computation *)
+Definition smc_saprocs : seq (aproc sp_dtype data) :=
+  [aprocs palice xa; pbob xb yb; pcoserv sa sb ra].
+
+(* Erased processes for interpreter (strips session type indices) *)
+Definition smc_procs : seq (proc data) :=
+  erase_aprocs smc_saprocs.
 
 Definition smc_scalar_product h :=
   interp h smc_procs (nseq 3 [::]).
@@ -145,11 +148,11 @@ Definition smc_scalar_product h :=
 Definition smc_max_fuel : nat := 25.
 
 (* Verify the computed fuel matches *)
-Lemma smc_max_fuel_ok : smc_max_fuel = [> smc_procs].
+Lemma smc_max_fuel_ok : smc_max_fuel = [> smc_saprocs].
 Proof. reflexivity. Qed.
 
 Definition smc_scalar_product_traces :=
-  interp_traces [> smc_procs] smc_procs.
+  interp_traces [> smc_saprocs] smc_procs.
 
 Definition smc_scalar_product_tracesT := smc_max_fuel.-bseq data.
 

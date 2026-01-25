@@ -353,12 +353,16 @@ Proof. by native_compute. Qed.
 Local Open Scope sproc_scope.
 Local Open Scope proc_scope.
 
-(* Pack session-typed processes into erased aproc list for interpreter *)
-Definition smc_procs : seq (smc_interpreter.aproc data) :=
-  [sprocs palice xa; pbob xb yb; pcoserv sa sb ra].
+(* Session-typed processes for duality checking and fuel computation *)
+Definition smc_saprocs : seq (aproc sp_dtype data) :=
+  [aprocs palice xa; pbob xb yb; pcoserv sa sb ra].
+
+(* Erased processes for interpreter (strips session type indices) *)
+Definition smc_procs : seq (proc data) :=
+  erase_aprocs smc_saprocs.
 
 (* Fuel bound: 8 + 9 + 8 = 25 *)
-Lemma smc_max_fuel_ok : [> smc_procs] = 25.
+Lemma smc_max_fuel_ok : [> smc_saprocs] = 25.
 Proof. reflexivity. Qed.
 
 End scalar_product.
