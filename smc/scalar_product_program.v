@@ -3,10 +3,12 @@ From mathcomp Require Import all_ssreflect all_algebra fingroup finalg ring.
 From mathcomp Require Import Rstruct reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
-Require Import smc_interpreter.
+Require Import smc_interpreter smc_session_types scalar_product_interface.
 
 (**md**************************************************************************)
 (* # SMC Program for the SMC Scalar Product Protocol                          *)
+(*                                                                            *)
+(* Now with session types for protocol verification!                          *)
 (*                                                                            *)
 (* |   Definitions     |    | Meaning                                        |*)
 (* |-------------------|----|------------------------------------------------|*)
@@ -17,12 +19,16 @@ Require Import smc_interpreter.
 (* |                   |    | results                                        |*)
 (* |-------------------------------------------------------------------------|*)
 (*                                                                            *)
+(* Session type verification:                                                 *)
+(* - coserv_alice_dual: proves coserv and alice have dual session types      *)
+(* - coserv_bob_dual: proves coserv and bob have dual session types          *)
+(* - alice_bob_dual: proves alice and bob have dual session types            *)
 (*                                                                            *)
 (* Formalization for:                                                         *)
 (* A practical approach to solve secure multi-party computation problems      *)
 (* Du, W., Zhan, J.Z.                                                         *)
 (* In: Workshop on New Security Paradigms (NSPW 2002), Virginia Beach, VA, USA*)
-(* September 23-26, 2002. pp. 127–135. ACM (2002).                            *)
+(* September 23-26, 2002. pp. 127-135. ACM (2002).                            *)
 (* https://doi.org/10.1145/844102.844125                                      *)
 (*                                                                            *)
 (******************************************************************************)
@@ -43,6 +49,7 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope proc_scope.
+Local Open Scope sproc_scope.
 
 Section scalar_product.
 Variable m : nat.
@@ -51,54 +58,82 @@ Variable VX : lmodType TX. (* vector is not ringType (mul)*)
 Variable dotproduct : VX -> VX -> TX.
 Local Notation "u *d w" := (dotproduct u w).
 
-Definition alice : nat := 0.
-Definition bob : nat := 1.
-Definition coserv : nat := 2.
+(* Import definitions from scalar_product_interface *)
+Let alice := @scalar_product_interface.alice.
+Let bob := @scalar_product_interface.bob.
+Let coserv := @scalar_product_interface.coserv.
+Let data := data TX VX.
+Let one := @one TX VX.
+Let vec := @vec TX VX.
+Let SRecv_one := @scalar_product_interface.SRecv_one TX VX.
+Let SRecv_vec := @scalar_product_interface.SRecv_vec TX VX.
 
-Definition data := (TX + VX)%type.
-Definition one x : data := inl x.
-Definition vec x : data := inr x.
+(******************************************************************************)
+(** * Session-Typed Protocol Definitions                                      *)
+(******************************************************************************)
 
-(* Recv wrappers for fuel-indexed proc type *)
-Definition Recv_one {n} frm (f : TX -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => if x is inl v then f v else Fail).
-Definition Recv_vec {n} frm (f : VX -> proc data n) : proc data n.+1 :=
-  Recv frm (fun x => if x is inr v then f v else Fail).
+(* Commodity server's protocol - session typed *)
+(* Fuel and session environment are automatically inferred via _ *)
+Definition pcoserv (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _ :=
+  SInit (vec sa)
+  (SInit (vec sb)
+  (SInit (one ra)
+  (SSend alice DT_Vec (vec sa)
+  (SSend alice DT_One (one ra)
+  (SSend bob DT_Vec (vec sb)
+  (SSend bob DT_One (one (sa *d sb - ra)) SFinish)))))).
 
-(* Fuel is automatically inferred via _ *)
-Definition pcoserv (sa sb: VX) (ra : TX) : proc data _ :=
-  Init (vec sa) (
-  Init (vec sb) (
-  Init (one ra) (
-  Send alice (vec sa) (
-  Send alice (one ra) (
-  Send bob (vec sb) (
-  Send bob (one (sa *d sb - ra)) Finish)))))).
+(* Alice's protocol - session typed *)
+Definition palice (xa : VX) : @sproc sp_dtype data alice _ _ :=
+  SInit (vec xa)
+  (SRecv_vec coserv (fun sa =>
+   SRecv_one coserv (fun ra =>
+   SSend bob DT_Vec (vec (xa + sa))
+   (SRecv_vec bob (fun xb' =>
+    SRecv_one bob (fun t =>
+    SRet (one (t - (xb' *d sa) + ra)))))))).
 
-Definition palice (xa : VX) : proc data _ :=
-  Init (vec xa) (
-  Recv_vec coserv (fun sa =>
-  Recv_one coserv (fun ra =>
-  Send bob (vec (xa + sa)) (
-  Recv_vec bob (fun xb' =>
-  Recv_one bob (fun t =>
-  Ret (one (t - (xb' *d sa) + ra)))))))).
+(* Bob's protocol - session typed *)
+Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
+  SInit (vec xb)
+  (SInit (one yb)
+  (SRecv_vec coserv (fun sb =>
+   SRecv_one coserv (fun rb =>
+   SRecv_vec alice (fun xa' =>
+   let t := xa' *d xb + rb - yb in
+   SSend alice DT_Vec (vec (xb + sb))
+   (SSend alice DT_One (one t)
+   (SRet (one yb)))))))).
 
-Definition pbob (xb : VX) (yb : TX) : proc data _ :=
-  Init (vec xb) (
-  Init (one yb) (
-  Recv_vec coserv (fun sb =>
-  Recv_one coserv (fun rb =>
-  Recv_vec alice (fun xa' =>
-  let t := xa' *d xb + rb - yb in
-    Send alice (vec (xb + sb))
-    (Send alice (one t) (Ret (one yb)))))))).
+(******************************************************************************)
+(** * Session Type Duality Verification                                       *)
+(******************************************************************************)
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 
-(* Pack processes into aproc list using [procs ...] notation *)
-Definition smc_procs : seq (aproc data) :=
-  [procs palice xa; pbob xb yb; pcoserv sa sb ra].
+(* Wrap processes in session-typed aproc for duality checking *)
+Definition saproc_coserv := mk_aproc (pcoserv sa sb ra).
+Definition saproc_alice := mk_aproc (palice xa).
+Definition saproc_bob := mk_aproc (pbob xb yb).
+
+(* Duality proofs - verified by computation *)
+Lemma coserv_alice_dual : channels_dual saproc_coserv saproc_alice = true.
+Proof. by native_compute. Qed.
+
+Lemma coserv_bob_dual : channels_dual saproc_coserv saproc_bob = true.
+Proof. by native_compute. Qed.
+
+Lemma alice_bob_dual : channels_dual saproc_alice saproc_bob = true.
+Proof. by native_compute. Qed.
+
+(******************************************************************************)
+(** * Interpreter Integration (via Erasure)                                   *)
+(******************************************************************************)
+
+(* Pack session-typed processes into erased aproc list for interpreter *)
+(* [sprocs ...] notation erases session types and packs into smc_interpreter.aproc *)
+Definition smc_procs : seq (smc_interpreter.aproc data) :=
+  [sprocs palice xa; pbob xb yb; pcoserv sa sb ra].
 
 Definition smc_scalar_product h :=
   interp h smc_procs (nseq 3 [::]).
@@ -131,4 +166,3 @@ Definition is_scalar_product (trs: smc_scalar_product_party_tracesT) :=
   xa *d xb = ya + yb.
 
 End scalar_product.
-
