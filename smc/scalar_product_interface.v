@@ -75,15 +75,15 @@ Definition vec (x : VX) : data := inr x.
 (******************************************************************************)
 
 (* Receive scalar (TX) value *)
-Definition SRecv_one {me n env} (src : nat) 
-    (f : TX -> @sproc sp_dtype data me n env) 
-    : @sproc sp_dtype data me n.+1 (senv_recv env src DT_One) :=
+Definition SRecv_one {party n env} (src : nat) 
+    (f : TX -> @sproc sp_dtype data party n env) 
+    : @sproc sp_dtype data party n.+1 (senv_recv env src DT_One) :=
   SRecv src DT_One (fun d => match d with inl v => f v | inr _ => SFail end).
 
 (* Receive vector (VX) value *)
-Definition SRecv_vec {me n env} (src : nat)
-    (f : VX -> @sproc sp_dtype data me n env)
-    : @sproc sp_dtype data me n.+1 (senv_recv env src DT_Vec) :=
+Definition SRecv_vec {party n env} (src : nat)
+    (f : VX -> @sproc sp_dtype data party n env)
+    : @sproc sp_dtype data party n.+1 (senv_recv env src DT_Vec) :=
   SRecv src DT_Vec (fun d => match d with inr v => f v | inl _ => SFail end).
 
 (******************************************************************************)
@@ -91,27 +91,27 @@ Definition SRecv_vec {me n env} (src : nat)
 (******************************************************************************)
 
 (* Send vector - takes VX directly, applies vec wrapper and DT_Vec *)
-Definition SPSendVec {me n env} (party : nat) (x : VX) 
-    (p : @sproc sp_dtype data me n env) 
-    : @sproc sp_dtype data me n.+1 (senv_send env party DT_Vec) := 
-  SSend party DT_Vec (vec x) p.
+Definition SPSendVec {party n env} (dst : nat) (x : VX) 
+    (p : @sproc sp_dtype data party n env) 
+    : @sproc sp_dtype data party n.+1 (senv_send env dst DT_Vec) := 
+  SSend dst DT_Vec (vec x) p.
 
 (* Send scalar - takes TX directly, applies one wrapper and DT_One *)
-Definition SPSendOne {me n env} (party : nat) (x : TX)
-    (p : @sproc sp_dtype data me n env)
-    : @sproc sp_dtype data me n.+1 (senv_send env party DT_One) := 
-  SSend party DT_One (one x) p.
+Definition SPSendOne {party n env} (dst : nat) (x : TX)
+    (p : @sproc sp_dtype data party n env)
+    : @sproc sp_dtype data party n.+1 (senv_send env dst DT_One) := 
+  SSend dst DT_One (one x) p.
 
 (******************************************************************************)
 (** * Init Wrapper                                                            *)
 (******************************************************************************)
 
 (* Init wrapper for session-typed processes *)
-Definition SPInit {me n env} (x : data) (p : @sproc sp_dtype data me n env) 
-    : @sproc sp_dtype data me n.+1 env := SInit x p.
+Definition SPInit {party n env} (x : data) (p : @sproc sp_dtype data party n env) 
+    : @sproc sp_dtype data party n.+1 env := SInit x p.
 
 (* Ret wrapper *)
-Definition SPRet {me : nat} (x : data) : @sproc sp_dtype data me 2 senv_end := SRet x.
+Definition SPRet {party : nat} (x : data) : @sproc sp_dtype data party 2 senv_end := SRet x.
 
 End scalar_product_types.
 
@@ -120,9 +120,9 @@ End scalar_product_types.
 Arguments data TX VX : clear implicits.
 Arguments one {TX VX}.
 Arguments vec {TX VX}.
-Arguments SRecv_one {TX VX me n env}.
-Arguments SRecv_vec {TX VX me n env}.
-Arguments SPSendVec {TX VX me n env}.
-Arguments SPSendOne {TX VX me n env}.
-Arguments SPInit {TX VX me n env}.
-Arguments SPRet {TX VX me}.
+Arguments SRecv_one {TX VX party n env}.
+Arguments SRecv_vec {TX VX party n env}.
+Arguments SPSendVec {TX VX party n env}.
+Arguments SPSendOne {TX VX party n env}.
+Arguments SPInit {TX VX party n env}.
+Arguments SPRet {TX VX party}.

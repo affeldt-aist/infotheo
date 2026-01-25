@@ -191,9 +191,9 @@ Let data := std_data PHE.
 Let D := @phe_D PHE.
 
 (* Receive encrypted - pattern match data, use SFail on mismatch *)
-Definition DRecv_enc {me n env} (src : nat)
-    (f : phe_enc PHE -> @sproc dsdp_dtype data me n env)
-    : @sproc dsdp_dtype data me n.+1 (senv_recv env src DT_Enc) :=
+Definition DRecv_enc {party n env} (src : nat)
+    (f : phe_enc PHE -> @sproc dsdp_dtype data party n env)
+    : @sproc dsdp_dtype data party n.+1 (senv_recv env src DT_Enc) :=
   SRecv src DT_Enc (fun d => 
     match @std_from_enc PHE d with
     | Some enc => f enc
@@ -202,9 +202,9 @@ Definition DRecv_enc {me n env} (src : nat)
 
 (* Receive encrypted and decrypt - still tracks as DT_Enc (what's on the wire) *)
 (* NOTE: D returns option msg, so need nested match for decrypt failure *)
-Definition DRecv_dec {me n env} (src : nat) (dk : phe_pkey PHE)
-    (f : phe_msg PHE -> @sproc dsdp_dtype data me n env)
-    : @sproc dsdp_dtype data me n.+1 (senv_recv env src DT_Enc) :=
+Definition DRecv_dec {party n env} (src : nat) (dk : phe_pkey PHE)
+    (f : phe_msg PHE -> @sproc dsdp_dtype data party n env)
+    : @sproc dsdp_dtype data party n.+1 (senv_recv env src DT_Enc) :=
   SRecv src DT_Enc (fun d => 
     match @std_from_enc PHE d with
     | Some enc => match D dk enc with
@@ -215,28 +215,28 @@ Definition DRecv_dec {me n env} (src : nat) (dk : phe_pkey PHE)
     end).
 
 (* Send encrypted - the only send variant needed *)
-Definition DPSendEnc {me n env} (party : nat) (x : phe_enc PHE)
-    (p : @sproc dsdp_dtype data me n env)
-    : @sproc dsdp_dtype data me n.+1 (senv_send env party DT_Enc) :=
-  SSend party DT_Enc (@std_e PHE x) p.
+Definition DPSendEnc {party n env} (dst : nat) (x : phe_enc PHE)
+    (p : @sproc dsdp_dtype data party n env)
+    : @sproc dsdp_dtype data party n.+1 (senv_send env dst DT_Enc) :=
+  SSend dst DT_Enc (@std_e PHE x) p.
 
 (* Init/Ret wrappers - can init any data kind (msg, enc, key) *)
 (* Init doesn't affect session env since it's local storage *)
-Definition DPInit {me n env} (x : data) (p : @sproc dsdp_dtype data me n env)
-    : @sproc dsdp_dtype data me n.+1 env := 
+Definition DPInit {party n env} (x : data) (p : @sproc dsdp_dtype data party n env)
+    : @sproc dsdp_dtype data party n.+1 env := 
   SInit x p.
 
-Definition DPRet {me : nat} (x : data) : @sproc dsdp_dtype data me 2 senv_end := 
+Definition DPRet {party : nat} (x : data) : @sproc dsdp_dtype data party 2 senv_end := 
   SRet x.
 
 End Session_Typed_DSDP.
 
 (* Arguments declarations for implicit parameters *)
-Arguments DRecv_enc {PHE me n env}.
-Arguments DRecv_dec {PHE me n env}.
-Arguments DPSendEnc {PHE me n env}.
-Arguments DPInit {PHE me n env}.
-Arguments DPRet {PHE me}.
+Arguments DRecv_enc {PHE party n env}.
+Arguments DRecv_dec {PHE party n env}.
+Arguments DPSendEnc {PHE party n env}.
+Arguments DPInit {PHE party n env}.
+Arguments DPRet {PHE party}.
 
 (* ========================================================================== *)
 (* Notation shortcuts for use in client files                                 *)

@@ -113,22 +113,12 @@ Definition alice_idx : nat := 0.
 Definition bob_idx : nat := 1.
 Definition charlie_idx : nat := 2.
 
-(* Session-typed wrappers for notations - use DPxxx from dsdp_interface directly *)
-Definition PInit {me n env} (x : data) (p : @sproc dsdp_dtype data me n env) 
-    : @sproc dsdp_dtype data me n.+1 env := @DPInit PHE me n env x p.
-Definition PSend {me n env} (party_idx : nat) (x : enc)
-    (p : @sproc dsdp_dtype data me n env)
-    : @sproc dsdp_dtype data me n.+1 (senv_send env party_idx DT_Enc) := 
-  @DPSendEnc PHE me n env party_idx x p.
-Definition PRet {me} (x : data) : @sproc dsdp_dtype data me 2 senv_end := @DPRet PHE me x.
-Definition Recv_dec {me n env} (src_idx : nat) (dk : pkey)
-    (f : msg -> @sproc dsdp_dtype data me n env) 
-    : @sproc dsdp_dtype data me n.+1 (senv_recv env src_idx DT_Enc) :=
-  @DRecv_dec PHE me n env src_idx dk f.
-Definition Recv_enc {me n env} (src_idx : nat)
-    (f : enc -> @sproc dsdp_dtype data me n env) 
-    : @sproc dsdp_dtype data me n.+1 (senv_recv env src_idx DT_Enc) :=
-  @DRecv_enc PHE me n env src_idx f.
+(* Use session-typed wrappers from dsdp_interface directly *)
+Let PInit {party n env} := @DPInit PHE party n env.
+Let PSend {party n env} := @DPSendEnc PHE party n env.
+Let PRet {party} := @DPRet PHE party.
+Let Recv_dec {party n env} := @DRecv_dec PHE party n env.
+Let Recv_enc {party n env} := @DRecv_enc PHE party n env.
 
 (** * Data wrapper shorthand notations *)
 
