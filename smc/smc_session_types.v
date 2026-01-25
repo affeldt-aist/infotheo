@@ -241,3 +241,210 @@ Qed.
 
 End duality.
 
+(******************************************************************************)
+(** * Existential Process Wrapper (aproc)                                     *)
+(******************************************************************************)
+
+Section aproc_def.
+
+Variable dtype : eqType.
+Variable data : Type.
+
+(* aproc: existentially wraps me, fuel, and senv so processes can be stored in lists *)
+Definition aproc : Type := { me : nat & { n : nat & { env : senv dtype & @sproc dtype data me n env }}}.
+
+(* Smart constructor *)
+Definition mk_aproc {me : nat} {n : nat} {env : senv dtype} 
+    (p : @sproc dtype data me n env) : aproc :=
+  existT _ me (existT _ n (existT _ env p)).
+
+(* Accessors *)
+Definition aproc_me (ap : aproc) : nat := projT1 ap.
+Definition aproc_fuel (ap : aproc) : nat := projT1 (projT2 ap).
+Definition aproc_env (ap : aproc) : senv dtype := projT1 (projT2 (projT2 ap)).
+Definition aproc_proc (ap : aproc) : @sproc dtype data (aproc_me ap) (aproc_fuel ap) (aproc_env ap) :=
+  projT2 (projT2 (projT2 ap)).
+
+(* Get session type with specific party *)
+Definition aproc_stype (ap : aproc) (them : nat) : stype dtype :=
+  aproc_env ap them.
+
+End aproc_def.
+
+Arguments mk_aproc {dtype data me n env}.
+Arguments aproc_me {dtype data}.
+Arguments aproc_fuel {dtype data}.
+Arguments aproc_env {dtype data}.
+Arguments aproc_proc {dtype data}.
+Arguments aproc_stype {dtype data}.
+
+(******************************************************************************)
+(** * Session Type Decidable Equality                                         *)
+(******************************************************************************)
+
+Section stype_eq.
+
+Variable dtype : eqType.
+
+(* Decidable equality for session types *)
+Fixpoint stype_eqb (s1 s2 : stype dtype) : bool :=
+  match s1, s2 with
+  | STEnd, STEnd => true
+  | STSend d1 k1, STSend d2 k2 => (d1 == d2) && stype_eqb k1 k2
+  | STRecv d1 k1, STRecv d2 k2 => (d1 == d2) && stype_eqb k1 k2
+  | _, _ => false
+  end.
+
+Lemma stype_eqP : Equality.axiom stype_eqb.
+Proof.
+move=> s1 s2.
+elim: s1 s2 => [d1 k1 IH|d1 k1 IH|] [d2 k2|d2 k2|] //=; try by constructor.
+- case: (d1 =P d2) => [<-|Hneq] /=.
+  + case: (IH k2) => [<-|Hneq]; first by constructor.
+    constructor. by case.
+  + constructor. by case.
+- case: (d1 =P d2) => [<-|Hneq] /=.
+  + case: (IH k2) => [<-|Hneq]; first by constructor.
+    constructor. by case.
+  + constructor. by case.
+Qed.
+
+HB.instance Definition _ := hasDecEq.Build (stype dtype) stype_eqP.
+
+End stype_eq.
+
+(******************************************************************************)
+(** * Duality Checking                                                        *)
+(******************************************************************************)
+
+Section duality_check.
+
+Variable dtype : eqType.
+
+(* Check if two session types are dual *)
+Definition are_dual (s1 s2 : stype dtype) : bool := s1 == dual s2.
+
+(* Check if two aprocs have dual session types for communication between them *)
+Definition channels_dual {data : Type} (ap1 ap2 : aproc dtype data) : bool :=
+  let me1 := aproc_me ap1 in
+  let me2 := aproc_me ap2 in
+  (* ap1's view of me2 should be dual to ap2's view of me1 *)
+  are_dual (aproc_stype ap1 me2) (aproc_stype ap2 me1).
+
+End duality_check.
+
+Arguments are_dual {dtype}.
+Arguments channels_dual {dtype data}.
+
+(******************************************************************************)
+(** * Phase 2 Tests                                                           *)
+(******************************************************************************)
+
+Section test_phase2.
+
+(* Reuse test_dtype from Phase 1 tests *)
+Let dtype := test_dtype.
+Let data := test_data.
+
+(* Two-party protocol test *)
+(* Party 0 sends to Party 1, then finishes *)
+Definition proto_p0 : @sproc dtype data 0 _ _ :=
+  SSend 1 DT_A 42 SFinish.
+
+(* Party 1 receives from Party 0, then finishes *)
+Definition proto_p1 : @sproc dtype data 1 _ _ :=
+  SRecv 0 DT_A (fun _ => SFinish).
+
+(* Wrap in aproc *)
+Definition aproc_p0 : aproc dtype data := mk_aproc proto_p0.
+Definition aproc_p1 : aproc dtype data := mk_aproc proto_p1.
+
+(* Test: Extract session types *)
+Eval compute in aproc_stype aproc_p0 1.  (* Should be: STSend DT_A STEnd *)
+Eval compute in aproc_stype aproc_p1 0.  (* Should be: STRecv DT_A STEnd *)
+
+(* Test: Check duality *)
+Eval compute in channels_dual aproc_p0 aproc_p1.  (* Should be: true *)
+
+(* Verify duality mathematically *)
+Lemma proto_dual_correct : channels_dual aproc_p0 aproc_p1 = true.
+Proof. by native_compute. Qed.
+
+End test_phase2.
+
+(******************************************************************************)
+(** * Specialized Recv Wrappers                                               *)
+(******************************************************************************)
+
+(* These wrappers provide type-safe receive operations that:
+   1. Specify the expected dtype for session type tracking
+   2. Pattern match on data to extract the expected form
+   3. Use SFail if the data doesn't match the expected form *)
+
+Section recv_wrappers.
+
+Variable dtype : eqType.
+Variable data : Type.
+
+(* A "checker" function that extracts a typed value from data, or fails *)
+(* For example: is_scalar : data -> option TX *)
+Variable T : Type.                    (* Target type (e.g., TX for scalars) *)
+Variable dt : dtype.                  (* dtype for session tracking *)
+Variable check : data -> option T.    (* Checker: data -> option T *)
+
+(* Specialized receive: receive from src, check data, continue with typed value *)
+Definition SRecv_check {me : nat} {n : nat} {env : senv dtype} 
+    (src : nat) (f : T -> @sproc dtype data me n env) : @sproc dtype data me n.+1 (senv_recv env src dt) :=
+  SRecv src dt (fun d => 
+    match check d with
+    | Some v => f v
+    | None => SFail
+    end).
+
+End recv_wrappers.
+
+Arguments SRecv_check {dtype data T dt check me n env} src.
+
+(* Example instantiation for scalar product data types *)
+Section recv_wrappers_example.
+
+(* Define dtype for scalar product: vectors vs scalars *)
+Inductive sp_dtype : Type := DT_Vec | DT_One.
+
+Definition sp_dtype_eqb_subproof (d1 d2 : sp_dtype) : { d1 = d2 } + { d1 <> d2 }.
+Proof. decide equality. Defined.
+
+Definition sp_dtype_eqb (d1 d2 : sp_dtype) : bool :=
+  if sp_dtype_eqb_subproof d1 d2 then true else false.
+
+Lemma sp_dtype_eqP : Equality.axiom sp_dtype_eqb.
+Proof.
+move=> d1 d2. rewrite /sp_dtype_eqb.
+by case: sp_dtype_eqb_subproof => /= H; constructor.
+Qed.
+
+HB.instance Definition _ := hasDecEq.Build sp_dtype sp_dtype_eqP.
+
+(* Data type for scalar product: sum of vector and scalar *)
+Variable TX : Type.  (* scalar type *)
+Variable VX : Type.  (* vector type *)
+Let sp_data := (TX + VX)%type.
+
+(* Checkers *)
+Definition is_scalar (d : sp_data) : option TX :=
+  match d with inl v => Some v | inr _ => None end.
+
+Definition is_vector (d : sp_data) : option VX :=
+  match d with inr v => Some v | inl _ => None end.
+
+(* Specialized receivers for scalar product *)
+Definition SRecv_one {me n env} (src : nat) (f : TX -> @sproc sp_dtype sp_data me n env) 
+    : @sproc sp_dtype sp_data me n.+1 (senv_recv env src DT_One) :=
+  @SRecv_check sp_dtype sp_data TX DT_One is_scalar me n env src f.
+
+Definition SRecv_vec {me n env} (src : nat) (f : VX -> @sproc sp_dtype sp_data me n env)
+    : @sproc sp_dtype sp_data me n.+1 (senv_recv env src DT_Vec) :=
+  @SRecv_check sp_dtype sp_data VX DT_Vec is_vector me n env src f.
+
+End recv_wrappers_example.
+
