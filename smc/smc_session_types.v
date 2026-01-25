@@ -6,8 +6,11 @@ Require Import smc_interpreter.
 (* # Session Types for SMC Protocols                                          *)
 (*                                                                            *)
 (* Binary session types for verifying communication protocols in SMC.         *)
-(* Type-indexed session types where both fuel AND session environment are     *)
-(* automatically inferred by Coq's unification.                               *)
+(* Session environment is automatically inferred by Coq's unification.        *)
+(*                                                                            *)
+(* Two layers:                                                                *)
+(*   sproc me env - session-typed process (type-checked)                      *)
+(*   proc         - unindexed process (for interpretation)                    *)
 (*                                                                            *)
 (* Based on:                                                                  *)
 (* Kohei Honda, Vasco T. Vasconcelos, and Makoto Kubo.                        *)
@@ -68,43 +71,40 @@ Section sproc_def.
 
 Variable dtype : eqType.
 Variable data : Type.
-Variable classify : data -> dtype.  (* Maps data value to its kind - MUST be transparent *)
 
 (* Process indexed by: which party I am (me), fuel (n), session environment (env) *)
-(* Both fuel AND env are inferred by Coq's unification! *)
+(* Both fuel AND session env are inferred by Coq's unification! *)
+(* Fuel is used to compute interpreter steps; erased when converting to proc *)
 Inductive sproc (me : nat) : nat -> senv dtype -> Type :=
 
-  (* Finish: base case, empty session environment *)
+  (* Finish: base case, fuel=1, empty session environment *)
   | SFinish : sproc me 1 senv_end
   
-  (* Ret: returns value, empty session environment *)
+  (* Ret: returns value, fuel=2, empty session environment *)
   | SRet : data -> sproc me 2 senv_end
   
-  (* Init: doesn't affect session types, just initializes local data *)
+  (* Init: doesn't affect session types, increments fuel *)
   | SInit : forall n env,
       data -> 
       sproc me n env -> 
       sproc me n.+1 env
   
-  (* Send: prepends STSend to session with dst *)
-  (* dtype is explicit (like SRecv) to avoid scope issues with data values *)
+  (* Send: prepends STSend to session with dst, increments fuel *)
   | SSend : forall n env dst (dt : dtype),
       data ->
       sproc me n env ->
       sproc me n.+1 (senv_send env dst dt)
   
-  (* Recv: prepends STRecv to session with src *)
-  (* dtype is explicit because it cannot be inferred from continuation *)
+  (* Recv: prepends STRecv to session with src, increments fuel *)
   | SRecv : forall n env src (dt : dtype),
       (data -> sproc me n env) ->
       sproc me n.+1 (senv_recv env src dt)
   
-  (* Fail: polymorphic in env for error handling *)
+  (* Fail: polymorphic in fuel and env for error handling *)
   | SFail : forall n env, sproc me n env.
 
 End sproc_def.
 
-(* Note: classify is not used in constructors, so not included as parameter *)
 Arguments SFinish {dtype data me}.
 Arguments SRet {dtype data me}.
 Arguments SInit {dtype data me n env}.
@@ -140,26 +140,18 @@ HB.instance Definition _ := hasDecEq.Build test_dtype test_dtype_eqP.
 (* Simple data type: just nat for testing *)
 Definition test_data := nat.
 
-(* Simple classifier: even -> DT_A, odd -> DT_B *)
-Definition test_classify (d : test_data) : test_dtype :=
-  if odd d then DT_B else DT_A.
-
 (* Party identifiers for testing *)
 Definition party0 : nat := 0.
 Definition party1 : nat := 1.
 
 (* TEST 1: Simple Finish - should infer fuel=1, env=senv_end *)
-(* Use @ for explicit application to make type arguments clear *)
-(* sproc now takes: dtype, data, me, fuel, senv (no classify) *)
 Definition test1 : @sproc test_dtype test_data party0 _ _ :=
   SFinish.
 
-(* Verify test1's inferred types *)
 Check test1.
 (* Should show: sproc ... party0 1 senv_end *)
 
 (* TEST 2: Send then Finish - should infer fuel=2, env with one Send *)
-(* SSend now takes: dst, dtype, data, continuation *)
 Definition test2 : @sproc test_dtype test_data party0 _ _ :=
   SSend party1 DT_A 42 SFinish.
 
@@ -206,13 +198,22 @@ Definition get_stype {dtype : eqType} {data : Type}
     (p : @sproc dtype data me n env) (them : nat) : stype dtype :=
   env them.
 
+(* Extract inferred fuel from sproc *)
+Definition get_fuel {dtype : eqType} {data : Type}
+    {me : nat} {n : nat} {env : senv dtype} 
+    (p : @sproc dtype data me n env) : nat := n.
+
 (* Check session type of test7 with party1 *)
 Eval compute in get_stype test7 party1.
-(* Should show: STSend DT_A STEnd (since we send even number to party1) *)
+(* Should show: STSend DT_A STEnd *)
 
 (* Check session type of test7 with party2 *)
 Eval compute in get_stype test7 party2.
 (* Should show: STRecv DT_A (STRecv DT_B STEnd) *)
+
+(* Check inferred fuel of test7 *)
+Eval compute in get_fuel test7.
+(* Should show: 4 *)
 
 End test_inference.
 
@@ -283,6 +284,13 @@ Arguments aproc_fuel {dtype data}.
 Arguments aproc_env {dtype data}.
 Arguments aproc_proc {dtype data}.
 Arguments aproc_stype {dtype data}.
+
+(* Compute sum of all fuels from aproc list - used as interpreter fuel *)
+Definition sum_fuel {dtype : eqType} {data : Type} (ps : seq (aproc dtype data)) : nat := 
+  foldr (fun p acc => aproc_fuel p + acc) 0 ps.
+
+(* Notation for fuel computation *)
+Notation "[> ps ]" := (sum_fuel ps) (at level 0).
 
 (******************************************************************************)
 (** * Session Type Decidable Equality                                         *)
@@ -368,6 +376,10 @@ Definition aproc_p1 : aproc dtype data := mk_aproc proto_p1.
 (* Test: Extract session types *)
 Eval compute in aproc_stype aproc_p0 1.  (* Should be: STSend DT_A STEnd *)
 Eval compute in aproc_stype aproc_p1 0.  (* Should be: STRecv DT_A STEnd *)
+
+(* Test: Extract fuel *)
+Eval compute in aproc_fuel aproc_p0.  (* Should be: 2 *)
+Eval compute in aproc_fuel aproc_p1.  (* Should be: 2 *)
 
 (* Test: Check duality *)
 Eval compute in channels_dual aproc_p0 aproc_p1.  (* Should be: true *)
@@ -455,41 +467,42 @@ Definition SRecv_vec {me n env} (src : nat) (f : VX -> @sproc sp_dtype sp_data m
 End recv_wrappers_example.
 
 (******************************************************************************)
-(** * Phase 4: Erasure to Original proc Type                                  *)
+(** * Erasure: Session Types -> Unindexed proc                                *)
 (******************************************************************************)
 
-(* Use proc type from smc_interpreter *)
+(* Erase session types and fuel from sproc to get unindexed proc for interpretation *)
 
 Section erasure.
 
 Variable data : Type.
 Variable dtype : eqType.
 
-(* Erasure: convert session-typed sproc to fuel-indexed proc *)
-(* This erases the session environment index, keeping only fuel *)
+(* Erasure: convert session-typed sproc to unindexed proc *)
+(* This erases BOTH the fuel index AND the session environment index *)
 Fixpoint erase {me : nat} {n : nat} {env : senv dtype} 
-    (p : @sproc dtype data me n env) : smc_interpreter.proc data n :=
-  match p in @sproc _ _ _ m _ return smc_interpreter.proc data m with
+    (p : @sproc dtype data me n env) : smc_interpreter.proc data :=
+  match p with
   | SFinish => Finish
   | SRet d => Ret d
-  | @SInit _ _ _ n' env' d k => Init d (erase k)
-  | @SSend _ _ _ n' env' dst dt d k => Send dst d (erase k)
-  | @SRecv _ _ _ n' env' src dt f => Recv src (fun d => erase (f d))
-  | @SFail _ _ _ n' env' => @Fail data n'
+  | @SInit _ _ _ _ _ d k => Init d (erase k)
+  | @SSend _ _ _ _ _ dst _ d k => Send dst d (erase k)
+  | @SRecv _ _ _ _ _ src _ f => Recv src (fun d => erase (f d))
+  | @SFail _ _ _ _ _ => Fail
   end.
 
-(* Erase session-typed aproc to smc_interpreter.aproc *)
-Definition erase_aproc (ap : aproc dtype data) : smc_interpreter.aproc data :=
-  let me := aproc_me ap in
-  let n := aproc_fuel ap in
-  let env := aproc_env ap in
-  let p := aproc_proc ap in
-  pack (erase p).
+(* Erase session-typed aproc to proc *)
+Definition erase_aproc (ap : aproc dtype data) : smc_interpreter.proc data :=
+  erase (aproc_proc ap).
+
+(* Erase list of aprocs to list of procs, computing total fuel *)
+Definition erase_aprocs (aps : seq (aproc dtype data)) : seq (smc_interpreter.proc data) :=
+  map erase_aproc aps.
 
 End erasure.
 
 Arguments erase {data dtype me n env}.
 Arguments erase_aproc {data dtype}.
+Arguments erase_aprocs {data dtype}.
 
 (******************************************************************************)
 (** * Notations for Session-Typed Process Lists                               *)
@@ -498,20 +511,22 @@ Arguments erase_aproc {data dtype}.
 (* Declare scope for session-typed processes *)
 Declare Scope sproc_scope.
 
-(* Notation for packing session-typed processes into erased aproc list *)
-(* Mirrors [procs p;..;q] from smc_interpreter but with session type erasure *)
-(* Usage: [sprocs p ; .. ; q ] where p,q are sproc values *)
-Notation "[sprocs p ; .. ; q ]" := 
-  (cons (erase_aproc (mk_aproc p)) .. (cons (erase_aproc (mk_aproc q)) nil) ..)
+(* Notation for packing session-typed processes into aproc list *)
+(* Usage: [aprocs p ; .. ; q ] where p,q are sproc values *)
+Notation "[aprocs p ; .. ; q ]" := 
+  (cons (mk_aproc p) .. (cons (mk_aproc q) nil) ..)
   (at level 0) : sproc_scope.
 
-(* For fuel computation, use sum_fuel from smc_interpreter directly *)
-(* [> ps] notation is already available from smc_interpreter *)
+(* Notation for erasing and running with inferred fuel *)
+(* Usage: run_sprocs [aprocs p1; p2; p3] *)
+Definition run_sprocs {dtype : eqType} {data : Type} 
+    (aps : seq (aproc dtype data)) : seq (proc data) * seq (seq data) :=
+  run_interp [> aps] (erase_aprocs aps).
 
 Local Open Scope sproc_scope.
 
 (******************************************************************************)
-(** * Phase 4 Tests: Erasure Verification                                     *)
+(** * Erasure Tests                                                           *)
 (******************************************************************************)
 
 Section test_erasure.
@@ -521,29 +536,34 @@ Let dtype := test_dtype.
 Let data := test_data.
 
 (* Test erasure on simple process *)
-Definition erase_test1 : proc data 1 := erase test1.
+Definition erase_test1 : proc data := erase test1.
 Check erase_test1.
 
-Definition erase_test2 : proc data 2 := erase test2.
+Definition erase_test2 : proc data := erase test2.
 Check erase_test2.
 
-(* Test that erased process has same fuel *)
-Lemma erase_preserves_fuel : forall {me n env} (p : @sproc dtype data me n env),
-  True. (* Fuel is preserved by construction - it's the same index n *)
-Proof. done. Qed.
+(* Test fuel extraction *)
+Eval compute in get_fuel test1.  (* Should be: 1 *)
+Eval compute in get_fuel test2.  (* Should be: 2 *)
+Eval compute in get_fuel test7.  (* Should be: 4 *)
 
-(* The erased processes can now be used with the original interpreter *)
-(* by importing smc_interpreter and using:
-   
-   From infotheo Require Import smc_interpreter.
+(* Example: run two-party protocol with AUTOMATIC fuel computation *)
+(* The fuel [> ...] is computed from the inferred fuel indices *)
+Definition test_procs := [aprocs proto_p0; proto_p1].
+Eval compute in [> test_procs].  (* Should be: 4 (= 2 + 2) *)
+
+(* Run with automatic fuel - no manual "100" needed! *)
+Definition test_run := run_sprocs test_procs.
+
+(* The erased processes can be used with the interpreter:
    
    Definition run_scalar_product sa sb ra xa xb yb :=
-     let procs := [procs 
-       erase_aproc (sp_aproc_coserv sa sb ra);
-       erase_aproc (sp_aproc_alice xa);
-       erase_aproc (sp_aproc_bob xb yb)
+     let procs := [aprocs 
+       sp_proc_coserv sa sb ra;
+       sp_proc_alice xa;
+       sp_proc_bob xb yb
      ] in
-     run_interp [> procs] procs.
+     run_sprocs procs.  (* Fuel automatically computed! *)
 *)
 
 End test_erasure.
@@ -557,8 +577,7 @@ This file provides a session type system for SMC protocols with the following
 key properties:
 
 1. AUTOMATIC INFERENCE: Both fuel AND session environment are automatically
-   inferred by Coq's type unification. Users write programs without explicit
-   type annotations for these indices.
+   inferred by Coq's type unification. Users write programs with _ placeholders.
 
 2. PARAMETERIZED TYPES: Session types (stype) are parameterized by a user-
    defined dtype to avoid combinatorial explosion when adding new data kinds.
@@ -566,15 +585,22 @@ key properties:
 3. DUALITY VERIFICATION: The channels_dual function verifies that two parties
    have dual session types, ensuring protocol correctness.
 
-4. ERASURE: Session-typed programs can be erased to the original fuel-indexed
-   proc type for execution with the existing interpreter.
+4. ERASURE: Session-typed programs (sproc) can be erased to unindexed proc
+   for execution with the interpreter. This simplifies relational semantics.
+
+5. AUTOMATIC FUEL: The inferred fuel index can be extracted using get_fuel or
+   sum_fuel, eliminating the need to manually specify interpreter fuel.
+
+Two-layer design:
+  - sproc me n env : session-typed with fuel (for type checking, fuel inference)
+  - proc           : unindexed process (for interpretation and relational proofs)
 
 Usage:
   1. Define your dtype (e.g., DT_Vec | DT_One for scalar product)
   2. Define your data type (e.g., TX + VX)
-  3. Write programs using sproc with _ for fuel and senv indices
+  3. Write programs using sproc with _ _ for fuel and senv indices
   4. Verify duality using channels_dual and native_compute
-  5. Erase to proc for execution with smc_interpreter
+  5. Run with run_sprocs - fuel is automatically computed!
 
 Example:
   Definition my_sender : @sproc my_dtype my_data 0 _ _ :=
@@ -583,5 +609,8 @@ Example:
   Lemma sender_receiver_dual : 
     channels_dual (mk_aproc my_sender) (mk_aproc my_receiver) = true.
   Proof. by native_compute. Qed.
+  
+  (* Run with automatic fuel computation *)
+  Definition result := run_sprocs [aprocs my_sender; my_receiver].
 *)
 
