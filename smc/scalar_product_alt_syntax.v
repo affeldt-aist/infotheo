@@ -225,46 +225,13 @@ Notation "'Recv_vec⟨' p '⟩' 'fun' x '=>' P" := (SRecv_vec p (fun x => P))
 Notation "x" := x (in custom smc at level 0, x ident).
 
 (******************************************************************************)
-(** * Scalar Product Protocol Programs - Unicode Version                      *)
-(******************************************************************************)
-
-(* Commodity server's protocol - Unicode version with session types *)
-(* Fuel and session environment automatically inferred *)
-(* Note: No explicit [DT_Vec] or [DT_One] needed - & and ! determine dtype! *)
-Definition pcoserv (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _ :=
-  {| Init (&sa, &sb, !ra) ·
-     Send⟨alice⟩ &sa ·
-     Send⟨alice⟩ !ra ·
-     Send⟨bob⟩ &sb ·
-     Send⟨bob⟩ !(sa *d sb - ra) ·
-     Finish |}.
-
-(* Alice's protocol - Unicode version with session types *)
-Definition palice (xa : VX) : @sproc sp_dtype data alice _ _ :=
-  {| Init &xa ·
-     Recv_vec⟨coserv⟩ λ sa ·
-     Recv_one⟨coserv⟩ λ ra ·
-     Send⟨bob⟩ &(xa + sa) ·
-     Recv_vec⟨bob⟩ λ xb' ·
-     Recv_one⟨bob⟩ λ t ·
-     Ret_one (t - (xb' *d sa) + ra) |}.
-
-(* Bob's protocol - Unicode version with session types *)
-Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
-  {| Init (&xb, !yb) ·
-     Recv_vec⟨coserv⟩ λ sb ·
-     Recv_one⟨coserv⟩ λ rb ·
-     Recv_vec⟨alice⟩ λ xa' ·
-     Send⟨alice⟩ &(xb + sb) ·
-     Send⟨alice⟩ !(xa' *d xb + rb - yb) ·
-     Ret_one yb |}.
-
-(******************************************************************************)
-(** * Scalar Product Protocol Programs - ASCII Version                        *)
+(** * Scalar Product Protocol Programs - ASCII Version (Default)              *)
 (******************************************************************************)
 
 (* Commodity server's protocol - ASCII version with session types *)
-Definition pcoserv_ascii (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _ :=
+(* Fuel and session environment automatically inferred *)
+(* Note: No explicit [DT_Vec] or [DT_One] needed - & and ! determine dtype! *)
+Definition pcoserv (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _ :=
   {| Init (&sa, &sb, !ra) ;
      Send<alice> &sa ;
      Send<alice> !ra ;
@@ -273,7 +240,7 @@ Definition pcoserv_ascii (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _
      Finish |}.
 
 (* Alice's protocol - ASCII version with session types *)
-Definition palice_ascii (xa : VX) : @sproc sp_dtype data alice _ _ :=
+Definition palice (xa : VX) : @sproc sp_dtype data alice _ _ :=
   {| Init &xa ;
      Recv_vec<coserv> fun sa =>
      Recv_one<coserv> fun ra =>
@@ -283,7 +250,7 @@ Definition palice_ascii (xa : VX) : @sproc sp_dtype data alice _ _ :=
      Ret_one (t - (xb' *d sa) + ra) |}.
 
 (* Bob's protocol - ASCII version with session types *)
-Definition pbob_ascii (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
+Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
   {| Init (&xb, !yb) ;
      Recv_vec<coserv> fun sb =>
      Recv_one<coserv> fun rb =>
@@ -292,14 +259,47 @@ Definition pbob_ascii (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
      Send<alice> !(xa' *d xb + rb - yb) ;
      Ret_one yb |}.
 
+(******************************************************************************)
+(** * Scalar Product Protocol Programs - Unicode Version                      *)
+(******************************************************************************)
+
+(* Commodity server's protocol - Unicode version with session types *)
+Definition pcoserv_unicode (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _ :=
+  {| Init (&sa, &sb, !ra) ·
+     Send⟨alice⟩ &sa ·
+     Send⟨alice⟩ !ra ·
+     Send⟨bob⟩ &sb ·
+     Send⟨bob⟩ !(sa *d sb - ra) ·
+     Finish |}.
+
+(* Alice's protocol - Unicode version with session types *)
+Definition palice_unicode (xa : VX) : @sproc sp_dtype data alice _ _ :=
+  {| Init &xa ·
+     Recv_vec⟨coserv⟩ λ sa ·
+     Recv_one⟨coserv⟩ λ ra ·
+     Send⟨bob⟩ &(xa + sa) ·
+     Recv_vec⟨bob⟩ λ xb' ·
+     Recv_one⟨bob⟩ λ t ·
+     Ret_one (t - (xb' *d sa) + ra) |}.
+
+(* Bob's protocol - Unicode version with session types *)
+Definition pbob_unicode (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
+  {| Init (&xb, !yb) ·
+     Recv_vec⟨coserv⟩ λ sb ·
+     Recv_one⟨coserv⟩ λ rb ·
+     Recv_vec⟨alice⟩ λ xa' ·
+     Send⟨alice⟩ &(xb + sb) ·
+     Send⟨alice⟩ !(xa' *d xb + rb - yb) ·
+     Ret_one yb |}.
+
 (* Verify ASCII and Unicode versions are equivalent *)
-Lemma pcoserv_ascii_eq sa sb ra : pcoserv sa sb ra = pcoserv_ascii sa sb ra.
+Lemma pcoserv_unicode_eq sa sb ra : pcoserv sa sb ra = pcoserv_unicode sa sb ra.
 Proof. reflexivity. Qed.
 
-Lemma palice_ascii_eq xa : palice xa = palice_ascii xa.
+Lemma palice_unicode_eq xa : palice xa = palice_unicode xa.
 Proof. reflexivity. Qed.
 
-Lemma pbob_ascii_eq xb yb : pbob xb yb = pbob_ascii xb yb.
+Lemma pbob_unicode_eq xb yb : pbob xb yb = pbob_unicode xb yb.
 Proof. reflexivity. Qed.
 
 (******************************************************************************)

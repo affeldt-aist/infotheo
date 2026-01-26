@@ -4,8 +4,15 @@ From mathcomp Require Import Rstruct reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
 Require Import scalar_product_program smc_interpreter smc_tactics.
+Require Import smc_session_types scalar_product_interface.
+Require Import scalar_product_alt_syntax.
 
 (******************************************************************************)
+(*                                                                            *)
+(* Session type verification:                                                 *)
+(* - coserv_alice_dual: proves coserv and alice have dual session types       *)
+(* - coserv_bob_dual: proves coserv and bob have dual session types           *)
+(* - alice_bob_dual: proves alice and bob have dual session types             *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
 (* ```                                                                        *)
@@ -51,6 +58,46 @@ Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope proc_scope.
 
+(******************************************************************************)
+(** * Session Type Duality Verification                                       *)
+(******************************************************************************)
+
+Section duality_proof.
+
+Local Open Scope sproc_scope.
+
+Variable TX : finComRingType.
+Variable VX : lmodType TX.
+Variable dotproduct : VX -> VX -> TX.
+
+(* Import definitions from scalar_product_alt_syntax (ASCII syntax version) *)
+Let pcoserv := @scalar_product_alt_syntax.pcoserv TX VX dotproduct.
+Let palice := @scalar_product_alt_syntax.palice TX VX dotproduct.
+Let pbob := @scalar_product_alt_syntax.pbob TX VX dotproduct.
+
+Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
+
+(* Wrap processes in session-typed aproc for duality checking *)
+Definition saproc_coserv := mk_aproc (pcoserv sa sb ra).
+Definition saproc_alice := mk_aproc (palice xa).
+Definition saproc_bob := mk_aproc (pbob xb yb).
+
+(* Duality proofs - verified by computation *)
+Lemma coserv_alice_dual : channels_dual saproc_coserv saproc_alice = true.
+Proof. by native_compute. Qed.
+
+Lemma coserv_bob_dual : channels_dual saproc_coserv saproc_bob = true.
+Proof. by native_compute. Qed.
+
+Lemma alice_bob_dual : channels_dual saproc_alice saproc_bob = true.
+Proof. by native_compute. Qed.
+
+End duality_proof.
+
+(******************************************************************************)
+(** * Trace Correctness and Security Proofs                                   *)
+(******************************************************************************)
+
 Section proof.
 
 Context {R : realType}.
@@ -79,10 +126,10 @@ Let ya := t - xb' *d sa + ra.
 
 Let smc_scalar_product_procs := smc_procs dotproduct sa sb ra yb xa xb.
 
-(* With fuel-indexed proc, the result has aproc (packed processes) *)
+(* Interpreter produces final processes when run with sufficient fuel *)
 Lemma smc_scalar_product_ok :
   smc_scalar_product dotproduct sa sb ra yb xa xb smc_max_fuel =
-  ([:: pack Finish; pack Finish; pack Finish],
+  ([:: Finish; Finish; Finish],
    [:: [:: one ya;
            one t;
            vec xb';
@@ -104,7 +151,7 @@ Proof. reflexivity. Qed.
 (* With fuel equal to sum_fuel, evaluation reaches a final state *)
 Lemma smc_scalar_product_terminates :
   all_final (smc_scalar_product dotproduct sa sb ra yb xa xb
-    [> smc_scalar_product_procs]).1.
+    [> smc_saprocs dotproduct sa sb ra yb xa xb]).1.
 Proof. reflexivity. Qed.
 
 Lemma smc_scalar_product_traces_ok :

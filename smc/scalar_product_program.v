@@ -8,7 +8,7 @@ Require Import smc_interpreter smc_session_types scalar_product_interface.
 (**md**************************************************************************)
 (* # SMC Program for the SMC Scalar Product Protocol                          *)
 (*                                                                            *)
-(* Now with session types for protocol verification!                          *)
+(* Session-typed protocol definitions with automatic fuel inference.          *)
 (*                                                                            *)
 (* |   Definitions     |    | Meaning                                        |*)
 (* |-------------------|----|------------------------------------------------|*)
@@ -18,11 +18,6 @@ Require Import smc_interpreter smc_session_types scalar_product_interface.
 (* | is_scalar_product | == | The correctness of the SMC scalar product      |*)
 (* |                   |    | results                                        |*)
 (* |-------------------------------------------------------------------------|*)
-(*                                                                            *)
-(* Session type verification:                                                 *)
-(* - coserv_alice_dual: proves coserv and alice have dual session types      *)
-(* - coserv_bob_dual: proves coserv and bob have dual session types          *)
-(* - alice_bob_dual: proves alice and bob have dual session types            *)
 (*                                                                            *)
 (* Formalization for:                                                         *)
 (* A practical approach to solve secure multi-party computation problems      *)
@@ -106,31 +101,12 @@ Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
    (SRet (one yb)))))))).
 
 (******************************************************************************)
-(** * Session Type Duality Verification                                       *)
+(** * Interpreter Integration (via Erasure)                                   *)
 (******************************************************************************)
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 
-(* Wrap processes in session-typed aproc for duality checking *)
-Definition saproc_coserv := mk_aproc (pcoserv sa sb ra).
-Definition saproc_alice := mk_aproc (palice xa).
-Definition saproc_bob := mk_aproc (pbob xb yb).
-
-(* Duality proofs - verified by computation *)
-Lemma coserv_alice_dual : channels_dual saproc_coserv saproc_alice = true.
-Proof. by native_compute. Qed.
-
-Lemma coserv_bob_dual : channels_dual saproc_coserv saproc_bob = true.
-Proof. by native_compute. Qed.
-
-Lemma alice_bob_dual : channels_dual saproc_alice saproc_bob = true.
-Proof. by native_compute. Qed.
-
-(******************************************************************************)
-(** * Interpreter Integration (via Erasure)                                   *)
-(******************************************************************************)
-
-(* Session-typed processes for duality checking and fuel computation *)
+(* Session-typed processes for fuel computation *)
 Definition smc_saprocs : seq (aproc sp_dtype data) :=
   [aprocs palice xa; pbob xb yb; pcoserv sa sb ra].
 
