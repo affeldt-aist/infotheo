@@ -417,6 +417,20 @@ Let k x : data := inr x.
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
 
+(* Encryption hypotheses for E_enc_ce_removal:
+   These are standard information-theoretic assumptions for homomorphic encryption.
+   1. Fresh ciphertexts are uniformly distributed over the ciphertext space
+   2. Fresh ciphertexts are independent of all other random variables
+   These enable dropping encryption terms from conditional entropy calculations. *)
+Hypothesis E_enc_unif : forall (T0 : finType) (P0 : R.-fdist T0)
+  (A : finType) (p : party) (X : {RV P0 -> p.-enc A}) (n : nat)
+  (card_A : #|A| = n.+1),
+  `p_X = fdist_uniform (card_enc_for' p card_A).
+
+Hypothesis E_enc_inde : forall (A B : finType) (p : party)
+  (X : {RV P -> p.-enc A}) (Y : {RV P -> B}),
+  P |= X _|_ Y.
+
 (* Note: Trace-related entropy lemmas (DSDP_RV, AliceTraces,
    centropy_AliceTraces_AliceView) are defined in dsdp_entropy_trace.v
    for Z/pqZ analysis. For F_m based trace analysis, see
@@ -733,9 +747,9 @@ Lemma alice_view_to_cond (A : finType) (Xvar : {RV P -> A}) :
 Proof.
 move=> cinde_X.
 rewrite /AliceView.
-rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_AliceView_neq0.
-rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_Eqn1View_neq0.
-rewrite (E_enc_ce_removal Xvar card_msg); last exact: Pr_Eqn2View_neq0.
+rewrite (E_enc_ce_removal E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_AliceView_neq0.
+rewrite (E_enc_ce_removal E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_Eqn1View_neq0.
+rewrite (E_enc_ce_removal E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_Eqn2View_neq0.
 have H_reorder: `H(Xvar | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
   `H(Xvar | [% Dk_a, R2, R3, V1, U1, U2, U3, S]).
   rewrite /centropy_RV /centropy /= !snd_RV2.

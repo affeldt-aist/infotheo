@@ -120,6 +120,20 @@ Let E_alice_d3 := E' alice `o D3.
 Let E_charlie_v3 := E' charlie `o V3.
 Let E_bob_v2 := E' bob `o V2.
 
+(* Encryption hypotheses for E_enc_ce_removal:
+   These are standard information-theoretic assumptions for homomorphic encryption.
+   1. Fresh ciphertexts are uniformly distributed over the ciphertext space
+   2. Fresh ciphertexts are independent of all other random variables
+   These enable dropping encryption terms from conditional entropy calculations. *)
+Hypothesis E_enc_unif : forall (T0 : finType) (P0 : R.-fdist T0)
+  (A : finType) (p : party) (X : {RV P0 -> p.-enc A}) (n : nat)
+  (card_A : #|A| = n.+1),
+  `p_X = fdist_uniform (card_enc_for' p card_A).
+
+Hypothesis E_enc_inde : forall (A B : finType) (p : party)
+  (X : {RV P -> p.-enc A}) (Y : {RV P -> B}),
+  P |= X _|_ Y.
+
 (* Alice's view of the protocol *)
 Let alice_inputsT :=
   (Alice.-key Dec msg * msg * msg * msg * msg * msg * msg)%type.
@@ -256,7 +270,7 @@ Proof.
 (* Proof chain: H(V2|AliceView) = H(V2|CondRV) = H([V2,V3]|CondRV) = log(m) *)
 have H_v2_logm: `H(V2 | AliceView) = log (m%:R : R).
   (* Use alice_view_to_cond from dsdp_entropy.v with the record *)
-  rewrite (alice_view_to_cond Pr_AliceView_neq0 Pr_Eqn1View_neq0
+  rewrite (alice_view_to_cond E_enc_unif E_enc_inde Pr_AliceView_neq0 Pr_Eqn1View_neq0
             Pr_Eqn2View_neq0 (decomposition cinde_V2V3)).
   rewrite -V3_determined_centropy_v2_local.
   exact: dsdp_constraint_centropy_eqlogm.
@@ -368,8 +382,10 @@ Theorem US_compromised_leaks_V2 :
   US = ConstUS -> ~ `H(V2 | AliceView ) = `H `p_V2.
 Proof.
 move => H.
-(* From alice_view to [% Alice_input_view, S] *)
-rewrite !(E_enc_ce_removal V2 card_msg).
+(* From alice_view to [% Alice_input_view, S] - strip encryption terms *)
+rewrite (E_enc_ce_removal E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_AliceView_neq0.
+rewrite (E_enc_ce_removal E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_Eqn1View_neq0.
+rewrite (E_enc_ce_removal E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_Eqn2View_neq0.
 pose h := (fun o : (Alice.-key Dec msg * msg *
   msg * msg * msg * msg * msg * msg) =>
   let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
@@ -403,9 +419,6 @@ have -> : z `o [% AliceInputsView, V2 \+ VU1] = V2.
 have -> : idfun `o V2 = V2.
   by apply: boolp.funext => i.
 exact: neg_self_indep.
-exact: Pr_Eqn2View_neq0.
-exact: Pr_Eqn1View_neq0.
-exact: Pr_AliceView_neq0.
 Qed.
 
 End malicious_adversary_case_analysis.
