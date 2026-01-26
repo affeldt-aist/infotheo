@@ -70,17 +70,13 @@ Variable TX : finComRingType.
 Variable VX : lmodType TX.
 Variable dotproduct : VX -> VX -> TX.
 
-(* Import definitions from scalar_product_alt_syntax (ASCII syntax version) *)
-Let pcoserv := @scalar_product_alt_syntax.pcoserv TX VX dotproduct.
-Let palice := @scalar_product_alt_syntax.palice TX VX dotproduct.
-Let pbob := @scalar_product_alt_syntax.pbob TX VX dotproduct.
-
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 
-(* Wrap processes in session-typed aproc for duality checking *)
-Definition saproc_coserv := mk_aproc (pcoserv sa sb ra).
-Definition saproc_alice := mk_aproc (palice xa).
-Definition saproc_bob := mk_aproc (pbob xb yb).
+(* Import aproc wrappers from scalar_product_alt_syntax (ASCII syntax version) *)
+(* Each definition only depends on variables it actually uses *)
+Let saproc_coserv := @scalar_product_alt_syntax.saproc_coserv TX VX dotproduct sa sb ra.
+Let saproc_alice := @scalar_product_alt_syntax.saproc_alice TX VX dotproduct xa.
+Let saproc_bob := @scalar_product_alt_syntax.saproc_bob TX VX dotproduct yb xb.
 
 (* Duality proofs - verified by computation *)
 Lemma coserv_alice_dual : channels_dual saproc_coserv saproc_alice = true.
