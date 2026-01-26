@@ -79,13 +79,13 @@ Let saproc_alice := @scalar_product_alt_syntax.saproc_alice TX VX dotproduct xa.
 Let saproc_bob := @scalar_product_alt_syntax.saproc_bob TX VX dotproduct yb xb.
 
 (* Duality proofs - verified by computation *)
+Lemma alice_bob_dual : channels_dual saproc_alice saproc_bob = true.
+Proof. by native_compute. Qed.
+
 Lemma coserv_alice_dual : channels_dual saproc_coserv saproc_alice = true.
 Proof. by native_compute. Qed.
 
 Lemma coserv_bob_dual : channels_dual saproc_coserv saproc_bob = true.
-Proof. by native_compute. Qed.
-
-Lemma alice_bob_dual : channels_dual saproc_alice saproc_bob = true.
 Proof. by native_compute. Qed.
 
 End duality_proof.
