@@ -170,7 +170,6 @@ Qed.
 
 
 (* Soundness: step implements rstep *)
-(*
 Lemma step_sound n (ps : n.-tuple proc) :
   let res := [tuple step ps nil i | i < n] in
   rstep ps (map_tuple (fun r => r.1.1) res) (map_tuple (fun r => r.1.2) res).
@@ -322,23 +321,22 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
     apply: (rtrans (IH _ H' _)); last 3 first.
     * move=> k k' ps'' traces H.
       rewrite !inE.
-      have [kj|_] := eqVneq k (Ordinal jn).
+      have [kj|kj] := eqVneq k (Ordinal jn).
         (* k = Ordinal jn: H3 gives Send k' x pi = Send i v pj', so k' = i *)
         inversion H; subst.
         move: H3; rewrite (tnth_nth Fail) Hpj => -[] k'i _ _.
         by rewrite (val_inj k'i) eqxx andbF.
-      have [ki|ki] := eqVneq k i.
+      have [ki|_] := eqVneq k i.
         (* k = i: H3 gives Send k' x pi = Recv j f, contradiction *)
         by inversion H; subst; rewrite Hpi in H3.
       have [k'j|_] := eqVneq k' (Ordinal jn).
         (* k' = Ordinal jn: H4 gives Recv k pj = Send i v pj', contradiction *)
         by inversion H; subst; rewrite (tnth_nth Fail) Hpj in H4.
-      have [k'i|_] := eqVneq k' i.
+      have [k'i|k'i] := eqVneq k' i.
         (* k' = i: rcomm gives k = Ordinal jn *)
         inversion H; subst.
-        move: H4; rewrite Hpi => -[] kj _.
-        (* kj : val k = j, and val (Ordinal jn) = j *)
-        by rewrite (val_inj kj) eqxx.
+        move: H4; rewrite Hpi => -[] kj'.
+        by move/eqP: kj; elim; apply/val_inj.
       exact: (Hpss _ _ _ _ H).
     * (* The reduction: Send j sends to Recv i *)
       move: (rcomm (Ordinal jn) i v pj' f).
@@ -346,8 +344,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps'');
         last first.
         apply/val_inj; rewrite /=/ps'' !(tnth_mktuple,tnth_map) !inE !eqxx /=.
-        rewrite eq_sym ij /=.
-        by rewrite (tnth_nth Fail) Hpj Hpi.
+        by rewrite (tnth_nth Fail) Hpj ij Hpi.
       move/rone.
       have -> : inject [tuple Ordinal jn; i] ps'' [tuple pj'; f v] =
            map_tuple (fun r : proc * seq data * bool => r.1.1) (res' pss ps).
@@ -357,7 +354,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
           rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps);
             last by apply/val_inj => /=; rewrite (tnth_nth Fail) Hpj Hpi.
           move=> Hr.
-          by rewrite -(Hpss _ _ _ _ Hr) Hi /step Hpj -tnth_nth Hpi eqxx.
+          by rewrite (Hpss _ _ _ _ Hr) Hi /step Hpj -tnth_nth Hpi eqxx.
         case/boolP: (i == k) => [/eqP <-|ik] /=.
           by rewrite Hi /step -tnth_nth Hpi Hpj eqxx.
         by rewrite !inE eq_sym jk eq_sym ik.
@@ -369,8 +366,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
         rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps);
           last by apply/val_inj => /=; rewrite (tnth_nth Fail) Hpj Hpi.
         move=> Hr.
-        by rewrite -(Hpss _ _ _ _ Hr) Hi /step Hpj -tnth_nth Hpi eqxx.
-      rewrite andbT.
+        by rewrite (Hpss _ _ _ _ Hr) Hi /step Hpj -tnth_nth Hpi eqxx.
       have [<- |] //= := eqVneq i k.
       by rewrite Hi /step -tnth_nth Hpi Hpj eqxx.
   + (* Recv but no matching Send - skip this process *)
@@ -381,7 +377,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       rewrite !tnth_mktuple !inE.
       have [-> |] //= := eqVneq k i.
       rewrite Hi /step -tnth_nth Hpi.
-      case Hj: nth => [|dst' v' pj'|||] //.
+      case Hj: nth => [|dst' v' pj'||||] //.
       case: ifP => ei //.
       by elim: Hn; exists v', pj'; rewrite -(eqP ei).
     apply: IH => //.
@@ -393,7 +389,9 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       (* For rcomm, H3 says ps !_ i = Send _ _ _, contradicts Hpi: ps !_ i = Recv _ _ *)
       by rewrite Hpi in H3.
     * inversion 1; subst.
-      by rewrite Hpi in H4.
+      move: H4; rewrite Hpi => -[] aj.
+      rewrite (tnth_nth Fail) aj in H3.
+      by elim: Hn; exists x, pi.
     * exact: Hpss.
 (* Case Ret x *)
 - pose pss' := pss `\ i.
@@ -451,8 +449,6 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
   + by inversion 1; subst; rewrite Hpi in H4.
   + exact: Hpss.
 Qed.
-*)
-
 End interp.
 
 Arguments Finish {data}.
