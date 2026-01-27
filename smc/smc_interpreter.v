@@ -258,6 +258,20 @@ case: H Hps => /=.
 Qed.
 
 
+Lemma comm_disjoint n (ps : n.-tuple proc) i j k l ps1 tr1 ps2 tr2 :
+  rred [tuple i; j] (extract [tuple i; j] ps) ps1 tr1 ->
+  rred [tuple k; l] (extract [tuple k; l] ps) ps2 tr2 ->
+  (i == k) /\ (j == l) \/ (i != k) /\ (j != l).
+Proof.
+inversion 1; inversion 1; subst.
+case/boolP: (i == k) => ik; [left | right]; split => //.
+  move: H10; rewrite (tnth_nth Fail) -(eqP ik) -tnth_nth -H3 => -[lj] _ _.
+  exact/eqP/val_inj.
+apply: contra ik => /eqP jl.
+move: H11; rewrite (tnth_nth Fail) -jl -tnth_nth -H4 => -[ki] _.
+exact/eqP/val_inj.
+Qed.
+  
 (* Soundness: step implements rstep *)
 Lemma step_sound n (ps : n.-tuple proc) :
   let res := [tuple step ps nil i | i < n] in
@@ -303,7 +317,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       case/boolP: (i == j') => [/eqP <-|ij] /=.
         by rewrite Hi /step -tnth_nth Hpi.
       by have -> : (j' \in pss') = (j' \in pss) by rewrite !inE eq_sym ij.
-    apply.
+    exact.
   + apply: eq_from_tnth => j'; rewrite !(tnth_mktuple, tnth_map) /=.
     case/boolP: (i == j') => [/eqP <-|ij] /=.
       by rewrite Hi !inE eqxx /= /step -tnth_nth Hpi.
@@ -320,25 +334,25 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       by rewrite nth_default ?size_tuple // in Hpj.
     case/boolP: (i == Ordinal jn) => ij /=.
       by rewrite (eqP ij) (tnth_nth Fail) Hpj in Hpi.
+    have := rcomm i (Ordinal jn) x p pj.
+    rewrite (_ : [tuple Send _ _ _; _] = extract [tuple i; Ordinal jn] ps);
+      last by apply/val_inj => /=; rewrite Hpi (tnth_nth Fail) Hpj.
+    move=> Hr.
+    have Hj : Ordinal jn \in pss by move/Hpss: Hr => <-.
     pose pss' := pss `\ i `\ Ordinal jn.
     have H': pss' `<` pss.
       exact/(fsub_proper_trans (B:=pss `\ i))/fproperD1/Hi/fsubD1set.
     apply: (rtrans (IH _ H' _)); last 3 first.
     * move=> k k' ps' traces H.
       rewrite !inE.
+      case: (comm_disjoint Hr H) => -[].
+        by move => /eqP <- /eqP <-; rewrite !eqxx !andbF.
+      rewrite eq_sym (eq_sym _ k') => -> ->.
+      inversion H; subst.
       have [kj|_] := eqVneq k (Ordinal jn).
-        by inversion H; subst; rewrite (tnth_nth Fail) Hpj in H3.
-      have [ki|ki] := eqVneq k i.
-        inversion H; subst.
-        have [//|k'j] := eqVneq k' (Ordinal jn).
-        move: H3; rewrite Hpi => -[] k'j'.
-        by move/eqP: k'j; elim; apply/val_inj.
-      have [k'j|_] := eqVneq k' (Ordinal jn).
-        inversion H; subst.
-        move: H4; rewrite (tnth_nth Fail) Hpj => -[] ki'.
-        by move/eqP: ki; elim; apply/val_inj.
+        by rewrite kj (tnth_nth Fail) Hpj in H3.
       have [k'i|_] := eqVneq k' i.
-        by inversion H; subst; rewrite Hpi in H4.
+        by rewrite k'i Hpi in H4.
       exact: (Hpss _ _ _ _ H).
     * move: (rcomm i (Ordinal jn) x p pj).
       set ps'' := map_tuple _ _.
@@ -353,23 +367,15 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
         case/boolP: (i == k) => [/eqP <-|ik] /=.
           by rewrite Hi /step -tnth_nth Hpi Hpj eqxx.
         case/boolP: (_ == _) => jk /=.
-          move: (rcomm i (Ordinal jn) x p pj).
-          rewrite (_ : [tuple Send _ _ _; _] = extract [tuple i; Ordinal jn] ps);
-            last by apply/val_inj => /=; rewrite Hpi (tnth_nth Fail) Hpj.
-          move=> Hr.
-          by rewrite -(eqP jk) -(Hpss _ _ _ _ Hr) Hi /step Hpj -tnth_nth Hpi eqxx.
+          by rewrite -(eqP jk) Hj /step Hpj -tnth_nth Hpi eqxx.
         by rewrite !inE eq_sym jk eq_sym ik.
-      apply.
+      exact.
     * apply: eq_from_tnth => k; rewrite !(tnth_mktuple, tnth_map) /=.
       rewrite !inE !(eq_sym k) andbCA.
       have [<- | ik] /= := eqVneq i k.
         by rewrite Hi /step -tnth_nth Hpi Hpj eqxx.
       have [<- |] //= := eqVneq (Ordinal jn) k.
-      move: (rcomm i (Ordinal jn) x p pj).
-      rewrite (_ : [tuple Send _ _ _; _] = extract [tuple i; Ordinal jn] ps);
-        last by apply/val_inj => /=; rewrite Hpi (tnth_nth Fail) Hpj.
-      move=> Hr.
-      by rewrite -(Hpss _ _ _ _ Hr) Hi /step Hpj -tnth_nth Hpi eqxx.
+      by rewrite Hj /step Hpj -tnth_nth Hpi eqxx.
   + (* Send but no matching Recv - skip this process *)
     pose pss' := pss `\ i.
     have H': pss' `<` pss by apply: fproperD1.
@@ -404,28 +410,25 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       by rewrite nth_default ?size_tuple // in Hpj.
     case/boolP: (i == Ordinal jn) => ij /=.
       by rewrite (eqP ij) (tnth_nth Fail) Hpj in Hpi.
+    move: (rcomm (Ordinal jn) i v pj' f).
+    rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps);
+      last by apply/val_inj => /=; rewrite (tnth_nth Fail) Hpj Hpi.
+    move=> Hr.
+    have Hj : Ordinal jn \in pss by move/Hpss: Hr => ->.
     pose pss' := pss `\ i `\ Ordinal jn.
     have H': pss' `<` pss.
       exact/(fsub_proper_trans (B:=pss `\ i))/fproperD1/Hi/fsubD1set.
     apply: (rtrans (IH _ H' _)); last 3 first.
     * move=> k k' ps'' traces H.
       rewrite !inE.
-      have [kj|kj] := eqVneq k (Ordinal jn).
-        (* k = Ordinal jn: H3 gives Send k' x pi = Send i v pj', so k' = i *)
-        inversion H; subst.
-        move: H3; rewrite (tnth_nth Fail) Hpj => -[] k'i _ _.
-        by rewrite (val_inj k'i) eqxx andbF.
+      case: (comm_disjoint Hr H) => -[].
+        by move => /eqP <- /eqP <-; rewrite !eqxx !andbF.
+      rewrite eq_sym (eq_sym _ k') => -> ->.
+      inversion H; subst.
       have [ki|_] := eqVneq k i.
-        (* k = i: H3 gives Send k' x pi = Recv j f, contradiction *)
-        by inversion H; subst; rewrite Hpi in H3.
+        by rewrite ki Hpi in H3.
       have [k'j|_] := eqVneq k' (Ordinal jn).
-        (* k' = Ordinal jn: H4 gives Recv k pj = Send i v pj', contradiction *)
-        by inversion H; subst; rewrite (tnth_nth Fail) Hpj in H4.
-      have [k'i|k'i] := eqVneq k' i.
-        (* k' = i: rcomm gives k = Ordinal jn *)
-        inversion H; subst.
-        move: H4; rewrite Hpi => -[] kj'.
-        by move/eqP: kj; elim; apply/val_inj.
+        by rewrite k'j (tnth_nth Fail) Hpj in H4.
       exact: (Hpss _ _ _ _ H).
     * (* The reduction: Send j sends to Recv i *)
       move: (rcomm (Ordinal jn) i v pj' f).
@@ -439,23 +442,15 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
            map_tuple (fun r : proc * seq data * bool => r.1.1) (res' pss ps).
         apply: eq_from_tnth => k; rewrite !(tnth_mktuple,tnth_map) /=.
         case/boolP: (Ordinal jn == k) => [/eqP <-|jk] /=.
-          move: (rcomm (Ordinal jn) i v pj' f).
-          rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps);
-            last by apply/val_inj => /=; rewrite (tnth_nth Fail) Hpj Hpi.
-          move=> Hr.
-          by rewrite (Hpss _ _ _ _ Hr) Hi /step Hpj -tnth_nth Hpi eqxx.
+          by rewrite Hj /step Hpj -tnth_nth Hpi eqxx.
         case/boolP: (i == k) => [/eqP <-|ik] /=.
           by rewrite Hi /step -tnth_nth Hpi Hpj eqxx.
         by rewrite !inE eq_sym jk eq_sym ik.
-      apply.
+      exact.
     * apply: eq_from_tnth => k; rewrite !(tnth_mktuple, tnth_map) /=.
       rewrite !inE !(eq_sym k).
       have [<- | jk] /= := eqVneq (Ordinal jn) k.
-        move: (rcomm (Ordinal jn) i v pj' f).
-        rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps);
-          last by apply/val_inj => /=; rewrite (tnth_nth Fail) Hpj Hpi.
-        move=> Hr.
-        by rewrite (Hpss _ _ _ _ Hr) Hi /step Hpj -tnth_nth Hpi eqxx.
+        by rewrite Hj /step Hpj -tnth_nth Hpi eqxx.
       have [<- |] //= := eqVneq i k.
       by rewrite Hi /step -tnth_nth Hpi Hpj eqxx.
   + (* Recv but no matching Send - skip this process *)
@@ -502,7 +497,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       case/boolP: (i == j') => [/eqP <-|ij] /=.
         by rewrite Hi /step -tnth_nth Hpi.
       by have -> : (j' \in pss') = (j' \in pss) by rewrite !inE eq_sym ij.
-    apply.
+    exact.
   + apply: eq_from_tnth => j'; rewrite !(tnth_mktuple, tnth_map) /=.
     case/boolP: (i == j') => [/eqP <-|ij] /=.
       by rewrite Hi !inE eqxx /= /step -tnth_nth Hpi.
