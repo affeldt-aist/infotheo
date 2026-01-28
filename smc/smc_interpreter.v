@@ -266,44 +266,22 @@ Lemma rred_disjoint n m p (ps : n.-tuple proc) (l1 : lens n m) (l2 : lens n p)
 Proof.
 move=> Hpsl1 Hpsl2 Hred1 Hred2.
 case: Hred1 Hpsl1 => [i j pi | i x | i j x pi pj] /(f_equal val) /= [] Hpi;
-case: Hred2 Hpsl2 => [i' j' pi' | i' x' | i' j' x' pi' pj'] /(f_equal val) /=[].
-- have [<-|ii' Hpi'] := eqVneq i i'; first by rewrite -Hpi => -[] <- <-; left.
-  by right => a b; rewrite !inE => /eqP -> /eqP ->.
-- have [<-|ii' Hpi'] := eqVneq i i'; first by rewrite -Hpi.
-  by right => a b; rewrite !inE => /eqP -> /eqP ->.
-- have [<-|ii' Hpi'] := eqVneq i i'; first by rewrite -Hpi.
-  have [<-|ij' Hpj'] := eqVneq i j'; first by rewrite -Hpi.
-  right => a b; rewrite !inE => /eqP -> /orP[] /eqP ->; apply/eqP => ij.
-    by rewrite ij -Hpi' in Hpi.
-  by rewrite ij -Hpj' in Hpi.
-- have [<-|ii' Hpi'] := eqVneq i i'; first by rewrite -Hpi.
-  by right => a b; rewrite !inE => /eqP -> /eqP ->.
-- have [<-|ii' Hpi'] := eqVneq i i'; first by rewrite -Hpi => -[] <-; left.
-  by right => a b; rewrite !inE => /eqP -> /eqP ->.
-- have [<-|ii' Hpi'] := eqVneq i i'; first by rewrite -Hpi.
-  have [<-|ij' Hpj'] := eqVneq i j'; first by rewrite -Hpi.
-  right => a b; rewrite !inE => /eqP -> /orP[] /eqP ->; apply/eqP => ij.
-    by rewrite ij -Hpi' in Hpi.
-  by rewrite ij -Hpj' in Hpi.
-- have [<-|ii' Hpi'] := eqVneq i i'; first by rewrite -Hpi.
-  have [->|ji' Hpj] := eqVneq j i'; first by rewrite -Hpi'.
-  right => a b; rewrite !inE => /orP[] /eqP ->/eqP ->; apply/eqP => ij.
-    by rewrite ij -Hpi' in Hpi.
-  by rewrite ij -Hpi' in Hpj.
-- have [<-|ii' Hpi'] := eqVneq i i'; first by rewrite -Hpi.
-  have [->|ji' Hpj] := eqVneq j i'; first by rewrite -Hpi'.
-  right => a b; rewrite !inE => /orP[] /eqP ->/eqP ->; apply/eqP => ij.
-    by rewrite ij -Hpi' in Hpi.
-  by rewrite ij -Hpi' in Hpj.
-- have [<-|ii' Hpi'] := eqVneq i i'; have [<-|jj' Hpj' Hpj] := eqVneq j j'.
-  + by rewrite -Hpi => -[] <- <- <- [] <-; left.
-    move: Hpj'; rewrite -Hpi => -[j'j]; move/eqP: jj'; elim; exact/val_inj.
-  + move=> <- [] ii''; move/eqP: ii'; elim; exact/val_inj.
-  right => a b; rewrite !inE => /orP[] /eqP -> /orP[] /eqP ->; apply/eqP => ij.
-  + by move/eqP: ii'; elim.
+case: Hred2 Hpsl2 => [i' j' pi' | i' x' | i' j' x' pi' pj'] /(f_equal val) /=[];
+  (have [<-|ii' Hpi'] := eqVneq i i'; [rewrite -Hpi // => -[]
+   | right => a b; rewrite !inE; try by do! move /eqP ->]).
+- by move=> <- <-; left.
+- move=> /eqP-> /orP[] /eqP->; apply/eqP => ij; by rewrite ij -(Hpi',H) in Hpi.
+- by move=> <-; left.
+- move=> /eqP-> /orP[] /eqP->; apply/eqP => ij; by rewrite ij -(Hpi',H) in Hpi.
+- move=> /orP[] /eqP-> /eqP->; apply/eqP => ij; by rewrite -ij -(Hpi,H) in Hpi'.
+- move=> /orP[] /eqP-> /eqP->; apply/eqP => ij; by rewrite -ij -(Hpi,H) in Hpi'.
+- by move=> /val_inj -> -> -> <- [] <-; left.
+- move: H H0.
+  have [<-|jj' Hpj' Hpj] := eqVneq j j'.
+    by move=> <- [] /val_inj /eqP; rewrite (negbTE ii').
+  move=> /orP[] /eqP -> /orP[] /eqP -> //; apply/eqP => ij.
   + by rewrite ij -Hpj' in Hpi.
   + by rewrite ij -Hpi' in Hpj.
-  + by move/eqP: jj'; elim.
 Qed.
 
 Lemma comm_disjoint n (ps : n.-tuple proc) i j k l ps1 tr1 ps2 tr2 :
