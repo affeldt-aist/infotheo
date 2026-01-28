@@ -133,94 +133,100 @@ Inductive rstep {n} :
 Definition add_trace tr (res : (proc * seq data * bool)) :=
   let '(p,tr',c) := res in (p, tr' ++ tr, c).
 
-(* TODO: try to refactor the proof with lens_disjoint.
-Definition lens_disjoint {n m1 m2} (l1 : lens n m1) (l2 : lens n m2) : bool :=
-  [disjoint [fset x in l1] & [fset x in l2]].
-
-Lemma rred_lens_disjoint : forall l1 l2 ps ps1' ps2' tr1 tr2,
-  rred l1 (extract l1 ps) ps1' tr1 ->
-  rred l2 (extract l2 ps) ps2' tr2 ->
-  l1 != l2 ->
-  lens_disjoint l1 l2.
-
-(* Injecting with disjoint lenses commutes *)
-Lemma inject_disjoint_comm n m1 m2 (l1 : lens n m1) (l2 : lens n m2) 
-    (ps : n.-tuple proc) (ps1' : m1.-tuple proc) (ps2' : m2.-tuple proc) :
-  lens_disjoint l1 l2 ->
-  inject l1 (inject l2 ps ps2') ps1' = inject l2 (inject l1 ps ps1') ps2'.
-
-(* Composing rstep with disjoint lenses *)
-Lemma rstep_disjoint_compose n m1 m2 (l1 : lens n m1) (l2 : lens n m2)
-    (ps : n.-tuple proc) ps1' ps2' tr1 tr2 :
-  lens_disjoint l1 l2 ->
-  rred l1 (extract l1 ps) ps1' tr1 ->
-  rred l2 (extract l2 ps) ps2' tr2 ->
-  rstep ps (inject l1 (inject l2 ps ps2') ps1') 
-        [tuple (if i \in l1 then tr1 !_ (index i l1) 
-                else if i \in l2 then tr2 !_ (index i l2) 
-                else nil) | i < n].
-
-
-(***** But we need to define this: ******)
-
-(* A "reduction spec" packages a lens with the reduction data *)
+(* Reduction specification - packages reduction data *)
 Inductive red_spec n : Type :=
   | RSinit (i : 'I_n) (x : data) (p : proc)
-  | RSret (i : 'I_n) (x : data)  
+  | RSret (i : 'I_n) (x : data)
   | RScomm (i j : 'I_n) (x : data) (pi : proc) (pj : data -> proc).
 
-Definition red_spec_lens n (r : red_spec n) : seq 'I_n :=
+Arguments RSinit {n}.
+Arguments RSret {n}.
+Arguments RScomm {n}.
+
+(* Get indices involved in a reduction *)
+Definition red_spec_indices {n} (r : red_spec n) : seq 'I_n :=
   match r with
   | RSinit i _ _ => [:: i]
   | RSret i _ => [:: i]
   | RScomm i j _ _ _ => [:: i; j]
   end.
 
-(* Collect all applicable reductions from a process tuple *)
-Definition applicable_reds n (ps : n.-tuple proc) : seq (red_spec n) :=
-  (* For each i, check if Init/Ret applies, or if Send/Recv has matching partner *)
-  ...
+(* Get lens for a reduction *)
+Definition red_spec_lens {n} (r : red_spec n) :
+    lens n (size (red_spec_indices r)) :=
+  match r return lens n (size (red_spec_indices r)) with
+  | RSinit i _ _ => [tuple i]
+  | RSret i _ => [tuple i]
+  | RScomm i j _ _ _ => [tuple i; j]
+  end.
 
-(* Key property: applicable reductions are pairwise disjoint *)
-Lemma applicable_pairwise_disjoint n (ps : n.-tuple proc) :
-  let rs := applicable_reds ps in
-  forall r1 r2, r1 \in rs -> r2 \in rs -> r1 <> r2 ->
-  lens_disjoint (red_spec_lens r1) (red_spec_lens r2).
+(* Get input processes for a reduction *)
+Definition red_spec_input {n} (r : red_spec n) :
+    (size (red_spec_indices r)).-tuple proc :=
+  match r return (size (red_spec_indices r)).-tuple proc with
+  | RSinit _ x p => [tuple Init x p]
+  | RSret _ x => [tuple Ret x]
+  | RScomm i j x pi pj => [tuple Send (nat_of_ord j) x pi; Recv (nat_of_ord i) pj]
+  end.
 
-(* Then we can have this: *)
+(* Get output processes for a reduction *)
+Definition red_spec_output {n} (r : red_spec n) :
+    (size (red_spec_indices r)).-tuple proc :=
+  match r return (size (red_spec_indices r)).-tuple proc with
+  | RSinit _ _ p => [tuple p]
+  | RSret _ _ => [tuple Finish]
+  | RScomm _ _ x pi pj => [tuple pi; pj x]
+  end.
 
-Lemma step_sound n (ps : n.-tuple proc) :
-  let res := [tuple step ps nil i | i < n] in
-  rstep ps (map_tuple (fun r => r.1.1) res) (map_tuple (fun r => r.1.2) res).
+(* Get output traces for a reduction *)
+Definition red_spec_traces {n} (r : red_spec n) :
+    (size (red_spec_indices r)).-tuple (seq data) :=
+  match r return (size (red_spec_indices r)).-tuple (seq data) with
+  | RSinit _ x _ => [tuple [:: x]]
+  | RSret _ x => [tuple [:: x]]
+  | RScomm _ _ x _ _ => [tuple nil; [:: x]]
+  end.
+
+(* Try to build a red_spec from index i based on the process at that index *)
+Definition red_spec_at {n} (ps : n.-tuple proc) (i : 'I_n) : option (red_spec n) :=
+  match ps !_ i with
+  | Init x p => Some (RSinit i x p)
+  | Ret x => Some (RSret i x)
+  | Send j x p =>
+      if (j < n)%N =P true is ReflectT jn then
+        let j' := Ordinal jn in
+        match ps !_ j' with
+        | Recv frm f => if frm == i then Some (RScomm i j' x p f) else None
+        | _ => None
+        end
+      else None
+  | _ => None
+  end.
+
+(* A reduction applies to a process tuple (propositional) *)
+Definition red_applies {n} (ps : n.-tuple proc) (r : red_spec n) : Prop :=
+  extract (red_spec_lens r) ps = red_spec_input r :> seq _.
+
+(* red_spec yields valid rred *)
+Lemma red_spec_valid n (r : red_spec n) :
+  rred (red_spec_lens r) (red_spec_input r) (red_spec_output r)
+       (red_spec_traces r).
+Proof. by case: r => *; constructor. Qed.
+
+(* red_spec_at produces reductions that apply *)
+Lemma red_spec_at_applies n (ps : n.-tuple proc) i r :
+  red_spec_at ps i = Some r -> red_applies ps r.
 Proof.
-(* 1. Collect all applicable reductions *)
-pose rs := applicable_reds ps.
-
-(* 2. Show each reduction in rs produces a valid rred *)
-have Hvalid : forall r, r \in rs -> 
-  rred (red_spec_lens r) (extract (red_spec_lens r) ps) ... .
-
-(* 3. The applicable reductions are pairwise disjoint *)
-have Hdisj := applicable_pairwise_disjoint ps.
-
-(* 4. Induction on the list of applicable reductions *)
-elim: rs Hvalid Hdisj => [|r rs' IH] Hvalid Hdisj.
-- (* No applicable reductions: step does nothing, use rrefl *)
-  ...
-  exact: rrefl.
-- (* r :: rs': compose r with the rest *)
-  apply: rtrans.
-  + (* First do the reductions in rs' *)
-    apply: IH.
-    * move=> r' Hr'; exact: Hvalid.
-    * (* rs' still pairwise disjoint *) ...
-  + (* Then do reduction r - disjoint from all of rs' *)
-    apply: rone.
-    (* r is disjoint from everything in rs', so extract is unchanged *)
-    ...
+rewrite /red_applies /red_spec_at.
+case Hpi: (ps !_ i) => [x p|dst w next|frm f|x||] //=.
+- by move=> [<-] /=; rewrite Hpi.
+- case: eqP => //= dstn.
+  case Hdst: (ps !_ _) => [|dst' w' next'|frm' f'|||] //=.
+  case: ifP => // frm'i [<-] /=.
+  by rewrite Hpi Hdst (eqP frm'i).
+- by move=> [<-] /=; rewrite Hpi.
 Qed.
 
-*)
 
 Lemma step_trace n (ps : n.-tuple proc) tr i :
   step ps tr i = add_trace tr (step ps nil i).
