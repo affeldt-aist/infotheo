@@ -512,15 +512,20 @@ Qed.
 
 Definition aproc_default := @mk_aproc dtype data 0 0 senv_end SFail.
 
+Definition dependent_mktuple (A : Type) n (P : 'I_n -> A -> Prop)
+  (f : forall i, {a | P i a}) : {sa : n.-tuple A | forall i, P i (tnth sa i)}.
+exists [tuple sval (f i) | i < n].
+abstract (move=> i; rewrite tnth_mktuple; exact: (svalP (f i))).
+Defined.
+
 Lemma fuel_decreases (ps : seq (aproc dtype data)) k tr :
   k < size ps ->
   let res := step (erase_aprocs ps) (nth [::] tr k) k in
-  { ap' & erase_aproc ap' = res.1.1 /\
+  { ap' | erase_aproc ap' = res.1.1 /\
       aproc_fuel ap' + res.2 <= aproc_fuel (nth aproc_default ps k) }.
 Proof.
 move => Hk /=.
-rewrite /step.
-rewrite (nth_map aproc_default) //.
+rewrite /step (nth_map aproc_default) //.
 move Hnth: (nth _ ps k) => [p [n] [env] sp].
 rewrite {2}/aproc_fuel /=.
 move/(f_equal erase_aproc): Hnth.
@@ -557,32 +562,8 @@ elim: h ps traces => [|h IH] ps traces.
   by rewrite /step /= !nth_nseq // Hi.
 move=> Hps /=.
 set ps' := unzip1 (unzip1 _).
-have hles tr :
-  let resk :=
-    [seq step (erase_aprocs ps) (nth [::] tr i) i | i <- iota 0 (size ps)] in
-  {aps' & erase_aprocs aps' = unzip1 (unzip1 resk) /\
-     forall i, i < size aps' ->
-       aproc_fuel (nth aproc_default aps' i) + (nth (Fail,nil,false) resk i).2
-       <= aproc_fuel (nth aproc_default ps i)}%N.
-  move=> resk.
-  rewrite -{1}(take_size resk).
-  have : (size resk <= size ps)%N by rewrite !size_map size_iota.
-  elim: (size resk) => [|k {}IH] Hk. by exists nil; rewrite take0.
-  case: IH; first exact: ltnW.
-  move=> aps' [Haps' Hfuel].
-  have [ap' [Hap' Hfu]] := fuel_decreases tr Hk.
-  exists (rcons aps' ap').
-  rewrite (take_nth (Fail,nil,false)); last by rewrite !size_map size_iota.
-  rewrite -!cats1 [erase_aprocs _]map_cat [map _ _]Haps' /= Hap'.
-  rewrite ![unzip1 (_ ++ _)]map_cat /=.
-  rewrite (nth_map 0) ?size_iota // nth_iota //.
-  split => // i.
-  rewrite size_cat addn1 ltnS => ik.
-  move/(f_equal size): Haps'.
-  rewrite !size_map size_take !size_map size_iota Hk => Hsz.
-  move: ik; rewrite nth_cat leq_eqVlt => /orP[/eqP ->|ik].
-    by rewrite ltnn subnn /= (nth_map 0) ?size_iota ?Hsz // nth_iota.
-  by rewrite ik Hfuel.
+have hles tr :=
+  dependent_mktuple (fun k : 'I_(size ps) => fuel_decreases tr (ltn_ord k)).
 case: ifPn; last first.
   rewrite -!all_predC -!all_map -!map_comp size_map => /allP /= Hc <-.
   apply/allP => /= b /mapP[/= i Hi] ->.
@@ -599,24 +580,29 @@ suff : exists aps', erase_aprocs aps' = ps' /\
   rewrite Hsz -Haps'.
   apply: IH.
   by rewrite /sum_fuel sumnE big_map (big_nth aproc_default) -Hsz.
-have [aps' [Haps' Hfuel]] := hles traces.
-exists aps'; split.
-  by rewrite Haps' /ps' size_map.
-have Hsz : size ps = size aps'.
-  rewrite -(size_map erase_aproc aps') -/(erase_aprocs _) Haps' !size_map.
-  by rewrite size_iota.
+have [aps' Haps'] := hles traces.
+exists aps'.
+have Hsz : size aps' = size ps by rewrite size_tuple.
+split.
+  apply: (@eq_from_nth _ Fail).
+    by rewrite !size_map size_tuple size_iota.
+  move=> i; rewrite !size_map Hsz => Hi.
+  rewrite (nth_map aproc_default) ?Hsz // (_ : i = Ordinal Hi) // -tnth_nth.
+  rewrite (proj1 (Haps' _)) -[ps']map_comp -map_comp.
+  by rewrite  (nth_map 0) ?size_iota?size_map // nth_iota.
 rewrite -ltnS (leq_trans _ Hps) // ?(ltnW Hk) // /sum_fuel sumnE big_map.
-rewrite -{2}(ssr_ext.map_nth_iota_id aproc_default ps) big_map.
-rewrite -{2}(subn0 (size ps)) -/(index_iota _ _) -subn_gt0 -sumnB.
+rewrite -{3}(ssr_ext.map_nth_iota_id aproc_default ps) big_map.
+rewrite -{3}(subn0 (size ps)) -/(index_iota _ _) -subn_gt0 -sumnB.
   rewrite lt0n sum_nat_seq_neq0.
   apply/hasP; exists k; first by rewrite mem_iota leq0n add0n subn0.
   rewrite /= -lt0n subn_gt0 -addn1 (_ : 1 = true) // -Hck.
-  have := Hfuel k.
-  rewrite -Hsz => /(_ Hk).
-  by rewrite (nth_map 0) ?size_iota // nth_iota.
+  have [_] := Haps' (Ordinal Hk).
+  by rewrite (tnth_nth aproc_default).
 move=> i _.
 case/boolP: (i < size aps') => Hi.
-  have := Hfuel i Hi.
+  rewrite Hsz in Hi.
+  have [_] := Haps' (Ordinal Hi).
+  rewrite (tnth_nth aproc_default) /=.
   exact/leq_trans/leq_addr.
 by rewrite nth_default // leqNgt.
 Qed.
