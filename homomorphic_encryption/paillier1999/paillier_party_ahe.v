@@ -21,11 +21,11 @@
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp ssrfun.
-From infotheo Require Import homomorphic_encryption.ahe_types.
-From infotheo Require Import homomorphic_encryption.ahe_enc_dec.
-From infotheo Require Import homomorphic_encryption.ahe_homo_ops.
-From infotheo Require Import homomorphic_encryption.ahe_algebra.
-From infotheo Require Import homomorphic_encryption.paillier1999.paillier_enc.
+Require Import he_types.
+Require Import enc_dec.
+Require Import ahe_enc.
+Require Import ahe_algebra.
+Require Import paillier_enc.
 
 Import GRing.Theory.
 

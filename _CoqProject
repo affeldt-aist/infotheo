@@ -101,9 +101,9 @@ smc/scalar_product_program.v
 smc/scalar_product_proof.v
 smc/smc_syntax_demo.v
 smc/scalar_product_alt_syntax.v
-homomorphic_encryption/ahe_types.v
-homomorphic_encryption/ahe_enc_dec.v
-homomorphic_encryption/ahe_homo_ops.v
+homomorphic_encryption/he_types.v
+homomorphic_encryption/enc_dec.v
+homomorphic_encryption/ahe_enc.v
 homomorphic_encryption/ahe_algebra.v
 homomorphic_encryption/benaloh1994/benaloh_enc.v
 homomorphic_encryption/benaloh1994/benaloh_party_ahe.v

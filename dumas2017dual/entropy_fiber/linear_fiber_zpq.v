@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap lra.
+From mathcomp Require Import ring boolp finmap lra.
 From mathcomp Require Import mathcomp_extra.
 From robot Require Import euclidean.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.

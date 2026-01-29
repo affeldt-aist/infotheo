@@ -26,11 +26,11 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp ssrfun.
 From mathcomp Require Import cyclic.  (* For Euler_exp_totient *)
-From infotheo Require Import homomorphic_encryption.ahe_types.
-From infotheo Require Import homomorphic_encryption.ahe_enc_dec.
-From infotheo Require Import homomorphic_encryption.ahe_homo_ops.
-From infotheo Require Import homomorphic_encryption.ahe_algebra.
-From infotheo Require Import homomorphic_encryption.benaloh1994.benaloh_enc.
+Require Import he_types.
+Require Import enc_dec.
+Require Import ahe_enc.
+Require Import ahe_algebra.
+Require Import benaloh_enc.
 
 Import GRing.Theory.
 

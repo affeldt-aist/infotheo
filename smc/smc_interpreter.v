@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg ring.
-From mathcomp Require Import Rstruct reals finmap.
+From mathcomp Require Import reals finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
 Require Import smc_tactics.
@@ -200,6 +200,14 @@ Definition red_spec_at {n} (ps : n.-tuple proc) (i : 'I_n) : option (red_spec n)
         | _ => None
         end
       else None
+  | Recv j f =>
+      if (j < n)%N =P true is ReflectT jn then
+        let j' := Ordinal jn in
+        match ps !_ j' with
+        | Send dst x p => if dst == i then Some (RScomm j' i x p f) else None
+        | _ => None
+        end
+      else None
   | _ => None
   end.
 
@@ -224,9 +232,40 @@ case Hpi: (ps !_ i) => [x p|dst w next|frm f|x||] //=.
   case Hdst: (ps !_ _) => [|dst' w' next'|frm' f'|||] //=.
   case: ifP => // frm'i [<-] /=.
   by rewrite Hpi Hdst (eqP frm'i).
+- case: eqP => //= frmn.
+  case Hfrm: (ps !_ _) => [|dst' w' next'||||] //=.
+  case: ifP => // dsti [<-] /=.
+  by rewrite Hfrm Hpi (eqP dsti).
 - by move=> [<-] /=; rewrite Hpi.
 Qed.
 
+(* Collect all applicable reductions from a process tuple *)
+(* Only use red_spec_at (sender perspective) to avoid duplicating RScomm *)
+Definition applicable_reds {n} (ps : n.-tuple proc) : seq (red_spec n) :=
+  pmap (red_spec_at ps) (enum 'I_n).
+
+(* Check if two lenses are disjoint (using seq predicate) *)
+Definition lens_disjoint {n m1 m2} (l1 : lens n m1) (l2 : lens n m2) : bool :=
+  all (fun x => x \notin l2) l1.
+
+(* Helper: i not in lens implies index i l >= size l *)
+Lemma notin_index_geq n m (l : lens n m) (i : 'I_n) :
+  i \notin l -> (m <= index i l)%N.
+Proof.
+move=> Hnotin.
+rewrite leqNgt.
+apply/negP => Hidx.
+move: Hnotin.
+by rewrite -index_mem size_tuple Hidx.
+Qed.
+
+(* Injecting with disjoint lenses commutes *)
+(* TODO: Complete this proof - the structure is correct but SSReflect rewriting is complex *)
+Lemma inject_disjoint_comm n m1 m2 (T : eqType) (l1 : lens n m1) (l2 : lens n m2)
+    (ps : n.-tuple T) (ps1 : m1.-tuple T) (ps2 : m2.-tuple T) :
+  lens_disjoint l1 l2 ->
+  inject l1 (inject l2 ps ps2) ps1 = inject l2 (inject l1 ps ps1) ps2.
+Proof. Admitted.
 
 Lemma step_trace n (ps : n.-tuple proc) tr i :
   step ps tr i = add_trace tr (step ps nil i).

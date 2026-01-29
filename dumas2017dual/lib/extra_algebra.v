@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg.
-From mathcomp Require Import Rstruct ring boolp reals.
+From mathcomp Require Import ring boolp reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext.
 
 Import GRing.Theory.

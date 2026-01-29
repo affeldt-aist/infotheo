@@ -11,25 +11,25 @@
 (*                                                                            *)
 (* == Operations ==                                                           *)
 (*                                                                            *)
-(*   phe_E : party -> msg -> rand -> enc    (encryption)                      *)
-(*   phe_K : party -> key -> msg -> pkey    (key generation)                  *)
-(*   phe_D : pkey -> enc -> option msg      (decryption)                      *)
+(*   enc : party -> msg -> rand -> enc    (encryption)                        *)
+(*   key : party -> key -> msg -> pkey    (key generation)                    *)
+(*   dec : pkey -> enc -> option msg      (decryption)                        *)
 (*                                                                            *)
 (* == Properties ==                                                           *)
 (*                                                                            *)
-(*   phe_dec_correct : D(K(p,Dec,sk), E(p,m,r)) = Some m                      *)
+(*   dec_correct : dec (key (p,Dec,sk), enc(p,m,r)) = Some m                  *)
 (*                                                                            *)
 (* == Related Files ==                                                        *)
 (*                                                                            *)
-(*   ahe_types.v     - Type definitions (Party_HE_types)                      *)
-(*   ahe_homo_ops.v  - Homomorphic operations mixin (isPartyAHE_HomoOps)      *)
-(*   ahe_algebra.v   - Algebraic properties mixin (isPartyAHE_Algebra)        *)
+(*   he_types.v     - Type definitions (HETypes)                              *)
+(*   ahe_enc.v  - Homomorphic operations mixin (isAHEnc)                      *)
+(*   ahe_algebra.v   - Algebraic properties mixin (isAHEAlgebra)              *)
 (*                                                                            *)
 (******************************************************************************)
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra.
-From infotheo Require Import homomorphic_encryption.ahe_types.
+Require Import he_types.
 
 Import GRing.Theory.
 
@@ -43,25 +43,22 @@ Local Open Scope ring_scope.
 (*                   Encryption/Decryption Mixin                               *)
 (* ========================================================================== *)
 
-(* HB mixin for party-labeled encryption operations.
-   Uses phe_ prefix since E/D/K are generic encryption operations,
-   not specific to additive homomorphism. *)
-HB.mixin Record isPartyHE_EncDec (T : Party_HE_types) := {
+HB.mixin Record isEncDec (T : HETypes) := {
   (* Encryption: party -> message -> randomness -> ciphertext *)
-  phe_E : phe_party T -> phe_msg T -> phe_rand T -> phe_enc T ;
+  enc : party T -> plain T -> rand T -> party_cipher T ;
   
   (* Key generation: party -> key type -> secret -> party key *)
-  phe_K : phe_party T -> key -> phe_msg T -> phe_pkey T ;
+  key : party T -> key -> plain T -> pkey T ;
   
   (* Decryption: party key -> ciphertext -> optional message *)
-  phe_D : phe_pkey T -> phe_enc T -> option (phe_msg T) ;
+  dec : pkey T -> party_cipher T -> option (plain T) ;
   
   (* Decryption correctness: decrypting an encryption yields the message.
      Note: For concrete instances (Benaloh, Paillier), this may require
      implementing actual decryption or using an axiom placeholder. *)
-  phe_dec_correct : forall (p : phe_party T) (m : phe_msg T) (r : phe_rand T) (sk : phe_msg T),
-    phe_D (phe_K p Dec sk) (phe_E p m r) = Some m
+  dec_correct : forall (p : party T) (m : plain T) (r : rand T) (sk : plain T),
+    dec (key p Dec sk) (enc p m r) = Some m
 }.
 
-#[short(type=Party_HE_EncDec_scheme)]
-HB.structure Definition Party_HE_EncDec := { T of isPartyHE_EncDec T }.
+#[short(type=EncDec_scheme)]
+HB.structure Definition EncDec := { T of isEncDec T }.

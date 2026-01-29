@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap.
+From mathcomp Require Import ring boolp finmap.
 Require Import smc_interpreter smc_session_types homomorphic_encryption.
 
 Import GRing.Theory.
@@ -38,22 +38,13 @@ Definition Recv_dec_param {msg enc pkey : Type}
   (D : pkey -> enc -> option msg)
   (data : Type) (from_enc : data -> option enc)
   (frm : nat) (dk : pkey) (f : msg -> proc data) : proc data :=
-  Recv frm (fun x => match from_enc x with
-                     | Some v => match D dk v with
-                                 | Some v' => f v'
-                                 | None => Fail
-                                 end
-                     | None => Fail
-                     end).
+  Recv frm (oapp f Fail \o obind (D dk) \o from_enc).
 
 (* Recv_enc: receive encrypted value (cannot decrypt), do HE computation *)
 Definition Recv_enc_param {enc : Type}
   (data : Type) (from_enc : data -> option enc)
   (frm : nat) (f : enc -> proc data) : proc data :=
-  Recv frm (fun x => match from_enc x with
-                     | Some v => f v
-                     | None => Fail
-                     end).
+  Recv frm (oapp f Fail \o from_enc).
 
 (* ========================================================================== *)
 (* Session Data Type Kind (outside section - no PHE dependency)               *)

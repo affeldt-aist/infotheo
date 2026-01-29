@@ -39,7 +39,7 @@
 
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
-From mathcomp Require Import Rstruct ring boolp finmap reals.
+From mathcomp Require Import ring boolp finmap reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
 Require Import smc_proba smc_entropy.
@@ -63,10 +63,10 @@ Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
 (* AHE types and structures *)
-From infotheo Require Export homomorphic_encryption.ahe_types.
-From infotheo Require Export homomorphic_encryption.ahe_enc_dec.
-From infotheo Require Export homomorphic_encryption.ahe_homo_ops.
-From infotheo Require Export homomorphic_encryption.ahe_algebra.
+Require Export he_types.
+Require Export enc_dec.
+Require Export ahe_enc.
+Require Export ahe_algebra.
 
 (* ========================================================================== *)
 (*                          Party and Type Definitions                         *)

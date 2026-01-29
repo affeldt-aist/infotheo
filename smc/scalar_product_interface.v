@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup finalg ring.
-From mathcomp Require Import Rstruct reals.
+From mathcomp Require Import reals.
 Require Import smc_interpreter smc_session_types.
 
 (**md**************************************************************************)
