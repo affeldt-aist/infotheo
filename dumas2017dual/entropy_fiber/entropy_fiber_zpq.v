@@ -149,7 +149,7 @@ rewrite (bigID (fun vv => vv \in fiber cond)) /=.
 (* Terms outside fiber are 0 *)
 have Hzero: \sum_(vv | vv \notin fiber cond)
             `Pr[[%VarRV, CondRV] = (vv, cond)] = 0.
-  apply big1 => [[v2' v3']] Hnotin.
+  rewrite big1 // => [[v2' v3']] Hnotin.
   rewrite pfwd1_eq0 //.
   rewrite mem_undup.
   apply/mapP.

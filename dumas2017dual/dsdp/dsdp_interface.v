@@ -72,24 +72,24 @@ HB.instance Definition _ := hasDecEq.Build dsdp_dtype dsdp_dtype_eqP.
 (** Parameterized record bundling all DSDP data operations.
     This eliminates the need to repeat data/d/e/k/from_enc/Recv_dec/Recv_enc
     definitions in every DSDP file. *)
-Record DSDP_Interface (PHE : Party_AHE_scheme) := MkDSDP_Interface {
+Record DSDP_Interface (PHE : AHEAlgebra_scheme) := MkDSDP_Interface {
   (* The carrier data type *)
   di_data : Type ;
   
   (* Constructors: wrap msg/enc/pkey into data *)
-  di_d : phe_msg PHE -> di_data ;
-  di_e : phe_enc PHE -> di_data ;
-  di_k : phe_pkey PHE -> di_data ;
+  di_d : plain PHE -> di_data ;
+  di_e : party_cipher PHE -> di_data ;
+  di_k : pkey PHE -> di_data ;
   
   (* Extractor: get enc from data *)
-  di_from_enc : di_data -> option (phe_enc PHE) ;
+  di_from_enc : di_data -> option (party_cipher PHE) ;
   
   (* Specialized Recv operations (proc is now unindexed) *)
   di_Recv_dec : 
-    nat -> phe_pkey PHE -> (phe_msg PHE -> proc di_data) -> 
+    nat -> pkey PHE -> (plain PHE -> proc di_data) -> 
     proc di_data ;
   di_Recv_enc :
-    nat -> (phe_enc PHE -> proc di_data) -> 
+    nat -> (party_cipher PHE -> proc di_data) -> 
     proc di_data ;
 }.
 
@@ -107,12 +107,12 @@ Arguments di_Recv_enc {PHE} _ _ _.
 
 Section Standard_DSDP_Interface.
 
-Variable PHE : Party_AHE_scheme.
+Variable PHE : AHEAlgebra_scheme.
 
-Let msg := phe_msg PHE.
-Let enc := phe_enc PHE.
-Let pkey := phe_pkey PHE.
-Let D := @phe_D PHE.
+Let msg := plain PHE.
+Let enc := party_cipher PHE.
+Let pkey := pkey PHE.
+Let D := @dec PHE.
 
 (* Standard sum-type data encoding: (msg + enc + pkey) *)
 Definition std_data := (msg + enc + pkey)%type.
@@ -150,18 +150,18 @@ End Standard_DSDP_Interface.
 
 Section Standard_Interface_Properties.
 
-Variable PHE : Party_AHE_scheme.
+Variable PHE : AHEAlgebra_scheme.
 Let DI := Standard_DSDP_Interface PHE.
 
-Lemma std_from_enc_e (x : phe_enc PHE) : 
+Lemma std_from_enc_e (x : party_cipher PHE) : 
   di_from_enc DI (di_e DI x) = Some x.
 Proof. by []. Qed.
 
-Lemma std_from_enc_d (x : phe_msg PHE) : 
+Lemma std_from_enc_d (x : plain PHE) : 
   di_from_enc DI (di_d DI x) = None.
 Proof. by []. Qed.
 
-Lemma std_from_enc_k (x : phe_pkey PHE) : 
+Lemma std_from_enc_k (x : pkey PHE) : 
   di_from_enc DI (di_k DI x) = None.
 Proof. by []. Qed.
 
@@ -176,14 +176,14 @@ End Standard_Interface_Properties.
 
 Section Session_Typed_DSDP.
 
-Variable PHE : Party_AHE_scheme.
+Variable PHE : AHEAlgebra_scheme.
 
 Let data := std_data PHE.
-Let D := @phe_D PHE.
+Let D := @dec PHE.
 
 (* Receive encrypted - pattern match data, use SFail on mismatch *)
 Definition DRecv_enc {party n env} (src : nat)
-    (f : phe_enc PHE -> @sproc dsdp_dtype data party n env)
+    (f : party_cipher PHE -> @sproc dsdp_dtype data party n env)
     : @sproc dsdp_dtype data party n.+1 (senv_recv env src DT_Enc) :=
   SRecv src DT_Enc (fun d => 
     match @std_from_enc PHE d with
@@ -193,8 +193,8 @@ Definition DRecv_enc {party n env} (src : nat)
 
 (* Receive encrypted and decrypt - still tracks as DT_Enc (what's on the wire) *)
 (* NOTE: D returns option msg, so need nested match for decrypt failure *)
-Definition DRecv_dec {party n env} (src : nat) (dk : phe_pkey PHE)
-    (f : phe_msg PHE -> @sproc dsdp_dtype data party n env)
+Definition DRecv_dec {party n env} (src : nat) (dk : pkey PHE)
+    (f : plain PHE -> @sproc dsdp_dtype data party n env)
     : @sproc dsdp_dtype data party n.+1 (senv_recv env src DT_Enc) :=
   SRecv src DT_Enc (fun d => 
     match @std_from_enc PHE d with
@@ -206,7 +206,7 @@ Definition DRecv_dec {party n env} (src : nat) (dk : phe_pkey PHE)
     end).
 
 (* Send encrypted - the only send variant needed *)
-Definition DPSendEnc {party n env} (dst : nat) (x : phe_enc PHE)
+Definition DPSendEnc {party n env} (dst : nat) (x : party_cipher PHE)
     (p : @sproc dsdp_dtype data party n env)
     : @sproc dsdp_dtype data party n.+1 (senv_send env dst DT_Enc) :=
   SSend dst DT_Enc (@std_e PHE x) p.

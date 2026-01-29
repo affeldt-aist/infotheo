@@ -73,18 +73,18 @@ Local Open Scope dsdp_scope.
 
 Section dsdp.
 
-(* Parameterize by a Party_AHE_scheme instance *)
-Variable PHE : Party_AHE_scheme.
+(* Parameterize by an AHEAlgebra_scheme instance *)
+Variable PHE : AHEAlgebra_scheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface PHE.
 
 (* Extract types from the scheme *)
-Let partyT := phe_party PHE.
-Let msg := phe_msg PHE.
-Let rand := phe_rand PHE.
-Let enc := phe_enc PHE.
-Let pkey := phe_pkey PHE.
+Let partyT := party PHE.
+Let msg := plain PHE.
+Let rand := rand PHE.
+Let enc := party_cipher PHE.
+Let pkey := pkey PHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
@@ -93,11 +93,11 @@ Let e := di_e DI.
 Let k := di_k DI.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
-Let E := @phe_E PHE.
-Let K := @phe_K PHE.
-Let D := @phe_D PHE.
-Let Emul := @pahe_Emul PHE.
-Let Epow := @pahe_Epow PHE.
+Let E := @enc PHE.
+Let K := @key PHE.
+Let D := @dec PHE.
+Let Emul := @Emul PHE.
+Let Epow := @Epow PHE.
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).

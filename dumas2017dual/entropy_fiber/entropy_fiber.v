@@ -128,9 +128,9 @@ have ->: \sum_(i in S) `Pr[X = i | Y = c] * log (`Pr[X = i | Y = c]) =
   apply: eq_bigr => x Hx_in.
   by rewrite (Hsol_unif x Hx_in).
 (* Step 5: Compute: -|S| * (1/|S|) * log(1/|S|) = log(|S|) *)
-rewrite big_const iter_addr addr0 -mulr_natr.
-rewrite logV; first by field; rewrite pnatr_eq0 -lt0n.
-by rewrite ltr0n.
+rewrite big_const iter_addr addr0 -mulr_natr mul1r.
+rewrite logV; last by rewrite ltr0n.
+by field; rewrite pnatr_eq0 -lt0n.
 Qed.
 
 End general_pointwise_entropy.
@@ -188,10 +188,9 @@ Lemma entropy_uniform_set (S : {set DomainT}) (n : nat) :
   (- \sum_(x in S) n%:R^-1 * log (n%:R^-1 : R)) = log (n%:R : R).
 Proof.
 move=> Hcard Hn_pos.
-rewrite big_const iter_addr addr0 Hcard -mulr_natr.
+rewrite big_const iter_addr addr0 Hcard -mulr_natr mul1r.
 rewrite logV; last by rewrite ltr0n.
-field.
-by rewrite pnatr_eq0 -lt0n.
+by field; rewrite pnatr_eq0 -lt0n.
 Qed.
 
 (** Entropy version: fdist uniform on S with H(P) = log |S|. *)
@@ -216,10 +215,9 @@ have ->: \sum_(i in S) (fdist_uniform_supp _ HS_pos)
      \sum_(i in S) (#|S|%:R : R)^-1 * log ((#|S|%:R : R)^-1).
   apply: eq_bigr => i Hi.
   by rewrite fdist_uniform_supp_in.
-rewrite big_const iter_addr addr0 Hcard -mulr_natr.
+rewrite big_const iter_addr addr0 Hcard -mulr_natr mul1r.
 rewrite logV; last by rewrite ltr0n.
-field.
-by rewrite pnatr_eq0 -lt0n.
+by field; rewrite pnatr_eq0 -lt0n.
 Qed.
 
 (* If X is uniform over fiber(c) given Y=c, then H(X|Y=c) = log|fiber(c)|.

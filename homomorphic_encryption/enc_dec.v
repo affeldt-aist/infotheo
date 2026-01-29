@@ -48,7 +48,7 @@ HB.mixin Record isEncDec (T : HETypes) := {
   enc : party T -> plain T -> rand T -> party_cipher T ;
   
   (* Key generation: party -> key type -> secret -> party key *)
-  key : party T -> key -> plain T -> pkey T ;
+  key : party T -> key_type -> plain T -> pkey T ;
   
   (* Decryption: party key -> ciphertext -> optional message *)
   dec : pkey T -> party_cipher T -> option (plain T) ;

@@ -7,12 +7,11 @@
 (*                                                                            *)
 (* == Architecture ==                                                         *)
 (*                                                                            *)
-(*   Party_AHE structure (defined using Hierarchy Builder):                   *)
-(*   - Party_HE_types bundles: phe_party, phe_msg, phe_rand, phe_cipher,      *)
-(*                             phe_enc, phe_pkey                              *)
-(*   - isPartyHE_EncDec mixin: phe_E, phe_D, phe_K, dec_correct               *)
-(*   - isPartyAHE_HomoOps mixin: pahe_Emul, pahe_Epow, morphism_2 properties  *)
-(*   - isPartyAHE_Algebra mixin: assoc, comm, id properties                   *)
+(*   AHEAlgebra structure (defined using Hierarchy Builder):                  *)
+(*   - HETypes bundles: party, plain, rand, cipher, party_cipher, pkey        *)
+(*   - isEncDec mixin: enc, dec, key, dec_correct                             *)
+(*   - isAHEnc mixin: Emul, Epow, morphism_2 properties                       *)
+(*   - isAHEAlgebra mixin: assoc, comm, id properties                         *)
 (*                     |               \                                      *)
 (*                     v                v                                     *)
 (*            Benaloh_Party_AHE    Paillier_Party_AHE                         *)
@@ -28,10 +27,10 @@
 (*                                                                            *)
 (* == Related Files ==                                                        *)
 (*                                                                            *)
-(*   ahe_types.v            - Party_HE_types and key type                     *)
-(*   ahe_enc_dec.v          - isPartyHE_EncDec mixin                          *)
-(*   ahe_homo_ops.v         - isPartyAHE_HomoOps mixin (morphism_2 style)     *)
-(*   ahe_algebra.v          - isPartyAHE_Algebra mixin and Party_AHE          *)
+(*   he_types.v             - HETypes and key_type type                            *)
+(*   enc_dec.v              - isEncDec mixin                                  *)
+(*   ahe_enc.v              - isAHEnc mixin (morphism_2 style)                *)
+(*   ahe_algebra.v          - isAHEAlgebra mixin and AHEAlgebra               *)
 (*   benaloh1994/benaloh_party_ahe.v - Benaloh Party_AHE instance             *)
 (*   paillier1999/paillier_party_ahe.v - Paillier Party_AHE instance          *)
 (*                                                                            *)
@@ -130,12 +129,12 @@ Variable party : finType.
 Variable msg : finComNzRingType.
 
 Definition enc := (party * msg)%type.
-Definition pkey := (party * key * msg)%type.
+Definition party_pkey := (party * key_type * msg)%type.
 
 Definition E i m : enc := (i, m).
-Definition K i k m : pkey := (i, k, m).
+Definition K i k m : party_pkey := (i, k, m).
 
-Definition D (dk : pkey) (e : enc) : option msg :=
+Definition D (dk : party_pkey) (e : enc) : option msg :=
   match dk, e with
   | (i, k, _), (j, m) => if (i == j) && (k == Dec) then Some m else None
   end.
@@ -159,13 +158,13 @@ Section party_key_def.
    `T` means any type of the key's value.
 *)
 
-Variant party_key (p : party) (k : key) (T : Type) : Type :=
+Variant party_key (p : party) (k : key_type) (T : Type) : Type :=
   KeyOf of T.
 
 Definition party_key_v p k T (pk : party_key p k T) : T :=
   let 'KeyOf v := pk in v.
 
-Variable (p : party) (k : key)(T : Type).
+Variable (p : party) (k : key_type)(T : Type).
 
 HB.instance Definition _ := [isNew for @party_key_v p k T].
 
@@ -174,7 +173,7 @@ End party_key_def.
 Notation "p .-key k" := (party_key p k)
   (at level 2, format "p .-key k") : type_scope.
 
-Coercion tuple_of_party_key p k T (pk : p.-key k T) : (party * key * T) :=
+Coercion tuple_of_party_key p k T (pk : p.-key k T) : (party * key_type * T) :=
   let 'KeyOf v := pk in (p, k, v).
 
 Section party_key_types.
@@ -188,7 +187,7 @@ HB.instance Definition _ p k (T : countType) :=
 HB.instance Definition _ p k (T : finType) :=
   [Finite of p.-key k T by <:].
 
-Variable (p : party)(k : key)(T : finType).
+Variable (p : party)(k : key_type)(T : finType).
 
 Lemma card_party_key : #|{:p.-key k T}| = #|T|.
 Proof.

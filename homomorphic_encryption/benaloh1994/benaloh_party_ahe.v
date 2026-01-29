@@ -4,9 +4,9 @@
 (*                                                                            *)
 (* This file provides HB instances for Benaloh encryption implementing        *)
 (* the three AHE mixins:                                                      *)
-(*   - isPartyHE_EncDec   (encryption/decryption)                             *)
-(*   - isPartyAHE_HomoOps (homomorphic operations)                            *)
-(*   - isPartyAHE_Algebra (algebraic properties)                              *)
+(*   - isEncDec     (encryption/decryption)                               *)
+(*   - isAHEnc      (homomorphic operations)                              *)
+(*   - isAHEAlgebra (algebraic properties)                                *)
 (*                                                                            *)
 (* == Cryptographic Assumptions ==                                            *)
 (*                                                                            *)
@@ -252,30 +252,30 @@ Qed.
 
 (* Type definitions *)
 Definition benaloh_enc_party := (party * 'Z_n)%type.
-Definition benaloh_pkey := (party * key * 'Z_r)%type.
+Definition benaloh_pkey := (party * key_type * 'Z_r)%type.
 
 (* ========================================================================== *)
 (*                   Type Bundle                                               *)
 (* ========================================================================== *)
 
-Definition Benaloh_Party_HE_types : Party_HE_types := 
-  MkPartyHE party 'Z_r 'Z_n 'Z_n (party * 'Z_n)%type benaloh_pkey.
+Definition Benaloh_HETypes : HETypes := 
+  MkHE party 'Z_r 'Z_n 'Z_n (party * 'Z_n)%type benaloh_pkey.
 
 (* ========================================================================== *)
 (*                   Encryption/Decryption Operations                          *)
 (* ========================================================================== *)
 
-Definition benaloh_phe_E (p : party) (m : 'Z_r) (u : 'Z_n) : (party * 'Z_n) := 
+Definition benaloh_enc (p : party) (m : 'Z_r) (u : 'Z_n) : (party * 'Z_n) := 
   (p, benaloh_enc y m u).
 
-Definition benaloh_phe_K (p : party) (k : key) (m : 'Z_r) : benaloh_pkey := 
+Definition benaloh_key (p : party) (k : key_type) (m : 'Z_r) : benaloh_pkey := 
   (p, k, m).
 
 (* Decryption using the Benaloh decryption algorithm.
    Only decrypts if:
    1. The key is a decryption key (k == Dec)
    2. The party labels match (i == j) *)
-Definition benaloh_phe_D (dk : benaloh_pkey) (e : party * 'Z_n) : option 'Z_r :=
+Definition benaloh_dec (dk : benaloh_pkey) (e : party * 'Z_n) : option 'Z_r :=
   match dk, e with
   | (i, k, _), (j, c) => 
     if (i == j) && (k == Dec) then Some (benaloh_decrypt c) else None
@@ -283,42 +283,42 @@ Definition benaloh_phe_D (dk : benaloh_pkey) (e : party * 'Z_n) : option 'Z_r :=
 
 (* Decryption correctness - proved using the Benaloh decryption algorithm.
    Uses rand_coprime_n assumption: randomness is a unit in Z_n. *)
-Lemma benaloh_phe_dec_correct : forall (p : party) (m : 'Z_r) (u : 'Z_n) (sk : 'Z_r),
-  benaloh_phe_D (benaloh_phe_K p Dec sk) (benaloh_phe_E p m u) = Some m.
+Lemma benaloh_dec_correct : forall (p : party) (m : 'Z_r) (u : 'Z_n) (sk : 'Z_r),
+  benaloh_dec (benaloh_key p Dec sk) (benaloh_enc p m u) = Some m.
 Proof.
   move=> p m u sk.
-  rewrite /benaloh_phe_D /benaloh_phe_K /benaloh_phe_E /=.
+  rewrite /benaloh_dec /benaloh_key /benaloh_enc /=.
   rewrite eq_refl /=.
   rewrite benaloh_decrypt_correct.
   reflexivity.
 Qed.
 
 (* ========================================================================== *)
-(*                   isPartyHE_EncDec Instance                                 *)
+(*                   isEncDec Instance                                        *)
 (* ========================================================================== *)
 
-HB.instance Definition Benaloh_isPartyHE_EncDec : isPartyHE_EncDec Benaloh_Party_HE_types := 
-  @isPartyHE_EncDec.Build Benaloh_Party_HE_types 
-    benaloh_phe_E benaloh_phe_K benaloh_phe_D
-    benaloh_phe_dec_correct.
+HB.instance Definition Benaloh_isEncDec : isEncDec Benaloh_HETypes := 
+  @isEncDec.Build Benaloh_HETypes 
+    benaloh_enc benaloh_key benaloh_dec
+    benaloh_dec_correct.
 
 (* ========================================================================== *)
 (*                   Homomorphic Operations                                    *)
 (* ========================================================================== *)
 
 (* Homomorphic addition: ciphertext multiplication *)
-Definition benaloh_pahe_Emul (e1 e2 : party * 'Z_n) : (party * 'Z_n) := 
+Definition benaloh_Emul (e1 e2 : party * 'Z_n) : (party * 'Z_n) := 
   let (p1, c1) := e1 in
   let (_, c2) := e2 in
   (p1, c1 * c2).
 
 (* Homomorphic scalar multiplication: ciphertext exponentiation *)
-Definition benaloh_pahe_Epow (e : party * 'Z_n) (m : 'Z_r) : (party * 'Z_n) :=
+Definition benaloh_Epow (e : party * 'Z_n) (m : 'Z_r) : (party * 'Z_n) :=
   let (p, c) := e in
   (p, c ^+ (m : nat)).
 
 (* Randomness exponentiation by message: r ^^ m *)
-Definition benaloh_pahe_rand_pow (u : 'Z_n) (m : 'Z_r) : 'Z_n := u ^+ (m : nat).
+Definition benaloh_rand_pow (u : 'Z_n) (m : 'Z_r) : 'Z_n := u ^+ (m : nat).
 
 (* -------------------------------------------------------------------------- *)
 (*  Local notations for compact {morph} syntax                                *)
@@ -326,111 +326,111 @@ Definition benaloh_pahe_rand_pow (u : 'Z_n) (m : 'Z_r) : 'Z_n := u ^+ (m : nat).
 (* These notations make the morphism statements readable:
    {morph E[ p ] : x y / x +mr y >-> x *E y}
    expands to:
-   morphism_2 (phe_E_curry Benaloh_Party_HE_types p)
-              (msg_rand_add Benaloh_Party_HE_types)
-              benaloh_pahe_Emul *)
-Local Notation BT := Benaloh_Party_HE_types.
-Local Notation "E[ p ]" := (phe_E_curry BT p) (at level 10, p at level 9).
+   morphism_2 (enc_curry Benaloh_HETypes p)
+              (msg_rand_add Benaloh_HETypes)
+              benaloh_Emul *)
+Local Notation BT := Benaloh_HETypes.
+Local Notation "E[ p ]" := (enc_curry BT p) (at level 10, p at level 9).
 Local Notation "x +mr y" := (msg_rand_add BT x y) (at level 50, left associativity).
-Local Notation "x *E y" := (benaloh_pahe_Emul x y) (at level 40, left associativity).
+Local Notation "x *E y" := (benaloh_Emul x y) (at level 40, left associativity).
 
 (* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) *)
-Lemma benaloh_pahe_Emul_addM : forall (p : party),
+Lemma benaloh_Emul_addM : forall (p : party),
   {morph E[ p ] : x y / x +mr y >-> x *E y}.
 Proof.
   move=> p [m1 u1] [m2 u2].
-  rewrite /phe_E_curry /msg_rand_add /benaloh_pahe_Emul /=.
-  rewrite /benaloh_phe_E /=.
+  rewrite /enc_curry /msg_rand_add /benaloh_Emul /=.
+  rewrite /benaloh_enc /=.
   congr pair.
   rewrite (@benaloh_enc.enc_mul_dist n r r_gt1 y y_order_r m1 m2 u1 u2).
   reflexivity.
 Qed.
 
-(* Scalar multiplication homomorphism proof *)
-Lemma benaloh_pahe_Epow_mulM : forall (p : party) (m1 m2 : 'Z_r) (u : 'Z_n),
-  benaloh_pahe_Epow (benaloh_phe_E p m1 u) m2 
-    = benaloh_phe_E p (m1 * m2) (benaloh_pahe_rand_pow u m2).
+(* Scalar multiplication homomorphism proof.
+   Signature must match isAHEnc.Epow_mulM:
+   forall (p : party T) (m : plain T),
+     {morph E[p] : mr / (mr.1 * m, rand_pow mr.2 m) >-> Epow mr m} *)
+Lemma benaloh_Epow_mulM : forall (p : party) (m : 'Z_r),
+  {morph E[p] : mr / (mr.1 * m, benaloh_rand_pow mr.2 m) >-> benaloh_Epow mr m}.
 Proof.
-  move=> p m1 m2 u.
-  rewrite /benaloh_pahe_Epow /benaloh_phe_E /benaloh_pahe_rand_pow /=.
+  move=> p m2 [m1 u].
+  rewrite /enc_curry /benaloh_Epow /benaloh_enc /benaloh_rand_pow /=.
   congr pair.
   rewrite (@benaloh_enc.enc_exp_dist n r r_gt1 y y_order_r m1 (m2 : nat) u).
-  congr (benaloh_enc y _ _).
+  congr (benaloh_enc.benaloh_enc y _ _).
   by rewrite mulrC -[m2 in m2 * _]natr_Zp mulr_natl.
 Qed.
 
 (* ========================================================================== *)
-(*                   isPartyAHE_HomoOps Instance                               *)
+(*                   isAHEnc Instance                                         *)
 (* ========================================================================== *)
 
-HB.instance Definition Benaloh_isPartyAHE_HomoOps : isPartyAHE_HomoOps Benaloh_Party_HE_types := 
-  @isPartyAHE_HomoOps.Build Benaloh_Party_HE_types 
-    benaloh_pahe_Emul benaloh_pahe_Epow benaloh_pahe_rand_pow
-    benaloh_pahe_Emul_addM benaloh_pahe_Epow_mulM.
+HB.instance Definition Benaloh_isAHEnc : isAHEnc Benaloh_HETypes := 
+  @isAHEnc.Build Benaloh_HETypes 
+    benaloh_Emul benaloh_Epow benaloh_rand_pow
+    benaloh_Emul_addM benaloh_Epow_mulM.
 
 (* ========================================================================== *)
 (*                   Algebraic Properties                                      *)
 (* ========================================================================== *)
 
 (* Associativity of Emul *)
-Lemma benaloh_pahe_Emul_assoc : forall (e1 e2 e3 : party * 'Z_n),
-  benaloh_pahe_Emul (benaloh_pahe_Emul e1 e2) e3 = 
-  benaloh_pahe_Emul e1 (benaloh_pahe_Emul e2 e3).
+Lemma benaloh_Emul_assoc : forall (e1 e2 e3 : party * 'Z_n),
+  benaloh_Emul (benaloh_Emul e1 e2) e3 = 
+  benaloh_Emul e1 (benaloh_Emul e2 e3).
 Proof.
   move=> [p1 c1] [p2 c2] [p3 c3].
-  rewrite /benaloh_pahe_Emul /=.
+  rewrite /benaloh_Emul /=.
   by rewrite mulrA.
 Qed.
 
 (* Unit randomness for identity element: 1 in Z_n *)
-Definition benaloh_pahe_rand_unit : 'Z_n := 1.
+Definition benaloh_rand_unit : 'Z_n := 1.
 
 (* Identity element: E(p, 0, 1) acts as identity for Emul.
    Proof: benaloh_enc y 0 1 = y^0 * 1^r = 1 * 1 = 1
    So Emul (p, c) (p', 1) = (p, c * 1) = (p, c) *)
-Lemma benaloh_pahe_Emul_id : forall (p : party) (e : party * 'Z_n),
-  benaloh_pahe_Emul e (benaloh_phe_E p 0 benaloh_pahe_rand_unit) = e.
+Lemma benaloh_Emul_id : forall (p : party) (e : party * 'Z_n),
+  benaloh_Emul e (benaloh_enc p 0 benaloh_rand_unit) = e.
 Proof.
   move=> p [pe ce].
-  rewrite /benaloh_pahe_Emul /benaloh_phe_E /benaloh_pahe_rand_unit /=.
-  rewrite /benaloh_enc.
-  rewrite expr0.
-  rewrite mul1r.
-  rewrite expr1n.
-  rewrite mulr1.
+  rewrite /benaloh_Emul /benaloh_enc /benaloh_rand_unit /=.
+  (* Unfold the module-level benaloh_enc.benaloh_enc *)
+  rewrite /benaloh_enc.benaloh_enc.
+  rewrite expr0 mul1r expr1n mulr1.
   reflexivity.
 Qed.
 
 (* Cipher extraction: extracts the raw ciphertext without party label *)
-Definition benaloh_pahe_enc_cipher (e : party * 'Z_n) : 'Z_n := e.2.
+Definition benaloh_enc_cipher (e : party * 'Z_n) : 'Z_n := e.2.
 
 (* Cipher-level commutativity: the raw ciphertext part commutes *)
-Lemma benaloh_pahe_Emul_comm_cipher : forall (e1 e2 : party * 'Z_n),
-  benaloh_pahe_enc_cipher (benaloh_pahe_Emul e1 e2) = 
-  benaloh_pahe_enc_cipher (benaloh_pahe_Emul e2 e1).
+Lemma benaloh_Emul_comm_cipher : forall (e1 e2 : party * 'Z_n),
+  benaloh_enc_cipher (benaloh_Emul e1 e2) = 
+  benaloh_enc_cipher (benaloh_Emul e2 e1).
 Proof.
   move=> [p1 c1] [p2 c2].
-  rewrite /benaloh_pahe_enc_cipher /benaloh_pahe_Emul /=.
+  rewrite /benaloh_enc_cipher /benaloh_Emul /=.
   apply mulrC.
 Qed.
 
 (* Same-party commutativity: when parties are equal, full commutativity holds *)
-Lemma benaloh_pahe_Emul_comm_same_party : forall (p : party) (c1 c2 : 'Z_n),
-  benaloh_pahe_Emul (p, c1) (p, c2) = benaloh_pahe_Emul (p, c2) (p, c1).
+Lemma benaloh_Emul_comm_same_party : forall (p : party) (c1 c2 : 'Z_n),
+  benaloh_Emul (p, c1) (p, c2) = benaloh_Emul (p, c2) (p, c1).
 Proof.
   move=> p c1 c2.
-  rewrite /benaloh_pahe_Emul /=.
+  rewrite /benaloh_Emul /=.
   congr pair.
   apply mulrC.
 Qed.
 
 (* ========================================================================== *)
-(*                   isPartyAHE_Algebra Instance                               *)
+(*                   isAHEAlgebra Instance                                    *)
 (* ========================================================================== *)
 
-HB.instance Definition Benaloh_isPartyAHE_Algebra : isPartyAHE_Algebra Benaloh_Party_HE_types := 
-  @isPartyAHE_Algebra.Build Benaloh_Party_HE_types 
-    benaloh_pahe_Emul_assoc benaloh_pahe_rand_unit benaloh_pahe_Emul_id
-    benaloh_pahe_enc_cipher benaloh_pahe_Emul_comm_cipher.
+HB.instance Definition Benaloh_isAHEAlgebra : isAHEAlgebra Benaloh_HETypes := 
+  @isAHEAlgebra.Build Benaloh_HETypes 
+    benaloh_Emul_assoc benaloh_rand_unit benaloh_Emul_id
+    benaloh_enc_cipher benaloh_Emul_comm_cipher.
 
 End Benaloh_Party_AHE.

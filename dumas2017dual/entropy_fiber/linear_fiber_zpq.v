@@ -44,8 +44,6 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 
-Local Definition R := Rdefinitions.R.
-
 (* ========================================================================== *)
 (*              Generalized linear fiber over Z/pqZ (dimension n)             *)
 (* ========================================================================== *)

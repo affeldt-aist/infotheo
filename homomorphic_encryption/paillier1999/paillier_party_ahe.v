@@ -4,9 +4,9 @@
 (*                                                                            *)
 (* This file provides HB instances for Paillier encryption implementing       *)
 (* the three AHE mixins:                                                      *)
-(*   - isPartyHE_EncDec   (encryption/decryption)                             *)
-(*   - isPartyAHE_HomoOps (homomorphic operations)                            *)
-(*   - isPartyAHE_Algebra (algebraic properties)                              *)
+(*   - isEncDec     (encryption/decryption)                               *)
+(*   - isAHEnc      (homomorphic operations)                              *)
+(*   - isAHEAlgebra (algebraic properties)                                *)
 (*                                                                            *)
 (* == Cryptographic Assumptions ==                                            *)
 (*                                                                            *)
@@ -160,72 +160,72 @@ Qed.
 
 (* Type definitions *)
 Definition paillier_enc_party := (party * 'Z_n2)%type.
-Definition paillier_pkey := (party * key * 'Z_n)%type.
+Definition paillier_pkey := (party * key_type * 'Z_n)%type.
 
 (* ========================================================================== *)
 (*                   Type Bundle                                               *)
 (* ========================================================================== *)
 
-Definition Paillier_Party_HE_types : Party_HE_types := 
-  MkPartyHE party 'Z_n 'Z_n2 'Z_n2 (party * 'Z_n2)%type paillier_pkey.
+Definition Paillier_HETypes : HETypes := 
+  MkHE party 'Z_n 'Z_n2 'Z_n2 (party * 'Z_n2)%type paillier_pkey.
 
 (* ========================================================================== *)
 (*                   Encryption/Decryption Operations                          *)
 (* ========================================================================== *)
 
-Definition paillier_phe_E (p : party) (m : 'Z_n) (r : 'Z_n2) : (party * 'Z_n2) := 
+Definition paillier_enc (p : party) (m : 'Z_n) (r : 'Z_n2) : (party * 'Z_n2) := 
   (p, paillier_enc g m r).
 
-Definition paillier_phe_K (p : party) (k : key) (m : 'Z_n) : paillier_pkey := 
+Definition paillier_key (p : party) (k : key_type) (m : 'Z_n) : paillier_pkey := 
   (p, k, m).
 
 (* Decryption using the Paillier decryption algorithm.
    Only decrypts if:
    1. The key is a decryption key (k == Dec)
    2. The party labels match (i == j) *)
-Definition paillier_phe_D (dk : paillier_pkey) (e : party * 'Z_n2) : option 'Z_n :=
+Definition paillier_dec (dk : paillier_pkey) (e : party * 'Z_n2) : option 'Z_n :=
   match dk, e with
   | (i, k, _), (j, c) => 
     if (i == j) && (k == Dec) then Some (paillier_decrypt c) else None
   end.
 
 (* Decryption correctness - proved using the Paillier decryption algorithm *)
-Lemma paillier_phe_dec_correct : forall (p : party) (m : 'Z_n) (r : 'Z_n2) (sk : 'Z_n),
-  paillier_phe_D (paillier_phe_K p Dec sk) (paillier_phe_E p m r) = Some m.
+Lemma paillier_dec_correct : forall (p : party) (m : 'Z_n) (r : 'Z_n2) (sk : 'Z_n),
+  paillier_dec (paillier_key p Dec sk) (paillier_enc p m r) = Some m.
 Proof.
   move=> p m r sk.
-  rewrite /paillier_phe_D /paillier_phe_K /paillier_phe_E /=.
+  rewrite /paillier_dec /paillier_key /paillier_enc /=.
   rewrite eq_refl /=.
   rewrite paillier_decrypt_correct.
   reflexivity.
 Qed.
 
 (* ========================================================================== *)
-(*                   isPartyHE_EncDec Instance                                 *)
+(*                   isEncDec Instance                                        *)
 (* ========================================================================== *)
 
-HB.instance Definition Paillier_isPartyHE_EncDec : isPartyHE_EncDec Paillier_Party_HE_types := 
-  @isPartyHE_EncDec.Build Paillier_Party_HE_types 
-    paillier_phe_E paillier_phe_K paillier_phe_D
-    paillier_phe_dec_correct.
+HB.instance Definition Paillier_isEncDec : isEncDec Paillier_HETypes := 
+  @isEncDec.Build Paillier_HETypes 
+    paillier_enc paillier_key paillier_dec
+    paillier_dec_correct.
 
 (* ========================================================================== *)
 (*                   Homomorphic Operations                                    *)
 (* ========================================================================== *)
 
 (* Homomorphic addition: ciphertext multiplication *)
-Definition paillier_pahe_Emul (e1 e2 : party * 'Z_n2) : (party * 'Z_n2) := 
+Definition paillier_Emul (e1 e2 : party * 'Z_n2) : (party * 'Z_n2) := 
   let (p1, c1) := e1 in
   let (_, c2) := e2 in
   (p1, c1 * c2).
 
 (* Homomorphic scalar multiplication: ciphertext exponentiation *)
-Definition paillier_pahe_Epow (e : party * 'Z_n2) (m : 'Z_n) : (party * 'Z_n2) :=
+Definition paillier_Epow (e : party * 'Z_n2) (m : 'Z_n) : (party * 'Z_n2) :=
   let (p, c) := e in
   (p, c ^+ (m : nat)).
 
 (* Randomness exponentiation by message: r ^^ m *)
-Definition paillier_pahe_rand_pow (r : 'Z_n2) (m : 'Z_n) : 'Z_n2 := r ^+ (m : nat).
+Definition paillier_rand_pow (r : 'Z_n2) (m : 'Z_n) : 'Z_n2 := r ^+ (m : nat).
 
 (* -------------------------------------------------------------------------- *)
 (*  Local notations for compact {morph} syntax                                *)
@@ -233,111 +233,111 @@ Definition paillier_pahe_rand_pow (r : 'Z_n2) (m : 'Z_n) : 'Z_n2 := r ^+ (m : na
 (* These notations make the morphism statements readable:
    {morph E[ p ] : x y / x +mr y >-> x *E y}
    expands to:
-   morphism_2 (phe_E_curry Paillier_Party_HE_types p)
-              (msg_rand_add Paillier_Party_HE_types)
-              paillier_pahe_Emul *)
-Local Notation PT := Paillier_Party_HE_types.
-Local Notation "E[ p ]" := (phe_E_curry PT p) (at level 10, p at level 9).
+   morphism_2 (enc_curry Paillier_HETypes p)
+              (msg_rand_add Paillier_HETypes)
+              paillier_Emul *)
+Local Notation PT := Paillier_HETypes.
+Local Notation "E[ p ]" := (enc_curry PT p) (at level 10, p at level 9).
 Local Notation "x +mr y" := (msg_rand_add PT x y) (at level 50, left associativity).
-Local Notation "x *E y" := (paillier_pahe_Emul x y) (at level 40, left associativity).
+Local Notation "x *E y" := (paillier_Emul x y) (at level 40, left associativity).
 
 (* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) *)
-Lemma paillier_pahe_Emul_addM : forall (p : party),
+Lemma paillier_Emul_addM : forall (p : party),
   {morph E[ p ] : x y / x +mr y >-> x *E y}.
 Proof.
   move=> p [m1 r1] [m2 r2].
-  rewrite /phe_E_curry /msg_rand_add /paillier_pahe_Emul /=.
-  rewrite /paillier_phe_E /=.
+  rewrite /enc_curry /msg_rand_add /paillier_Emul /=.
+  rewrite /paillier_enc /=.
   congr pair.
   rewrite (@paillier_enc.enc_mul_dist n n_gt1 g g_order_n m1 m2 r1 r2).
   reflexivity.
 Qed.
 
-(* Scalar multiplication homomorphism proof *)
-Lemma paillier_pahe_Epow_mulM : forall (p : party) (m1 m2 : 'Z_n) (r : 'Z_n2),
-  paillier_pahe_Epow (paillier_phe_E p m1 r) m2 
-    = paillier_phe_E p (m1 * m2) (paillier_pahe_rand_pow r m2).
+(* Scalar multiplication homomorphism proof.
+   Signature must match isAHEnc.Epow_mulM:
+   forall (p : party T) (m : plain T),
+     {morph E[p] : mr / (mr.1 * m, rand_pow mr.2 m) >-> Epow mr m} *)
+Lemma paillier_Epow_mulM : forall (p : party) (m : 'Z_n),
+  {morph E[p] : mr / (mr.1 * m, paillier_rand_pow mr.2 m) >-> paillier_Epow mr m}.
 Proof.
-  move=> p m1 m2 r.
-  rewrite /paillier_pahe_Epow /paillier_phe_E /paillier_pahe_rand_pow /=.
+  move=> p m2 [m1 r].
+  rewrite /enc_curry /paillier_Epow /paillier_enc /paillier_rand_pow /=.
   congr pair.
   rewrite (@paillier_enc.enc_exp_dist n n_gt1 g g_order_n m1 (m2 : nat) r).
-  congr (paillier_enc g _ _).
+  congr (paillier_enc.paillier_enc g _ _).
   by rewrite mulrC -[m2 in m2 * _]natr_Zp mulr_natl.
 Qed.
 
 (* ========================================================================== *)
-(*                   isPartyAHE_HomoOps Instance                               *)
+(*                   isAHEnc Instance                                         *)
 (* ========================================================================== *)
 
-HB.instance Definition Paillier_isPartyAHE_HomoOps : isPartyAHE_HomoOps Paillier_Party_HE_types := 
-  @isPartyAHE_HomoOps.Build Paillier_Party_HE_types 
-    paillier_pahe_Emul paillier_pahe_Epow paillier_pahe_rand_pow
-    paillier_pahe_Emul_addM paillier_pahe_Epow_mulM.
+HB.instance Definition Paillier_isAHEnc : isAHEnc Paillier_HETypes := 
+  @isAHEnc.Build Paillier_HETypes 
+    paillier_Emul paillier_Epow paillier_rand_pow
+    paillier_Emul_addM paillier_Epow_mulM.
 
 (* ========================================================================== *)
 (*                   Algebraic Properties                                      *)
 (* ========================================================================== *)
 
 (* Associativity of Emul *)
-Lemma paillier_pahe_Emul_assoc : forall (e1 e2 e3 : party * 'Z_n2),
-  paillier_pahe_Emul (paillier_pahe_Emul e1 e2) e3 = 
-  paillier_pahe_Emul e1 (paillier_pahe_Emul e2 e3).
+Lemma paillier_Emul_assoc : forall (e1 e2 e3 : party * 'Z_n2),
+  paillier_Emul (paillier_Emul e1 e2) e3 = 
+  paillier_Emul e1 (paillier_Emul e2 e3).
 Proof.
   move=> [p1 c1] [p2 c2] [p3 c3].
-  rewrite /paillier_pahe_Emul /=.
+  rewrite /paillier_Emul /=.
   by rewrite mulrA.
 Qed.
 
 (* Unit randomness for identity element: 1 in Z_{n^2} *)
-Definition paillier_pahe_rand_unit : 'Z_n2 := 1.
+Definition paillier_rand_unit : 'Z_n2 := 1.
 
 (* Identity element: E(p, 0, 1) acts as identity for Emul.
    Proof: paillier_enc g 0 1 = g^0 * 1^n = 1 * 1 = 1
    So Emul (p, c) (p', 1) = (p, c * 1) = (p, c) *)
-Lemma paillier_pahe_Emul_id : forall (p : party) (e : party * 'Z_n2),
-  paillier_pahe_Emul e (paillier_phe_E p 0 paillier_pahe_rand_unit) = e.
+Lemma paillier_Emul_id : forall (p : party) (e : party * 'Z_n2),
+  paillier_Emul e (paillier_enc p 0 paillier_rand_unit) = e.
 Proof.
   move=> p [pe ce].
-  rewrite /paillier_pahe_Emul /paillier_phe_E /paillier_pahe_rand_unit /=.
-  rewrite /paillier_enc.
-  rewrite expr0.
-  rewrite mul1r.
-  rewrite expr1n.
-  rewrite mulr1.
+  rewrite /paillier_Emul /paillier_enc /paillier_rand_unit /=.
+  (* Unfold the module-level paillier_enc.paillier_enc *)
+  rewrite /paillier_enc.paillier_enc.
+  rewrite expr0 mul1r expr1n mulr1.
   reflexivity.
 Qed.
 
 (* Cipher extraction: extracts the raw ciphertext without party label *)
-Definition paillier_pahe_enc_cipher (e : party * 'Z_n2) : 'Z_n2 := e.2.
+Definition paillier_enc_cipher (e : party * 'Z_n2) : 'Z_n2 := e.2.
 
 (* Cipher-level commutativity: the raw ciphertext part commutes *)
-Lemma paillier_pahe_Emul_comm_cipher : forall (e1 e2 : party * 'Z_n2),
-  paillier_pahe_enc_cipher (paillier_pahe_Emul e1 e2) = 
-  paillier_pahe_enc_cipher (paillier_pahe_Emul e2 e1).
+Lemma paillier_Emul_comm_cipher : forall (e1 e2 : party * 'Z_n2),
+  paillier_enc_cipher (paillier_Emul e1 e2) = 
+  paillier_enc_cipher (paillier_Emul e2 e1).
 Proof.
   move=> [p1 c1] [p2 c2].
-  rewrite /paillier_pahe_enc_cipher /paillier_pahe_Emul /=.
+  rewrite /paillier_enc_cipher /paillier_Emul /=.
   apply mulrC.
 Qed.
 
 (* Same-party commutativity: when parties are equal, full commutativity holds *)
-Lemma paillier_pahe_Emul_comm_same_party : forall (p : party) (c1 c2 : 'Z_n2),
-  paillier_pahe_Emul (p, c1) (p, c2) = paillier_pahe_Emul (p, c2) (p, c1).
+Lemma paillier_Emul_comm_same_party : forall (p : party) (c1 c2 : 'Z_n2),
+  paillier_Emul (p, c1) (p, c2) = paillier_Emul (p, c2) (p, c1).
 Proof.
   move=> p c1 c2.
-  rewrite /paillier_pahe_Emul /=.
+  rewrite /paillier_Emul /=.
   congr pair.
   apply mulrC.
 Qed.
 
 (* ========================================================================== *)
-(*                   isPartyAHE_Algebra Instance                               *)
+(*                   isAHEAlgebra Instance                                    *)
 (* ========================================================================== *)
 
-HB.instance Definition Paillier_isPartyAHE_Algebra : isPartyAHE_Algebra Paillier_Party_HE_types := 
-  @isPartyAHE_Algebra.Build Paillier_Party_HE_types 
-    paillier_pahe_Emul_assoc paillier_pahe_rand_unit paillier_pahe_Emul_id
-    paillier_pahe_enc_cipher paillier_pahe_Emul_comm_cipher.
+HB.instance Definition Paillier_isAHEAlgebra : isAHEAlgebra Paillier_HETypes := 
+  @isAHEAlgebra.Build Paillier_HETypes 
+    paillier_Emul_assoc paillier_rand_unit paillier_Emul_id
+    paillier_enc_cipher paillier_Emul_comm_cipher.
 
 End Paillier_Party_AHE.

@@ -40,18 +40,18 @@ Local Definition R := Rdefinitions.R.
 
 Section dsdp_correctness.
 
-(* Parameterize by a Party_AHE_scheme instance *)
-Variable PHE : Party_AHE_scheme.
+(* Parameterize by an AHEAlgebra_scheme instance *)
+Variable PHE : AHEAlgebra_scheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface PHE.
 
 (* Extract types from the scheme *)
-Let partyT := phe_party PHE.
-Let msg := phe_msg PHE.
-Let rand := phe_rand PHE.
-Let enc := phe_enc PHE.
-Let pkey := phe_pkey PHE.
+Let partyT := party PHE.
+Let msg := plain PHE.
+Let rand := rand PHE.
+Let enc := party_cipher PHE.
+Let pkey := pkey PHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
@@ -62,11 +62,11 @@ Let Recv_dec {n} := @di_Recv_dec PHE DI n.
 Let Recv_enc {n} := @di_Recv_enc PHE DI n.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
-Let E := @phe_E PHE.
-Let K := @phe_K PHE.
-Let D := @phe_D PHE.
-Let Emul := @pahe_Emul PHE.
-Let Epow := @pahe_Epow PHE.
+Let E := @enc PHE.
+Let K := @key PHE.
+Let D := @dec PHE.
+Let Emul := @Emul PHE.
+Let Epow := @Epow PHE.
 
 Notation "u *h w" := (Emul u w) (at level 40).
 Notation "u ^h w" := (Epow u w) (at level 40).
@@ -93,16 +93,16 @@ Hypothesis D_correct : forall p m r k,
 
 (* Both dsdp_program.v and dsdp_program_alt_syntax.v define the same programs
    (with same signatures and semantics) when instantiated with the same 
-   Party_AHE_scheme and party variables. The equivalence can be verified 
+   AHEAlgebra_scheme and party variables. The equivalence can be verified 
    by checking definitions match after section instantiation. *)
 
 (******************************************************************************)
 (** * Algebraic Correctness Proof                                              *)
 (******************************************************************************)
 
-(* The homomorphic properties from Party_AHE_scheme *)
-Let Emul_eq_add := @pahe_Emul_addE PHE.
-Let Epow_eq_mul := @pahe_Epow_mulM PHE.
+(* The homomorphic properties from AHEAlgebra_scheme *)
+Let Emul_eq_add := @Emul_addE PHE.
+Let Epow_eq_mul := @Epow_mulM PHE.
 
 (* Message and randomness variables *)
 Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
