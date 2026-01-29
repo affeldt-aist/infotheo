@@ -550,7 +550,7 @@ case Hn: n env / sp =>
 - by exists aproc_default.
 Qed.
 
-Lemma fuel_suffices h (ps : seq (aproc dtype data))  traces res :
+Lemma fuel_suffices_nored h (ps : seq (aproc dtype data)) traces res :
   (h >= [> ps])%N ->
   interp h (erase_aprocs ps) traces = res ->
   ~~ has snd [seq step res.1 (nth [::] res.2 i) i | i <- iota 0 (size ps)].
@@ -605,6 +605,44 @@ case/boolP: (i < size aps') => Hi.
   rewrite (tnth_nth aproc_default) /=.
   exact/leq_trans/leq_addr.
 by rewrite nth_default // leqNgt.
+Qed.
+
+Lemma interpD h1 h2 (ps : seq (proc data)) traces :
+  interp (h1 + h2) ps traces =
+  let (ps',traces') := interp h1 ps traces in
+  interp h2 ps' traces'.
+Proof.
+elim: h1 ps traces => // h1 IH ps traces /=.
+case: ifPn => Hfin.
+  by rewrite IH.
+case: h2 {IH} => //= h2.
+by rewrite (negbTE Hfin).
+Qed.
+
+Lemma size_interp_procs h (ps : seq (proc data)) tr :
+  size (interp h ps tr).1 = size ps.
+Proof.
+elim: h ps tr => // h IH ps tr /=.
+by case: ifP => Hfin //; rewrite IH !size_map size_iota.
+Qed.
+
+Lemma fuel_suffices h (ps : seq (aproc dtype data)) traces :
+  (h >= [> ps])%N ->
+  interp h (erase_aprocs ps) traces = interp [> ps] (erase_aprocs ps) traces.
+Proof.
+move=> Hh.
+have -> : h = [>ps] + (h - [> ps]).
+  rewrite -maxnE; exact/esym/maxn_idPr.
+set d := (h - _)%N; clearbody d.
+rewrite interpD.
+move Hint: (interp [>ps] _ _) => res.
+move/fuel_suffices_nored: (Hint).
+move/(_ (leqnn _)).
+case Hres: res => [ps' traces'] /=.
+move: (size_interp_procs [>ps] (erase_aprocs ps) traces).
+rewrite Hint Hres /= size_map => <- Hfin.
+case: d => // d /=.
+by rewrite (negbTE Hfin).
 Qed.
 End erasure.
 
