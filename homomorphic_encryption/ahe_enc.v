@@ -35,7 +35,7 @@
 (******************************************************************************)
 
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra ssrfun.
+From mathcomp Require Import all_boot all_order all_algebra ssrfun.
 Require Import he_types.
 Require Import enc_dec.
 
@@ -125,14 +125,9 @@ Section AHE_lemmas.
 
 Variable T : AHEnc_scheme.
 
-(* Uncurried form of the additive homomorphism, for ease of use.
-   Uses _E suffix following mathcomp convention for equation form. *)
-Lemma Emul_addE (p : party T) (m1 m2 : plain T) (r1 r2 : rand T) :
-  Emul (enc p m1 r1) (enc p m2 r2) = enc p (m1 + m2) (r1 * r2).
-Proof.
-  have H := Emul_addM p (m1, r1) (m2, r2).
-  rewrite /enc_curry /msg_rand_add /= in H.
-  exact (esym H).
-Qed.
+(* Convert enc p m r to curried form E[p] (m,r) for use with morphism lemmas *)
+Lemma enc_as_curry (p : party T) (m : plain T) (r : rand T) :
+  enc p m r = E[p] (m, r).
+Proof. by []. Qed.
 
 End AHE_lemmas.

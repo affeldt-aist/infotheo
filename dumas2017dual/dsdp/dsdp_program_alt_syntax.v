@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
@@ -50,8 +50,6 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 
-Local Definition R := Rdefinitions.R.
-
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
@@ -83,7 +81,7 @@ Let DI := Standard_DSDP_Interface PHE.
 Let partyT := party PHE.
 Let msg := plain PHE.
 Let rand := rand PHE.
-Let enc := party_cipher PHE.
+Let encT := party_cipher PHE.
 Let pkey := pkey PHE.
 
 (* Data type and constructors from interface *)

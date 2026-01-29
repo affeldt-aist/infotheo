@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 Require Import Reals.
 From mathcomp Require Import Rstruct ring.
 Require Import ssrR Reals_ext realType_ext logb ssr_ext ssralg_ext bigop_ext.

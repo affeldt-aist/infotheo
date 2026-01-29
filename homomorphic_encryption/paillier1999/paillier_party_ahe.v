@@ -20,7 +20,7 @@
 (******************************************************************************)
 
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp ssrfun.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg zmodp ssrfun.
 Require Import he_types.
 Require Import enc_dec.
 Require Import ahe_enc.
@@ -41,7 +41,7 @@ Local Open Scope ring_scope.
 
 Section Paillier_Party_AHE.
 
-Variable party : finType.
+Variable partyT : finType.
 Variable n : nat.
 Hypothesis n_gt1 : (1 < n)%N.
 Let n2 := (n * n)%N.
@@ -159,38 +159,38 @@ Proof.
 Qed.
 
 (* Type definitions *)
-Definition paillier_enc_party := (party * 'Z_n2)%type.
-Definition paillier_pkey := (party * key_type * 'Z_n)%type.
+Definition paillier_enc_party := (partyT * 'Z_n2)%type.
+Definition paillier_pkey := (partyT * key_type * 'Z_n)%type.
 
 (* ========================================================================== *)
 (*                   Type Bundle                                               *)
 (* ========================================================================== *)
 
 Definition Paillier_HETypes : HETypes := 
-  MkHE party 'Z_n 'Z_n2 'Z_n2 (party * 'Z_n2)%type paillier_pkey.
+  MkHE partyT 'Z_n 'Z_n2 'Z_n2 (partyT * 'Z_n2)%type paillier_pkey.
 
 (* ========================================================================== *)
 (*                   Encryption/Decryption Operations                          *)
 (* ========================================================================== *)
 
-Definition paillier_enc (p : party) (m : 'Z_n) (r : 'Z_n2) : (party * 'Z_n2) := 
+Definition paillier_enc (p : partyT) (m : 'Z_n) (r : 'Z_n2) : (partyT * 'Z_n2) := 
   (p, paillier_enc g m r).
 
-Definition paillier_key (p : party) (k : key_type) (m : 'Z_n) : paillier_pkey := 
+Definition paillier_key (p : partyT) (k : key_type) (m : 'Z_n) : paillier_pkey := 
   (p, k, m).
 
 (* Decryption using the Paillier decryption algorithm.
    Only decrypts if:
    1. The key is a decryption key (k == Dec)
    2. The party labels match (i == j) *)
-Definition paillier_dec (dk : paillier_pkey) (e : party * 'Z_n2) : option 'Z_n :=
+Definition paillier_dec (dk : paillier_pkey) (e : partyT * 'Z_n2) : option 'Z_n :=
   match dk, e with
   | (i, k, _), (j, c) => 
     if (i == j) && (k == Dec) then Some (paillier_decrypt c) else None
   end.
 
 (* Decryption correctness - proved using the Paillier decryption algorithm *)
-Lemma paillier_dec_correct : forall (p : party) (m : 'Z_n) (r : 'Z_n2) (sk : 'Z_n),
+Lemma paillier_dec_correct : forall (p : partyT) (m : 'Z_n) (r : 'Z_n2) (sk : 'Z_n),
   paillier_dec (paillier_key p Dec sk) (paillier_enc p m r) = Some m.
 Proof.
   move=> p m r sk.
@@ -214,13 +214,13 @@ HB.instance Definition Paillier_isEncDec : isEncDec Paillier_HETypes :=
 (* ========================================================================== *)
 
 (* Homomorphic addition: ciphertext multiplication *)
-Definition paillier_Emul (e1 e2 : party * 'Z_n2) : (party * 'Z_n2) := 
+Definition paillier_Emul (e1 e2 : partyT * 'Z_n2) : (partyT * 'Z_n2) := 
   let (p1, c1) := e1 in
   let (_, c2) := e2 in
   (p1, c1 * c2).
 
 (* Homomorphic scalar multiplication: ciphertext exponentiation *)
-Definition paillier_Epow (e : party * 'Z_n2) (m : 'Z_n) : (party * 'Z_n2) :=
+Definition paillier_Epow (e : partyT * 'Z_n2) (m : 'Z_n) : (partyT * 'Z_n2) :=
   let (p, c) := e in
   (p, c ^+ (m : nat)).
 
@@ -242,7 +242,7 @@ Local Notation "x +mr y" := (msg_rand_add PT x y) (at level 50, left associativi
 Local Notation "x *E y" := (paillier_Emul x y) (at level 40, left associativity).
 
 (* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) *)
-Lemma paillier_Emul_addM : forall (p : party),
+Lemma paillier_Emul_addM : forall (p : partyT),
   {morph E[ p ] : x y / x +mr y >-> x *E y}.
 Proof.
   move=> p [m1 r1] [m2 r2].
@@ -257,7 +257,7 @@ Qed.
    Signature must match isAHEnc.Epow_mulM:
    forall (p : party T) (m : plain T),
      {morph E[p] : mr / (mr.1 * m, rand_pow mr.2 m) >-> Epow mr m} *)
-Lemma paillier_Epow_mulM : forall (p : party) (m : 'Z_n),
+Lemma paillier_Epow_mulM : forall (p : partyT) (m : 'Z_n),
   {morph E[p] : mr / (mr.1 * m, paillier_rand_pow mr.2 m) >-> paillier_Epow mr m}.
 Proof.
   move=> p m2 [m1 r].
@@ -282,7 +282,7 @@ HB.instance Definition Paillier_isAHEnc : isAHEnc Paillier_HETypes :=
 (* ========================================================================== *)
 
 (* Associativity of Emul *)
-Lemma paillier_Emul_assoc : forall (e1 e2 e3 : party * 'Z_n2),
+Lemma paillier_Emul_assoc : forall (e1 e2 e3 : partyT * 'Z_n2),
   paillier_Emul (paillier_Emul e1 e2) e3 = 
   paillier_Emul e1 (paillier_Emul e2 e3).
 Proof.
@@ -297,7 +297,7 @@ Definition paillier_rand_unit : 'Z_n2 := 1.
 (* Identity element: E(p, 0, 1) acts as identity for Emul.
    Proof: paillier_enc g 0 1 = g^0 * 1^n = 1 * 1 = 1
    So Emul (p, c) (p', 1) = (p, c * 1) = (p, c) *)
-Lemma paillier_Emul_id : forall (p : party) (e : party * 'Z_n2),
+Lemma paillier_Emul_id : forall (p : partyT) (e : partyT * 'Z_n2),
   paillier_Emul e (paillier_enc p 0 paillier_rand_unit) = e.
 Proof.
   move=> p [pe ce].
@@ -309,10 +309,10 @@ Proof.
 Qed.
 
 (* Cipher extraction: extracts the raw ciphertext without party label *)
-Definition paillier_enc_cipher (e : party * 'Z_n2) : 'Z_n2 := e.2.
+Definition paillier_enc_cipher (e : partyT * 'Z_n2) : 'Z_n2 := e.2.
 
 (* Cipher-level commutativity: the raw ciphertext part commutes *)
-Lemma paillier_Emul_comm_cipher : forall (e1 e2 : party * 'Z_n2),
+Lemma paillier_Emul_comm_cipher : forall (e1 e2 : partyT * 'Z_n2),
   paillier_enc_cipher (paillier_Emul e1 e2) = 
   paillier_enc_cipher (paillier_Emul e2 e1).
 Proof.
@@ -322,7 +322,7 @@ Proof.
 Qed.
 
 (* Same-party commutativity: when parties are equal, full commutativity holds *)
-Lemma paillier_Emul_comm_same_party : forall (p : party) (c1 c2 : 'Z_n2),
+Lemma paillier_Emul_comm_same_party : forall (p : partyT) (c1 c2 : 'Z_n2),
   paillier_Emul (p, c1) (p, c2) = paillier_Emul (p, c2) (p, c1).
 Proof.
   move=> p c1 c2.

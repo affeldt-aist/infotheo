@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
@@ -32,40 +32,38 @@ Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope proc_scope.
 
-Local Definition R := Rdefinitions.R.
-
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
 Section dsdp.
 
 (* Parameterize by an AHEAlgebra_scheme instance *)
-Variable PHE : AHEAlgebra_scheme.
+Variable AHE : AHEAlgebra_scheme.
 
 (* Use standard DSDP interface for data types *)
-Let DI := Standard_DSDP_Interface PHE.
+Let DI := Standard_DSDP_Interface AHE.
 
 (* Extract types from the scheme *)
-Let partyT := party PHE.
-Let msg := plain PHE.
-Let rand := rand PHE.
-Let enc := party_cipher PHE.
-Let pkey := pkey PHE.
+Let partyT := party AHE.
+Let msg := plain AHE.
+Let rand := rand AHE.
+Let encT := party_cipher AHE.
+Let pkey := pkey AHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
 Let d := di_d DI.
 Let e := di_e DI.
 Let k := di_k DI.
-Let Recv_dec := @di_Recv_dec PHE DI.
-Let Recv_enc := @di_Recv_enc PHE DI.
+Let Recv_dec := @di_Recv_dec AHE DI.
+Let Recv_enc := @di_Recv_enc AHE DI.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
-Let E := @enc PHE.
-Let K := @key PHE.
-Let D := @dec PHE.
-Let Emul := @Emul PHE.
-Let Epow := @Epow PHE.
+Let E := @enc AHE.
+Let K := @key AHE.
+Let D := @dec AHE.
+Let Emul := @Emul AHE.
+Let Epow := @Epow AHE.
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
@@ -148,9 +146,10 @@ Definition dsdp_max_fuel : nat := 27.
 (* Algebraic correctness proof using homomorphic properties                    *)
 (* ========================================================================== *)
 
-(* The homomorphic properties from AHEAlgebra_scheme *)
-Let Emul_eq_add := @Emul_addE PHE.
-Let Epow_eq_mul := @Epow_mulM PHE.
+(* The homomorphic properties from AHEAlgebra_scheme - using mixin directly *)
+Let Emul_eq_add := @Emul_addM AHE.
+Let Epow_eq_mul := @Epow_mulM AHE.
+Let enc_curry_eq := @enc_as_curry AHE.
 
 (* 
    Protocol correctness theorem (algebraic version):
@@ -175,15 +174,15 @@ Let Epow_eq_mul := @Epow_mulM PHE.
 *)
 
 (* Key intermediate values in the protocol *)
-Definition bob_encrypted_input : enc := E bob v2 rb1.
-Definition charlie_encrypted_input : enc := E charlie v3 rc1.
+Definition bob_encrypted_input : encT := E bob v2 rb1.
+Definition charlie_encrypted_input : encT := E charlie v3 rc1.
 
 (* Alice's computation on Bob's ciphertext *)
-Definition alice_a2 : enc := 
+Definition alice_a2 : encT := 
   (bob_encrypted_input ^h u2) *h (E bob r2 ra1).
 
 (* Alice's computation on Charlie's ciphertext *)  
-Definition alice_a3 : enc :=
+Definition alice_a3 : encT :=
   (charlie_encrypted_input ^h u3) *h (E charlie r3 ra2).
 
 (* Lemma: alice_a2 encrypts v2*u2 + r2 *)
@@ -191,7 +190,8 @@ Lemma alice_a2_value : exists rr,
   alice_a2 = E bob (v2 * u2 + r2) rr.
 Proof.
   rewrite /alice_a2 /bob_encrypted_input /Epow /E /Emul.
-  rewrite Epow_eq_mul Emul_eq_add.
+  rewrite !enc_curry_eq.
+  rewrite -Epow_eq_mul -Emul_eq_add.
   by eexists.
 Qed.
 
@@ -200,7 +200,8 @@ Lemma alice_a3_value : exists rr,
   alice_a3 = E charlie (v3 * u3 + r3) rr.
 Proof.
   rewrite /alice_a3 /charlie_encrypted_input /Epow /E /Emul.
-  rewrite Epow_eq_mul Emul_eq_add.
+  rewrite !enc_curry_eq.
+  rewrite -Epow_eq_mul -Emul_eq_add.
   by eexists.
 Qed.
 
@@ -208,7 +209,7 @@ Qed.
 Definition d2_value : msg := v2 * u2 + r2.
 
 (* Bob's computation: a3 combined with encrypted d2 *)
-Definition bob_combined (a3_enc : enc) : enc :=
+Definition bob_combined (a3_enc : encT) : encT :=
   a3_enc *h (E charlie d2_value rb2).
 
 (* Lemma: Bob's combined ciphertext encrypts the sum *)
@@ -218,7 +219,7 @@ Proof.
   rewrite /bob_combined /Emul /E.
   have [rr3 Ha3] := alice_a3_value.
   rewrite /E in Ha3.
-  rewrite Ha3 Emul_eq_add.
+  rewrite Ha3 !enc_curry_eq -Emul_eq_add.
   by eexists.
 Qed.
 

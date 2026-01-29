@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Coq             *)
 (* Copyright (C) 2020 infotheo authors, license: LGPL-2.1-or-later            *)
 
-From mathcomp Require Import all_ssreflect ssralg finalg ssrnum matrix.
+From mathcomp Require Import all_boot all_order ssralg finalg ssrnum matrix.
 From mathcomp Require Import mathcomp_extra reals zmodp ring lra.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond graphoid.

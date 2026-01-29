@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup ring finmap.
+From mathcomp Require Import all_boot all_order all_algebra fingroup ring finmap.
 From mathcomp Require Import reals Rstruct boolp classical_sets.
 Require Import realType_ln realType_ext ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.

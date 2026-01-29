@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect.
+From mathcomp Require Import all_boot all_order.
 Require Import smc_interpreter.
 
 (**md**************************************************************************)

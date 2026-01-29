@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import ring boolp finmap.
 Require Import smc_interpreter smc_session_types homomorphic_encryption.
 
@@ -109,27 +109,27 @@ Section Standard_DSDP_Interface.
 
 Variable PHE : AHEAlgebra_scheme.
 
-Let msg := plain PHE.
-Let enc := party_cipher PHE.
-Let pkey := pkey PHE.
+Let msgT := plain PHE.
+Let encT := party_cipher PHE.
+Let pkeyT := pkey PHE.
 Let D := @dec PHE.
 
-(* Standard sum-type data encoding: (msg + enc + pkey) *)
-Definition std_data := (msg + enc + pkey)%type.
-Definition std_d (x : msg) : std_data := inl (inl x).
-Definition std_e (x : enc) : std_data := inl (inr x).
-Definition std_k (x : pkey) : std_data := inr x.
+(* Standard sum-type data encoding: (msgT + encT + pkeyT) *)
+Definition std_data := (msgT + encT + pkeyT)%type.
+Definition std_d (x : msgT) : std_data := inl (inl x).
+Definition std_e (x : encT) : std_data := inl (inr x).
+Definition std_k (x : pkeyT) : std_data := inr x.
 
-Definition std_from_enc (x : std_data) : option enc :=
+Definition std_from_enc (x : std_data) : option encT :=
   if x is inl (inr v) then Some v else None.
 
-Definition std_Recv_dec (frm : nat) (dk : pkey) 
-    (f : msg -> proc std_data) : proc std_data :=
-  @Recv_dec_param msg enc pkey D std_data std_from_enc frm dk f.
+Definition std_Recv_dec (frm : nat) (dk : pkeyT) 
+    (f : msgT -> proc std_data) : proc std_data :=
+  @Recv_dec_param msgT encT pkeyT D std_data std_from_enc frm dk f.
 
 Definition std_Recv_enc (frm : nat) 
-    (f : enc -> proc std_data) : proc std_data :=
-  @Recv_enc_param enc std_data std_from_enc frm f.
+    (f : encT -> proc std_data) : proc std_data :=
+  @Recv_enc_param encT std_data std_from_enc frm f.
 
 (** The canonical standard interface instance *)
 Definition Standard_DSDP_Interface : DSDP_Interface PHE := {|

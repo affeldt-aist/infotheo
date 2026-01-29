@@ -37,7 +37,7 @@
 (******************************************************************************)
 
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg zmodp.
 
 Import GRing.Theory.
 Import Num.Theory.

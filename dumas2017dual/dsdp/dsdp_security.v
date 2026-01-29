@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import ring boolp finmap matrix lra reals.
 Require Import rouche_capelli.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
@@ -88,9 +88,9 @@ Let card_msg : #|msg| = m.
 Proof. by rewrite card_ord Zp_cast. Qed.
 
 (* Define concrete party values for use with E' and encryption *)
-Let alice : party := Alice.
-Let bob : party := Bob.
-Let charlie : party := Charlie.
+Let alice : party_id := Alice.
+Let bob : party_id := Bob.
+Let charlie : party_id := Charlie.
 
 (* Use dsdp_random_inputs record to enable reuse of alice_view_to_cond *)
 Variable inputs : dsdp_random_inputs P p_minus_2 q_minus_2.
@@ -126,11 +126,11 @@ Let E_bob_v2 := E' bob `o V2.
    2. Fresh ciphertexts are independent of all other random variables
    These enable dropping encryption terms from conditional entropy calculations. *)
 Hypothesis E_enc_unif : forall (T0 : finType) (P0 : R.-fdist T0)
-  (A : finType) (p : party) (X : {RV P0 -> p.-enc A}) (n : nat)
+  (A : finType) (p : party_id) (X : {RV P0 -> p.-enc A}) (n : nat)
   (card_A : #|A| = n.+1),
   `p_X = fdist_uniform (card_enc_for' p card_A).
 
-Hypothesis E_enc_inde : forall (A B : finType) (p : party)
+Hypothesis E_enc_inde : forall (A B : finType) (p : party_id)
   (X : {RV P -> p.-enc A}) (Y : {RV P -> B}),
   P |= X _|_ Y.
 
@@ -449,9 +449,9 @@ Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
 
 (* Define concrete party values for use with E' and encryption *)
-Let alice : party := Alice.
-Let bob : party := Bob.
-Let charlie : party := Charlie.
+Let alice : party_id := Alice.
+Let bob : party_id := Bob.
+Let charlie : party_id := Charlie.
 
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.
@@ -711,9 +711,9 @@ Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
 
 (* Define concrete party values for use with E' and encryption *)
-Let alice : party := Alice.
-Let bob : party := Bob.
-Let charlie : party := Charlie.
+Let alice : party_id := Alice.
+Let bob : party_id := Bob.
+Let charlie : party_id := Charlie.
 
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.
@@ -870,9 +870,9 @@ Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
 
 (* Define concrete party values for use with E' and encryption *)
-Let alice : party := Alice.
-Let bob : party := Bob.
-Let charlie : party := Charlie.
+Let alice : party_id := Alice.
+Let bob : party_id := Bob.
+Let charlie : party_id := Charlie.
 
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.
@@ -1394,9 +1394,9 @@ Local Notation m := (p * q).
 Local Notation msg := 'Z_m.
 
 (* Define concrete party values for use with E' and encryption *)
-Let alice : party := Alice.
-Let bob : party := Bob.
-Let charlie : party := Charlie.
+Let alice : party_id := Alice.
+Let bob : party_id := Bob.
+Let charlie : party_id := Charlie.
 
 (* m = p * q > 1 since p, q >= 2 *)
 Let m_gt1 : (1 < m)%N.

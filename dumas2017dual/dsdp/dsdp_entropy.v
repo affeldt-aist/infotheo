@@ -1,5 +1,5 @@
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
@@ -401,21 +401,21 @@ Proof. by rewrite card_ord Zp_cast. Qed.
 Let card_msg_pair : #|((msg * msg)%type : finType)| = (m ^ 2)%N.
 Proof. by rewrite card_prod !card_msg expnS expn1. Qed.
 
-Let enc := enc party msg.
-Let pkey := pkey party msg.
+Let encT := party_enc party_id msg.
+Let pkeyT := party_pkey party_id msg.
 
 (* Define concrete party values for use with E' and encryption *)
-Let alice : party := Alice.
-Let bob : party := Bob.
-Let charlie : party := Charlie.
+Let alice : party_id := Alice.
+Let bob : party_id := Bob.
+Let charlie : party_id := Charlie.
 
-Let data := (msg + enc + pkey)%type.
+Let data := (msg + encT + pkeyT)%type.
 Let d x : data := inl (inl x).
 Let e x : data := inl (inr x).
 Let k x : data := inr x.
 
-Notation "u *h w" := (Emul u w).
-Notation "u ^h w" := (Epow u w).
+Notation "u *h w" := (party_Emul u w).
+Notation "u ^h w" := (party_Epow u w).
 
 (* Encryption hypotheses for E_enc_ce_removal:
    These are standard information-theoretic assumptions for homomorphic encryption.
@@ -423,11 +423,11 @@ Notation "u ^h w" := (Epow u w).
    2. Fresh ciphertexts are independent of all other random variables
    These enable dropping encryption terms from conditional entropy calculations. *)
 Hypothesis E_enc_unif : forall (T0 : finType) (P0 : R.-fdist T0)
-  (A : finType) (p : party) (X : {RV P0 -> p.-enc A}) (n : nat)
+  (A : finType) (p : party_id) (X : {RV P0 -> p.-enc A}) (n : nat)
   (card_A : #|A| = n.+1),
   `p_X = fdist_uniform (card_enc_for' p card_A).
 
-Hypothesis E_enc_inde : forall (A B : finType) (p : party)
+Hypothesis E_enc_inde : forall (A B : finType) (p : party_id)
   (X : {RV P -> p.-enc A}) (Y : {RV P -> B}),
   P |= X _|_ Y.
 

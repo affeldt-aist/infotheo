@@ -2,7 +2,7 @@ From Ltac2 Require Import Ltac2.
 From Ltac2 Require Option.
 From Ltac2 Require Import Message.
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg matrix.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import reals ring.
 Require Import realType_ext realType_ext realType_ln ssr_ext ssralg_ext.
 Require Import bigop_ext fdist proba jfdist_cond entropy graphoid smc_proba.

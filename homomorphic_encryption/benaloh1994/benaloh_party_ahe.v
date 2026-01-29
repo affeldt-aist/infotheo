@@ -24,7 +24,7 @@
 (******************************************************************************)
 
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra fingroup finalg zmodp ssrfun.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg zmodp ssrfun.
 From mathcomp Require Import cyclic.  (* For Euler_exp_totient *)
 Require Import he_types.
 Require Import enc_dec.
@@ -46,7 +46,7 @@ Local Open Scope ring_scope.
 
 Section Benaloh_Party_AHE.
 
-Variable party : finType.
+Variable partyT : finType.
 Variables (n r : nat).
 Hypothesis n_gt1 : (1 < n)%N.
 Hypothesis r_gt1 : (1 < r)%N.
@@ -251,31 +251,31 @@ Proof.
 Qed.
 
 (* Type definitions *)
-Definition benaloh_enc_party := (party * 'Z_n)%type.
-Definition benaloh_pkey := (party * key_type * 'Z_r)%type.
+Definition benaloh_enc_party := (partyT * 'Z_n)%type.
+Definition benaloh_pkey := (partyT * key_type * 'Z_r)%type.
 
 (* ========================================================================== *)
 (*                   Type Bundle                                               *)
 (* ========================================================================== *)
 
 Definition Benaloh_HETypes : HETypes := 
-  MkHE party 'Z_r 'Z_n 'Z_n (party * 'Z_n)%type benaloh_pkey.
+  MkHE partyT 'Z_r 'Z_n 'Z_n (partyT * 'Z_n)%type benaloh_pkey.
 
 (* ========================================================================== *)
 (*                   Encryption/Decryption Operations                          *)
 (* ========================================================================== *)
 
-Definition benaloh_enc (p : party) (m : 'Z_r) (u : 'Z_n) : (party * 'Z_n) := 
+Definition benaloh_enc (p : partyT) (m : 'Z_r) (u : 'Z_n) : (partyT * 'Z_n) := 
   (p, benaloh_enc y m u).
 
-Definition benaloh_key (p : party) (k : key_type) (m : 'Z_r) : benaloh_pkey := 
+Definition benaloh_key (p : partyT) (k : key_type) (m : 'Z_r) : benaloh_pkey := 
   (p, k, m).
 
 (* Decryption using the Benaloh decryption algorithm.
    Only decrypts if:
    1. The key is a decryption key (k == Dec)
    2. The party labels match (i == j) *)
-Definition benaloh_dec (dk : benaloh_pkey) (e : party * 'Z_n) : option 'Z_r :=
+Definition benaloh_dec (dk : benaloh_pkey) (e : partyT * 'Z_n) : option 'Z_r :=
   match dk, e with
   | (i, k, _), (j, c) => 
     if (i == j) && (k == Dec) then Some (benaloh_decrypt c) else None
@@ -283,7 +283,7 @@ Definition benaloh_dec (dk : benaloh_pkey) (e : party * 'Z_n) : option 'Z_r :=
 
 (* Decryption correctness - proved using the Benaloh decryption algorithm.
    Uses rand_coprime_n assumption: randomness is a unit in Z_n. *)
-Lemma benaloh_dec_correct : forall (p : party) (m : 'Z_r) (u : 'Z_n) (sk : 'Z_r),
+Lemma benaloh_dec_correct : forall (p : partyT) (m : 'Z_r) (u : 'Z_n) (sk : 'Z_r),
   benaloh_dec (benaloh_key p Dec sk) (benaloh_enc p m u) = Some m.
 Proof.
   move=> p m u sk.
@@ -307,13 +307,13 @@ HB.instance Definition Benaloh_isEncDec : isEncDec Benaloh_HETypes :=
 (* ========================================================================== *)
 
 (* Homomorphic addition: ciphertext multiplication *)
-Definition benaloh_Emul (e1 e2 : party * 'Z_n) : (party * 'Z_n) := 
+Definition benaloh_Emul (e1 e2 : partyT * 'Z_n) : (partyT * 'Z_n) := 
   let (p1, c1) := e1 in
   let (_, c2) := e2 in
   (p1, c1 * c2).
 
 (* Homomorphic scalar multiplication: ciphertext exponentiation *)
-Definition benaloh_Epow (e : party * 'Z_n) (m : 'Z_r) : (party * 'Z_n) :=
+Definition benaloh_Epow (e : partyT * 'Z_n) (m : 'Z_r) : (partyT * 'Z_n) :=
   let (p, c) := e in
   (p, c ^+ (m : nat)).
 
@@ -335,7 +335,7 @@ Local Notation "x +mr y" := (msg_rand_add BT x y) (at level 50, left associativi
 Local Notation "x *E y" := (benaloh_Emul x y) (at level 40, left associativity).
 
 (* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) *)
-Lemma benaloh_Emul_addM : forall (p : party),
+Lemma benaloh_Emul_addM : forall (p : partyT),
   {morph E[ p ] : x y / x +mr y >-> x *E y}.
 Proof.
   move=> p [m1 u1] [m2 u2].
@@ -350,7 +350,7 @@ Qed.
    Signature must match isAHEnc.Epow_mulM:
    forall (p : party T) (m : plain T),
      {morph E[p] : mr / (mr.1 * m, rand_pow mr.2 m) >-> Epow mr m} *)
-Lemma benaloh_Epow_mulM : forall (p : party) (m : 'Z_r),
+Lemma benaloh_Epow_mulM : forall (p : partyT) (m : 'Z_r),
   {morph E[p] : mr / (mr.1 * m, benaloh_rand_pow mr.2 m) >-> benaloh_Epow mr m}.
 Proof.
   move=> p m2 [m1 u].
@@ -375,7 +375,7 @@ HB.instance Definition Benaloh_isAHEnc : isAHEnc Benaloh_HETypes :=
 (* ========================================================================== *)
 
 (* Associativity of Emul *)
-Lemma benaloh_Emul_assoc : forall (e1 e2 e3 : party * 'Z_n),
+Lemma benaloh_Emul_assoc : forall (e1 e2 e3 : partyT * 'Z_n),
   benaloh_Emul (benaloh_Emul e1 e2) e3 = 
   benaloh_Emul e1 (benaloh_Emul e2 e3).
 Proof.
@@ -390,7 +390,7 @@ Definition benaloh_rand_unit : 'Z_n := 1.
 (* Identity element: E(p, 0, 1) acts as identity for Emul.
    Proof: benaloh_enc y 0 1 = y^0 * 1^r = 1 * 1 = 1
    So Emul (p, c) (p', 1) = (p, c * 1) = (p, c) *)
-Lemma benaloh_Emul_id : forall (p : party) (e : party * 'Z_n),
+Lemma benaloh_Emul_id : forall (p : partyT) (e : partyT * 'Z_n),
   benaloh_Emul e (benaloh_enc p 0 benaloh_rand_unit) = e.
 Proof.
   move=> p [pe ce].
@@ -402,10 +402,10 @@ Proof.
 Qed.
 
 (* Cipher extraction: extracts the raw ciphertext without party label *)
-Definition benaloh_enc_cipher (e : party * 'Z_n) : 'Z_n := e.2.
+Definition benaloh_enc_cipher (e : partyT * 'Z_n) : 'Z_n := e.2.
 
 (* Cipher-level commutativity: the raw ciphertext part commutes *)
-Lemma benaloh_Emul_comm_cipher : forall (e1 e2 : party * 'Z_n),
+Lemma benaloh_Emul_comm_cipher : forall (e1 e2 : partyT * 'Z_n),
   benaloh_enc_cipher (benaloh_Emul e1 e2) = 
   benaloh_enc_cipher (benaloh_Emul e2 e1).
 Proof.
@@ -415,7 +415,7 @@ Proof.
 Qed.
 
 (* Same-party commutativity: when parties are equal, full commutativity holds *)
-Lemma benaloh_Emul_comm_same_party : forall (p : party) (c1 c2 : 'Z_n),
+Lemma benaloh_Emul_comm_same_party : forall (p : partyT) (c1 c2 : 'Z_n),
   benaloh_Emul (p, c1) (p, c2) = benaloh_Emul (p, c2) (p, c1).
 Proof.
   move=> p c1 c2.

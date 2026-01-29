@@ -29,7 +29,7 @@
 (******************************************************************************)
 
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect all_algebra ssrfun.
+From mathcomp Require Import all_boot all_order all_algebra ssrfun.
 Require Import he_types.
 Require Import enc_dec.
 Require Import ahe_enc.
