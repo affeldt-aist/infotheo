@@ -70,6 +70,8 @@ Local Open Scope proc_scope.
 (* This section uses the idealized encryption model from idealized_party_ahe  *)
 (* where enc = (party, msg) and encryption is deterministic (no randomness).  *)
 (* This enables computational proofs via reflexivity.                         *)
+(*                                                                            *)
+(* Programs are instantiated from dsdp_program.v with unit randomness.        *)
 (* ========================================================================== *)
 
 Section dsdp_computational.
@@ -79,94 +81,87 @@ Local Notation m := m_minus_2.+2.
 
 Local Notation msg := 'F_m.  (* Finite field with m elements *)
 
-(* Use Idealized_HETypes from idealized_party_ahe.v *)
-Let enc := idealized_enc_party party_id msg.
-Let pkey := idealized_pkey party_id msg.
+(* ========================================================================== *)
+(* Build Idealized_HETypes as AHEAlgebra_scheme                                *)
+(* ========================================================================== *)
 
-(* Encryption constructor - deterministic, ignores randomness *)
-Let E : party_id -> msg -> enc := fun p m => (p, m).
+Local Definition Idealized_EncDec_instance := 
+  @Idealized_isEncDec party_id msg.
 
-(* Decryption *)
-Let D (dk : pkey) (ct : enc) : option msg :=
-  let i := dk.1.1 in
-  let kt := dk.1.2 in
-  let j := ct.1 in
-  let m := ct.2 in
-  if (i == j) && (kt == Dec) then Some m else None.
+Local Definition Idealized_AHEnc_instance := 
+  @Idealized_isAHEnc party_id msg.
 
-(* Homomorphic operations from idealized_party_ahe *)
-Let Emul := @idealized_Emul party_id msg.
-Let Epow := @idealized_Epow party_id msg.
+Local Definition Idealized_AHEAlgebra_instance := 
+  @Idealized_isAHEAlgebra party_id msg.
 
-Notation "u *h w" := (Emul u w) (at level 40).
-Notation "u ^h w" := (Epow u w) (at level 40).
+(* Build the type hierarchy *)
+Local Definition Idealized_EncDec_local : EncDec_scheme := 
+  @EncDec.Pack (Idealized_HETypes party_id msg) 
+    (@EncDec.Class (Idealized_HETypes party_id msg) Idealized_EncDec_instance).
+
+Local Definition Idealized_AHEnc_local : AHEnc_scheme := 
+  @AHEnc.Pack (Idealized_HETypes party_id msg) 
+    (@AHEnc.Class (Idealized_HETypes party_id msg) 
+      Idealized_EncDec_instance Idealized_AHEnc_instance).
+
+Local Definition Idealized_AHEAlgebra_local : AHEAlgebra_scheme := 
+  @AHEAlgebra.Pack Idealized_AHEnc_local 
+    (@AHEAlgebra.Class Idealized_AHEnc_local Idealized_AHEAlgebra_instance).
+
+(* The idealized scheme *)
+Let PHE : AHEAlgebra_scheme := Idealized_AHEAlgebra_local.
+
+(* Use standard interface from dsdp_interface.v *)
+Let DI := Standard_DSDP_Interface PHE.
+
+(* Extract type aliases for readability *)
+Let data := di_data DI.
+Let d := di_d DI.
+Let e := di_e DI.
+Let k := di_k DI.
+
+(* Local encryption alias - deterministic, ignores randomness *)
+Let E := @enc PHE.
 
 (* Party definitions *)
 Definition alice : party_id := Alice.
 Definition bob : party_id := Bob.
 Definition charlie : party_id := Charlie.
 
-(* Data type and wrappers *)
-Definition data := (msg + enc + pkey)%type.
-Definition d x : data := inl (inl x).
-Definition e x : data := inl (inr x).
-Definition k x : data := inr x.
+(* Party to nat mapping - use party_id_to_nat from homomorphic_encryption.v *)
+Let pn : party_id -> nat := party_id_to_nat.
 
-(* Specialized receive operations *)
-Definition Recv_dec frm (dk : pkey) f : proc data :=
-  Recv frm (fun x => if x is inl (inr v) then
-                       if D dk v is Some v' then f v' else Fail
-                     else Fail).
+(* Decryption correctness - use lemma from idealized_party_ahe.v *)
+Let D_correct : forall p m r k, 
+  @dec PHE (@key PHE p Dec k) (E p m r) = Some m.
+Proof. exact: idealized_dec_correct. Qed.
 
-Definition Recv_enc frm f : proc data :=
-  Recv frm (fun x => if x is inl (inr v) then f v else Fail).
-
-(* Program definitions matching old commit structure *)
-Definition pbob (dk : pkey)(v2 : msg) : proc data :=
-  Init (k dk) (
-  Init (d v2) (
-  Send (n(alice)) (e (E bob v2)) (
-  Recv_dec (n(alice)) dk (fun d2 =>
-  Recv_enc (n(alice)) (fun a3 =>
-    Send (n(charlie)) (e (a3 *h E charlie d2)) (
-  Finish)))))).
-
-Definition pcharlie (dk : pkey)(v3 : msg) : proc data :=
-  Init (k dk) (
-  Init (d v3) (
-  Send (n(alice)) (e (E charlie v3)) (
-  Recv_dec (n(bob)) dk (fun d3 =>
-    Send (n(alice)) (e (E alice d3))
-  Finish)))).
-
-Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3 : msg) : proc data :=
-  Init (k dk) (
-  Init (d v1) (
-  Init (d u1) (
-  Init (d u2) (
-  Init (d u3) (
-  Init (d r2) (
-  Init (d r3) (
-  Recv_enc (n(bob)) (fun c2 =>
-  Recv_enc (n(charlie)) (fun c3 =>
-  let a2 := (c2 ^h u2) *h (E bob r2) in
-  let a3 := (c3 ^h u3) *h (E charlie r3) in
-    Send (n(bob)) (e a2) (
-    Send (n(bob)) (e a3) (
-    Recv_dec (n(charlie)) dk (fun g =>
-    Ret (d (g - r2 - r3 + u1 * v1)))))))))))))).
+(* ========================================================================== *)
+(* Instantiate programs from dsdp_program.v with unit randomness              *)
+(* ========================================================================== *)
 
 Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
 
-(* Keys must be constructed with concrete party values *)
-Let dk_a : pkey := (Alice, Dec, k_a). 
-Let dk_b : pkey := (Bob, Dec, k_b). 
-Let dk_c : pkey := (Charlie, Dec, k_c). 
+(* Unit randomness - value doesn't matter since idealized scheme ignores it *)
+Let runit : rand PHE := 1.
+
+(* Keys constructed via the scheme's key operation *)
+Let dk_a := @key PHE Alice Dec k_a.
+Let dk_b := @key PHE Bob Dec k_b.
+Let dk_c := @key PHE Charlie Dec k_c.
+
+(* Instantiate generic programs from dsdp_program.v 
+   Note: Coq only generalizes section variables that are actually used:
+   - palice uses bob, charlie (not alice)
+   - pbob uses alice, bob, charlie  
+   - pcharlie uses alice, bob, charlie *)
+Let palice_inst := @palice PHE bob charlie pn dk_a v1 u1 u2 u3 r2 r3 runit runit.
+Let pbob_inst := @pbob PHE alice bob charlie pn dk_b v2 runit runit.
+Let pcharlie_inst := @pcharlie PHE alice bob charlie pn dk_c v3 runit runit.
 
 (* Protocol definition using interp directly with explicit traces *)
 Definition dsdp h :=
-  interp h [:: palice dk_a v1 u1 u2 u3 r2 r3; pbob dk_b v2; pcharlie dk_c v3]
-           [::[::];[::];[::]].
+  interp h [:: palice_inst; pbob_inst; pcharlie_inst] [::[::];[::];[::]].
 
 (* Protocol execution result: running dsdp for 15 steps produces the expected
    final state with all parties finished and their respective traces. *)
@@ -174,13 +169,13 @@ Lemma dsdp_ok :
   dsdp 15 = 
   ([:: Finish; Finish; Finish],
    [:: [:: d (v3 * u3 + r3 + (v2 * u2 + r2) - r2 - r3 + u1 * v1);
-           e (E alice (v3 * u3 + r3 + (v2 * u2 + r2))); 
-           e (E charlie v3);
-           e (E bob v2);
+           e (E alice (v3 * u3 + r3 + (v2 * u2 + r2)) runit); 
+           e (E charlie v3 runit);
+           e (E bob v2 runit);
            d r3; d r2; d u3; d u2; d u1; d v1; k dk_a];
-       [:: e (E charlie (v3 * u3 + r3));
-           e (E bob (v2 * u2 + r2)); d v2; k dk_b];
-       [:: e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2))); d v3; k dk_c]
+       [:: e (E charlie (v3 * u3 + r3) runit);
+           e (E bob (v2 * u2 + r2) runit); d v2; k dk_b];
+       [:: e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2)) runit); d v3; k dk_c]
   ]).
 Proof. reflexivity. Qed.
 
@@ -189,8 +184,7 @@ Notation dsdp_traceT := (15.-bseq data).
 Notation dsdp_tracesT := (3.-tuple dsdp_traceT).
 
 Definition dsdp_traces : dsdp_tracesT :=
-  interp_traces 15 [:: palice dk_a v1 u1 u2 u3 r2 r3;
-    pbob dk_b v2; pcharlie dk_c v3].
+  interp_traces 15 [:: palice_inst; pbob_inst; pcharlie_inst].
 
 Definition is_dsdp (trs : dsdp_tracesT) :=
   let '(s, u3, u2, u1, v1) :=
@@ -211,13 +205,13 @@ Lemma dsdp_traces_ok :
   dsdp_traces =
     [tuple
        [bseq d (v3 * u3 + r3 + (v2 * u2 + r2) - r2 - r3 + u1 * v1);
-             e (E alice (v3 * u3 + r3 + (v2 * u2 + r2)));
-             e (E charlie v3);
-             e (E bob v2);
+             e (E alice (v3 * u3 + r3 + (v2 * u2 + r2)) runit);
+             e (E charlie v3 runit);
+             e (E bob v2 runit);
              d r3; d r2; d u3; d u2; d u1; d v1; k dk_a];
-       [bseq e (E charlie (v3 * u3 + r3));
-             e (E bob (v2 * u2 + r2)); d v2; k dk_b];
-       [bseq e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2))); d v3; k dk_c]].
+       [bseq e (E charlie (v3 * u3 + r3) runit);
+             e (E bob (v2 * u2 + r2) runit); d v2; k dk_b];
+       [bseq e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2)) runit); d v3; k dk_c]].
 Proof. by apply/val_inj/(inj_map val_inj); rewrite interp_traces_ok. Qed.
 
 (* Protocol correctness: the final result S satisfies S = u1*v1 + u2*v2 + u3*v3. *)
