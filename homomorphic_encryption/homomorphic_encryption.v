@@ -27,7 +27,7 @@
 (*                                                                            *)
 (* == Related Files ==                                                        *)
 (*                                                                            *)
-(*   he_types.v             - HETypes and key_type type                            *)
+(*   he_types.v             - HETypes and key_type type                       *)
 (*   enc_dec.v              - isEncDec mixin                                  *)
 (*   ahe_enc.v              - isAHEnc mixin (morphism_2 style)                *)
 (*   ahe_algebra.v          - isAHEAlgebra mixin and AHEAlgebra               *)

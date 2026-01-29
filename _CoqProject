@@ -110,6 +110,7 @@ homomorphic_encryption/benaloh1994/benaloh_party_ahe.v
 homomorphic_encryption/paillier1999/paillier_enc.v
 homomorphic_encryption/paillier1999/paillier_party_ahe.v
 homomorphic_encryption/homomorphic_encryption.v
+homomorphic_encryption/idealized/idealized_party_ahe.v
 dumas2017dual/lib/extra_algebra.v
 dumas2017dual/lib/extra_proba.v
 dumas2017dual/lib/extra_entropy.v
