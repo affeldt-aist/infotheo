@@ -287,7 +287,7 @@ Arguments aproc_stype {dtype data}.
 
 (* Compute sum of all fuels from aproc list - used as interpreter fuel *)
 Definition sum_fuel {dtype : eqType} {data : Type} (ps : seq (aproc dtype data)) : nat := 
-  foldr (fun p acc => aproc_fuel p + acc) 0 ps.
+  sumn (map aproc_fuel ps).
 
 (* Notation for fuel computation *)
 Notation "[> ps ]" := (sum_fuel ps) (at level 0).
@@ -498,6 +498,128 @@ Definition erase_aproc (ap : aproc dtype data) : smc_interpreter.proc data :=
 Definition erase_aprocs (aps : seq (aproc dtype data)) : seq (smc_interpreter.proc data) :=
   map erase_aproc aps.
 
+Lemma nofuel_proc_fail p : aproc_fuel p = 0 -> erase_aproc p = Fail.
+Proof. by case: p => x [y] [e] [||n|n|n|n]. Qed.
+
+Lemma nofuel_procs_fail (ps : seq (aproc dtype data)) :
+  [> ps] = 0 -> erase_aprocs ps = nseq (size ps) Fail.
+Proof.
+rewrite /sum_fuel.
+elim: ps => // p ps IH /=.
+case Hp: (aproc_fuel p) => // /IH ->.
+by rewrite nofuel_proc_fail.
+Qed.
+
+Definition aproc_default := @mk_aproc dtype data 0 0 senv_end SFail.
+
+Lemma fuel_decreases (ps : seq (aproc dtype data)) k tr :
+  k < size ps ->
+  let res := step (erase_aprocs ps) (nth [::] tr k) k in
+  { ap' & erase_aproc ap' = res.1.1 /\
+      aproc_fuel ap' + res.2 <= aproc_fuel (nth aproc_default ps k) }.
+Proof.
+move => Hk /=.
+rewrite /step.
+rewrite (nth_map aproc_default) //.
+move Hnth: (nth _ ps k) => [p [n] [env] sp].
+rewrite {2}/aproc_fuel /=.
+move/(f_equal erase_aproc): Hnth.
+rewrite -(nth_map _ (default_proc _)) // -/(erase_aprocs ps).
+rewrite /erase_aproc /aproc_proc /=.
+case Hn: n env / sp =>
+       [|d|n' env d s|n' env dst dt d s|n' env dst d s|n' env] Hnth /=.
+- by exists (mk_aproc (party:=p) SFinish).
+- by exists (mk_aproc (party:=p) SFinish).
+- by exists (mk_aproc (party:=p) s); rewrite addn1.
+- case Hnth': nth => [||k' p'|||];
+    try by exists (mk_aproc (party:=p) (SSend dst dt d s)); rewrite addn0.
+  case: ifPn => [/eqP|] k'k.
+    by exists (mk_aproc (party:=p) s); rewrite addn1.
+  by exists (mk_aproc (party:=p) (SSend dst dt d s)); rewrite addn0.
+- case Hnth': nth => [|k' d' p'||||];
+    try by exists (mk_aproc (party:=p) (SRecv dst d s));
+           rewrite /= (addn0 (aproc_fuel _)).
+  case: ifPn => [/eqP|] k'k.
+    by exists (mk_aproc (party:=p) (s d')); rewrite addn1.
+  by exists (mk_aproc (party:=p) (SRecv dst d s)); rewrite addn0.
+- by exists aproc_default.
+Qed.
+
+Lemma fuel_suffices h (ps : seq (aproc dtype data))  traces res :
+  (h >= [> ps])%N ->
+  interp h (erase_aprocs ps) traces = res ->
+  ~~ has snd [seq step res.1 (nth [::] res.2 i) i | i <- iota 0 (size ps)].
+Proof.
+elim: h ps traces => [|h IH] ps traces.
+  rewrite leqn0 => /eqP /nofuel_procs_fail -> <- /=.
+  rewrite has_map -all_predC; apply/allP => i /=.
+  rewrite mem_iota add0n => /andP[_ Hi].
+  by rewrite /step /= !nth_nseq // Hi.
+move=> Hps /=.
+set ps' := unzip1 (unzip1 _).
+have hles tr :
+  let resk :=
+    [seq step (erase_aprocs ps) (nth [::] tr i) i | i <- iota 0 (size ps)] in
+  {aps' & erase_aprocs aps' = unzip1 (unzip1 resk) /\
+     forall i, i < size aps' ->
+       aproc_fuel (nth aproc_default aps' i) + (nth (Fail,nil,false) resk i).2
+       <= aproc_fuel (nth aproc_default ps i)}%N.
+  move=> resk.
+  rewrite -{1}(take_size resk).
+  have : (size resk <= size ps)%N by rewrite !size_map size_iota.
+  elim: (size resk) => [|k {}IH] Hk. by exists nil; rewrite take0.
+  case: IH; first exact: ltnW.
+  move=> aps' [Haps' Hfuel].
+  have [ap' [Hap' Hfu]] := fuel_decreases tr Hk.
+  exists (rcons aps' ap').
+  rewrite (take_nth (Fail,nil,false)); last by rewrite !size_map size_iota.
+  rewrite -!cats1 [erase_aprocs _]map_cat [map _ _]Haps' /= Hap'.
+  rewrite ![unzip1 (_ ++ _)]map_cat /=.
+  rewrite (nth_map 0) ?size_iota // nth_iota //.
+  split => // i.
+  rewrite size_cat addn1 ltnS => ik.
+  move/(f_equal size): Haps'.
+  rewrite !size_map size_take !size_map size_iota Hk => Hsz.
+  move: ik; rewrite nth_cat leq_eqVlt => /orP[/eqP ->|ik].
+    by rewrite ltnn subnn /= (nth_map 0) ?size_iota ?Hsz // nth_iota.
+  by rewrite ik Hfuel.
+case: ifPn; last first.
+  rewrite -!all_predC -!all_map -!map_comp size_map => /allP /= Hc <-.
+  apply/allP => /= b /mapP[/= i Hi] ->.
+  exact/Hc/map_f.
+rewrite has_map => /hasP[k].
+rewrite mem_iota size_map add0n => /andP[_ Hk] /= Hck.
+set traces' := unzip2 _.
+suff : exists aps', erase_aprocs aps' = ps' /\
+         \sum_(0 <= i < size ps) aproc_fuel (nth aproc_default aps' i) <= h.
+  case=> aps' [Haps' Hh'].
+  have Hsz : size ps = size aps'.
+    rewrite -(size_map erase_aproc aps') -/(erase_aprocs _) Haps' !size_map.
+    by rewrite size_iota.
+  rewrite Hsz -Haps'.
+  apply: IH.
+  by rewrite /sum_fuel sumnE big_map (big_nth aproc_default) -Hsz.
+have [aps' [Haps' Hfuel]] := hles traces.
+exists aps'; split.
+  by rewrite Haps' /ps' size_map.
+have Hsz : size ps = size aps'.
+  rewrite -(size_map erase_aproc aps') -/(erase_aprocs _) Haps' !size_map.
+  by rewrite size_iota.
+rewrite -ltnS (leq_trans _ Hps) // ?(ltnW Hk) // /sum_fuel sumnE big_map.
+rewrite -{2}(ssr_ext.map_nth_iota_id aproc_default ps) big_map.
+rewrite -{2}(subn0 (size ps)) -/(index_iota _ _) -subn_gt0 -sumnB.
+  rewrite lt0n sum_nat_seq_neq0.
+  apply/hasP; exists k; first by rewrite mem_iota leq0n add0n subn0.
+  rewrite /= -lt0n subn_gt0 -addn1 (_ : 1 = true) // -Hck.
+  have := Hfuel k.
+  rewrite -Hsz => /(_ Hk).
+  by rewrite (nth_map 0) ?size_iota // nth_iota.
+move=> i _.
+case/boolP: (i < size aps') => Hi.
+  have := Hfuel i Hi.
+  exact/leq_trans/leq_addr.
+by rewrite nth_default // leqNgt.
+Qed.
 End erasure.
 
 Arguments erase {data dtype party n env}.
