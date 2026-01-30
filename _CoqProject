@@ -95,6 +95,7 @@ smc/smc_proba.v
 smc/smc_entropy.v
 smc/smc_interpreter.v
 smc/smc_tactics.v
+smc/graded_resource.v
 smc/smc_session_types.v
 smc/scalar_product_interface.v
 smc/scalar_product_program.v

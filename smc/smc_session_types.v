@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_order.
-Require Import ssr_ext smc_interpreter.
+Require Import ssr_ext smc_interpreter graded_resource.
 
 (**md**************************************************************************)
 (* # Session Types for SMC Protocols                                          *)
@@ -62,6 +62,83 @@ Arguments STEnd {dtype}.
 Arguments senv_end {dtype}.
 Arguments senv_send {dtype}.
 Arguments senv_recv {dtype}.
+
+(******************************************************************************)
+(** * Session Type Depth                                                      *)
+(******************************************************************************)
+
+Section stype_depth_def.
+
+Variable dtype : eqType.
+
+(* Depth of a single session type - counts number of send/recv operations *)
+Fixpoint stype_depth (s : stype dtype) : nat :=
+  match s with
+  | STEnd => 0
+  | STSend _ k => (stype_depth k).+1
+  | STRecv _ k => (stype_depth k).+1
+  end.
+
+(* Depth of session environment - max over specified parties *)
+Definition senv_depth (env : senv dtype) (parties : seq nat) : nat :=
+  \max_(p <- parties) stype_depth (env p).
+
+(* Basic lemmas about stype_depth *)
+Lemma stype_depth_send (d : dtype) (k : stype dtype) :
+  stype_depth (STSend d k) = (stype_depth k).+1.
+Proof. by []. Qed.
+
+Lemma stype_depth_recv (d : dtype) (k : stype dtype) :
+  stype_depth (STRecv d k) = (stype_depth k).+1.
+Proof. by []. Qed.
+
+Lemma stype_depth_end : stype_depth (@STEnd dtype) = 0.
+Proof. by []. Qed.
+
+(* senv_end has depth 0 for any party set *)
+Lemma senv_depth_end (parties : seq nat) :
+  senv_depth (@senv_end dtype) parties = 0.
+Proof. by rewrite /senv_depth big1. Qed.
+
+(* Helper: F i0 <= bigmax over sequence when i0 is in the sequence *)
+Lemma leq_bigmax_seq_simple (F : nat -> nat) (r : seq nat) (i0 : nat) :
+  i0 \in r -> F i0 <= \max_(i <- r) F i.
+Proof.
+elim: r => [|h t IH] //=.
+rewrite in_cons big_cons => /orP[/eqP -> | Ht].
+  exact: leq_maxl.
+apply (leq_trans (IH Ht)).
+exact: leq_maxr.
+Qed.
+
+(* senv_send increases depth for the target party *)
+Lemma senv_depth_send (env : senv dtype) (dst : nat) (d : dtype) (parties : seq nat) :
+  dst \in parties ->
+  senv_depth (senv_send env dst d) parties >= (stype_depth (env dst)).+1.
+Proof.
+move=> Hdst.
+rewrite /senv_depth.
+apply (@leq_trans (stype_depth (senv_send env dst d dst))).
+  by rewrite /senv_send eqxx.
+exact: (leq_bigmax_seq_simple (fun p => stype_depth (senv_send env dst d p)) Hdst).
+Qed.
+
+(* senv_recv increases depth for the source party *)
+Lemma senv_depth_recv (env : senv dtype) (src : nat) (d : dtype) (parties : seq nat) :
+  src \in parties ->
+  senv_depth (senv_recv env src d) parties >= (stype_depth (env src)).+1.
+Proof.
+move=> Hsrc.
+rewrite /senv_depth.
+apply (@leq_trans (stype_depth (senv_recv env src d src))).
+  by rewrite /senv_recv eqxx.
+exact: (leq_bigmax_seq_simple (fun p => stype_depth (senv_recv env src d p)) Hsrc).
+Qed.
+
+End stype_depth_def.
+
+Arguments stype_depth {dtype}.
+Arguments senv_depth {dtype}.
 
 (******************************************************************************)
 (** * Session-Indexed Process Type                                            *)
@@ -689,11 +766,170 @@ rewrite Hint Hres /= size_map => <- Hfin.
 case: d => // d /=.
 by rewrite (negbTE Hfin).
 Qed.
+
+(******************************************************************************)
+(** * isDecomposableInterp Instance                                           *)
+(******************************************************************************)
+
+(* State type for interpreter: processes paired with traces *)
+Definition interp_state : Type := seq (proc data) * seq (seq data).
+
+(* Wrapper to match isDecomposableInterp signature: nat -> S -> S *)
+Definition interp_on_state (h : nat) (s : interp_state) : interp_state :=
+  let (ps, traces) := s in interp h ps traces.
+
+(* run 0 is identity *)
+Lemma run0_state : forall s : interp_state, interp_on_state 0 s = s.
+Proof. by case. Qed.
+
+(* runD in the form needed for isDecomposableInterp *)
+Lemma runD_state : forall n m (s : interp_state),
+  interp_on_state (n + m) s = interp_on_state m (interp_on_state n s).
+Proof.
+move=> n m [ps traces] /=.
+rewrite interpD.
+by case: (interp n ps traces).
+Qed.
+
+(* HB instance of isDecomposableInterp for the interpreter state *)
+HB.instance Definition _ := @isDecomposableInterp.Build
+  interp_state interp_on_state runD_state run0_state.
+
 End erasure.
 
 Arguments erase {data dtype party n env}.
 Arguments erase_aproc {data dtype}.
 Arguments erase_aprocs {data dtype}.
+
+(******************************************************************************)
+(** * isNatGraded Instance for Fuel                                           *)
+(******************************************************************************)
+
+(* Fuel family: trivially indexed by nat.
+   This represents fuel as a type family where all levels have the same type (unit).
+   The purpose is to enable using the generic termination lemmas from graded_resource.v
+   with the fuel parameter. *)
+Definition fuel_family (n : nat) : Type := unit.
+
+(* HB instance: fuel_family is a NatGraded type family.
+   - base: the terminal value at level 0 is tt (the unit value)
+   - down: stepping down from any level just returns tt *)
+HB.instance Definition _ := isNatGraded.Build fuel_family
+  tt                    (* base : fuel_family 0 *)
+  (fun _ _ => tt).      (* down : forall n, fuel_family n.+1 -> fuel_family n *)
+
+(******************************************************************************)
+(** * isNatGraded Instance for Session Environment                            *)
+(******************************************************************************)
+
+(* Session environment family: indexed by depth with exact equality.
+   Unlike fuel_family (trivially unit), this carries meaningful structure:
+   level n contains exactly the session environments with depth n.
+   
+   - base : senv_family 0
+     The terminal session environment where all sessions have ended.
+     This is senv_end, which maps every party to STEnd.
+   
+   - down : senv_family n.+1 -> senv_family n
+     The step-down operation corresponds to "one communication step occurred".
+     It pops the outer Send/Recv constructor from each session type.
+   
+   Example: Consider a 2-party protocol where party 0 sends twice to party 1.
+   
+     env at depth 2:  party 1 -> STSend D1 (STSend D2 STEnd)
+                      (other parties -> STEnd)
+     
+     After senv_down (one send occurred):
+     env at depth 1:  party 1 -> STSend D2 STEnd
+     
+     After another senv_down:
+     env at depth 0:  party 1 -> STEnd  (= senv_end, the base)
+   
+   This grading enables generic termination proofs: each communication step
+   strictly decreases the session environment depth until reaching base. *)
+
+Section senv_graded.
+
+Variable dtype : eqType.
+Variable parties : seq nat.
+
+(* Step down a single session type - pop outer Send/Recv constructor *)
+Definition stype_down (s : stype dtype) : stype dtype :=
+  match s with
+  | STSend _ k => k
+  | STRecv _ k => k
+  | STEnd => STEnd
+  end.
+
+(* stype_down reduces depth by 1, saturating at 0 *)
+Lemma stype_depth_down (s : stype dtype) :
+  stype_depth (stype_down s) = (stype_depth s).-1.
+Proof. by case: s. Qed.
+
+(* Step down an entire session environment pointwise *)
+Definition senv_down (env : senv dtype) : senv dtype :=
+  fun p => stype_down (env p).
+
+(* Predecessor distributes over max *)
+Lemma predn_max a b : (maxn a b).-1 = maxn a.-1 b.-1.
+Proof.
+case: a => [|a]; case: b => [|b] //=.
+  by rewrite max0n.
+by rewrite !maxnSS.
+Qed.
+
+(* Helper lemmas for bigmax without predicates *)
+Lemma bigmax_cons h t (F : nat -> nat) :
+  \max_(i <- h :: t) F i = maxn (F h) (\max_(i <- t) F i).
+Proof. by rewrite big_cons. Qed.
+
+Lemma bigmax_nil (F : nat -> nat) : \max_(i <- [::]) F i = 0.
+Proof. by rewrite big_nil. Qed.
+
+(* Key lemma: max of (f - 1) = (max f) - 1 for predecessor *)
+Lemma bigmax_pred (r : seq nat) (F : nat -> nat) :
+  (\max_(i <- r) (F i).-1) = (\max_(i <- r) F i).-1.
+Proof.
+elim: r => [|h t IH].
+  by rewrite !bigmax_nil.
+by rewrite !bigmax_cons IH predn_max.
+Qed.
+
+(* senv_down reduces environment depth by 1 *)
+Lemma senv_depth_down (env : senv dtype) :
+  senv_depth (senv_down env) parties = (senv_depth env parties).-1.
+Proof.
+rewrite /senv_depth /senv_down.
+under eq_bigr do rewrite stype_depth_down.
+exact: bigmax_pred.
+Qed.
+
+(* Type family: senvs with depth exactly n *)
+Definition senv_family (n : nat) : Type :=
+  { env : senv dtype | senv_depth env parties = n }.
+
+(* Base case: senv_end has depth exactly 0 *)
+Definition senv_family_base : senv_family 0.
+exists senv_end.
+exact: senv_depth_end.
+Defined.
+
+(* Step down: apply senv_down, use depth lemma *)
+Definition senv_family_down (n : nat) (e : senv_family n.+1) : senv_family n.
+exists (senv_down (sval e)).
+abstract (rewrite senv_depth_down (svalP e); exact: succnK).
+Defined.
+
+(* HB instance: senv_family is a NatGraded type family *)
+HB.instance Definition _ := isNatGraded.Build senv_family
+  senv_family_base
+  senv_family_down.
+
+End senv_graded.
+
+Arguments stype_down {dtype}.
+Arguments senv_down {dtype}.
+Arguments senv_family {dtype}.
 
 (******************************************************************************)
 (** * Notations for Session-Typed Process Lists                               *)
