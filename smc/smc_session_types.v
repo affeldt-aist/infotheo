@@ -1,6 +1,6 @@
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_order.
-Require Import smc_interpreter.
+Require Import ssr_ext smc_interpreter.
 
 (**md**************************************************************************)
 (* # Session Types for SMC Protocols                                          *)
@@ -590,29 +590,25 @@ Proof.
 elim: h ps traces => [|h IH] ps traces.
   rewrite leqn0 => /eqP /nofuel_procs_fail -> <- /=.
   rewrite has_map -all_predC; apply/allP => i /=.
-  rewrite mem_iota add0n => /andP[_ Hi].
-  by rewrite /step /= !nth_nseq // Hi.
+  by rewrite mem_iota leq0n add0n /step nth_nseq => /= ->.
 move=> Hps /=.
 set ps' := unzip1 (unzip1 _).
-have hles tr :=
-  dependent_mktuple (fun k : 'I_(size ps) => fuel_decreases tr (ltn_ord k)).
 case: ifPn; last first.
   rewrite -!all_predC -!all_map -!map_comp size_map => /allP /= Hc <-.
   apply/allP => /= b /mapP[/= i Hi] ->.
   exact/Hc/map_f.
 rewrite has_map => /hasP[k].
-rewrite mem_iota size_map add0n => /andP[_ Hk] /= Hck.
+rewrite mem_iota size_map leq0n add0n => /= Hk Hck.
 set traces' := unzip2 _.
 suff : exists aps', erase_aprocs aps' = ps' /\
          \sum_(0 <= i < size ps) aproc_fuel (nth aproc_default aps' i) <= h.
   case=> aps' [Haps' Hh'].
   have Hsz : size ps = size aps'.
-    rewrite -(size_map erase_aproc aps') -/(erase_aprocs _) Haps' !size_map.
-    by rewrite size_iota.
-  rewrite Hsz -Haps'.
-  apply: IH.
+    by rewrite -(size_map erase_aproc aps') [map _ _]Haps' !size_map size_iota.
+  rewrite Hsz -Haps'; apply: IH.
   by rewrite /sum_fuel sumnE big_map (big_nth aproc_default) -Hsz.
-have [aps' Haps'] := hles traces.
+have [aps' Haps'] :=
+  dependent_mktuple (fun k : 'I_(size ps) => fuel_decreases traces (ltn_ord k)).
 exists aps'.
 have Hsz : size aps' = size ps by rewrite size_tuple.
 split.
@@ -623,7 +619,7 @@ split.
   rewrite (proj1 (Haps' _)) -[ps']map_comp -map_comp.
   by rewrite  (nth_map 0) ?size_iota?size_map // nth_iota.
 rewrite -ltnS (leq_trans _ Hps) // ?(ltnW Hk) // /sum_fuel sumnE big_map.
-rewrite -{3}(ssr_ext.map_nth_iota_id aproc_default ps) big_map.
+rewrite -{3}(map_nth_iota_id aproc_default ps) big_map.
 rewrite -{3}(subn0 (size ps)) -/(index_iota _ _) -subn_gt0 -sumnB.
   rewrite lt0n sum_nat_seq_neq0.
   apply/hasP; exists k; first by rewrite mem_iota leq0n add0n subn0.
@@ -685,10 +681,10 @@ have -> : h = [>ps] + (h - [> ps]).
 set d := (h - _)%N; clearbody d.
 rewrite interpD.
 move Hint: (interp [>ps] _ _) => res.
-move/fuel_suffices_nored: (Hint).
+have /fuel_suffices_nored := Hint.
 move/(_ (leqnn _)).
 case Hres: res => [ps' traces'] /=.
-move: (size_interp_procs [>ps] (erase_aprocs ps) traces).
+have := size_interp_procs [>ps] (erase_aprocs ps) traces.
 rewrite Hint Hres /= size_map => <- Hfin.
 case: d => // d /=.
 by rewrite (negbTE Hfin).
