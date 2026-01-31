@@ -135,6 +135,41 @@ apply (@leq_trans (stype_depth (senv_recv env src d src))).
 exact: (leq_bigmax_seq_simple (fun p => stype_depth (senv_recv env src d p)) Hsrc).
 Qed.
 
+(* Helper: monotonicity of bigmax over sequences *)
+Lemma big_max_mono (parties : seq nat) (F G : nat -> nat) :
+  (forall i, i \in parties -> F i <= G i) ->
+  \max_(i <- parties) F i <= \max_(i <- parties) G i.
+Proof.
+move=> Hleq.
+apply/bigmax_leqP_seq => i Hi _.
+apply: leq_trans (Hleq i Hi) _.
+by apply: (leq_bigmax_seq _ Hi).
+Qed.
+
+(* senv_send preserves or increases depth (no membership requirement) *)
+Lemma senv_depth_senv_send_geq (env : senv dtype) (dst : nat) (dt : dtype) (parties : seq nat) :
+  senv_depth env parties <= senv_depth (senv_send env dst dt) parties.
+Proof.
+rewrite /senv_depth.
+apply: big_max_mono => i Hi.
+rewrite /senv_send.
+case: (i == dst) => /=.
+- by rewrite leqnSn.
+- by [].
+Qed.
+
+(* senv_recv preserves or increases depth (no membership requirement) *)
+Lemma senv_depth_senv_recv_geq (env : senv dtype) (src : nat) (dt : dtype) (parties : seq nat) :
+  senv_depth env parties <= senv_depth (senv_recv env src dt) parties.
+Proof.
+rewrite /senv_depth.
+apply: big_max_mono => i Hi.
+rewrite /senv_recv.
+case: (i == src) => /=.
+- by rewrite leqnSn.
+- by [].
+Qed.
+
 End stype_depth_def.
 
 Arguments stype_depth {dtype}.
@@ -649,6 +684,68 @@ case Hn: n env / sp =>
 - by exists aproc_default.
 Qed.
 
+(* Extended fuel_decreases: also tracks senv_depth non-increasing.
+   The senv bound follows from the structure of sproc constructors:
+   - SFinish/SRet: env = senv_end, depth = 0
+   - SInit: env unchanged
+   - SSend matched: env goes from (senv_send env' dst dt) to env', depth non-increasing
+   - SRecv matched: env goes from (senv_recv env' src dt) to env', depth non-increasing
+   - Blocked cases: env unchanged *)
+Lemma fuel_senv_decreases (ps : seq (aproc dtype data)) k tr (parties : seq nat) :
+  k < size ps ->
+  let res := step (erase_aprocs ps) (nth [::] tr k) k in
+  { ap' | erase_aproc ap' = res.1.1 /\
+      aproc_fuel ap' + res.2 <= aproc_fuel (nth aproc_default ps k) /\
+      senv_depth (aproc_env ap') parties <= senv_depth (aproc_env (nth aproc_default ps k)) parties }.
+Proof.
+move => Hk /=.
+rewrite /step (nth_map aproc_default) //.
+move Hnth: (nth _ ps k) => [p [n] [env] sp].
+rewrite {2}/aproc_fuel {2}/aproc_env /=.
+move/(f_equal erase_aproc): Hnth.
+rewrite -(nth_map _ (default_proc _)) // -/(erase_aprocs ps).
+rewrite /erase_aproc /aproc_proc /=.
+case Hn: n env / sp =>
+       [|d|n' env d s|n' env dst dt d s|n' env dst d s|n' env] Hnth /=.
+- (* SFinish: env = senv_end, stays senv_end *)
+  by exists (mk_aproc (party:=p) SFinish).
+- (* SRet: env = senv_end, becomes senv_end (via SFinish) *)
+  by exists (mk_aproc (party:=p) SFinish).
+- (* SInit: env unchanged *)
+  by exists (mk_aproc (party:=p) s); rewrite addn1.
+- (* SSend *)
+  case Hnth': nth => [||k' p'|||];
+    try by exists (mk_aproc (party:=p) (SSend dst dt d s)); rewrite addn0.
+  (* Recv case: check if matched *)
+  case: ifPn => [/eqP|] k'k.
+  + (* Matched: env goes from senv_send env dst dt to env *)
+    exists (mk_aproc (party:=p) s).
+    split; first by [].
+    split; first by rewrite addn1.
+    (* senv_depth env <= senv_depth (senv_send env dst dt) *)
+    exact: senv_depth_senv_send_geq.
+  + (* Not matched: blocked, env unchanged *)
+    by exists (mk_aproc (party:=p) (SSend dst dt d s)); rewrite addn0.
+- (* SRecv *)
+  case Hnth': nth => [|k' d' p'||||];
+    try by exists (mk_aproc (party:=p) (SRecv dst d s)); rewrite /= addn0.
+  (* Send case: check if matched *)
+  case: ifPn => [/eqP|] k'k.
+  + (* Matched: env goes from senv_recv env dst dt to env *)
+    exists (mk_aproc (party:=p) (s d')).
+    split; first by [].
+    split; first by rewrite addn1.
+    (* senv_depth env <= senv_depth (senv_recv env dst dt) *)
+    exact: senv_depth_senv_recv_geq.
+  + (* Not matched: blocked, env unchanged *)
+    by exists (mk_aproc (party:=p) (SRecv dst d s)); rewrite addn0.
+- (* SFail: default process has senv_end *)
+  exists aproc_default.
+  split; first by [].
+  split; first by [].
+  by rewrite /aproc_env /aproc_default /= senv_depth_end.
+Qed.
+
 (* Termination guarantee: if fuel h >= sum of all process fuels ([> ps]),
    then after interpretation, no process can take another step.
    Every process is stuck - the system has reached a quiescent state.
@@ -930,6 +1027,195 @@ End senv_graded.
 Arguments stype_down {dtype}.
 Arguments senv_down {dtype}.
 Arguments senv_family {dtype}.
+
+(******************************************************************************)
+(** * isStepDecreasing Instance for aproc (Fuel)                              *)
+(******************************************************************************)
+
+(* Step function that handles all operations including Send/Recv.
+   Checks for matching communication partners in the process list context.
+   This mirrors the interpreter's step function behavior. *)
+
+Section aproc_step_decreasing.
+
+Variable dtype : eqType.
+Variable data : Type.
+
+(* Context for stepping with full process list *)
+Record aproc_ctx := {
+  ctx_procs : seq (proc data) ;  (* all erased processes *)
+  ctx_trace : seq data ;          (* trace for this process *)
+  ctx_idx : nat ;                 (* index of this process *)
+}.
+
+(* Full step function: steps an aproc in context of all processes.
+   - SFinish/SFail: no progress, return same
+   - SRet: step to Finish, progress=1
+   - SInit: step to next, progress=1
+   - SSend: check if receiver is ready (Recv from us), if so progress=1
+   - SRecv: check if sender is ready (Send to us), if so apply continuation *)
+Definition aproc_step (ap : aproc dtype data) (ctx : aproc_ctx)
+    : aproc dtype data * nat.
+Proof.
+case: ap => [party [n [env sp]]].
+case: sp.
+- exact (mk_aproc (party:=party) SFinish, 0).
+- move=> d; exact (mk_aproc (party:=party) SFinish, 1).
+- move=> n' env' d next; exact (mk_aproc (party:=party) next, 1).
+- move=> n' env' dst dt d next.
+  case Hrecv: (nth (default_proc data) (ctx_procs ctx) dst) =>
+      [d' p'|dst' d' p'|frm f|d'| |].
+  + exact (mk_aproc (party:=party) (SSend dst dt d next), 0).
+  + exact (mk_aproc (party:=party) (SSend dst dt d next), 0).
+  + case: (frm == ctx_idx ctx).
+    * exact (mk_aproc (party:=party) next, 1).
+    * exact (mk_aproc (party:=party) (SSend dst dt d next), 0).
+  + exact (mk_aproc (party:=party) (SSend dst dt d next), 0).
+  + exact (mk_aproc (party:=party) (SSend dst dt d next), 0).
+  + exact (mk_aproc (party:=party) (SSend dst dt d next), 0).
+- move=> n' env' src dt cont.
+  case Hsend: (nth (default_proc data) (ctx_procs ctx) src) =>
+      [d' p'|dst' v p'|frm f|d'| |].
+  + exact (mk_aproc (party:=party) (SRecv src dt cont), 0).
+  + case: (dst' == ctx_idx ctx).
+    * exact (mk_aproc (party:=party) (cont v), 1).
+    * exact (mk_aproc (party:=party) (SRecv src dt cont), 0).
+  + exact (mk_aproc (party:=party) (SRecv src dt cont), 0).
+  + exact (mk_aproc (party:=party) (SRecv src dt cont), 0).
+  + exact (mk_aproc (party:=party) (SRecv src dt cont), 0).
+  + exact (mk_aproc (party:=party) (SRecv src dt cont), 0).
+- move=> n' env'; exact (@mk_aproc _ _ party n' env' SFail, 0).
+Defined.
+
+(* Proof that full step decreases fuel *)
+Lemma aproc_step_decreases (ap : aproc dtype data) (ctx : aproc_ctx) :
+  aproc_fuel (aproc_step ap ctx).1 + (aproc_step ap ctx).2 <= aproc_fuel ap.
+Proof.
+case: ap => [party [n [env sp]]].
+case: sp => /=.
+- by [].
+- by move=> d.
+- move=> n' env' d next; by rewrite /aproc_fuel /= addn1.
+- move=> n' env' dst dt d next.
+  rewrite /aproc_step /=.
+  case: (nth (default_proc data) (ctx_procs ctx) dst) =>
+      [d' p'|dst' d' p'|frm f|d'| |] /=.
+  + by rewrite /aproc_fuel /= addn0.
+  + by rewrite /aproc_fuel /= addn0.
+  + case: (frm == ctx_idx ctx) => /=.
+    * by rewrite /aproc_fuel /= addn1.
+    * by rewrite /aproc_fuel /= addn0.
+  + by rewrite /aproc_fuel /= addn0.
+  + by rewrite /aproc_fuel /= addn0.
+  + by rewrite /aproc_fuel /= addn0.
+- move=> n' env' src dt cont.
+  rewrite /aproc_step /=.
+  case: (nth (default_proc data) (ctx_procs ctx) src) =>
+      [d' p'|dst' v p'|frm f|d'| |] /=.
+  + by rewrite /aproc_fuel /= addn0.
+  + case: (dst' == ctx_idx ctx) => /=.
+    * by rewrite /aproc_fuel /= addn1.
+    * by rewrite /aproc_fuel /= addn0.
+  + by rewrite /aproc_fuel /= addn0.
+  + by rewrite /aproc_fuel /= addn0.
+  + by rewrite /aproc_fuel /= addn0.
+  + by rewrite /aproc_fuel /= addn0.
+- move=> n' env'; by rewrite /aproc_fuel /= addn0.
+Qed.
+
+End aproc_step_decreasing.
+
+Arguments aproc_ctx {data}.
+Arguments aproc_step {dtype data}.
+Arguments aproc_step_decreases {dtype data}.
+
+(******************************************************************************)
+(** * Session Env Depth Decreasing                                            *)
+(******************************************************************************)
+
+(* This section proves that stepping an aproc decreases (or preserves) the
+   session environment depth. Unlike fuel which always decreases by exactly 1
+   when progress is made, senv depth decrease depends on which party is involved
+   in the communication.
+   
+   Key insight from sproc constructors:
+   - SSend dst dt d next : sproc party n.+1 (senv_send env dst dt)
+     When SSend succeeds, env goes from (senv_send env dst dt) to env.
+     At party dst: STSend dt (env dst) -> env dst, depth decreases by 1.
+   
+   - SRecv src dt cont : sproc party n.+1 (senv_recv env src dt)
+     When SRecv succeeds, env goes from (senv_recv env src dt) to env.
+     At party src: STRecv dt (env src) -> env src, depth decreases by 1.
+   
+   The overall senv_depth (max over parties) decreases if the communicating
+   party (dst for SSend, src for SRecv) is in the parties set.
+   
+   Connection to sum_level_decreases:
+   This lemma provides the step_decreases hypothesis for senv-indexed processes,
+   enabling derivation of senv_suffices analogous to fuel_suffices. *)
+
+Section senv_step_decreasing.
+
+Variable dtype : eqType.
+Variable data : Type.
+Variable parties : seq nat.
+
+(* Session env depth never increases after a step.
+   
+   This lemma shows that stepping a process can only decrease or preserve
+   the session environment depth. It's sufficient for showing that senv
+   termination follows from fuel termination, since:
+   1. Fuel bounds the number of steps
+   2. Each step preserves or decreases senv depth
+   3. Therefore, after fuel steps, senv depth is bounded
+   
+   Note: Unlike fuel which strictly decreases by exactly 1 on progress,
+   senv_depth decrease depends on which party is involved. The depth only
+   strictly decreases when the communicating party (dst for SSend, src for 
+   SRecv) has the maximum depth. We use the simpler non-increasing form
+   since it's sufficient for our purposes and avoids complex party tracking. *)
+Lemma senv_step_nonincreasing (ap : aproc dtype data) (ctx : aproc_ctx) :
+  senv_depth (aproc_env (aproc_step ap ctx).1) parties <= senv_depth (aproc_env ap) parties.
+Proof.
+case: ap => [party [n [env sp]]].
+case: sp => /=.
+- (* SFinish *) by [].
+- (* SRet *) move=> d.
+  rewrite /senv_depth big1 //.
+- (* SInit *) move=> n' env' d next; by [].
+- (* SSend *) move=> n' env' dst dt d next.
+  rewrite /aproc_step /=.
+  (* When blocked: output env = input env (same), use reflexivity
+     When matched: output env = env' <= senv_send env' = input env *)
+  case: (nth (default_proc data) (ctx_procs ctx) dst) =>
+      [d' p'|dst' d' p'|frm f|d'| |] /=.
+  + by [].  (* Init: blocked, same env *)
+  + by [].  (* Send: blocked, same env *)
+  + case: (frm == ctx_idx ctx) => /=.
+    * exact: senv_depth_senv_send_geq.  (* Recv matched: env' <= senv_send env' *)
+    * by [].  (* Recv not matched: blocked, same env *)
+  + by [].  (* Ret: blocked, same env *)
+  + by [].  (* Finish: blocked, same env *)
+  + by [].  (* Fail: blocked, same env *)
+- (* SRecv *) move=> n' env' src dt cont.
+  rewrite /aproc_step /=.
+  case: (nth (default_proc data) (ctx_procs ctx) src) =>
+      [d' p'|dst' v p'|frm f|d'| |] /=.
+  + by [].  (* Init: blocked, same env *)
+  + case: (dst' == ctx_idx ctx) => /=.
+    * exact: senv_depth_senv_recv_geq.  (* Send matched: env' <= senv_recv env' *)
+    * by [].  (* Send not matched: blocked, same env *)
+  + by [].  (* Recv: blocked, same env *)
+  + by [].  (* Ret: blocked, same env *)
+  + by [].  (* Finish: blocked, same env *)
+  + by [].  (* Fail: blocked, same env *)
+- (* SFail *) move=> n' env'; by [].
+Qed.
+
+End senv_step_decreasing.
+
+Arguments senv_step_nonincreasing {dtype data} parties.
+
 
 (******************************************************************************)
 (** * Notations for Session-Typed Process Lists                               *)

@@ -1,0 +1,159 @@
+From HB Require Import structures.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg.
+From mathcomp Require Import reals.
+Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
+Require Import proba jfdist_cond entropy graphoid spp_proba spp_entropy.
+Require Import smc_interpreter smc_session_types pismc.
+Require Import spp_interface spp_program.
+
+Local Open Scope pismc_scope.
+Local Open Scope ring_scope.
+
+Section smc_spp_programs.
+
+Variable m : nat.
+Variable TX : finComRingType.
+Variable VX : lmodType TX. (* vector is not ringType (mul)*)
+Variable dotproduct : VX -> VX -> TX.
+Local Notation "u *d w" := (dotproduct u w).
+Let data := @spp_interface.data TX VX.
+
+(* Protocol-specific Send notations using SPSendVec/SPSendOne from spp_interface *)
+(* These have the dtype tag known at compile time, avoiding inference issues *)
+Local Notation "'Send<' p '>' '&' x ; P" := (SPSendVec p x P)
+  (in custom pismc at level 85, p constr at level 0, x constr at level 0,
+   P custom pismc at level 85, right associativity).
+
+Local Notation "'Send<' p '>' '!' x ; P" := (SPSendOne p x P)
+  (in custom pismc at level 85, p constr at level 0, x constr at level 0,
+   P custom pismc at level 85, right associativity).
+
+(* Protocol-specific Recv notations *)
+Local Notation "'Recv_vec<' p '>' 'fun' x '=>' P" := (SRecv_vec p (fun x => P))
+  (in custom pismc at level 85, p constr at level 0, x name,
+   P custom pismc at level 85, right associativity).
+
+Local Notation "'Recv_one<' p '>' 'fun' x '=>' P" := (SRecv_one p (fun x => P))
+  (in custom pismc at level 85, p constr at level 0, x name,
+   P custom pismc at level 85, right associativity).
+
+(* Return notation for scalar values *)
+Local Notation "'Ret_one' x" := (SRet (one x))
+  (in custom pismc at level 80, x constr).
+
+(* Init wrappers using vec/one directly *)
+Local Notation "'Init' '&' x ; P" := (SInit (vec x) P)
+  (in custom pismc at level 85, x constr at level 0,
+   P custom pismc at level 85, right associativity).
+
+Local Notation "'Init' '!' x ; P" := (SInit (one x) P)
+  (in custom pismc at level 85, x constr at level 0,
+   P custom pismc at level 85, right associativity).
+
+Local Notation "'Init' '(' '&' x ',' '!' y ')' ; P" := 
+  (SInit (vec x) (SInit (one y) P))
+  (in custom pismc at level 85, x constr at level 0, y constr at level 0,
+   P custom pismc at level 85, right associativity).
+
+Local Notation "'Init' '(' '&' x ',' '&' y ',' '!' z ')' ; P" := 
+  (SInit (vec x) (SInit (vec y) (SInit (one z) P)))
+  (in custom pismc at level 85, x constr at level 0, y constr at level 0, 
+   z constr at level 0, P custom pismc at level 85, right associativity).
+
+(******************************************************************************)
+(** * SMC-SPP Programs - piSMC Version                                        *)
+(******************************************************************************)
+
+(* Commodity server's protocol - piSMC version with session types *)
+(* Fuel and session environment automatically inferred *)
+Definition pcoserv (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _ :=
+ pi{ Init (&sa, &sb, !ra) ;
+     Send<alice> &sa ;
+     Send<alice> !ra ;
+     Send<bob> &sb ;
+     Send<bob> !(sa *d sb - ra) ;
+     Finish }.
+
+(* Alice's protocol - piSMC version with session types *)
+Definition palice (xa : VX) : @sproc sp_dtype data alice _ _ :=
+ pi{ Init &xa ;
+     Recv_vec<coserv> fun sa =>
+     Recv_one<coserv> fun ra =>
+     Send<bob> &(xa + sa) ;
+     Recv_vec<bob> fun xb' =>
+     Recv_one<bob> fun t =>
+     Ret_one (t - (xb' *d sa) + ra) }.
+
+(* Bob's protocol - piSMC version with session types *)
+Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
+ pi{ Init (&xb, !yb) ;
+     Recv_vec<coserv> fun sb =>
+     Recv_one<coserv> fun rb =>
+     Recv_vec<alice> fun xa' =>
+     Send<alice> &(xb + sb) ;
+     Send<alice> !(xa' *d xb + rb - yb) ;
+     Ret_one yb }.
+
+(* Import original program definitions from spp_program *)
+Let pcoserv_orig := @spp_program.pcoserv TX VX dotproduct.
+Let palice_orig := @spp_program.palice TX VX dotproduct.
+Let pbob_orig := @spp_program.pbob TX VX dotproduct.
+
+(* Prove that alt_syntax programs equal the original programs! *)
+(* This works because both use the same types from spp_interface *)
+Lemma pcoserv_cross_eq sa sb ra : 
+  pcoserv sa sb ra = pcoserv_orig sa sb ra.
+Proof. reflexivity. Qed.
+
+Lemma palice_cross_eq xa : 
+  palice xa = palice_orig xa.
+Proof. reflexivity. Qed.
+
+Lemma pbob_cross_eq xb yb : 
+  pbob xb yb = pbob_orig xb yb.
+Proof. reflexivity. Qed.
+
+(******************************************************************************)
+(** * Session Type Duality Verification                                       *)
+(******************************************************************************)
+
+Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
+
+(* Wrap in aproc for duality checking *)
+Definition saproc_coserv := mk_aproc (pcoserv sa sb ra).
+Definition saproc_alice := mk_aproc (palice xa).
+Definition saproc_bob := mk_aproc (pbob xb yb).
+
+(* Duality proofs - verified by computation *)
+Lemma coserv_alice_dual : channels_dual saproc_coserv saproc_alice.
+Proof. by native_compute. Qed.
+
+Lemma coserv_bob_dual : channels_dual saproc_coserv saproc_bob.
+Proof. by native_compute. Qed.
+
+Lemma alice_bob_dual : channels_dual saproc_alice saproc_bob.
+Proof. by native_compute. Qed.
+
+(******************************************************************************)
+(** * Interpreter Integration                                                 *)
+(******************************************************************************)
+
+Local Open Scope sproc_scope.
+Local Open Scope proc_scope.
+
+(* Session-typed processes for duality checking and fuel computation *)
+Definition spp_saprocs : seq (aproc sp_dtype data) :=
+  [aprocs palice xa; pbob xb yb; pcoserv sa sb ra].
+
+(* Erased processes for interpreter (strips session type indices) *)
+Definition spp_procs : seq (proc data) :=
+  erase_aprocs spp_saprocs.
+
+(* Fuel bound computed from program structure: 8 + 9 + 8 = 25
+   - palice: 8 (Init + 2*Recv + Send + 2*Recv + Ret=2)
+   - pbob: 9 (2*Init + 2*Recv + Recv + Send + Send + Ret=2)
+   - pcoserv: 8 (3*Init + 4*Send + Finish=1) *)
+Lemma spp_max_fuel_ok : [> spp_saprocs] = 25.
+Proof. reflexivity. Qed.
+
+End smc_spp_programs.

@@ -2,8 +2,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg ring.
 From mathcomp Require Import reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
-Require Import smc_interpreter smc_session_types scalar_product_interface.
+Require Import smc_interpreter smc_session_types spp_interface.
 
 (**md**************************************************************************)
 (* # SMC Program for the SMC Scalar Product Protocol                          *)
@@ -53,15 +52,15 @@ Variable VX : lmodType TX. (* vector is not ringType (mul)*)
 Variable dotproduct : VX -> VX -> TX.
 Local Notation "u *d w" := (dotproduct u w).
 
-(* Import definitions from scalar_product_interface *)
-Let alice := @scalar_product_interface.alice.
-Let bob := @scalar_product_interface.bob.
-Let coserv := @scalar_product_interface.coserv.
+(* Import definitions from spp_interface *)
+Let alice := @spp_interface.alice.
+Let bob := @spp_interface.bob.
+Let coserv := @spp_interface.coserv.
 Let data := data TX VX.
-Let one := @one TX VX.
-Let vec := @vec TX VX.
-Let SRecv_one := @scalar_product_interface.SRecv_one TX VX.
-Let SRecv_vec := @scalar_product_interface.SRecv_vec TX VX.
+Let one := @spp_interface.one TX VX.
+Let vec := @spp_interface.vec TX VX.
+Let SRecv_one := @spp_interface.SRecv_one TX VX.
+Let SRecv_vec := @spp_interface.SRecv_vec TX VX.
 
 (******************************************************************************)
 (** * Session-Typed Protocol Definitions                                      *)

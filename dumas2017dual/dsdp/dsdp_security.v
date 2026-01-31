@@ -3,8 +3,8 @@ From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matr
 From mathcomp Require Import ring boolp finmap matrix lra reals.
 Require Import rouche_capelli.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption.
+Require Import proba jfdist_cond entropy graphoid smc_interpreter spp_proba.
+Require Import homomorphic_encryption.
 Require Import extra_algebra extra_proba extra_entropy.
 Require Import dsdp_program dsdp_entropy.
 

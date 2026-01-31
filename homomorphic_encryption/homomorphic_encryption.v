@@ -41,8 +41,7 @@ From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matr
 From mathcomp Require Import ring boolp finmap reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid.
-Require Import smc_proba smc_entropy.
-Import smc_entropy.smc_entropy_proofs.
+Require Import spp_proba spp_entropy.
 
 Import GRing.Theory.
 Import Num.Theory.

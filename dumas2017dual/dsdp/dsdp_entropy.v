@@ -2,8 +2,8 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption entropy_fiber.
+Require Import proba jfdist_cond entropy graphoid smc_interpreter spp_tactics.
+Require Import spp_proba homomorphic_encryption entropy_fiber.
 Require Import entropy_fiber_zpq.  (* General entropy framework for Z/pqZ *)
 Require Import extra_algebra extra_proba extra_entropy.
 Require Import dsdp_program.
@@ -506,7 +506,6 @@ Let E_alice_d3 : {RV P -> Alice.-enc msg} := E' alice `o D3.
 Let E_charlie_v3 : {RV P -> Charlie.-enc msg} := E' charlie `o V3.
 Let E_bob_v2 : {RV P -> Bob.-enc msg} := E' bob `o V2.
 
-(* Use these two and apply_inde_RV_comp to prove trivial indeps*)
 Let alice_inputsT := (Alice.-key Dec msg * msg * msg * msg *
   msg * msg * msg)%type.
 Let AliceInputsView : {RV P -> alice_inputsT} :=

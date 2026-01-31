@@ -2,7 +2,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import mathcomp_extra contra ring reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_proba.
+Require Import proba jfdist_cond entropy graphoid spp_proba.
 
 (**md**************************************************************************)
 (* # SMC Proofs in entropy                                                    *)
@@ -58,8 +58,6 @@ Local Open Scope vec_ext_scope.
 
 Reserved Notation "u *d w" (at level 40).
 Reserved Notation "u \*d w" (at level 40).
-
-Module smc_entropy_proofs.
 
 Section extra_pr.
 Context {R : realType}.
@@ -1085,5 +1083,3 @@ Proof. exact: (@Hinde_all 0 0). Qed.
 
 
 End mutual_indep.
-
-End smc_entropy_proofs.

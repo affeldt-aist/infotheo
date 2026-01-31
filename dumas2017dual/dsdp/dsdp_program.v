@@ -2,8 +2,8 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_interpreter smc_tactics.
-Require Import smc_proba homomorphic_encryption.
+Require Import proba jfdist_cond entropy graphoid smc_interpreter.
+Require Import spp_proba homomorphic_encryption.
 Require Import dsdp_interface.
 
 Import GRing.Theory.

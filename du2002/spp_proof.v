@@ -2,17 +2,11 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg ring.
 From mathcomp Require Import reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid smc_proba smc_entropy.
-Require Import scalar_product_program smc_interpreter smc_tactics.
-Require Import smc_session_types scalar_product_interface.
-Require Import scalar_product_alt_syntax.
+Require Import proba jfdist_cond entropy graphoid spp_proba spp_entropy.
+Require Import smc_interpreter spp_tactics smc_session_types.
+Require Import spp_interface spp_program spp_pismc.
 
 (******************************************************************************)
-(*                                                                            *)
-(* Session type verification:                                                 *)
-(* - coserv_alice_dual: proves coserv and alice have dual session types       *)
-(* - coserv_bob_dual: proves coserv and bob have dual session types           *)
-(* - alice_bob_dual: proves alice and bob have dual session types             *)
 (*                                                                            *)
 (* Lemmas:                                                                    *)
 (* ```                                                                        *)
@@ -56,39 +50,6 @@ Local Open Scope proba_scope.
 Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
-Local Open Scope proc_scope.
-
-(******************************************************************************)
-(** * Session Type Duality Verification                                       *)
-(******************************************************************************)
-
-Section duality_proof.
-
-Local Open Scope sproc_scope.
-
-Variable TX : finComRingType.
-Variable VX : lmodType TX.
-Variable dotproduct : VX -> VX -> TX.
-
-Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
-
-(* Import aproc wrappers from scalar_product_alt_syntax (ASCII syntax version) *)
-(* Each definition only depends on variables it actually uses *)
-Let saproc_coserv := @scalar_product_alt_syntax.saproc_coserv TX VX dotproduct sa sb ra.
-Let saproc_alice := @scalar_product_alt_syntax.saproc_alice TX VX dotproduct xa.
-Let saproc_bob := @scalar_product_alt_syntax.saproc_bob TX VX dotproduct yb xb.
-
-(* Duality proofs - verified by computation *)
-Lemma alice_bob_dual : channels_dual saproc_alice saproc_bob = true.
-Proof. by native_compute. Qed.
-
-Lemma coserv_alice_dual : channels_dual saproc_coserv saproc_alice = true.
-Proof. by native_compute. Qed.
-
-Lemma coserv_bob_dual : channels_dual saproc_coserv saproc_bob = true.
-Proof. by native_compute. Qed.
-
-End duality_proof.
 
 (******************************************************************************)
 (** * Trace Correctness and Security Proofs                                   *)
@@ -164,21 +125,21 @@ Section result_correctness_proof.
 
 Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
-Notation "u *d w" := (scp.dotproduct u w).
-Notation "u \*d w" := (scp.dotproduct_rv u w).
+Notation "u *d w" := (dotproduct u w).
+Notation "u \*d w" := (dotproduct_rv u w).
   
 Lemma smc_scalar_product_is_correct sa sb ra yb xa xb :
-  is_scalar_product scp.dotproduct (
-      @smc_scalar_product_traces TX VX scp.dotproduct sa sb ra yb xa xb).
+  is_scalar_product dotproduct (
+      @smc_scalar_product_traces TX VX dotproduct sa sb ra yb xa xb).
 Proof.
 rewrite smc_scalar_product_traces_ok /is_scalar_product /=.
 symmetry.
-rewrite (scp.dot_productC (xa+sa) xb).
-rewrite !scp.dot_productDr.
-rewrite scp.dot_productC.
-rewrite (scp.dot_productC xb sa).
-rewrite (scp.dot_productC (xb+sb) sa).
-rewrite scp.dot_productDr.
+rewrite (dot_productC (xa+sa) xb).
+rewrite !dot_productDr.
+rewrite dot_productC.
+rewrite (dot_productC xb sa).
+rewrite (dot_productC (xb+sb) sa).
+rewrite dot_productDr.
 (* Weird: without making it as a lemma, the ring tactic fails. *)
 have // ->: xa *d xb + sa *d xb + (sa *d sb - ra) - yb -
             (sa *d xb + sa *d sb) + ra + yb = xa *d xb.
@@ -191,8 +152,8 @@ Section information_leakage_proof.
 
 Let TX := [the finComRingType of 'I_m.+2].
 Let VX := 'rV[TX]_n.
-Notation "u *d w" := (scp.dotproduct u w).
-Notation "u \*d w" := (scp.dotproduct_rv u w).
+Notation "u *d w" := (dotproduct u w).
+Notation "u \*d w" := (dotproduct_rv u w).
 
 Lemma card_TX : #|TX| = m.+2.
 Proof. by rewrite card_ord. Qed.
@@ -206,7 +167,7 @@ Qed.
 Definition scalar_product_uncurry (o: VX * VX * TX * TX * VX * VX)
   : smc_scalar_product_party_tracesT VX :=
   let '(sa, sb, ra, yb, xa, xb) := o in
-  (smc_scalar_product_traces scp.dotproduct sa sb ra yb xa xb).
+  (smc_scalar_product_traces dotproduct sa sb ra yb xa xb).
 
 Record scalar_product_random_inputs :=
   ScalarProductRandomInputs {
@@ -344,7 +305,7 @@ Qed.
 
 Let pnegy2_unif : `p_ (neg_RV y2) = fdist_uniform card_TX.
 Proof.
-rewrite -(scp.neg_RV_dist_eq (py2_unif inputs)).
+rewrite -(neg_RV_dist_eq (py2_unif inputs)).
 exact: (py2_unif inputs).
 Qed.
 
@@ -414,11 +375,11 @@ Let x1x2s2x1'r2_y2_indepP :=
 Let x1x2s2x1'_r2_indep :
   P |= [% x1, [% x2, s2, x1']] _|_ r2.
 Proof.
-rewrite inde_RV_sym /r2 scp.sub_RV_eq.
+rewrite inde_RV_sym /r2 sub_RV_eq.
 apply: (@lemma_3_5' _ _ _ _ _ _ _ _ _ _ card_TX); last first.
-  by rewrite -(@scp.neg_RV_dist_eq _ _ _ _ card_TX) pr1_unif.
+  by rewrite -(@neg_RV_dist_eq _ _ _ _ card_TX) pr1_unif.
 rewrite inde_RV_sym.
-apply: scp.neg_RV_inde_eq.
+apply: neg_RV_inde_eq.
 have := r1_indep inputs.
 pose f := fun vs : (VX * VX * VX * TX * VX) =>
   let '(xb, sa, xa, yb, sb) := vs in (sa *d sb, (xa, (xb, sb, xa + sa))).
@@ -483,14 +444,14 @@ Qed.
 
   *)
 
-Let proof_alice := scp.pi2_alice_is_leakage_free_proof
+Let proof_alice := pi2_alice_is_leakage_free_proof
       y2_x1x2s1s2r1_indep
       s2_x1s1r1x2_indep
       x1s1r1_x2_indep pnegy2_unif (ps2_unif inputs).
 
 Check proof_alice.
 
-Let proof_bob := scp.pi2_bob_is_leakage_free_proof
+Let proof_bob := pi2_bob_is_leakage_free_proof
       (card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
       x1x2s2x1'r2_y2_indepP
       x1x2s2x1'_r2_indep
