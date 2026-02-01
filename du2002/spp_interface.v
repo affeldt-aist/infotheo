@@ -83,16 +83,12 @@ Definition SPSendOne {party n env} (dst : nat) (x : TX)
     : @sproc sp_dtype data party n.+1 (senv_send env dst DT_One) := 
   SSend dst DT_One (one x) p.
 
-(******************************************************************************)
-(** * Sendable Constructors for piSMC Notations                               *)
-(******************************************************************************)
+Definition SPInit {party n env} (x : data)
+    (p : @sproc sp_dtype data party n env)
+    : @sproc sp_dtype data party n.+1 env := SInit x p.
 
-(* Sendable constructors for SMC-SPP *)
-Definition spp_sendable_vec (x : VX) : @Sendable sp_dtype data :=
-  {| sendable_tag := DT_Vec; sendable_data := vec x |}.
-
-Definition spp_sendable_one (x : TX) : @Sendable sp_dtype data :=
-  {| sendable_tag := DT_One; sendable_data := one x |}.
+Definition SPRet {party : nat} (x : data) : @sproc sp_dtype data party 2 senv_end := 
+  SRet x.
 
 End smc_spp_types.
 
@@ -105,5 +101,5 @@ Arguments SRecv_one {TX VX party n env}.
 Arguments SRecv_vec {TX VX party n env}.
 Arguments SPSendVec {TX VX party n env}.
 Arguments SPSendOne {TX VX party n env}.
-Arguments spp_sendable_vec {TX VX}.
-Arguments spp_sendable_one {TX VX}.
+Arguments SPInit {TX VX party n env}.
+Arguments SPRet {TX VX party}.

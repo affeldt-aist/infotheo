@@ -8,9 +8,18 @@ Require Import ssr_ext smc_interpreter graded_resource.
 (* Binary session types for verifying communication protocols in SMC.         *)
 (* Session environment is automatically inferred by Coq's unification.        *)
 (*                                                                            *)
-(* Two layers:                                                                *)
-(*   sproc party env - session-typed process (type-checked)                   *)
-(*   proc         - unindexed process (for interpretation)                    *)
+(* Three layers:                                                              *)
+(*   sproc party n env - session-typed process with fuel n and session env    *)
+(*                       Coq's unification automatically infers n and env     *)
+(*   aproc             - existential wrapper: packs sproc with hidden indices *)
+(*                       Enables storing heterogeneous sprocs in lists        *)
+(*   proc              - unindexed process (from smc_interpreter.v)           *)
+(*                       Used for actual interpretation                       *)
+(*                                                                            *)
+(* Workflow: sproc --(mk_aproc)--> aproc --(erase_aproc)--> proc              *)
+(*   1. Write protocols as sproc with _ _ placeholders (indices auto-inferred)*)
+(*   2. Pack into aproc list: [aprocs p1; p2; p3]                             *)
+(*   3. Run with run_sprocs: fuel [> aps] computed from inferred indices      *)
 (*                                                                            *)
 (* Based on:                                                                  *)
 (* Kohei Honda, Vasco T. Vasconcelos, and Makoto Kubo.                        *)
@@ -1048,7 +1057,7 @@ split; first exact: Herase.
 exact: Hcd'.
 Qed.
 
-(* For future, if we have typed interpreter, one for each resource.
+(* For future, if we have typed interpreter, one for each resource. *)
 
 (******************************************************************************)
 (** * isDecomposableInterp Instance                                           *)
@@ -1401,9 +1410,6 @@ Qed.
 End senv_step_decreasing.
 
 Arguments senv_step_nonincreasing {dtype data} parties.
-
-*)
-
 
 (******************************************************************************)
 (** * Notations for Session-Typed Process Lists                               *)

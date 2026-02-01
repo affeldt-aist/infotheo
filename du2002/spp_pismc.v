@@ -2,7 +2,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg.
 From mathcomp Require Import reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import proba jfdist_cond entropy graphoid spp_proba spp_entropy.
+Require Import spp_proba spp_entropy.
 Require Import smc_interpreter smc_session_types pismc.
 Require Import spp_interface spp_program.
 
@@ -17,48 +17,73 @@ Variable VX : lmodType TX. (* vector is not ringType (mul)*)
 Variable dotproduct : VX -> VX -> TX.
 Local Notation "u *d w" := (dotproduct u w).
 Let data := @spp_interface.data TX VX.
+Let alice := @spp_interface.alice.
+Let bob := @spp_interface.bob.
+Let coserv := @spp_interface.coserv.
+Let one := @spp_interface.one TX VX.
+Let vec := @spp_interface.vec TX VX.
+Let SRecv_one := @spp_interface.SRecv_one TX VX.
+Let SRecv_vec := @spp_interface.SRecv_vec TX VX.
+Let SPSendVec := @spp_interface.SPSendVec TX VX.
+Let SPSendOne := @spp_interface.SPSendOne TX VX.
+Let SPInit := @spp_interface.SPInit TX VX.
+Let SPRet := @spp_interface.SPRet TX VX.
 
 (* Protocol-specific Send notations using SPSendVec/SPSendOne from spp_interface *)
 (* These have the dtype tag known at compile time, avoiding inference issues *)
-Local Notation "'Send<' p '>' '&' x ; P" := (SPSendVec p x P)
+(* We need to find a better way to define piSMC a module be customized by
+   different data types, so different protocols can use the same module.
+*)
+
+(* Data wrapper shorthand notations - in standard scope, not custom entry *)
+(* These must be in standard scope so Init ( &x, !y ) works with constr parsing *)
+Local Notation "& x" := (vec x) (at level 0, x at level 0) : pismc_scope.
+Local Notation "! x" := (one x) (at level 0, x at level 0) : pismc_scope.
+
+Local Notation "'Send<' p '>' '&' x ; P" := (SPSendVec _ _ _ p x P)
   (in custom pismc at level 85, p constr at level 0, x constr at level 0,
    P custom pismc at level 85, right associativity).
 
-Local Notation "'Send<' p '>' '!' x ; P" := (SPSendOne p x P)
+Local Notation "'Send<' p '>' '!' x ; P" := (SPSendOne _ _ _ p x P)
   (in custom pismc at level 85, p constr at level 0, x constr at level 0,
    P custom pismc at level 85, right associativity).
 
 (* Protocol-specific Recv notations *)
-Local Notation "'Recv_vec<' p '>' 'fun' x '=>' P" := (SRecv_vec p (fun x => P))
+Local Notation "'Recv_vec<' p '>' 'fun' x '=>' P" :=
+  (SRecv_vec _ _ _ p (fun x => P))
   (in custom pismc at level 85, p constr at level 0, x name,
    P custom pismc at level 85, right associativity).
 
-Local Notation "'Recv_one<' p '>' 'fun' x '=>' P" := (SRecv_one p (fun x => P))
+Local Notation "'Recv_one<' p '>' 'fun' x '=>' P" :=
+  (SRecv_one _ _ _ p (fun x => P))
   (in custom pismc at level 85, p constr at level 0, x name,
    P custom pismc at level 85, right associativity).
 
 (* Return notation for scalar values *)
-Local Notation "'Ret_one' x" := (SRet (one x))
+Local Notation "'Ret' '!' x" := (SRet (one x))
+  (in custom pismc at level 80, x constr).
+Local Notation "'Ret' '&' x" := (SRet (vec x))
   (in custom pismc at level 80, x constr).
 
-(* Init wrappers using vec/one directly *)
-Local Notation "'Init' '&' x ; P" := (SInit (vec x) P)
+(* Finish notation *)
+Local Notation "'Finish'" := SFinish (in custom pismc at level 0).
+
+(* Single Init with continuation *)
+Notation "'Init' '&' x ; P" := (SPInit _ _ _ (vec x) P)
+  (in custom pismc at level 85, x constr at level 0,
+   P custom pismc at level 85, right associativity).
+Notation "'Init' '!' x ; P" := (SPInit _ _ _ (one x) P)
   (in custom pismc at level 85, x constr at level 0,
    P custom pismc at level 85, right associativity).
 
-Local Notation "'Init' '!' x ; P" := (SInit (one x) P)
-  (in custom pismc at level 85, x constr at level 0,
+(* Multi-var Init using tuple syntax - data values directly *)
+(* x and y are parsed in constr where &/! notations are defined in pismc_scope *)
+Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" :=
+  (SPInit _ _ _ x .. (SPInit _ _ _ y P) ..)
+  (in custom pismc at level 85,
+   x constr at level 0, y constr at level 0,
    P custom pismc at level 85, right associativity).
 
-Local Notation "'Init' '(' '&' x ',' '!' y ')' ; P" := 
-  (SInit (vec x) (SInit (one y) P))
-  (in custom pismc at level 85, x constr at level 0, y constr at level 0,
-   P custom pismc at level 85, right associativity).
-
-Local Notation "'Init' '(' '&' x ',' '&' y ',' '!' z ')' ; P" := 
-  (SInit (vec x) (SInit (vec y) (SInit (one z) P)))
-  (in custom pismc at level 85, x constr at level 0, y constr at level 0, 
-   z constr at level 0, P custom pismc at level 85, right associativity).
 
 (******************************************************************************)
 (** * SMC-SPP Programs - piSMC Version                                        *)
@@ -82,7 +107,7 @@ Definition palice (xa : VX) : @sproc sp_dtype data alice _ _ :=
      Send<bob> &(xa + sa) ;
      Recv_vec<bob> fun xb' =>
      Recv_one<bob> fun t =>
-     Ret_one (t - (xb' *d sa) + ra) }.
+     Ret !(t - (xb' *d sa) + ra) }.
 
 (* Bob's protocol - piSMC version with session types *)
 Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
@@ -92,7 +117,7 @@ Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
      Recv_vec<alice> fun xa' =>
      Send<alice> &(xb + sb) ;
      Send<alice> !(xa' *d xb + rb - yb) ;
-     Ret_one yb }.
+     Ret !yb }.
 
 (* Import original program definitions from spp_program *)
 Let pcoserv_orig := @spp_program.pcoserv TX VX dotproduct.
