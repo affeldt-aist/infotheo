@@ -167,67 +167,6 @@ Proof. by []. Qed.
 
 End Standard_Interface_Properties.
 
-(* ========================================================================== *)
-(* Session-Typed Wrappers for DSDP                                            *)
-(* ========================================================================== *)
-
-(* Session-typed versions using sproc from smc_session_types.
-   These coexist with the proc-based wrappers above. *)
-
-Section Session_Typed_DSDP.
-
-Variable PHE : AHEAlgebra_scheme.
-
-Let data := std_data PHE.
-Let D := @dec PHE.
-
-(* Receive encrypted - pattern match data, use SFail on mismatch *)
-Definition DRecv_enc {party n env} (src : nat)
-    (f : party_cipher PHE -> @sproc dsdp_dtype data party n env)
-    : @sproc dsdp_dtype data party n.+1 (senv_recv env src DT_Enc) :=
-  SRecv src DT_Enc (fun d => 
-    match @std_from_enc PHE d with
-    | Some enc => f enc
-    | None => SFail
-    end).
-
-(* Receive encrypted and decrypt - still tracks as DT_Enc (what's on the wire) *)
-(* NOTE: D returns option msg, so need nested match for decrypt failure *)
-Definition DRecv_dec {party n env} (src : nat) (dk : pkey PHE)
-    (f : plain PHE -> @sproc dsdp_dtype data party n env)
-    : @sproc dsdp_dtype data party n.+1 (senv_recv env src DT_Enc) :=
-  SRecv src DT_Enc (fun d => 
-    match @std_from_enc PHE d with
-    | Some enc => match D dk enc with
-                  | Some msg => f msg
-                  | None => SFail  (* decrypt failure *)
-                  end
-    | None => SFail  (* not an encrypted value *)
-    end).
-
-(* Send encrypted - the only send variant needed *)
-Definition DPSendEnc {party n env} (dst : nat) (x : party_cipher PHE)
-    (p : @sproc dsdp_dtype data party n env)
-    : @sproc dsdp_dtype data party n.+1 (senv_send env dst DT_Enc) :=
-  SSend dst DT_Enc (@std_e PHE x) p.
-
-(* Init/Ret wrappers - can init any data kind (msg, enc, key) *)
-(* Init doesn't affect session env since it's local storage *)
-Definition DPInit {party n env} (x : data) (p : @sproc dsdp_dtype data party n env)
-    : @sproc dsdp_dtype data party n.+1 env := 
-  SInit x p.
-
-Definition DPRet {party : nat} (x : data) : @sproc dsdp_dtype data party 2 senv_end := 
-  SRet x.
-
-End Session_Typed_DSDP.
-
-(* Arguments declarations for implicit parameters *)
-Arguments DRecv_enc {PHE party n env}.
-Arguments DRecv_dec {PHE party n env}.
-Arguments DPSendEnc {PHE party n env}.
-Arguments DPInit {PHE party n env}.
-Arguments DPRet {PHE party}.
 
 (* ========================================================================== *)
 (* Notation shortcuts for use in client files                                 *)

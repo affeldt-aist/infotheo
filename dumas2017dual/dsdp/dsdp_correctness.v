@@ -4,6 +4,7 @@ From mathcomp Require Import ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter.
 Require Import homomorphic_encryption.
+Require Import smc_session_types.
 Require Import dsdp_interface dsdp_program.
 Require Import idealized_party_ahe.  (* For idealized computational proofs *)
 Require Import benaloh_party_ahe.   (* For Benaloh computational proofs *)
@@ -39,6 +40,7 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope proc_scope.
+Local Open Scope sproc_scope.
 
 (******************************************************************************)
 (** * Algebraic Correctness (from dsdp_program.v)                              *)
@@ -159,9 +161,15 @@ Let palice_inst := @palice PHE bob charlie pn dk_a v1 u1 u2 u3 r2 r3 runit runit
 Let pbob_inst := @pbob PHE alice bob charlie pn dk_b v2 runit runit.
 Let pcharlie_inst := @pcharlie PHE alice bob charlie pn dk_c v3 runit runit.
 
+(* Session-typed processes packed via [aprocs ...].
+   See dsdp_program.v for detailed explanation of why this pattern is needed. *)
+Let dsdp_saprocs : seq (aproc dsdp_dtype data) :=
+  [aprocs palice_inst ; pbob_inst ; pcharlie_inst].
+
+Let dsdp_procs : seq (proc data) := erase_aprocs dsdp_saprocs.
+
 (* Protocol definition using interp directly with explicit traces *)
-Definition dsdp h :=
-  interp h [:: palice_inst; pbob_inst; pcharlie_inst] [::[::];[::];[::]].
+Definition dsdp h := interp h dsdp_procs [::[::];[::];[::]].
 
 (* Protocol execution result: running dsdp for 15 steps produces the expected
    final state with all parties finished and their respective traces. *)
@@ -184,7 +192,7 @@ Notation dsdp_traceT := (15.-bseq data).
 Notation dsdp_tracesT := (3.-tuple dsdp_traceT).
 
 Definition dsdp_traces : dsdp_tracesT :=
-  interp_traces 15 [:: palice_inst; pbob_inst; pcharlie_inst].
+  interp_traces 15 dsdp_procs.
 
 Definition is_dsdp (trs : dsdp_tracesT) :=
   let '(s, u3, u2, u1, v1) :=

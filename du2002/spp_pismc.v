@@ -4,12 +4,12 @@ From mathcomp Require Import reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import spp_proba spp_entropy.
 Require Import smc_interpreter smc_session_types pismc.
-Require Import spp_interface spp_program.
+Require Import spp_interface spp_program spp_session_types.
 
 Local Open Scope pismc_scope.
 Local Open Scope ring_scope.
 
-Section smc_spp_programs.
+Section spp_pismc_programs.
 
 Variable m : nat.
 Variable TX : finComRingType.
@@ -22,40 +22,35 @@ Let bob := @spp_interface.bob.
 Let coserv := @spp_interface.coserv.
 Let one := @spp_interface.one TX VX.
 Let vec := @spp_interface.vec TX VX.
-Let SRecv_one := @spp_interface.SRecv_one TX VX.
-Let SRecv_vec := @spp_interface.SRecv_vec TX VX.
-Let SPSendVec := @spp_interface.SPSendVec TX VX.
-Let SPSendOne := @spp_interface.SPSendOne TX VX.
-Let SPInit := @spp_interface.SPInit TX VX.
-Let SPRet := @spp_interface.SPRet TX VX.
 
-(* Protocol-specific Send notations using SPSendVec/SPSendOne from spp_interface *)
-(* These have the dtype tag known at compile time, avoiding inference issues *)
-(* We need to find a better way to define piSMC a module be customized by
-   different data types, so different protocols can use the same module.
-*)
+Let SRecv_one {TX VX party n env} := @spp_interface.SRecv_one TX VX party n env.
+Let SRecv_vec {TX VX party n env} := @spp_interface.SRecv_vec TX VX party n env.
+Let SPSendVec {TX VX party n env} := @spp_interface.SPSendVec TX VX party n env.
+Let SPSendOne {TX VX party n env} := @spp_interface.SPSendOne TX VX party n env.
+Let SPInit {TX VX party n env} := @spp_interface.SPInit TX VX party n env.
+Let SPRet {party} := @spp_interface.SPRet TX VX party.
 
 (* Data wrapper shorthand notations - in standard scope, not custom entry *)
 (* These must be in standard scope so Init ( &x, !y ) works with constr parsing *)
 Local Notation "& x" := (vec x) (at level 0, x at level 0) : pismc_scope.
 Local Notation "! x" := (one x) (at level 0, x at level 0) : pismc_scope.
 
-Local Notation "'Send<' p '>' '&' x ; P" := (SPSendVec _ _ _ p x P)
+Local Notation "'Send<' p '>' '&' x ; P" := (SPSendVec p x P)
   (in custom pismc at level 85, p constr at level 0, x constr at level 0,
    P custom pismc at level 85, right associativity).
 
-Local Notation "'Send<' p '>' '!' x ; P" := (SPSendOne _ _ _ p x P)
+Local Notation "'Send<' p '>' '!' x ; P" := (SPSendOne p x P)
   (in custom pismc at level 85, p constr at level 0, x constr at level 0,
    P custom pismc at level 85, right associativity).
 
 (* Protocol-specific Recv notations *)
 Local Notation "'Recv_vec<' p '>' 'fun' x '=>' P" :=
-  (SRecv_vec _ _ _ p (fun x => P))
+  (SRecv_vec p (fun x => P))
   (in custom pismc at level 85, p constr at level 0, x name,
    P custom pismc at level 85, right associativity).
 
 Local Notation "'Recv_one<' p '>' 'fun' x '=>' P" :=
-  (SRecv_one _ _ _ p (fun x => P))
+  (SRecv_one p (fun x => P))
   (in custom pismc at level 85, p constr at level 0, x name,
    P custom pismc at level 85, right associativity).
 
@@ -69,17 +64,17 @@ Local Notation "'Ret' '&' x" := (SRet (vec x))
 Local Notation "'Finish'" := SFinish (in custom pismc at level 0).
 
 (* Single Init with continuation *)
-Notation "'Init' '&' x ; P" := (SPInit _ _ _ (vec x) P)
+Notation "'Init' '&' x ; P" := (SPInit (vec x) P)
   (in custom pismc at level 85, x constr at level 0,
    P custom pismc at level 85, right associativity).
-Notation "'Init' '!' x ; P" := (SPInit _ _ _ (one x) P)
+Notation "'Init' '!' x ; P" := (SPInit (one x) P)
   (in custom pismc at level 85, x constr at level 0,
    P custom pismc at level 85, right associativity).
 
 (* Multi-var Init using tuple syntax - data values directly *)
 (* x and y are parsed in constr where &/! notations are defined in pismc_scope *)
 Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" :=
-  (SPInit _ _ _ x .. (SPInit _ _ _ y P) ..)
+  (SPInit x .. (SPInit y P) ..)
   (in custom pismc at level 85,
    x constr at level 0, y constr at level 0,
    P custom pismc at level 85, right associativity).
@@ -123,6 +118,8 @@ Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
 Let pcoserv_orig := @spp_program.pcoserv TX VX dotproduct.
 Let palice_orig := @spp_program.palice TX VX dotproduct.
 Let pbob_orig := @spp_program.pbob TX VX dotproduct.
+
+About spp_program.palice.
 
 (* Prove that alt_syntax programs equal the original programs! *)
 (* This works because both use the same types from spp_interface *)
@@ -181,4 +178,4 @@ Definition spp_procs : seq (proc data) :=
 Lemma spp_max_fuel_ok : [> spp_saprocs] = 25.
 Proof. reflexivity. Qed.
 
-End smc_spp_programs.
+End spp_pismc_programs.

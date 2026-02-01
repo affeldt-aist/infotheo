@@ -2,7 +2,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg ring.
 From mathcomp Require Import reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import smc_interpreter smc_session_types spp_interface.
+Require Import smc_interpreter smc_session_types spp_interface spp_session_types.
 
 (**md**************************************************************************)
 (* # SMC Program for the SMC Scalar Product Protocol                          *)
@@ -105,7 +105,20 @@ Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
 
 Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 
-(* Session-typed processes for fuel computation *)
+(* Session-typed processes packed via [aprocs ...].
+
+   Why not use [procs ...] directly with sproc?
+   - Each sproc has different type indices (party, fuel, session env)
+   - Coq unifies list element types BEFORE applying coercions
+   - sproc 0 n1 env1 and sproc 1 n2 env2 cannot unify
+   See: https://github.com/coq/coq/issues/10898
+
+   The aproc wrapper solves this:
+   - aproc existentially packages the indices, making all elements
+     have the same type: aproc sp_dtype data
+   - [> smc_saprocs] computes total fuel from packaged indices
+   - erase_aprocs converts to seq (proc data) for the interpreter
+   See also: https://github.com/coq/coq/issues/4593 (uniform inheritance) *)
 Definition smc_saprocs : seq (aproc sp_dtype data) :=
   [aprocs palice xa; pbob xb yb; pcoserv sa sb ra].
 

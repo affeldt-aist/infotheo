@@ -2,6 +2,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg ring.
 From mathcomp Require Import reals.
 Require Import smc_interpreter smc_session_types pismc.
+Require Import spp_session_types.
 
 (**md**************************************************************************)
 (* # SMC-SPP Interface                                                        *)

@@ -3,8 +3,8 @@ From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matr
 From mathcomp Require Import ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter.
-Require Import spp_proba homomorphic_encryption.
-Require Import dsdp_interface.
+Require Import smc_session_types spp_proba homomorphic_encryption.
+Require Import dsdp_interface dsdp_session_types.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -31,11 +31,18 @@ Local Open Scope fdist_scope.
 Local Open Scope entropy_scope.
 Local Open Scope vec_ext_scope.
 Local Open Scope proc_scope.
+Local Open Scope sproc_scope.
 
 Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
 Section dsdp.
+
+(* Party identifiers.
+   Because AHE requires party type but for session type it requires nat. *)
+Definition alice_idx : nat := 0.
+Definition bob_idx : nat := 1.
+Definition charlie_idx : nat := 2.
 
 (* Parameterize by an AHEAlgebra_scheme instance *)
 Variable AHE : AHEAlgebra_scheme.
@@ -45,10 +52,10 @@ Let DI := Standard_DSDP_Interface AHE.
 
 (* Extract types from the scheme *)
 Let partyT := party AHE.
-Let msg := plain AHE.
-Let rand := rand AHE.
+Let msgT := plain AHE.
+Let randT := rand AHE.
 Let encT := party_cipher AHE.
-Let pkey := pkey AHE.
+Let pkeyT := pkey AHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
@@ -64,6 +71,7 @@ Let K := @key AHE.
 Let D := @dec AHE.
 Let Emul := @Emul AHE.
 Let Epow := @Epow AHE.
+
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
@@ -81,56 +89,74 @@ Variable pn : partyT -> nat.
 Hypothesis D_correct : forall p m r k,
   D (K p Dec k) (E p m r) = Some m.
 
-(* Programs (proc is now unindexed - no fuel parameter).
-   Each encryption E(party, msg, rand) needs explicit randomness. *)
-Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) : proc data :=
-  Init (k dk) (
-  Init (d v2) (
-  Send (pn alice) (e (E bob v2 rb1)) (
-  Recv_dec (pn alice) dk (fun d2 =>
-  Recv_enc (pn alice) (fun a3 =>
-    Send (pn charlie) (e (a3 *h (E charlie d2 rb2))) (
-  Finish)))))).
+Definition pbob (dk : pkeyT)(v2 : msgT)(rb1 rb2 : randT) :
+  @sproc dsdp_dtype data bob_idx _ _ :=
+  DInit (k dk) (
+  DInit (d v2) (
+  DSend (pn alice) (e (E bob v2 rb1)) (
+  DRecv_dec (pn alice) dk (fun d2 =>
+  DRecv_enc (pn alice) (fun a3 =>
+    DSend (pn charlie) (e (a3 *h (E charlie d2 rb2))) (
+  DFinish)))))).
 
-Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) : proc data :=
-  Init (k dk) (
-  Init (d v3) (
-  Send (pn alice) (e (E charlie v3 rc1)) (
-  Recv_dec (pn bob) dk (fun d3 => (
-    Send (pn alice) (e (E alice d3 rc2))
-  Finish))))).
+Definition pcharlie (dk : pkeyT)(v3 : msgT)(rc1 rc2 : randT) :
+  @sproc dsdp_dtype data charlie_idx _ _ :=
+  DInit (k dk) (
+  DInit (d v3) (
+  DSend (pn alice) (e (E charlie v3 rc1)) (
+  DRecv_dec (pn bob) dk (fun d3 => (
+    DSend (pn alice) (e (E alice d3 rc2))
+  DFinish))))).
 
-Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) : proc data :=
-  Init (k dk) (
-  Init (d v1) (
-  Init (d u1) (
-  Init (d u2) (
-  Init (d u3) (
-  Init (d r2) (
-  Init (d r3) (
-  Recv_enc (pn bob) (fun c2 =>
-  Recv_enc (pn charlie) (fun c3 =>
+Definition palice (dk : pkeyT)(v1 u1 u2 u3 r2 r3: msgT)(ra1 ra2 : randT) :
+  @sproc dsdp_dtype data alice_idx _ _ :=
+  DInit (k dk) (
+  DInit (d v1) (
+  DInit (d u1) (
+  DInit (d u2) (
+  DInit (d u3) (
+  DInit (d r2) (
+  DInit (d r3) (
+  DRecv_enc (pn bob) (fun c2 =>
+  DRecv_enc (pn charlie) (fun c3 =>
   let a2 := (c2 ^h u2 *h (E bob r2 ra1)) in
   let a3 := (c3 ^h u3 *h (E charlie r3 ra2)) in
-    Send (pn bob) (e a2) (
-    Send (pn bob) (e a3) (
-    Recv_dec (pn charlie) dk (fun g =>
-    Ret (d ((g - r2 - r3 + u1 * v1))))))))))))))).
+    DSend (pn bob) (e a2) (
+    DSend (pn bob) (e a3) (
+    DRecv_dec (pn charlie) dk (fun g =>
+    DRet (d ((g - r2 - r3 + u1 * v1))))))))))))))).
   
 (* Randomness variables for each party's encryptions *)
-Variables (rb1 rb2 rc1 rc2 ra1 ra2 : rand).
-Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
+Variables (rb1 rb2 rc1 rc2 ra1 ra2 : randT).
+Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msgT).
 
 (* Keys constructed using the scheme's K operation *)
-Let dk_a : pkey := K alice Dec k_a.
-Let dk_b : pkey := K bob Dec k_b.
-Let dk_c : pkey := K charlie Dec k_c.
+Let dk_a : pkeyT := K alice Dec k_a.
+Let dk_b : pkeyT := K bob Dec k_b.
+Let dk_c : pkeyT := K charlie Dec k_c.
 
-(* Pack processes into proc list using [procs ...] notation *)
+(* Session-typed processes packed via [aprocs ...].
+
+   Why not use [procs ...] directly with sproc?
+   - Each sproc has different type indices (party, fuel, session env)
+   - Coq unifies list element types BEFORE applying coercions
+   - sproc 0 n1 env1 and sproc 1 n2 env2 cannot unify
+   See: https://github.com/coq/coq/issues/10898
+
+   The aproc wrapper solves this:
+   - aproc existentially packages the indices, making all elements
+     have the same type: aproc dsdp_dtype data
+   - [> dsdp_saprocs] computes total fuel from packaged indices
+   - erase_aprocs converts to seq (proc data) for the interpreter
+   See also: https://github.com/coq/coq/issues/4593 (uniform inheritance) *)
+Definition dsdp_saprocs : seq (aproc dsdp_dtype data) :=
+  [aprocs palice dk_a v1 u1 u2 u3 r2 r3 ra1 ra2; 
+          pbob dk_b v2 rb1 rb2; 
+          pcharlie dk_c v3 rc1 rc2].
+
+(* Erased processes for interpreter (strips session type indices) *)
 Definition dsdp_procs : seq (proc data) :=
-  [procs palice dk_a v1 u1 u2 u3 r2 r3 ra1 ra2; 
-         pbob dk_b v2 rb1 rb2; 
-         pcharlie dk_c v3 rc1 rc2].
+  erase_aprocs dsdp_saprocs.
 
 Definition dsdp h :=
   interp h dsdp_procs (nseq 3 [::]).
@@ -206,7 +232,7 @@ Proof.
 Qed.
 
 (* Value Bob decrypts from a2 *)
-Definition d2_value : msg := v2 * u2 + r2.
+Definition d2_value : msgT := v2 * u2 + r2.
 
 (* Bob's computation: a3 combined with encrypted d2 *)
 Definition bob_combined (a3_enc : encT) : encT :=
@@ -224,10 +250,10 @@ Proof.
 Qed.
 
 (* Value Charlie decrypts *)
-Definition g_value : msg := v3 * u3 + r3 + d2_value.
+Definition g_value : msgT := v3 * u3 + r3 + d2_value.
 
 (* Final computation by Alice *)
-Definition alice_result : msg := g_value - r2 - r3 + u1 * v1.
+Definition alice_result : msgT := g_value - r2 - r3 + u1 * v1.
 
 (* Main correctness theorem: Alice computes the dot product *)
 Theorem dsdp_computes_dot_product :
