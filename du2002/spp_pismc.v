@@ -178,4 +178,50 @@ Definition spp_procs : seq (proc data) :=
 Lemma spp_max_fuel_ok : [> spp_saprocs] = 25.
 Proof. reflexivity. Qed.
 
+(*******************************************************************************)
+(** * Session Environment Convergence for SPP                                   *)
+(*******************************************************************************)
+
+(* SPP-specific: after interpretation, all processes are terminal (Finish, Ret, or Fail).
+
+   For SPP with co-dual session types and sufficient fuel, interpretation
+   terminates with all processes in their final state. *)
+Lemma spp_terminates traces :
+  all_terminated (interp [> spp_saprocs] spp_procs traces).1.
+Proof. by native_compute. Qed.
+
+(* SPP-specific: after interpretation, no process is Fail.
+
+   This follows from the structure of SPP programs:
+   - None of the programs (pcoserv, palice, pbob) use SFail explicitly
+   - The programs use direct SRecv, not SRecv_check (which could fail)
+   - All channels are co-dual, so communications always match
+
+   Therefore, no SFail can appear in the final state. *)
+Lemma spp_no_fail traces :
+  all_nonfail (interp [> spp_saprocs] spp_procs traces).1.
+Proof. by native_compute. Qed.
+
+(* Main theorem: SPP session environment converges to empty.
+
+   Combines the general terminated_nonfail_senv_zero lemma with
+   SPP-specific termination and no-fail properties. *)
+Theorem spp_senv_zero traces :
+  exists aps' : seq (aproc sp_dtype data),
+    erase_aprocs aps' = (interp [> spp_saprocs] spp_procs traces).1 /\
+    aprocs_senv_depth [:: 0; 1; 2] aps' = 0.
+Proof.
+(* Use senv_bounded to get annotated processes for the final state *)
+have [aps' [Hsz [Herase Hsenv]]] :=
+  @senv_bounded _ _ [:: 0; 1; 2] [> spp_saprocs] spp_saprocs traces (leqnn _).
+exists aps'.
+split; first exact: Herase.
+(* Apply terminated_nonfail_senv_zero: need all_terminated and all_nonfail *)
+apply: terminated_nonfail_senv_zero.
+- (* all_terminated: rewrite using Herase and apply spp_terminates *)
+  by rewrite Herase; exact: spp_terminates.
+- (* all_nonfail: rewrite using Herase and apply spp_no_fail *)
+  by rewrite Herase; exact: spp_no_fail.
+Qed.
+
 End spp_pismc_programs.
