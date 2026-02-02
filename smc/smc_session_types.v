@@ -834,6 +834,20 @@ Qed.
 (** * Session Environment Convergence                                         *)
 (******************************************************************************)
 
+Definition is_terminal (p : proc data) : bool :=
+  match p with Finish | Ret _ | Fail => true | _ => false end.
+
+Definition is_nonfail (p : proc data) : bool :=
+  match p with Fail => false | _ => true end.
+
+Definition all_terminated (ps : seq (proc data)) : bool :=
+  all is_terminal ps.
+
+Definition all_nonfail (ps : seq (proc data)) : bool :=
+  all is_nonfail ps.
+
+(*** NOTE: WRONG DIRECTION BELOW **)
+
 (* This section proves that for co-dual session-typed processes, the session
    environment depth (senv_depth) converges to 0 after running with sufficient
    fuel. This is the senv analogue of fuel_suffices.
@@ -849,6 +863,40 @@ Variable parties : seq nat.
 (* Maximum session environment depth across all annotated processes *)
 Definition aprocs_senv_depth (ps : seq (aproc dtype data)) : nat :=
   \max_(ap <- ps) senv_depth (aproc_env ap) parties.
+
+(* Correct convergence property: termination implies empty session environment *)
+Definition senv_converges_correct (ps : seq (aproc dtype data)) : Prop :=
+  all_terminated (erase_aprocs ps) -> aprocs_senv_depth ps = 0.
+
+(* General: non-failing terminal processes have empty session environment.
+
+   This follows from the sproc type structure:
+   - SFinish has senv_end (depth 0)
+   - SRet has senv_end (depth 0)
+   - SFail is the only terminal that can have non-empty senv
+
+   So if all processes are terminal and none are Fail, senv depth must be 0. *)
+Lemma terminated_nonfail_senv_zero (aps : seq (aproc dtype data)) :
+  all_terminated (erase_aprocs aps) ->
+  all_nonfail (erase_aprocs aps) ->
+  aprocs_senv_depth aps = 0.
+Proof.
+rewrite /aprocs_senv_depth /all_terminated /all_nonfail /erase_aprocs.
+elim: aps => [|ap aps IH] //=.
+  by rewrite big_nil.
+rewrite big_cons.
+move=> /andP[Hterm_ap Hterm_aps] /andP[Hnf_ap Hnf_aps].
+rewrite IH // maxn0.
+(* Now show senv_depth (aproc_env ap) parties = 0 *)
+(* ap is terminal and not Fail, so underlying sproc is SFinish or SRet *)
+case: ap Hterm_ap Hnf_ap => party [n] [env] sp /=.
+rewrite /erase_aproc /aproc_proc /aproc_env /=.
+case: n env / sp => //=.
+(* SFinish: env = senv_end *)
+- move=> _ _. exact: senv_depth_end.
+(* SRet: env = senv_end *)
+- move=> d _ _. exact: senv_depth_end.
+Qed.
 
 (* Co-dual invariant: fuel exhaustion implies session completion.
    
