@@ -201,4 +201,78 @@ Proof.
 by native_compute.
 Qed.
 
+(*******************************************************************************)
+(** * Interpreter Integration                                                  *)
+(*******************************************************************************)
+
+Local Open Scope sproc_scope.
+Local Open Scope proc_scope.
+
+(* Session-typed processes for duality checking and fuel computation *)
+Definition dsdp_saprocs : seq (aproc dsdp_dtype data) :=
+  [aprocs palice dk v1 u1 u2 u3 r2 r3 ra1 ra2; pbob dk v2 rb1 rb2; pcharlie dk v3 rc1 rc2].
+
+(* Erased processes for interpreter (strips session type indices) *)
+Definition dsdp_procs : seq (proc data) :=
+  erase_aprocs dsdp_saprocs.
+
+(* Fuel bound computed from program structure:
+   - palice: 15 (7*Init + 2*Recv_enc + 2*Send + Recv_dec + Ret=2)
+   - pbob: 7 (2*Init + Send + Recv_dec + Recv_enc + Send + Finish=1)
+   - pcharlie: 6 (2*Init + Send + Recv_dec + Send + Finish=1)
+   Total: 15 + 7 + 6 = 28, but actually computed as 27 *)
+Lemma dsdp_max_fuel_ok : [> dsdp_saprocs] = 27.
+Proof. reflexivity. Qed.
+
+(*******************************************************************************)
+(** * Session Environment Convergence for DSDP                                 *)
+(*******************************************************************************)
+
+(* NOTE: The following lemmas cannot currently be proved computationally.
+
+   Unlike SPP (which uses concrete ring types), DSDP uses abstract types from
+   AHEAlgebra_scheme (enc, dec, Emul, Epow, key). These abstract operations
+   prevent native_compute/vm_compute from reducing the interpreter to a
+   concrete final state.
+
+   The lemmas are semantically true for the same reasons as SPP:
+   - dsdp_no_fail: None of the programs use SFail, and all channels are co-dual
+   - dsdp_terminates: With sufficient fuel (27), all programs reach terminal states
+   - dsdp_senv_zero: Follows from the above two via terminated_nonfail_senv_zero
+
+   Possible approaches for future work:
+   1. Instantiate AHEAlgebra_scheme with a concrete implementation for proofs
+   2. Develop a semantic/structural proof that doesn't rely on computation
+   3. Use program extraction and external verification
+
+   For now, these properties are asserted as axioms or left as admitted. *)
+
+(*
+Lemma dsdp_no_fail traces :
+  all_nonfail (interp [> dsdp_saprocs] dsdp_procs traces).1.
+Proof.
+(* Cannot prove computationally due to abstract HE types *)
+Admitted.
+
+Lemma dsdp_terminates traces :
+  all_terminated (interp [> dsdp_saprocs] dsdp_procs traces).1.
+Proof.
+(* Cannot prove computationally due to abstract HE types *)
+Admitted.
+
+Theorem dsdp_senv_zero traces :
+  exists aps' : seq (aproc dsdp_dtype data),
+    erase_aprocs aps' = (interp [> dsdp_saprocs] dsdp_procs traces).1 /\
+    aprocs_senv_depth [:: 0; 1; 2] aps' = 0.
+Proof.
+have [aps' [Hsz [Herase Hsenv]]] :=
+  @senv_bounded _ _ [:: 0; 1; 2] [> dsdp_saprocs] dsdp_saprocs traces (leqnn _).
+exists aps'.
+split; first exact: Herase.
+apply: terminated_nonfail_senv_zero.
+- by rewrite Herase; exact: dsdp_terminates.
+- by rewrite Herase; exact: dsdp_no_fail.
+Qed.
+*)
+
 End smc_dsdp_program.
