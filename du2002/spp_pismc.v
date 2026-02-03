@@ -78,7 +78,6 @@ Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" :=
    x constr at level 0, y constr at level 0,
    P custom pismc at level 85, right associativity).
 
-
 (******************************************************************************)
 (** * SMC-SPP Programs - piSMC Version                                        *)
 (******************************************************************************)
@@ -86,39 +85,37 @@ Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" :=
 (* Commodity server's protocol - piSMC version with session types *)
 (* Fuel and session environment automatically inferred *)
 Definition pcoserv (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _ :=
- pi{ Init (&sa, &sb, !ra) ;
-     Send<alice> &sa ;
-     Send<alice> !ra ;
-     Send<bob> &sb ;
-     Send<bob> !(sa *d sb - ra) ;
-     Finish }.
+ \pi{ Init (&sa, &sb, !ra) ;
+    Send<alice> &sa ;
+    Send<alice> !ra ;
+    Send<bob> &sb ;
+    Send<bob> !(sa *d sb - ra) ;
+    Finish }.
 
 (* Alice's protocol - piSMC version with session types *)
 Definition palice (xa : VX) : @sproc sp_dtype data alice _ _ :=
- pi{ Init &xa ;
-     Recv<coserv> &sa =>
-     Recv<coserv> !ra =>
-     Send<bob> &(xa + sa) ;
-     Recv<bob> &xb' =>
-     Recv<bob> !t =>
-     Ret !(t - (xb' *d sa) + ra) }.
+ \pi{ Init &xa ;
+    Recv<coserv> &sa =>
+    Recv<coserv> !ra =>
+    Send<bob> &(xa + sa) ;
+    Recv<bob> &xb' =>
+    Recv<bob> !t =>
+    Ret !(t - (xb' *d sa) + ra) }.
 
 (* Bob's protocol - piSMC version with session types *)
 Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
- pi{ Init (&xb, !yb) ;
-     Recv<coserv> &sb =>
-     Recv<coserv> !rb =>
-     Recv<alice> &xa' =>
-     Send<alice> &(xb + sb) ;
-     Send<alice> !(xa' *d xb + rb - yb) ;
-     Ret !yb }.
+ \pi{ Init (&xb, !yb) ;
+    Recv<coserv> &sb =>
+    Recv<coserv> !rb =>
+    Recv<alice> &xa' =>
+    Send<alice> &(xb + sb) ;
+    Send<alice> !(xa' *d xb + rb - yb) ;
+    Ret !yb }.
 
 (* Import original program definitions from spp_program *)
 Let pcoserv_orig := @spp_program.pcoserv TX VX dotproduct.
 Let palice_orig := @spp_program.palice TX VX dotproduct.
 Let pbob_orig := @spp_program.pbob TX VX dotproduct.
-
-About spp_program.palice.
 
 (* Prove that alt_syntax programs equal the original programs! *)
 (* This works because both use the same types from spp_interface *)

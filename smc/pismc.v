@@ -10,6 +10,6 @@ Declare Custom Entry pismc.
 
 (* Program delimiter.
    Note that `{| e |}` is conflicting with the Rocq structure syntax.
-   So we use `pi{ e }` instead. *)
-Notation "'pi{' e '}'" := e (e custom pismc at level 99) : pismc_scope.
+   So we use `\pi{ e }` instead. *)
+Notation "'\pi{' e '}'" := e (e custom pismc at level 99) : pismc_scope.
 

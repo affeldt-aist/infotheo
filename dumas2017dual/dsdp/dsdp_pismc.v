@@ -110,7 +110,7 @@ Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" := (PInit x .. (PInit y P) ..
 (* Bob's protocol - using concrete indices for session type duality *)
 Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) 
     : @sproc dsdp_dtype data bob_idx _ _ :=
-  pi{ Init (#dk, &v2) ;
+  \pi{ Init (#dk, &v2) ;
      Send<alice_idx> $(E bob v2 rb1);
      Recv<alice_idx> #dk d2 =>
      Recv<alice_idx> a3 =>
@@ -120,7 +120,7 @@ Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand)
 (* Charlie's protocol *)
 Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) 
     : @sproc dsdp_dtype data charlie_idx _ _ :=
-  pi{ Init (#dk, &v3) ;
+  \pi{ Init (#dk, &v3) ;
      Send<alice_idx> $(E charlie v3 rc1) ;
      Recv<bob_idx> #dk d3 =>
      Send<alice_idx> $(E alice d3 rc2) ;
@@ -129,7 +129,7 @@ Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand)
 (* Alice's protocol *)
 Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) 
     : @sproc dsdp_dtype data alice_idx _ _ :=
-  pi{ Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
+  \pi{ Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
      Recv<bob_idx> c2 =>
      Recv<charlie_idx> c3 =>
      Send<bob_idx> $(c2 ^h u2 *h (E bob r2 ra1)) ;
