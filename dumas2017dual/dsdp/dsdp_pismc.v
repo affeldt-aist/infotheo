@@ -5,6 +5,7 @@ Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import smc_interpreter pismc.
 Require Import smc_session_types homomorphic_encryption.
 Require Import dsdp_interface dsdp_session_types dsdp_program.
+Require Import idealized_party_ahe.  (* For computational termination proofs *)
 
 Local Open Scope pismc_scope.
 Local Open Scope ring_scope.
@@ -276,3 +277,109 @@ Qed.
 *)
 
 End smc_dsdp_program.
+
+(*******************************************************************************)
+(** * Session Environment Convergence for DSDP (Idealized Instance)            *)
+(*******************************************************************************)
+
+(* This section instantiates DSDP with the Idealized AHE scheme, where
+   enc/dec have concrete computable definitions. This enables native_compute
+   proofs for termination properties. *)
+
+Section dsdp_idealized_termination.
+
+Variable m_minus_2 : nat.
+Local Notation m := m_minus_2.+2.
+Local Notation msg := 'F_m.
+
+(* Build the Idealized AHEAlgebra_scheme (same as in dsdp_correctness.v) *)
+Local Definition Idealized_EncDec_instance :=
+  @Idealized_isEncDec party_id msg.
+
+Local Definition Idealized_AHEnc_instance :=
+  @Idealized_isAHEnc party_id msg.
+
+Local Definition Idealized_AHEAlgebra_instance :=
+  @Idealized_isAHEAlgebra party_id msg.
+
+Local Definition Idealized_EncDec_local : EncDec_scheme :=
+  @EncDec.Pack (Idealized_HETypes party_id msg)
+    (@EncDec.Class (Idealized_HETypes party_id msg) Idealized_EncDec_instance).
+
+Local Definition Idealized_AHEnc_local : AHEnc_scheme :=
+  @AHEnc.Pack (Idealized_HETypes party_id msg)
+    (@AHEnc.Class (Idealized_HETypes party_id msg)
+      Idealized_EncDec_instance Idealized_AHEnc_instance).
+
+Local Definition Idealized_AHEAlgebra_local : AHEAlgebra_scheme :=
+  @AHEAlgebra.Pack Idealized_AHEnc_local
+    (@AHEAlgebra.Class Idealized_AHEnc_local Idealized_AHEAlgebra_instance).
+
+Let PHE : AHEAlgebra_scheme := Idealized_AHEAlgebra_local.
+Let DI := Standard_DSDP_Interface PHE.
+Let data := di_data DI.
+
+(* Party definitions *)
+Let alice : party_id := Alice.
+Let bob : party_id := Bob.
+Let charlie : party_id := Charlie.
+Let pn : party_id -> nat := party_id_to_nat.
+
+(* Program variables *)
+Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
+Let runit : rand PHE := 1.
+
+Let dk := @key PHE Alice Dec k_a.
+
+(* Instantiate programs from dsdp_program.v *)
+Let palice_inst :=
+  @dsdp_program.palice PHE bob charlie pn dk v1 u1 u2 u3 r2 r3 runit runit.
+Let pbob_inst :=
+  @dsdp_program.pbob PHE alice bob charlie pn (@key PHE Bob Dec k_b) v2
+    runit runit.
+Let pcharlie_inst :=
+  @dsdp_program.pcharlie PHE alice bob charlie pn
+    (@key PHE Charlie Dec k_c) v3 runit runit.
+
+Local Open Scope sproc_scope.
+Local Open Scope proc_scope.
+
+(* Session-typed processes *)
+Definition dsdp_ideal_saprocs : seq (aproc dsdp_dtype data) :=
+  [aprocs palice_inst; pbob_inst; pcharlie_inst].
+
+Definition dsdp_ideal_procs : seq (proc data) :=
+  erase_aprocs dsdp_ideal_saprocs.
+
+(* Fuel bound *)
+Lemma dsdp_ideal_max_fuel_ok : [> dsdp_ideal_saprocs] = 27.
+Proof. reflexivity. Qed.
+
+(* DSDP (Idealized): after interpretation, all processes are terminal. *)
+Lemma dsdp_ideal_terminates traces :
+  all_terminated (interp [> dsdp_ideal_saprocs] dsdp_ideal_procs traces).1.
+Proof. by native_compute. Qed.
+
+(* DSDP (Idealized): after interpretation, no process is Fail. *)
+Lemma dsdp_ideal_no_fail traces :
+  all_nonfail (interp [> dsdp_ideal_saprocs] dsdp_ideal_procs traces).1.
+Proof. by native_compute. Qed.
+
+(* Main theorem: DSDP (Idealized) session environment converges to empty. *)
+Theorem dsdp_ideal_senv_zero traces :
+  exists aps' : seq (aproc dsdp_dtype data),
+    erase_aprocs aps' =
+      (interp [> dsdp_ideal_saprocs] dsdp_ideal_procs traces).1 /\
+    aprocs_senv_depth [:: 0; 1; 2] aps' = 0.
+Proof.
+have [aps' [Hsz [Herase Hsenv]]] :=
+  @senv_bounded _ _ [:: 0; 1; 2] [> dsdp_ideal_saprocs]
+    dsdp_ideal_saprocs traces (leqnn _).
+exists aps'.
+split; first exact: Herase.
+apply: terminated_nonfail_senv_zero.
+- by rewrite Herase; exact: dsdp_ideal_terminates.
+- by rewrite Herase; exact: dsdp_ideal_no_fail.
+Qed.
+
+End dsdp_idealized_termination.
