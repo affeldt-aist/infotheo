@@ -30,8 +30,6 @@ Let SPSendOne {TX VX party n env} := @spp_interface.SPSendOne TX VX party n env.
 Let SPInit {TX VX party n env} := @spp_interface.SPInit TX VX party n env.
 Let SPRet {party} := @spp_interface.SPRet TX VX party.
 
-(* Data wrapper shorthand notations - in standard scope, not custom entry *)
-(* These must be in standard scope so Init ( &x, !y ) works with constr parsing *)
 Local Notation "& x" := (vec x) (at level 0, x at level 0) : pismc_scope.
 Local Notation "! x" := (one x) (at level 0, x at level 0) : pismc_scope.
 
@@ -44,12 +42,12 @@ Local Notation "'Send<' p '>' '!' x ; P" := (SPSendOne p x P)
    P custom pismc at level 85, right associativity).
 
 (* Protocol-specific Recv notations *)
-Local Notation "'Recv_vec<' p '>' 'fun' x '=>' P" :=
+Local Notation "'Recv<' p '>' '&' x '=>' P" :=
   (SRecv_vec p (fun x => P))
   (in custom pismc at level 85, p constr at level 0, x name,
    P custom pismc at level 85, right associativity).
 
-Local Notation "'Recv_one<' p '>' 'fun' x '=>' P" :=
+Local Notation "'Recv<' p '>' '!' x '=>' P" :=
   (SRecv_one p (fun x => P))
   (in custom pismc at level 85, p constr at level 0, x name,
    P custom pismc at level 85, right associativity).
@@ -72,7 +70,8 @@ Notation "'Init' '!' x ; P" := (SPInit (one x) P)
    P custom pismc at level 85, right associativity).
 
 (* Multi-var Init using tuple syntax - data values directly *)
-(* x and y are parsed in constr where &/! notations are defined in pismc_scope *)
+(* x and y are parsed in constr where
+   &/! notations are defined in pismc_scope *)
 Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" :=
   (SPInit x .. (SPInit y P) ..)
   (in custom pismc at level 85,
@@ -97,19 +96,19 @@ Definition pcoserv (sa sb: VX) (ra : TX) : @sproc sp_dtype data coserv _ _ :=
 (* Alice's protocol - piSMC version with session types *)
 Definition palice (xa : VX) : @sproc sp_dtype data alice _ _ :=
  pi{ Init &xa ;
-     Recv_vec<coserv> fun sa =>
-     Recv_one<coserv> fun ra =>
+     Recv<coserv> &sa =>
+     Recv<coserv> !ra =>
      Send<bob> &(xa + sa) ;
-     Recv_vec<bob> fun xb' =>
-     Recv_one<bob> fun t =>
+     Recv<bob> &xb' =>
+     Recv<bob> !t =>
      Ret !(t - (xb' *d sa) + ra) }.
 
 (* Bob's protocol - piSMC version with session types *)
 Definition pbob (xb : VX) (yb : TX) : @sproc sp_dtype data bob _ _ :=
  pi{ Init (&xb, !yb) ;
-     Recv_vec<coserv> fun sb =>
-     Recv_one<coserv> fun rb =>
-     Recv_vec<alice> fun xa' =>
+     Recv<coserv> &sb =>
+     Recv<coserv> !rb =>
+     Recv<alice> &xa' =>
      Send<alice> &(xb + sb) ;
      Send<alice> !(xa' *d xb + rb - yb) ;
      Ret !yb }.
@@ -179,10 +178,11 @@ Lemma spp_max_fuel_ok : [> spp_saprocs] = 25.
 Proof. reflexivity. Qed.
 
 (*******************************************************************************)
-(** * Session Environment Convergence for SPP                                   *)
+(** * Session Environment Convergence for SPP                                  *)
 (*******************************************************************************)
 
-(* SPP-specific: after interpretation, all processes are terminal (Finish, Ret, or Fail).
+(* SPP-specific: after interpretation, all processes are terminal
+   (Finish, Ret, or Fail).
 
    For SPP with co-dual session types and sufficient fuel, interpretation
    terminates with all processes in their final state. *)

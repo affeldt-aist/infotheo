@@ -76,12 +76,12 @@ Notation "'Send<' p '>' x ; P" := (PSend p x P)
    P custom pismc at level 85, right associativity).
 
 (* Protocol-specific Recv notations *)
-Local Notation "'Recv_enc<' p '>' 'fun' x '=>' P" :=
+Local Notation "'Recv<' p '>' x '=>' P" :=
   (Recv_enc p (fun x => P))
   (in custom pismc at level 85, p constr at level 0, x name,
    P custom pismc at level 85, right associativity).
 
-Notation "'Recv_dec<' p '>' dk 'fun' x '=>' P" :=
+Notation "'Recv<' p '>' '#' dk x '=>' P" :=
   (Recv_dec p dk (fun x => P))
   (in custom pismc at level 85, p constr at level 0, 
    dk constr at level 0, x name,
@@ -112,8 +112,8 @@ Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand)
     : @sproc dsdp_dtype data bob_idx _ _ :=
   pi{ Init (#dk, &v2) ;
      Send<alice_idx> $(E bob v2 rb1);
-     Recv_dec<alice_idx> dk fun d2 =>
-     Recv_enc<alice_idx> fun a3 =>
+     Recv<alice_idx> #dk d2 =>
+     Recv<alice_idx> a3 =>
      Send<charlie_idx> $(a3 *h (E charlie d2 rb2)) ;
      Finish }.
 
@@ -122,7 +122,7 @@ Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand)
     : @sproc dsdp_dtype data charlie_idx _ _ :=
   pi{ Init (#dk, &v3) ;
      Send<alice_idx> $(E charlie v3 rc1) ;
-     Recv_dec<bob_idx> dk fun d3 =>
+     Recv<bob_idx> #dk d3 =>
      Send<alice_idx> $(E alice d3 rc2) ;
      Finish }.
 
@@ -130,11 +130,11 @@ Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand)
 Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) 
     : @sproc dsdp_dtype data alice_idx _ _ :=
   pi{ Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
-     Recv_enc<bob_idx> fun c2 =>
-     Recv_enc<charlie_idx> fun c3 =>
+     Recv<bob_idx> c2 =>
+     Recv<charlie_idx> c3 =>
      Send<bob_idx> $(c2 ^h u2 *h (E bob r2 ra1)) ;
      Send<bob_idx> $(c3 ^h u3 *h (E charlie r3 ra2)) ;
-     Recv_dec<charlie_idx> dk fun g =>
+     Recv<charlie_idx> #dk g =>
      Ret &(g - r2 - r3 + u1 * v1) }.
 
 
