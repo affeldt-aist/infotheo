@@ -5,7 +5,7 @@ Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import smc_interpreter pismc.
 Require Import smc_session_types homomorphic_encryption.
 Require Import dsdp_interface dsdp_session_types dsdp_program.
-Require Import idealized_party_ahe.  (* For computational termination proofs *)
+Require Import idealized_ahe.  (* For computational termination proofs *)
 
 Local Open Scope pismc_scope.
 Local Open Scope ring_scope.

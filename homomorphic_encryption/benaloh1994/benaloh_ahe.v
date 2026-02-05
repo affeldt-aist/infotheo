@@ -201,8 +201,7 @@ Proof.
   rewrite -!exprM.
   rewrite (mulnC (m : nat) phi_div_r).
   rewrite euler_property //.
-  rewrite mulr1.
-  reflexivity.
+  by rewrite mulr1.
 Qed.
 
 (* x_base has order dividing r - provable from euler_property and y_coprime_n *)
@@ -289,8 +288,7 @@ Proof.
   move=> p m u sk.
   rewrite /benaloh_dec /benaloh_key /benaloh_enc /=.
   rewrite eq_refl /=.
-  rewrite benaloh_decrypt_correct.
-  reflexivity.
+  by rewrite benaloh_decrypt_correct.
 Qed.
 
 (* ========================================================================== *)
@@ -303,7 +301,7 @@ HB.instance Definition Benaloh_isEncDec : isEncDec Benaloh_HETypes :=
     benaloh_dec_correct.
 
 (* ========================================================================== *)
-(*                   Homomorphic Operations                                    *)
+(*                   Homomorphic Operations                                   *)
 (* ========================================================================== *)
 
 (* Homomorphic addition: ciphertext multiplication *)
@@ -324,34 +322,41 @@ Definition benaloh_rand_pow (u : 'Z_n) (m : 'Z_r) : 'Z_n := u ^+ (m : nat).
 (*  Local notations for compact {morph} syntax                                *)
 (* -------------------------------------------------------------------------- *)
 (* These notations make the morphism statements readable:
-   {morph E[ p ] : x y / x +mr y >-> x *E y}
+   {morph E[ p ] : x y / x (+) y >-> x *E y}
    expands to:
    morphism_2 (enc_curry Benaloh_HETypes p)
               (msg_rand_add Benaloh_HETypes)
               benaloh_Emul *)
+(* The reason we re-define notations already in ahe_enc.v is because the type
+   now is different. In there, it is abstract types like rand T and plain T.
+   If we just use the notations from there, the type we use here like 'Z_r
+   cannot work. *)
 Local Notation BT := Benaloh_HETypes.
 Local Notation "E[ p ]" := (enc_curry BT p) (at level 10, p at level 9).
-Local Notation "x +mr y" := (msg_rand_add BT x y) (at level 50, left associativity).
-Local Notation "x *E y" := (benaloh_Emul x y) (at level 40, left associativity).
+Local Notation "x {+} y" := (msg_rand_add BT x y)
+  (at level 50, left associativity).
+Local Notation "x {^}  y" := (unpair_mul_rand_op BT x y benaloh_rand_pow)
+  (at level 50, left associativity).
+Local Notation "x (.) y" := (benaloh_Emul x y)
+  (at level 40, left associativity).
+Local Notation "x (^) y" := (benaloh_Epow x y)
+  (at level 40, left associativity).
 
-(* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) *)
+(* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) mod m *)
 Lemma benaloh_Emul_addM : forall (p : partyT),
-  {morph E[ p ] : x y / x +mr y >-> x *E y}.
+  {morph E[ p ] : x y / x {+} y >-> x (.) y}.
 Proof.
   move=> p [m1 u1] [m2 u2].
   rewrite /enc_curry /msg_rand_add /benaloh_Emul /=.
   rewrite /benaloh_enc /=.
   congr pair.
-  rewrite (@benaloh_enc.enc_mul_dist n r r_gt1 y y_order_r m1 m2 u1 u2).
-  reflexivity.
+  by rewrite (@benaloh_enc.enc_mul_dist n r r_gt1 y y_order_r m1 m2 u1 u2).
 Qed.
 
-(* Scalar multiplication homomorphism proof.
-   Signature must match isAHEnc.Epow_mulM:
-   forall (p : party T) (m : plain T),
-     {morph E[p] : mr / (mr.1 * m, rand_pow mr.2 m) >-> Epow mr m} *)
+(* Scalar multiplication homomorphism proof:
+   E(m1)^m2 = E(m1 m2) mod m *)
 Lemma benaloh_Epow_mulM : forall (p : partyT) (m : 'Z_r),
-  {morph E[p] : mr / (mr.1 * m, benaloh_rand_pow mr.2 m) >-> benaloh_Epow mr m}.
+  {morph E[p] : mr / m {^} mr >-> mr (^) m}.
 Proof.
   move=> p m2 [m1 u].
   rewrite /enc_curry /benaloh_Epow /benaloh_enc /benaloh_rand_pow /=.

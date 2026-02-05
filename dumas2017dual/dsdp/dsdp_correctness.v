@@ -6,8 +6,9 @@ Require Import proba jfdist_cond entropy graphoid smc_interpreter.
 Require Import homomorphic_encryption.
 Require Import smc_session_types.
 Require Import dsdp_interface dsdp_program.
-Require Import idealized_party_ahe.  (* For idealized computational proofs *)
-Require Import benaloh_party_ahe.   (* For Benaloh computational proofs *)
+Require Import idealized_ahe.  (* For idealized computational proofs *)
+Require Import benaloh_ahe.   (* For Benaloh computational proofs *)
+Require Import paillier_ahe.  (* For Paillier computational proofs *)
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -278,13 +279,13 @@ Hypothesis rand_coprime_n : forall (u : 'Z_n), coprime (u : nat) n.
    This ensures the discrete log search in decryption is well-defined.
    This is a key assumption about proper Benaloh key generation. *)
 Hypothesis x_base_injective : forall (m1 m2 : 'Z_r), 
-  benaloh_party_ahe.x_base y phi_div_r ^+ (m1 : nat) = 
-  benaloh_party_ahe.x_base y phi_div_r ^+ (m2 : nat) -> m1 = m2.
+  benaloh_ahe.x_base y phi_div_r ^+ (m1 : nat) = 
+  benaloh_ahe.x_base y phi_div_r ^+ (m2 : nat) -> m1 = m2.
 
 (* ========================================================================== *)
 (* Build the Benaloh AHEAlgebra_scheme instance                                *)
 (*                                                                            *)
-(* The HB instances from benaloh_party_ahe.v are parameterized by all the     *)
+(* The HB instances from benaloh_ahe.v are parameterized by all the     *)
 (* cryptographic hypotheses. We apply them here to get a proper instance.     *)
 (* ========================================================================== *)
 
@@ -341,3 +342,146 @@ Proof.
 Qed.
 
 End dsdp_computational_benaloh.
+
+
+(* ========================================================================== *)
+(* Computational Correctness Proofs using Paillier Encryption                 *)
+(*                                                                            *)
+(* This section instantiates the generic dsdp_correctness proofs with the     *)
+(* concrete Paillier AHEAlgebra_scheme. All cryptographic hypotheses required *)
+(* for a valid Paillier instantiation are provided explicitly.                *)
+(* ========================================================================== *)
+
+Section dsdp_computational_paillier.
+
+(* Paillier scheme parameters *)
+Variable n : nat.
+
+(* n_gt1: The modulus n must be > 1 for Z_{n^2} to be non-trivial.
+   In practice, n = p*q for large primes p, q. *)
+Hypothesis n_gt1 : (1 < n)%N.
+
+Let n2 := (n * n)%N.
+
+Variable g : 'Z_n2.
+
+(* g_order_n ensures g is an n-th root of unity in Z_{n^2}.
+   With standard choice g = 1 + n, this holds because:
+     (1+n)^n = 1 + n*n = 1 (mod n^2)
+   This is required for the homomorphic properties:
+   - enc_mul_dist: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2)
+   - enc_exp_dist: E(m,r)^k = E(m*k, r^k)
+   Without this, g^(m1+m2) != g^m1 * g^m2 in general. *)
+Hypothesis g_order_n : g ^+ n = 1.
+
+(* Paillier decryption uses the L-function and private key (λ, μ):
+     m = L(c^λ mod n²) · μ mod n
+   where L(x) = (x - 1) / n
+   
+   The decryption algorithm:
+   1. λ = lcm(p-1, q-1) where n = p·q (Carmichael function)
+   2. μ = L(g^λ mod n²)^(-1) mod n
+   3. c^λ removes randomness: (g^m * r^n)^λ = g^(m·λ) (since r^(n·λ) = 1)
+   4. L(g^(m·λ)) · μ extracts m *)
+
+Variable lambda : nat.
+
+(* Carmichael's theorem: r^(n·λ) = 1 in Z*_{n²} *)
+Hypothesis carmichael_property : forall (r : 'Z_n2), r ^+ (n * lambda) = 1.
+
+(* L-function: L(x) = (x-1)/n maps Z_{n²} to Z_n *)
+Definition L_func (x : 'Z_n2) : 'Z_n :=
+  inZp (((x : nat) - 1) %/ n)%N.
+
+(* Key property: L(g^k) extracts k mod n.
+   
+   Proof sketch (requires detailed modular arithmetic):
+   1. g = 1 + n in Z_{n²}
+   2. g^k = (1+n)^k = 1 + k·n (mod n²) by binomial theorem
+   3. (g^k - 1) / n = k (exact integer division)
+   4. k mod n gives the result in Z_n
+   
+   We state this as a hypothesis since the full proof requires
+   establishing the binomial expansion for 'Z_n2 arithmetic. *)
+Hypothesis L_of_g_power : forall (k : nat), 
+  L_func (g ^+ k) = inZp k.
+
+Variable mu : 'Z_n.
+
+(* μ satisfies: λ · μ = 1 (mod n), i.e., μ = λ^(-1) mod n *)
+Hypothesis lambda_mu_inverse : (inZp lambda : 'Z_n) * mu = 1.
+
+(* ========================================================================== *)
+(* Type Definitions                                                            *)
+(* ========================================================================== *)
+
+(* Paillier ciphertext type with party label *)
+Definition paillier_enc_party : Type := (party_id * 'Z_n2)%type.
+
+(* Paillier public key type *)
+Definition paillier_pkey : Type := (party_id * key_type * 'Z_n)%type.
+
+(* Build the Paillier HETypes *)
+Local Definition Paillier_HETypes : HETypes := 
+  MkHE party_id 'Z_n 'Z_n2 'Z_n2 paillier_enc_party paillier_pkey.
+
+(* ========================================================================== *)
+(* Build the Paillier AHEAlgebra_scheme instance                                *)
+(*                                                                            *)
+(* The HB instances from paillier_ahe.v are parameterized by all the          *)
+(* cryptographic hypotheses. We apply them here to get a proper instance.     *)
+(* ========================================================================== *)
+
+(* Register the HB instances with all hypotheses *)
+Local Definition Paillier_EncDec_instance := 
+  @Paillier_isEncDec party_id n n_gt1 g g_order_n lambda 
+    carmichael_property L_of_g_power mu lambda_mu_inverse.
+
+Local Definition Paillier_AHEnc_instance := 
+  @Paillier_isAHEnc party_id n n_gt1 g g_order_n lambda 
+    carmichael_property L_of_g_power mu lambda_mu_inverse.
+
+Local Definition Paillier_AHEAlgebra_instance := 
+  @Paillier_isAHEAlgebra party_id n n_gt1 g g_order_n lambda 
+    carmichael_property L_of_g_power mu lambda_mu_inverse.
+
+(* Build the type hierarchy step by step *)
+(* First: EncDec_scheme (HETypes + isEncDec) *)
+Local Definition Paillier_EncDec_local : EncDec_scheme := 
+  @EncDec.Pack Paillier_HETypes 
+    (@EncDec.Class Paillier_HETypes Paillier_EncDec_instance).
+
+(* Second: AHEnc_scheme (HETypes + isEncDec + isAHEnc) *)
+Local Definition Paillier_AHEnc_local : AHEnc_scheme := 
+  @AHEnc.Pack Paillier_HETypes 
+    (@AHEnc.Class Paillier_HETypes 
+      Paillier_EncDec_instance Paillier_AHEnc_instance).
+
+(* Third: AHEAlgebra_scheme (AHEnc_scheme + isAHEAlgebra) *)
+Local Definition Paillier_AHEAlgebra_local : AHEAlgebra_scheme := 
+  @AHEAlgebra.Pack Paillier_AHEnc_local 
+    (@AHEAlgebra.Class Paillier_AHEnc_local Paillier_AHEAlgebra_instance).
+
+(* The Paillier scheme as an AHEAlgebra_scheme *)
+Let PHE : AHEAlgebra_scheme := Paillier_AHEAlgebra_local.
+
+(* ========================================================================== *)
+(* Instantiate the generic dsdp_correctness theorem                            *)
+(*                                                                            *)
+(* The generic theorem from dsdp_correctness section has signature:            *)
+(*   dsdp_computes_dot_product : forall (AHE : AHEAlgebra_scheme)              *)
+(*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                  *)
+(*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3            *)
+(* ========================================================================== *)
+
+(* Message variables *)
+Variables (v1 v2 v3 u1 u2 u3 r2 r3 : plain PHE).
+
+(* Main theorem: DSDP computes the dot product using Paillier encryption *)
+Theorem dsdp_computes_dot_product_paillier :
+  @alice_result PHE v1 v2 v3 u1 u2 u3 r2 r3 = u1 * v1 + u2 * v2 + u3 * v3.
+Proof.
+  exact: (@dsdp_computes_dot_product PHE v1 v2 v3 u1 u2 u3 r2 r3).
+Qed.
+
+End dsdp_computational_paillier.

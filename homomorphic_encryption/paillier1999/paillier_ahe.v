@@ -125,8 +125,7 @@ Proof.
   rewrite (natr_Zp m).
   rewrite -mulrA.
   rewrite (@Zp_nat (Zp_trunc n) lambda).
-  rewrite lambda_mu_inverse mulr1.
-  reflexivity.
+  by rewrite lambda_mu_inverse mulr1.
 Qed.
 
 (* ========================================================================== *)
@@ -145,8 +144,7 @@ Proof.
   rewrite exprMn_comm; last by apply mulrC.
   rewrite -!exprM.
   rewrite carmichael_property.
-  rewrite mulr1.
-  reflexivity.
+  by rewrite mulr1.
 Qed.
 
 (* Decryption correctness *)
@@ -196,8 +194,7 @@ Proof.
   move=> p m r sk.
   rewrite /paillier_dec /paillier_key /paillier_enc /=.
   rewrite eq_refl /=.
-  rewrite paillier_decrypt_correct.
-  reflexivity.
+  by rewrite paillier_decrypt_correct.
 Qed.
 
 (* ========================================================================== *)
@@ -231,34 +228,41 @@ Definition paillier_rand_pow (r : 'Z_n2) (m : 'Z_n) : 'Z_n2 := r ^+ (m : nat).
 (*  Local notations for compact {morph} syntax                                *)
 (* -------------------------------------------------------------------------- *)
 (* These notations make the morphism statements readable:
-   {morph E[ p ] : x y / x +mr y >-> x *E y}
+   {morph E[ p ] : x y / x {+} y >-> x (.) y}
    expands to:
    morphism_2 (enc_curry Paillier_HETypes p)
               (msg_rand_add Paillier_HETypes)
               paillier_Emul *)
+(* The reason we re-define notations already in ahe_enc.v is because the type
+   now is different. In there, it is abstract types like rand T and plain T.
+   If we just use the notations from there, the type we use here like 'Z_n2
+   cannot work. *)
 Local Notation PT := Paillier_HETypes.
 Local Notation "E[ p ]" := (enc_curry PT p) (at level 10, p at level 9).
-Local Notation "x +mr y" := (msg_rand_add PT x y) (at level 50, left associativity).
-Local Notation "x *E y" := (paillier_Emul x y) (at level 40, left associativity).
+Local Notation "x {+} y" := (msg_rand_add PT x y)
+  (at level 50, left associativity).
+Local Notation "x {^}  y" := (unpair_mul_rand_op PT x y paillier_rand_pow)
+  (at level 50, left associativity).
+Local Notation "x (.) y" := (paillier_Emul x y)
+  (at level 40, left associativity).
+Local Notation "x (^) y" := (paillier_Epow x y)
+  (at level 40, left associativity).
 
-(* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) *)
+(* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) mod m *)
 Lemma paillier_Emul_addM : forall (p : partyT),
-  {morph E[ p ] : x y / x +mr y >-> x *E y}.
+  {morph E[ p ] : x y / x {+} y >-> x (.) y}.
 Proof.
   move=> p [m1 r1] [m2 r2].
   rewrite /enc_curry /msg_rand_add /paillier_Emul /=.
   rewrite /paillier_enc /=.
   congr pair.
-  rewrite (@paillier_enc.enc_mul_dist n n_gt1 g g_order_n m1 m2 r1 r2).
-  reflexivity.
+  by rewrite (@paillier_enc.enc_mul_dist n n_gt1 g g_order_n m1 m2 r1 r2).
 Qed.
 
-(* Scalar multiplication homomorphism proof.
-   Signature must match isAHEnc.Epow_mulM:
-   forall (p : party T) (m : plain T),
-     {morph E[p] : mr / (mr.1 * m, rand_pow mr.2 m) >-> Epow mr m} *)
+(* Scalar multiplication homomorphism proof:
+    E(m1)^m2 = E(m1 m2) mod m *)
 Lemma paillier_Epow_mulM : forall (p : partyT) (m : 'Z_n),
-  {morph E[p] : mr / (mr.1 * m, paillier_rand_pow mr.2 m) >-> paillier_Epow mr m}.
+  {morph E[p] : mr / m {^} mr >-> mr (^) m}.
 Proof.
   move=> p m2 [m1 r].
   rewrite /enc_curry /paillier_Epow /paillier_enc /paillier_rand_pow /=.

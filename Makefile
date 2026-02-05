@@ -51,4 +51,14 @@ spp-rebuild: Makefile.coq
 	find $(SPP_DIRS) \( -name "*.vo" -o -name "*.vos" -o -name "*.vok" -o -name "*.glob" \) -delete 2>/dev/null || true
 	$(MAKE) -f Makefile.coq $(SPP_VO)
 
+HOM_DIRS := homomorphic_encryption
+HOM_VO := $(patsubst %.v,%.vo,$(shell grep -E '^(homomorphic_encryption/)' _CoqProject))
+
+hom: Makefile.coq
+	$(MAKE) -f Makefile.coq $(HOM_VO)
+
+hom-rebuild: Makefile.coq
+	find $(HOM_DIRS) \( -name "*.vo" -o -name "*.vos" -o -name "*.vok" -o -name "*.glob" \) -delete 2>/dev/null || true
+	$(MAKE) -f Makefile.coq $(HOM_VO)
+
 .PHONY: all clean dsdp
