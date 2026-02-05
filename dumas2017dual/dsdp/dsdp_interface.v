@@ -15,8 +15,7 @@ Import Num.Theory.
 (* dsdp_program_alt_syntax.v, and dsdp_entropy_trace.v.                       *)
 (*                                                                            *)
 (* Components:                                                                *)
-(*   Recv_dec_param  - Parameterized receive-and-decrypt operation            *)
-(*   Recv_enc_param  - Parameterized receive-encrypted operation              *)
+(*   Recv_param      - Single parametric receive combinator                   *)
 (*   DSDP_Interface  - Record bundling data type and operations               *)
 (*   Standard_DSDP_Interface - Canonical sum-type implementation              *)
 (*                                                                            *)
@@ -30,21 +29,24 @@ Local Open Scope ring_scope.
 Local Open Scope proc_scope.
 
 (* ========================================================================== *)
-(* Parameterized Recv operations - defined once, reused everywhere            *)
+(* Parameterized Recv combinator - instantiated in two ways:                  *)
+(*   1. Recv-and-decrypt: extract ciphertext, decrypt, continue with plaintext*)
+(*   2. Recv-for-HE: extract ciphertext, continue with it for HE computation  *)
 (* ========================================================================== *)
 
-(* Recv_dec: receive encrypted value, decrypt with key, continue with decrypted value *)
-Definition Recv_dec_param {msg enc pkey : Type}
-  (D : pkey -> enc -> option msg)
-  (data : Type) (from_enc : data -> option enc)
-  (frm : nat) (dk : pkey) (f : msg -> proc data) : proc data :=
-  Recv frm (oapp f Fail \o obind (D dk) \o from_enc).
+Section Recv_param.
 
-(* Recv_enc: receive encrypted value (cannot decrypt), do HE computation *)
-Definition Recv_enc_param {enc : Type}
-  (data : Type) (from_enc : data -> option enc)
-  (frm : nat) (f : enc -> proc data) : proc data :=
-  Recv frm (oapp f Fail \o from_enc).
+Variable (T : Type).
+Variable (data : Type).
+Variable (extract : data -> option T).
+
+(* Recv_param: receive data, extract value of type T, continue with it *)
+Definition Recv_param (frm : nat) (f : T -> proc data) : proc data :=
+  Recv frm (oapp f Fail \o extract).
+
+End Recv_param.
+
+Arguments Recv_param {T} data extract frm f.
 
 (* ========================================================================== *)
 (* Session Data Type Kind (outside section - no PHE dependency)               *)
@@ -123,13 +125,15 @@ Definition std_k (x : pkeyT) : std_data := inr x.
 Definition std_from_enc (x : std_data) : option encT :=
   if x is inl (inr v) then Some v else None.
 
+(* Recv-and-decrypt: extract ciphertext, decrypt, continue with plaintext *)
 Definition std_Recv_dec (frm : nat) (dk : pkeyT) 
     (f : msgT -> proc std_data) : proc std_data :=
-  @Recv_dec_param msgT encT pkeyT D std_data std_from_enc frm dk f.
+  Recv_param std_data (obind (D dk) \o std_from_enc) frm f.
 
+(* Recv-for-HE: extract ciphertext, continue with it for HE computation *)
 Definition std_Recv_enc (frm : nat) 
     (f : encT -> proc std_data) : proc std_data :=
-  @Recv_enc_param encT std_data std_from_enc frm f.
+  Recv_param std_data std_from_enc frm f.
 
 (** The canonical standard interface instance *)
 Definition Standard_DSDP_Interface : DSDP_Interface PHE := {|
