@@ -67,8 +67,8 @@ Definition msg_rand_add (T : EncDec_scheme)
 
 (* Wrapper for defining a notation later. *)
 Definition unpair_mul_rand_op (T : EncDec_scheme)
-   (m: plain T)
-   (mr : plain T * rand T) :=
+   (mr : plain T * rand T)
+   (m: plain T) :=
   fun (op : rand T -> plain T -> rand T) => (mr.1 * m, (op mr.2 m)).
 
 (* Make T explicit in these definitions *)
@@ -120,7 +120,7 @@ HB.mixin Record isAHEnc (T : HETypes) of isEncDec T := {
      Expands to: forall mr,
        enc p (mr.1 * m) (rand_pow mr.2 m) = Epow (enc p mr.1 mr.2) m *)
   Epow_mulM : forall (p : party T) (m : plain T),
-    {morph E[p] : mr / m {[rand_pow]} mr >-> Epow mr m}
+    {morph E[p] : mr / mr {[rand_pow]} m >-> Epow mr m}
 }.
 
 #[short(type=AHEnc_scheme)]

@@ -24,8 +24,8 @@
 (******************************************************************************)
 
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order all_algebra fingroup finalg zmodp ssrfun.
-From mathcomp Require Import cyclic.  (* For Euler_exp_totient *)
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg.
+From mathcomp Require Import cyclic zmodp ssrfun.  (* For Euler_exp_totient *)
 Require Import he_types.
 Require Import enc_dec.
 Require Import ahe_enc.
@@ -335,7 +335,7 @@ Local Notation BT := Benaloh_HETypes.
 Local Notation "E[ p ]" := (enc_curry BT p) (at level 10, p at level 9).
 Local Notation "x {+} y" := (msg_rand_add BT x y)
   (at level 50, left associativity).
-Local Notation "x {^}  y" := (unpair_mul_rand_op BT x y benaloh_rand_pow)
+Local Notation "x {^} y" := (unpair_mul_rand_op BT x y benaloh_rand_pow)
   (at level 50, left associativity).
 Local Notation "x (.) y" := (benaloh_Emul x y)
   (at level 40, left associativity).
@@ -356,7 +356,7 @@ Qed.
 (* Scalar multiplication homomorphism proof:
    E(m1)^m2 = E(m1 m2) mod m *)
 Lemma benaloh_Epow_mulM : forall (p : partyT) (m : 'Z_r),
-  {morph E[p] : mr / m {^} mr >-> mr (^) m}.
+  {morph E[p] : mr / mr {^} m >-> mr (^) m}.
 Proof.
   move=> p m2 [m1 u].
   rewrite /enc_curry /benaloh_Epow /benaloh_enc /benaloh_rand_pow /=.

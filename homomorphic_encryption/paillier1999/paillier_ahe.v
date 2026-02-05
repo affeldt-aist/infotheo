@@ -262,7 +262,7 @@ Qed.
 (* Scalar multiplication homomorphism proof:
     E(m1)^m2 = E(m1 m2) mod m *)
 Lemma paillier_Epow_mulM : forall (p : partyT) (m : 'Z_n),
-  {morph E[p] : mr / m {^} mr >-> mr (^) m}.
+  {morph E[p] : mr / mr {^} m >-> mr (^) m}.
 Proof.
   move=> p m2 [m1 r].
   rewrite /enc_curry /paillier_Epow /paillier_enc /paillier_rand_pow /=.

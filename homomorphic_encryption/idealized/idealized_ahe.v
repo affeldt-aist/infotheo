@@ -143,7 +143,7 @@ Qed.
    E(m*k, r^k) = E(m,r) ^ k
    For idealized: (p, m*k) = (p, m) ^ k, which is true by definition. *)
 Lemma idealized_Epow_mulM : forall (p : partyT) (k : msgT),
-  {morph E[ p ] : mr / k {^} mr >-> mr (^) k}.
+  {morph E[ p ] : mr / mr {^} k >-> mr (^) k}.
 Proof.
   move=> p k [m r].
   rewrite /enc_curry /idealized_Epow /idealized_rand_pow /=.
