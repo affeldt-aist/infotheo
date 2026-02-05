@@ -1,6 +1,6 @@
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
-From mathcomp Require Import ring boolp finmap.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg.
+From mathcomp Require Import matrix ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter.
 Require Import homomorphic_encryption.
@@ -44,7 +44,7 @@ Local Open Scope proc_scope.
 Local Open Scope sproc_scope.
 
 (******************************************************************************)
-(** * Algebraic Correctness (from dsdp_program.v)                              *)
+(** * Algebraic Correctness (from dsdp_program.v)                             *)
 (******************************************************************************)
 
 (* The algebraic correctness proof for DSDP is defined in dsdp_program.v.
@@ -85,7 +85,7 @@ Local Notation m := m_minus_2.+2.
 Local Notation msg := 'F_m.  (* Finite field with m elements *)
 
 (* ========================================================================== *)
-(* Build Idealized_HETypes as AHEAlgebra_scheme                                *)
+(* Build Idealized_HETypes as AHEAlgebra_scheme                               *)
 (* ========================================================================== *)
 
 Local Definition Idealized_EncDec_instance := 
@@ -223,7 +223,8 @@ Lemma dsdp_traces_ok :
        [bseq e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2)) runit); d v3; k dk_c]].
 Proof. by apply/val_inj/(inj_map val_inj); rewrite interp_traces_ok. Qed.
 
-(* Protocol correctness: the final result S satisfies S = u1*v1 + u2*v2 + u3*v3. *)
+(* Protocol correctness:
+  the final result S satisfies S = u1*v1 + u2*v2 + u3*v3. *)
 Lemma dsdp_is_correct:
   is_dsdp dsdp_traces.
 Proof. rewrite dsdp_traces_ok /is_dsdp /=. ring. Qed.
@@ -231,7 +232,7 @@ Proof. rewrite dsdp_traces_ok /is_dsdp /=. ring. Qed.
 End dsdp_computational.
 
 (* ========================================================================== *)
-(* Computational Correctness Proofs using Benaloh Encryption                   *)
+(* Computational Correctness Proofs using Benaloh Encryption                  *)
 (*                                                                            *)
 (* This section instantiates the generic dsdp_correctness proofs with the     *)
 (* concrete Benaloh AHEAlgebra_scheme. All cryptographic hypotheses required  *)
@@ -283,9 +284,9 @@ Hypothesis x_base_injective : forall (m1 m2 : 'Z_r),
   benaloh_ahe.x_base y phi_div_r ^+ (m2 : nat) -> m1 = m2.
 
 (* ========================================================================== *)
-(* Build the Benaloh AHEAlgebra_scheme instance                                *)
+(* Build the Benaloh AHEAlgebra_scheme instance                               *)
 (*                                                                            *)
-(* The HB instances from benaloh_ahe.v are parameterized by all the     *)
+(* The HB instances from benaloh_ahe.v are parameterized by all the           *)
 (* cryptographic hypotheses. We apply them here to get a proper instance.     *)
 (* ========================================================================== *)
 
@@ -323,12 +324,12 @@ Local Definition Benaloh_AHEAlgebra_local : AHEAlgebra_scheme :=
 Let PHE : AHEAlgebra_scheme := Benaloh_AHEAlgebra_local.
 
 (* ========================================================================== *)
-(* Instantiate the generic dsdp_correctness theorem                            *)
+(* Instantiate the generic dsdp_correctness theorem                           *)
 (*                                                                            *)
-(* The generic theorem from dsdp_correctness section has signature:            *)
-(*   dsdp_computes_dot_product : forall (AHE : AHEAlgebra_scheme)              *)
-(*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                  *)
-(*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3            *)
+(* The generic theorem from dsdp_correctness section has signature:           *)
+(*   dsdp_computes_dot_product : forall (AHE : AHEAlgebra_scheme)             *)
+(*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                 *)
+(*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3           *)
 (* ========================================================================== *)
 
 (* Message variables *)
@@ -389,22 +390,19 @@ Variable lambda : nat.
 (* Carmichael's theorem: r^(n·λ) = 1 in Z*_{n²} *)
 Hypothesis carmichael_property : forall (r : 'Z_n2), r ^+ (n * lambda) = 1.
 
-(* L-function: L(x) = (x-1)/n maps Z_{n²} to Z_n *)
-Definition L_func (x : 'Z_n2) : 'Z_n :=
-  inZp (((x : nat) - 1) %/ n)%N.
-
 (* Key property: L(g^k) extracts k mod n.
-   
+   Uses L_func from paillier_ahe which computes L(x) = (x-1)/n.
+
    Proof sketch (requires detailed modular arithmetic):
    1. g = 1 + n in Z_{n²}
    2. g^k = (1+n)^k = 1 + k·n (mod n²) by binomial theorem
    3. (g^k - 1) / n = k (exact integer division)
    4. k mod n gives the result in Z_n
-   
+
    We state this as a hypothesis since the full proof requires
    establishing the binomial expansion for 'Z_n2 arithmetic. *)
-Hypothesis L_of_g_power : forall (k : nat), 
-  L_func (g ^+ k) = inZp k.
+Hypothesis L_of_g_power : forall (k : nat),
+  @paillier_ahe.L_func n (g ^+ k) = inZp k.
 
 Variable mu : 'Z_n.
 
@@ -412,66 +410,57 @@ Variable mu : 'Z_n.
 Hypothesis lambda_mu_inverse : (inZp lambda : 'Z_n) * mu = 1.
 
 (* ========================================================================== *)
-(* Type Definitions                                                            *)
-(* ========================================================================== *)
-
-(* Paillier ciphertext type with party label *)
-Definition paillier_enc_party : Type := (party_id * 'Z_n2)%type.
-
-(* Paillier public key type *)
-Definition paillier_pkey : Type := (party_id * key_type * 'Z_n)%type.
-
-(* Build the Paillier HETypes *)
-Local Definition Paillier_HETypes : HETypes := 
-  MkHE party_id 'Z_n 'Z_n2 'Z_n2 paillier_enc_party paillier_pkey.
-
-(* ========================================================================== *)
-(* Build the Paillier AHEAlgebra_scheme instance                                *)
+(* Build the Paillier AHEAlgebra_scheme instance                              *)
 (*                                                                            *)
-(* The HB instances from paillier_ahe.v are parameterized by all the          *)
-(* cryptographic hypotheses. We apply them here to get a proper instance.     *)
+(* We use the HB instances exported from paillier_ahe.v, instantiated with    *)
+(* our section variables and cryptographic hypotheses.                        *)
 (* ========================================================================== *)
 
-(* Register the HB instances with all hypotheses *)
-Local Definition Paillier_EncDec_instance := 
-  @Paillier_isEncDec party_id n n_gt1 g g_order_n lambda 
-    carmichael_property L_of_g_power mu lambda_mu_inverse.
+(* Build isEncDec instance using paillier_ahe definitions *)
+Local Definition Paillier_EncDec_instance :
+  isEncDec (Paillier_HETypes party_id n) :=
+  @Paillier_isEncDec party_id n g lambda carmichael_property
+    mu L_of_g_power lambda_mu_inverse.
 
-Local Definition Paillier_AHEnc_instance := 
-  @Paillier_isAHEnc party_id n n_gt1 g g_order_n lambda 
-    carmichael_property L_of_g_power mu lambda_mu_inverse.
+(* Build isAHEnc instance using paillier_ahe lemmas *)
+Local Definition Paillier_AHEnc_instance :
+  isAHEnc (Paillier_HETypes party_id n) :=
+  @Paillier_isAHEnc party_id n n_gt1 g g_order_n lambda carmichael_property
+    mu L_of_g_power lambda_mu_inverse.
 
-Local Definition Paillier_AHEAlgebra_instance := 
-  @Paillier_isAHEAlgebra party_id n n_gt1 g g_order_n lambda 
-    carmichael_property L_of_g_power mu lambda_mu_inverse.
+(* Build isAHEAlgebra instance using paillier_ahe lemmas *)
+Local Definition Paillier_AHEAlgebra_instance :
+  isAHEAlgebra (Paillier_HETypes party_id n) :=
+  @Paillier_isAHEAlgebra party_id n n_gt1 g g_order_n lambda carmichael_property
+    mu L_of_g_power lambda_mu_inverse.
 
 (* Build the type hierarchy step by step *)
 (* First: EncDec_scheme (HETypes + isEncDec) *)
-Local Definition Paillier_EncDec_local : EncDec_scheme := 
-  @EncDec.Pack Paillier_HETypes 
-    (@EncDec.Class Paillier_HETypes Paillier_EncDec_instance).
+Local Definition Paillier_EncDec_local : EncDec_scheme :=
+  @EncDec.Pack (Paillier_HETypes party_id n)
+    (@EncDec.Class (Paillier_HETypes party_id n) Paillier_EncDec_instance).
 
 (* Second: AHEnc_scheme (HETypes + isEncDec + isAHEnc) *)
-Local Definition Paillier_AHEnc_local : AHEnc_scheme := 
-  @AHEnc.Pack Paillier_HETypes 
-    (@AHEnc.Class Paillier_HETypes 
+Local Definition Paillier_AHEnc_local : AHEnc_scheme :=
+  @AHEnc.Pack (Paillier_HETypes party_id n)
+    (@AHEnc.Class (Paillier_HETypes party_id n)
       Paillier_EncDec_instance Paillier_AHEnc_instance).
 
 (* Third: AHEAlgebra_scheme (AHEnc_scheme + isAHEAlgebra) *)
-Local Definition Paillier_AHEAlgebra_local : AHEAlgebra_scheme := 
-  @AHEAlgebra.Pack Paillier_AHEnc_local 
+Local Definition Paillier_AHEAlgebra_local : AHEAlgebra_scheme :=
+  @AHEAlgebra.Pack Paillier_AHEnc_local
     (@AHEAlgebra.Class Paillier_AHEnc_local Paillier_AHEAlgebra_instance).
 
 (* The Paillier scheme as an AHEAlgebra_scheme *)
 Let PHE : AHEAlgebra_scheme := Paillier_AHEAlgebra_local.
 
 (* ========================================================================== *)
-(* Instantiate the generic dsdp_correctness theorem                            *)
+(* Instantiate the generic dsdp_correctness theorem                           *)
 (*                                                                            *)
-(* The generic theorem from dsdp_correctness section has signature:            *)
-(*   dsdp_computes_dot_product : forall (AHE : AHEAlgebra_scheme)              *)
-(*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                  *)
-(*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3            *)
+(* The generic theorem from dsdp_correctness section has signature:           *)
+(*   dsdp_computes_dot_product : forall (AHE : AHEAlgebra_scheme)             *)
+(*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                 *)
+(*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3           *)
 (* ========================================================================== *)
 
 (* Message variables *)
