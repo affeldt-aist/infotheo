@@ -74,7 +74,7 @@ HB.instance Definition _ := hasDecEq.Build dsdp_dtype dsdp_dtype_eqP.
 (** Parameterized record bundling all DSDP data operations.
     This eliminates the need to repeat data/d/e/k/from_enc/Recv_dec/Recv_enc
     definitions in every DSDP file. *)
-Record DSDP_Interface (AHE : AHEAlgebra_scheme) := MkDSDP_Interface {
+Record DSDP_Interface (AHE : AHEScheme) := MkDSDP_Interface {
   (* The carrier data type *)
   di_data : Type ;
   
@@ -109,7 +109,7 @@ Arguments di_Recv_enc {AHE} _ _ _.
 
 Section Standard_DSDP_Interface.
 
-Variable AHE : AHEAlgebra_scheme.
+Variable AHE : AHEScheme.
 
 Let msgT := plain AHE.
 Let encT := party_cipher AHE.
@@ -154,7 +154,7 @@ End Standard_DSDP_Interface.
 
 Section Standard_Interface_Properties.
 
-Variable AHE : AHEAlgebra_scheme.
+Variable AHE : AHEScheme.
 Let DI := Standard_DSDP_Interface AHE.
 
 Lemma std_from_enc_e (x : party_cipher AHE) : 

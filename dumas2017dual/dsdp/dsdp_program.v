@@ -44,8 +44,8 @@ Definition alice_idx : nat := 0.
 Definition bob_idx : nat := 1.
 Definition charlie_idx : nat := 2.
 
-(* Parameterize by an AHEAlgebra_scheme instance *)
-Variable AHE : AHEAlgebra_scheme.
+(* Parameterize by an AHEScheme instance *)
+Variable AHE : AHEScheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface AHE.
@@ -172,7 +172,7 @@ Definition dsdp_max_fuel : nat := 27.
 (* Algebraic correctness proof using homomorphic properties                    *)
 (* ========================================================================== *)
 
-(* The homomorphic properties from AHEAlgebra_scheme - using mixin directly *)
+(* The homomorphic properties from AHEScheme - using mixin directly *)
 Let Emul_eq_add := @Emul_addM AHE.
 Let Epow_eq_mul := @Epow_mulM AHE.
 Let enc_curry_eq := @enc_as_curry AHE.

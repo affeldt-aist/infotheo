@@ -52,7 +52,7 @@ Local Open Scope sproc_scope.
    Key theorem (exported from dsdp_program.v):
    
      dsdp.dsdp_computes_dot_product : 
-       forall (AHE : AHEAlgebra_scheme) 
+       forall (AHE : AHEScheme) 
               (alice bob charlie : party AHE)
               (pn : party AHE -> nat)
               (D_correct : forall p m r k, dec (key p Dec k) (enc p m r) = Some m)
@@ -85,7 +85,7 @@ Local Notation m := m_minus_2.+2.
 Local Notation msg := 'F_m.  (* Finite field with m elements *)
 
 (* ========================================================================== *)
-(* Build Idealized_HETypes as AHEAlgebra_scheme                               *)
+(* Build Idealized_HETypes as AHEScheme                               *)
 (* ========================================================================== *)
 
 Local Definition Idealized_EncDec_instance := 
@@ -107,12 +107,12 @@ Local Definition Idealized_AHEnc_local : AHEnc_scheme :=
     (@AHEnc.Class (Idealized_HETypes party_id msg) 
       Idealized_EncDec_instance Idealized_AHEnc_instance).
 
-Local Definition Idealized_AHEAlgebra_local : AHEAlgebra_scheme := 
+Local Definition Idealized_AHEAlgebra_local : AHEScheme := 
   @AHEAlgebra.Pack Idealized_AHEnc_local 
     (@AHEAlgebra.Class Idealized_AHEnc_local Idealized_AHEAlgebra_instance).
 
 (* The idealized scheme *)
-Let PHE : AHEAlgebra_scheme := Idealized_AHEAlgebra_local.
+Let PHE : AHEScheme := Idealized_AHEAlgebra_local.
 
 (* Use standard interface from dsdp_interface.v *)
 Let DI := Standard_DSDP_Interface PHE.
@@ -235,7 +235,7 @@ End dsdp_computational.
 (* Computational Correctness Proofs using Benaloh Encryption                  *)
 (*                                                                            *)
 (* This section instantiates the generic dsdp_correctness proofs with the     *)
-(* concrete Benaloh AHEAlgebra_scheme. All cryptographic hypotheses required  *)
+(* concrete Benaloh AHEScheme. All cryptographic hypotheses required  *)
 (* for a valid Benaloh instantiation are provided explicitly.                 *)
 (* ========================================================================== *)
 
@@ -284,7 +284,7 @@ Hypothesis x_base_injective : forall (m1 m2 : 'Z_r),
   benaloh_ahe.x_base y phi_div_r ^+ (m2 : nat) -> m1 = m2.
 
 (* ========================================================================== *)
-(* Build the Benaloh AHEAlgebra_scheme instance                               *)
+(* Build the Benaloh AHEScheme instance                               *)
 (*                                                                            *)
 (* The HB instances from benaloh_ahe.v are parameterized by all the           *)
 (* cryptographic hypotheses. We apply them here to get a proper instance.     *)
@@ -315,19 +315,19 @@ Local Definition Benaloh_AHEnc_local : AHEnc_scheme :=
     (@AHEnc.Class (Benaloh_HETypes party_id n r) 
       Benaloh_EncDec_instance Benaloh_AHEnc_instance).
 
-(* Third: AHEAlgebra_scheme (AHEnc_scheme + isAHEAlgebra) *)
-Local Definition Benaloh_AHEAlgebra_local : AHEAlgebra_scheme := 
+(* Third: AHEScheme (AHEnc_scheme + isAHEAlgebra) *)
+Local Definition Benaloh_AHEAlgebra_local : AHEScheme := 
   @AHEAlgebra.Pack Benaloh_AHEnc_local 
     (@AHEAlgebra.Class Benaloh_AHEnc_local Benaloh_AHEAlgebra_instance).
 
-(* The Benaloh scheme as an AHEAlgebra_scheme *)
-Let PHE : AHEAlgebra_scheme := Benaloh_AHEAlgebra_local.
+(* The Benaloh scheme as an AHEScheme *)
+Let PHE : AHEScheme := Benaloh_AHEAlgebra_local.
 
 (* ========================================================================== *)
 (* Instantiate the generic dsdp_correctness theorem                           *)
 (*                                                                            *)
 (* The generic theorem from dsdp_correctness section has signature:           *)
-(*   dsdp_computes_dot_product : forall (AHE : AHEAlgebra_scheme)             *)
+(*   dsdp_computes_dot_product : forall (AHE : AHEScheme)             *)
 (*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                 *)
 (*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3           *)
 (* ========================================================================== *)
@@ -349,7 +349,7 @@ End dsdp_computational_benaloh.
 (* Computational Correctness Proofs using Paillier Encryption                 *)
 (*                                                                            *)
 (* This section instantiates the generic dsdp_correctness proofs with the     *)
-(* concrete Paillier AHEAlgebra_scheme. All cryptographic hypotheses required *)
+(* concrete Paillier AHEScheme. All cryptographic hypotheses required *)
 (* for a valid Paillier instantiation are provided explicitly.                *)
 (* ========================================================================== *)
 
@@ -410,7 +410,7 @@ Variable mu : 'Z_n.
 Hypothesis lambda_mu_inverse : (inZp lambda : 'Z_n) * mu = 1.
 
 (* ========================================================================== *)
-(* Build the Paillier AHEAlgebra_scheme instance                              *)
+(* Build the Paillier AHEScheme instance                              *)
 (*                                                                            *)
 (* We use the HB instances exported from paillier_ahe.v, instantiated with    *)
 (* our section variables and cryptographic hypotheses.                        *)
@@ -446,19 +446,19 @@ Local Definition Paillier_AHEnc_local : AHEnc_scheme :=
     (@AHEnc.Class (Paillier_HETypes party_id n)
       Paillier_EncDec_instance Paillier_AHEnc_instance).
 
-(* Third: AHEAlgebra_scheme (AHEnc_scheme + isAHEAlgebra) *)
-Local Definition Paillier_AHEAlgebra_local : AHEAlgebra_scheme :=
+(* Third: AHEScheme (AHEnc_scheme + isAHEAlgebra) *)
+Local Definition Paillier_AHEAlgebra_local : AHEScheme :=
   @AHEAlgebra.Pack Paillier_AHEnc_local
     (@AHEAlgebra.Class Paillier_AHEnc_local Paillier_AHEAlgebra_instance).
 
-(* The Paillier scheme as an AHEAlgebra_scheme *)
-Let PHE : AHEAlgebra_scheme := Paillier_AHEAlgebra_local.
+(* The Paillier scheme as an AHEScheme *)
+Let PHE : AHEScheme := Paillier_AHEAlgebra_local.
 
 (* ========================================================================== *)
 (* Instantiate the generic dsdp_correctness theorem                           *)
 (*                                                                            *)
 (* The generic theorem from dsdp_correctness section has signature:           *)
-(*   dsdp_computes_dot_product : forall (AHE : AHEAlgebra_scheme)             *)
+(*   dsdp_computes_dot_product : forall (AHE : AHEScheme)             *)
 (*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                 *)
 (*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3           *)
 (* ========================================================================== *)

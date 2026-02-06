@@ -12,8 +12,8 @@ Local Open Scope ring_scope.
 
 Section smc_dsdp_program.
 
-(* Parameterize by an AHEAlgebra_scheme instance *)
-Variable AHE : AHEAlgebra_scheme.
+(* Parameterize by an AHEScheme instance *)
+Variable AHE : AHEScheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface AHE.
@@ -232,7 +232,7 @@ Proof. reflexivity. Qed.
 (* NOTE: The following lemmas cannot currently be proved computationally.
 
    Unlike SPP (which uses concrete ring types), DSDP uses abstract types from
-   AHEAlgebra_scheme (enc, dec, Emul, Epow, key). These abstract operations
+   AHEScheme (enc, dec, Emul, Epow, key). These abstract operations
    prevent native_compute/vm_compute from reducing the interpreter to a
    concrete final state.
 
@@ -242,7 +242,7 @@ Proof. reflexivity. Qed.
    - dsdp_senv_zero: Follows from the above two via terminated_nonfail_senv_zero
 
    Possible approaches for future work:
-   1. Instantiate AHEAlgebra_scheme with a concrete implementation for proofs
+   1. Instantiate AHEScheme with a concrete implementation for proofs
    2. Develop a semantic/structural proof that doesn't rely on computation
    3. Use program extraction and external verification
 
@@ -292,7 +292,7 @@ Variable m_minus_2 : nat.
 Local Notation m := m_minus_2.+2.
 Local Notation msg := 'F_m.
 
-(* Build the Idealized AHEAlgebra_scheme (same as in dsdp_correctness.v) *)
+(* Build the Idealized AHEScheme (same as in dsdp_correctness.v) *)
 Local Definition Idealized_EncDec_instance :=
   @Idealized_isEncDec party_id msg.
 
@@ -311,11 +311,11 @@ Local Definition Idealized_AHEnc_local : AHEnc_scheme :=
     (@AHEnc.Class (Idealized_HETypes party_id msg)
       Idealized_EncDec_instance Idealized_AHEnc_instance).
 
-Local Definition Idealized_AHEAlgebra_local : AHEAlgebra_scheme :=
+Local Definition Idealized_AHEAlgebra_local : AHEScheme :=
   @AHEAlgebra.Pack Idealized_AHEnc_local
     (@AHEAlgebra.Class Idealized_AHEnc_local Idealized_AHEAlgebra_instance).
 
-Let AHE : AHEAlgebra_scheme := Idealized_AHEAlgebra_local.
+Let AHE : AHEScheme := Idealized_AHEAlgebra_local.
 Let DI := Standard_DSDP_Interface AHE.
 Let data := di_data DI.
 

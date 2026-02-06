@@ -17,7 +17,7 @@ Import Prenex Implicits.
 
 Section smc_dsdp_session_types.
 
-Variable PHE : AHEAlgebra_scheme.
+Variable PHE : AHEScheme.
 
 Let data := di_data (Standard_DSDP_Interface PHE).
 Let e := di_e (Standard_DSDP_Interface PHE).

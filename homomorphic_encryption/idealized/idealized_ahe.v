@@ -2,7 +2,7 @@
 (*                                                                            *)
 (* Idealized Party-Labeled AHE Instance                                       *)
 (*                                                                            *)
-(* This file provides an idealized AHEAlgebra_scheme where encryption is      *)
+(* This file provides an idealized AHEScheme where encryption is      *)
 (* deterministic: enc(p, m, r) = (p, m). Randomness is ignored.               *)
 (*                                                                            *)
 (* Use cases:                                                                 *)

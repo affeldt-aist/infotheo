@@ -15,7 +15,7 @@
 (*                                                                            *)
 (* == Structure ==                                                            *)
 (*                                                                            *)
-(*   AHEAlgebra_scheme : bundles HETypes with all three mixins                *)
+(*   AHEScheme : bundles HETypes with all three mixins                *)
 (*     - isEncDec     (encryption/decryption)                                 *)
 (*     - isAHEnc      (homomorphic operations)                                *)
 (*     - isAHEAlgebra (algebraic properties)                                  *)
@@ -90,5 +90,5 @@ HB.mixin Record isAHEAlgebra (T : AHEnc_scheme) := {
    - isEncDec      : enc, dec, key, dec_correct
    - isAHEnc       : Emul, Epow, rand_pow, Emul_addM, Epow_mulM
    - isAHEAlgebra  : Emul_assoc, Emul_id, enc_cipher, Emul_comm_cipher *)
-#[short(type=AHEAlgebra_scheme)]
+#[short(type=AHEScheme)]
 HB.structure Definition AHEAlgebra := { T of isAHEAlgebra T }.

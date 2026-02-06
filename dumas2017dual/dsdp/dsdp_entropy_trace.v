@@ -41,8 +41,8 @@ Reserved Notation "u ^h w" (at level 40).
 
 Section dsdp_traces.
 
-(* Parameterize by an AHEAlgebra_scheme instance *)
-Variable PHE : AHEAlgebra_scheme.
+(* Parameterize by an AHEScheme instance *)
+Variable PHE : AHEScheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface PHE.
@@ -114,7 +114,7 @@ End dsdp_traces.
 (*                                                                            *)
 (* NOTE: The trace-based entropy analysis relied on the idealized encryption  *)
 (* model where enc = (party * msg) and E' is deterministic. With the new      *)
-(* AHEAlgebra_scheme interface where encryption requires randomness, the      *)
+(* AHEScheme interface where encryption requires randomness, the      *)
 (* trace structure becomes more complex.                                      *)
 (*                                                                            *)
 (* The entropy equivalence lemmas (centropy_AliceTraces_AliceView, etc.)      *)
@@ -124,8 +124,8 @@ End dsdp_traces.
 
 Section trace_entropy_analysis.
 
-(* Parameterize by an AHEAlgebra_scheme instance *)
-Variable PHE : AHEAlgebra_scheme.
+(* Parameterize by an AHEScheme instance *)
+Variable PHE : AHEScheme.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface PHE.
