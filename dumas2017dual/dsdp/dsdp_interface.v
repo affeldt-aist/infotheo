@@ -49,7 +49,7 @@ End Recv_param.
 Arguments Recv_param {T} data extract frm f.
 
 (* ========================================================================== *)
-(* Session Data Type Kind (outside section - no PHE dependency)               *)
+(* Session Data Type Kind (outside section - no AHE dependency)               *)
 (* ========================================================================== *)
 
 (* Only encrypted values are communicated - single dtype suffices *)
@@ -74,34 +74,34 @@ HB.instance Definition _ := hasDecEq.Build dsdp_dtype dsdp_dtype_eqP.
 (** Parameterized record bundling all DSDP data operations.
     This eliminates the need to repeat data/d/e/k/from_enc/Recv_dec/Recv_enc
     definitions in every DSDP file. *)
-Record DSDP_Interface (PHE : AHEAlgebra_scheme) := MkDSDP_Interface {
+Record DSDP_Interface (AHE : AHEAlgebra_scheme) := MkDSDP_Interface {
   (* The carrier data type *)
   di_data : Type ;
   
   (* Constructors: wrap msg/enc/pkey into data *)
-  di_d : plain PHE -> di_data ;
-  di_e : party_cipher PHE -> di_data ;
-  di_k : pkey PHE -> di_data ;
+  di_d : plain AHE -> di_data ;
+  di_e : party_cipher AHE -> di_data ;
+  di_k : pkey AHE -> di_data ;
   
   (* Extractor: get enc from data *)
-  di_from_enc : di_data -> option (party_cipher PHE) ;
+  di_from_enc : di_data -> option (party_cipher AHE) ;
   
   (* Specialized Recv operations (proc is now unindexed) *)
   di_Recv_dec : 
-    nat -> pkey PHE -> (plain PHE -> proc di_data) -> 
+    nat -> pkey AHE -> (plain AHE -> proc di_data) -> 
     proc di_data ;
   di_Recv_enc :
-    nat -> (party_cipher PHE -> proc di_data) -> 
+    nat -> (party_cipher AHE -> proc di_data) -> 
     proc di_data ;
 }.
 
-Arguments di_data {PHE} _.
-Arguments di_d {PHE} _ _.
-Arguments di_e {PHE} _ _.
-Arguments di_k {PHE} _ _.
-Arguments di_from_enc {PHE} _ _.
-Arguments di_Recv_dec {PHE} _ _ _ _.
-Arguments di_Recv_enc {PHE} _ _ _.
+Arguments di_data {AHE} _.
+Arguments di_d {AHE} _ _.
+Arguments di_e {AHE} _ _.
+Arguments di_k {AHE} _ _.
+Arguments di_from_enc {AHE} _ _.
+Arguments di_Recv_dec {AHE} _ _ _ _.
+Arguments di_Recv_enc {AHE} _ _ _.
 
 (* ========================================================================== *)
 (* Standard DSDP Interface using Sum Types                                    *)
@@ -109,12 +109,12 @@ Arguments di_Recv_enc {PHE} _ _ _.
 
 Section Standard_DSDP_Interface.
 
-Variable PHE : AHEAlgebra_scheme.
+Variable AHE : AHEAlgebra_scheme.
 
-Let msgT := plain PHE.
-Let encT := party_cipher PHE.
-Let pkeyT := pkey PHE.
-Let D := @dec PHE.
+Let msgT := plain AHE.
+Let encT := party_cipher AHE.
+Let pkeyT := pkey AHE.
+Let D := @dec AHE.
 
 (* Standard sum-type data encoding: (msgT + encT + pkeyT) *)
 Definition std_data := (msgT + encT + pkeyT)%type.
@@ -136,7 +136,7 @@ Definition std_Recv_enc (frm : nat)
   Recv_param std_data std_from_enc frm f.
 
 (** The canonical standard interface instance *)
-Definition Standard_DSDP_Interface : DSDP_Interface PHE := {|
+Definition Standard_DSDP_Interface : DSDP_Interface AHE := {|
   di_data := std_data ;
   di_d := std_d ;
   di_e := std_e ;
@@ -154,18 +154,18 @@ End Standard_DSDP_Interface.
 
 Section Standard_Interface_Properties.
 
-Variable PHE : AHEAlgebra_scheme.
-Let DI := Standard_DSDP_Interface PHE.
+Variable AHE : AHEAlgebra_scheme.
+Let DI := Standard_DSDP_Interface AHE.
 
-Lemma std_from_enc_e (x : party_cipher PHE) : 
+Lemma std_from_enc_e (x : party_cipher AHE) : 
   di_from_enc DI (di_e DI x) = Some x.
 Proof. by []. Qed.
 
-Lemma std_from_enc_d (x : plain PHE) : 
+Lemma std_from_enc_d (x : plain AHE) : 
   di_from_enc DI (di_d DI x) = None.
 Proof. by []. Qed.
 
-Lemma std_from_enc_k (x : pkey PHE) : 
+Lemma std_from_enc_k (x : pkey AHE) : 
   di_from_enc DI (di_k DI x) = None.
 Proof. by []. Qed.
 

@@ -417,7 +417,7 @@ Let k x : data := inr x.
 Notation "u *h w" := (party_Emul u w).
 Notation "u ^h w" := (party_Epow u w).
 
-(* Encryption hypotheses for E_enc_ce_removal:
+(* Encryption hypotheses for E_enc_ce_contract:
    These are standard information-theoretic assumptions for homomorphic encryption.
    1. Fresh ciphertexts are uniformly distributed over the ciphertext space
    2. Fresh ciphertexts are independent of all other random variables
@@ -746,9 +746,9 @@ Lemma alice_view_to_cond (A : finType) (Xvar : {RV P -> A}) :
 Proof.
 move=> cinde_X.
 rewrite /AliceView.
-rewrite (E_enc_ce_removal E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_AliceView_neq0.
-rewrite (E_enc_ce_removal E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_Eqn1View_neq0.
-rewrite (E_enc_ce_removal E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_Eqn2View_neq0.
+rewrite (E_enc_ce_contract E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_AliceView_neq0.
+rewrite (E_enc_ce_contract E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_Eqn1View_neq0.
+rewrite (E_enc_ce_contract E_enc_unif E_enc_inde Xvar card_msg); last exact: Pr_Eqn2View_neq0.
 have H_reorder: `H(Xvar | [% Dk_a, S, V1, U1, U2, U3, R2, R3]) =
   `H(Xvar | [% Dk_a, R2, R3, V1, U1, U2, U3, S]).
   rewrite /centropy_RV /centropy /= !snd_RV2.

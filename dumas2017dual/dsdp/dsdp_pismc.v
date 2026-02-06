@@ -13,17 +13,17 @@ Local Open Scope ring_scope.
 Section smc_dsdp_program.
 
 (* Parameterize by an AHEAlgebra_scheme instance *)
-Variable PHE : AHEAlgebra_scheme.
+Variable AHE : AHEAlgebra_scheme.
 
 (* Use standard DSDP interface for data types *)
-Let DI := Standard_DSDP_Interface PHE.
+Let DI := Standard_DSDP_Interface AHE.
 
 (* Extract types from the scheme *)
-Let partyT := party PHE.
-Let msg := plain PHE.
-Let rand := rand PHE.
-Let encT := party_cipher PHE.
-Let pkey := pkey PHE.
+Let partyT := party AHE.
+Let msg := plain AHE.
+Let rand := rand AHE.
+Let encT := party_cipher AHE.
+Let pkey := pkey AHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
@@ -32,11 +32,11 @@ Let e := di_e DI.
 Let k := di_k DI.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
-Let E := @enc PHE.
-Let K := @key PHE.
-Let D := @dec PHE.
-Let Emul := @Emul PHE.
-Let Epow := @Epow PHE.
+Let E := @enc AHE.
+Let K := @key AHE.
+Let D := @dec AHE.
+Let Emul := @Emul AHE.
+Let Epow := @Epow AHE.
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
@@ -53,11 +53,11 @@ Definition bob_idx : nat := 1.
 Definition charlie_idx : nat := 2.
 
 (* Use session-typed wrappers from dsdp_interface directly *)
-Let PInit {party n env} := @DInit PHE party n env.
-Let PSend {party n env} := @DSend PHE party n env.
-Let PRet {party} := @DRet PHE party.
-Let Recv_dec {party n env} := @DRecv_dec PHE party n env.
-Let Recv_enc {party n env} := @DRecv_enc PHE party n env.
+Let PInit {party n env} := @DInit AHE party n env.
+Let PSend {party n env} := @DSend AHE party n env.
+Let PRet {party} := @DRet AHE party.
+Let Recv_dec {party n env} := @DRecv_dec AHE party n env.
+Let Recv_enc {party n env} := @DRecv_enc AHE party n env.
 
 (** * Data wrapper shorthand notations *)
 
@@ -152,9 +152,9 @@ Hypothesis pn_bob : pn bob = bob_idx.
 Hypothesis pn_charlie : pn charlie = charlie_idx.
 
 (* Import original programs from dsdp_program *)
-Let palice_orig := @dsdp_program.palice PHE bob charlie pn.
-Let pbob_orig := @dsdp_program.pbob PHE alice bob charlie pn.
-Let pcharlie_orig := @dsdp_program.pcharlie PHE alice bob charlie pn.
+Let palice_orig := @dsdp_program.palice AHE bob charlie pn.
+Let pbob_orig := @dsdp_program.pbob AHE alice bob charlie pn.
+Let pcharlie_orig := @dsdp_program.pcharlie AHE alice bob charlie pn.
 
 (* Cross-equality proofs on erased processes (proc, not sproc).
    The sproc types differ in session env indices, but erased procs are equal
@@ -315,8 +315,8 @@ Local Definition Idealized_AHEAlgebra_local : AHEAlgebra_scheme :=
   @AHEAlgebra.Pack Idealized_AHEnc_local
     (@AHEAlgebra.Class Idealized_AHEnc_local Idealized_AHEAlgebra_instance).
 
-Let PHE : AHEAlgebra_scheme := Idealized_AHEAlgebra_local.
-Let DI := Standard_DSDP_Interface PHE.
+Let AHE : AHEAlgebra_scheme := Idealized_AHEAlgebra_local.
+Let DI := Standard_DSDP_Interface AHE.
 Let data := di_data DI.
 
 (* Party definitions *)
@@ -327,19 +327,19 @@ Let pn : party_id -> nat := party_id_to_nat.
 
 (* Program variables *)
 Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
-Let runit : rand PHE := 1.
+Let runit : rand AHE := 1.
 
-Let dk := @key PHE Alice Dec k_a.
+Let dk := @key AHE Alice Dec k_a.
 
 (* Instantiate programs from dsdp_program.v *)
 Let palice_inst :=
-  @dsdp_program.palice PHE bob charlie pn dk v1 u1 u2 u3 r2 r3 runit runit.
+  @dsdp_program.palice AHE bob charlie pn dk v1 u1 u2 u3 r2 r3 runit runit.
 Let pbob_inst :=
-  @dsdp_program.pbob PHE alice bob charlie pn (@key PHE Bob Dec k_b) v2
+  @dsdp_program.pbob AHE alice bob charlie pn (@key AHE Bob Dec k_b) v2
     runit runit.
 Let pcharlie_inst :=
-  @dsdp_program.pcharlie PHE alice bob charlie pn
-    (@key PHE Charlie Dec k_c) v3 runit runit.
+  @dsdp_program.pcharlie AHE alice bob charlie pn
+    (@key AHE Charlie Dec k_c) v3 runit runit.
 
 Local Open Scope sproc_scope.
 Local Open Scope proc_scope.

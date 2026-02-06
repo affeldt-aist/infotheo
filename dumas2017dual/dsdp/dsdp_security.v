@@ -120,7 +120,7 @@ Let E_alice_d3 := E' alice `o D3.
 Let E_charlie_v3 := E' charlie `o V3.
 Let E_bob_v2 := E' bob `o V2.
 
-(* Encryption hypotheses for E_enc_ce_removal:
+(* Encryption hypotheses for E_enc_ce_contract:
    These are standard information-theoretic assumptions for homomorphic encryption.
    1. Fresh ciphertexts are uniformly distributed over the ciphertext space
    2. Fresh ciphertexts are independent of all other random variables
@@ -383,9 +383,9 @@ Theorem US_compromised_leaks_V2 :
 Proof.
 move => H.
 (* From alice_view to [% Alice_input_view, S] - strip encryption terms *)
-rewrite (E_enc_ce_removal E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_AliceView_neq0.
-rewrite (E_enc_ce_removal E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_Eqn1View_neq0.
-rewrite (E_enc_ce_removal E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_Eqn2View_neq0.
+rewrite (E_enc_ce_contract E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_AliceView_neq0.
+rewrite (E_enc_ce_contract E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_Eqn1View_neq0.
+rewrite (E_enc_ce_contract E_enc_unif E_enc_inde V2 card_msg); last exact: Pr_Eqn2View_neq0.
 pose h := (fun o : (Alice.-key Dec msg * msg *
   msg * msg * msg * msg * msg * msg) =>
   let '(dk_a, s, v1, u1, u2, u3, r2, r3) := o in
