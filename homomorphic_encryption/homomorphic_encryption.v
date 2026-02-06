@@ -173,6 +173,7 @@ HB.instance Definition _ := [isNew for @party_key_v p k T].
 
 End party_key_def.
 
+(* TODO: it confuses math-comp contributors since this style is used for dep types *)
 Notation "p .-key k" := (party_key p k)
   (at level 2, format "p .-key k") : type_scope.
 

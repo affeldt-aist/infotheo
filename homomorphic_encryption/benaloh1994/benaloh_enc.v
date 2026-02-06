@@ -5,8 +5,9 @@
 (* This file defines the Benaloh encryption scheme and the core homomorphic   *)
 (* properties using MathComp ring exponentiation lemmas.                      *)
 (*                                                                            *)
-(* Key assumption: the generator y has order dividing r [y ^+ r = 1].         *)
-(* This is a standard cryptographic constraint in the Benaloh scheme.         *)
+(* Key assumption: y is a unit whose alpha-th power has order exactly r,      *)
+(* where alpha = phi(n)/r. This is the Fazio-Nicolosi condition ensuring      *)
+(* that y^m is distinct for each m in Z_r.                                    *)
 (*                                                                            *)
 (* == Informal "why it works" (math) ==                                       *)
 (*                                                                            *)
@@ -37,7 +38,7 @@
 (******************************************************************************)
 
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order all_algebra fingroup finalg zmodp.
+From mathcomp Require Import all_boot all_order all_algebra fingroup finalg zmodp cyclic.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -93,65 +94,104 @@ Qed.
 (*                      Benaloh Cryptosystem Parameters                        *)
 (* ========================================================================== *)
 
-Section benaloh_params.
+Section BenalohEuler.
 
+(* Modulus n = p * q *)
 Variable n : nat.
-Variable r : nat.
-
-(* n and r must be > 1 for 'Z_n and 'Z_r to be valid types *)
 Hypothesis n_gt1 : (1 < n)%N.
+
+(* Block size r divides phi(n) *)
+Variable r : nat.
 Hypothesis r_gt1 : (1 < r)%N.
 
-(* Generator y in Z_n *)
-Variable y : 'Z_n.
+(* phi(n) via unit group cardinality *)
+Definition phi_n := #|[set: {unit 'Z_n}]|.
+
+Hypothesis r_div_phi : (r %| phi_n)%N.
+Definition alpha := (phi_n %/ r)%N.
+
+(* Generator y is a unit *)
+Variable y : {unit 'Z_n}.
+
+(* Key cryptographic constraint: y has order dividing r *)
+Hypothesis y_order_r : (val y) ^+ r = 1.
 
 (* ========================================================================== *)
 (*                         Encryption Definition                               *)
 (* ========================================================================== *)
 
-Definition benaloh_enc (m : 'Z_r) (u : 'Z_n) : 'Z_n :=
-  y ^+ m * u ^+ r.
+(* Encryption with unit randomness *)
+Definition benaloh_enc (m : 'Z_r) (u : {unit 'Z_n}) : 'Z_n :=
+  (val y) ^+ m * (val u) ^+ r.
 
 (* ========================================================================== *)
-(*                     Key Cryptographic Constraint                            *)
+(*                          Euler's Theorem                                    *)
 (* ========================================================================== *)
 
-Hypothesis y_order_r : y ^+ r = 1.
+(* Helper: val of group exponent = ring exponent of val *)
+Lemma val_unit_exp (u : {unit 'Z_n}) k : val (u ^+ k)%g = (val u) ^+ k.
+Proof. by elim: k => [|k IHk] //; rewrite expgS /= IHk exprS. Qed.
+
+(* Euler's theorem: any unit raised to phi(n) equals 1 *)
+Lemma euler_unit (x : {unit 'Z_n}) : (val x) ^+ phi_n = 1.
+Proof.
+  rewrite -val_unit_exp /phi_n.
+  have Hmem : x \in [set: {unit 'Z_n}] by rewrite in_setT.
+  by rewrite expg_cardG.
+Qed.
 
 (* ========================================================================== *)
 (*                         Homomorphic Properties                              *)
 (* ========================================================================== *)
 
 (* Exponentiation of y depends only on exponent mod r *)
-Lemma expr_modr (k : nat) : y ^+ k = y ^+ (k %% r)%N.
+Lemma expr_modr (k : nat) : (val y) ^+ k = (val y) ^+ (k %% r)%N.
 Proof.
   rewrite {1}(divn_eq k r) exprD exprM exprAC y_order_r expr1n mul1r.
   reflexivity.
 Qed.
 
+(* Helper: 'Z_r elements as nats are bounded by r *)
+Lemma Zp_val_ltn (x : 'Z_r) : ((x : nat) < r)%N.
+Proof.
+  case: r r_gt1 x => [|[|r']].
+  - done.
+  - done.
+  - move=> _ x.
+    exact: ltn_ord.
+Qed.
+
 (* Encryption multiplication distributes as addition on messages *)
-Lemma enc_mul_dist : forall (m1 m2 : 'Z_r) (u1 u2 : 'Z_n),
-  benaloh_enc m1 u1 * benaloh_enc m2 u2 = 
+Lemma enc_mul_dist : forall (m1 m2 : 'Z_r) (u1 u2 : {unit 'Z_n}),
+  benaloh_enc m1 u1 * benaloh_enc m2 u2 =
   benaloh_enc (m1 + m2) (u1 * u2).
 Proof.
   move=> m1 m2 u1 u2.
-  rewrite /benaloh_enc exprMn mulrACA -exprD.
+  rewrite /benaloh_enc /= exprMn mulrACA -exprD.
+  rewrite (expr_modr (m1 + m2)).
   congr (_ * _).
-  rewrite (expr_modr (m1 + m2)) (expr_modr (m1 + m2)%R).
-  congr (y ^+ _).
-  exact: (Zp_add_eqmod r_gt1).
+  congr ((val y) ^+ _).
+  have H := Zp_add_eqmod r_gt1 m1 m2.
+  move: H; rewrite /eqn => H.
+  have Hlt := Zp_val_ltn (m1 + m2)%R.
+  by rewrite H modn_small.
 Qed.
 
 (* Encryption exponentiation distributes as scalar multiplication *)
-Lemma enc_exp_dist : forall (m1 : 'Z_r) (m2 : nat) (u : 'Z_n),
+Lemma enc_exp_dist : forall (m1 : 'Z_r) (m2 : nat) (u : {unit 'Z_n}),
   (benaloh_enc m1 u) ^+ m2 = benaloh_enc (m1 *+ m2) (u ^+ m2).
 Proof.
   move=> m1 m2 u.
   rewrite /benaloh_enc (exprMn_comm _ (mulrC _ _)) -!exprM [(r * m2)%N]mulnC.
+  rewrite val_unit_exp.
   congr (_ * _).
-  rewrite (expr_modr (m1 * m2)) (expr_modr (m1 *+ m2)).
-  congr (y ^+ _).
-  exact: (Zp_mulrn_eqmod r_gt1).
+  - rewrite (expr_modr (m1 * m2)) (expr_modr (m1 *+ m2)).
+    f_equal.
+    have H := Zp_mulrn_eqmod r_gt1 m1 m2.
+    move: H; rewrite /eqn => H.
+    have Hlt := Zp_val_ltn (m1 *+ m2)%R.
+    by rewrite H modn_small.
+  - by rewrite exprM.
 Qed.
 
-End benaloh_params.
+End BenalohEuler.

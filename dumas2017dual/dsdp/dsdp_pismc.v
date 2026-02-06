@@ -107,9 +107,14 @@ Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" := (PInit x .. (PInit y P) ..
 (** * Each encryption E(party, msg, rand) needs explicit randomness.          *)
 (******************************************************************************)
 
+Print sproc.
+Arguments sproc dtype data party {_} {_}.
+Check sproc.
+About sproc.
+
 (* Bob's protocol - using concrete indices for session type duality *)
 Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) 
-    : @sproc dsdp_dtype data bob_idx _ _ :=
+    : sproc dsdp_dtype data bob_idx :=
   \pi{ Init (#dk, &v2) ;
      Send<alice_idx> $(E bob v2 rb1);
      Recv<alice_idx> #dk d2 =>
@@ -187,17 +192,17 @@ Definition aproc_bob := mk_aproc (pbob dk v2 rb1 rb2).
 Definition aproc_charlie := mk_aproc (pcharlie dk v3 rc1 rc2).
 
 (* Three-party duality verification *)
-Lemma alice_bob_dual : channels_dual aproc_alice aproc_bob = true.
+Lemma alice_bob_dual : channels_dual aproc_alice aproc_bob.
 Proof.
 by native_compute.
 Qed.
 
-Lemma alice_charlie_dual : channels_dual aproc_alice aproc_charlie = true.
+Lemma alice_charlie_dual : channels_dual aproc_alice aproc_charlie.
 Proof.
 by native_compute.
 Qed.
 
-Lemma bob_charlie_dual : channels_dual aproc_bob aproc_charlie = true.
+Lemma bob_charlie_dual : channels_dual aproc_bob aproc_charlie.
 Proof.
 by native_compute.
 Qed.

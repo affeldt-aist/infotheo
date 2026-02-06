@@ -23,6 +23,8 @@
 (*                                                                            *)
 (******************************************************************************)
 
+(* TODO: https://arxiv.org/pdf/1008.2991 (revised version, with more hypotheses)*)
+
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg.
 From mathcomp Require Import cyclic zmodp ssrfun.  (* For Euler_exp_totient *)
@@ -46,10 +48,6 @@ Local Open Scope ring_scope.
 
 Section Benaloh_Party_AHE.
 
-Variable partyT : finType.
-Variables (n r : nat).
-Hypothesis n_gt1 : (1 < n)%N.
-Hypothesis r_gt1 : (1 < r)%N.
 Variable y : 'Z_n.
 (* y_order_r ensures y is an r-th root of unity in Z_n.
    This is required for the homomorphic properties:
@@ -58,11 +56,12 @@ Variable y : 'Z_n.
    Without this, y^(m1+m2) != y^m1 * y^m2 in general. *)
 Hypothesis y_order_r : y ^+ r = 1.
 (* y must be in Z_n^* (coprime to n) for Euler's theorem to apply *)
-Hypothesis y_coprime_n : coprime (y : nat) n.
+Hypothesis y_coprime_n : coprime (y : nat) n.  (* TODO: define r by this *)
 
-(* ========================================================================== *)
-(*                   Secret Key Parameters                                     *)
-(* ========================================================================== *)
+Variable partyT : finType.
+Variables (n r : nat).
+Hypothesis n_gt1 : (1 < n)%N.
+Hypothesis r_gt1 : (1 < r)%N.
 
 (* Benaloh decryption requires φ(n)/r where φ is Euler's totient.
    The decryption algorithm:
@@ -78,7 +77,27 @@ Variable phi_div_r : nat.
 
 (* r * phi_div_r = φ(n), i.e., phi_div_r = φ(n)/r.
    This is a key parameter relationship in the Benaloh scheme. *)
+(* TODO: remove this? *)
+(* TODO: mathcomp totient computatable algorithm to find the smallest (for define r from y) *)
 Hypothesis phi_eq_totient : r * phi_div_r = totient n.
+
+
+(* x = y^(φ(n)/r) is the base for discrete log in decryption *)
+Definition x_base : 'Z_n := y ^+ phi_div_r.
+
+(* For the discrete log to succeed, we need x_base^m to be injective on 'Z_r.
+   This requires x_base to have exact order r (not just dividing r).
+   This is a genuine cryptographic assumption about proper key generation:
+   the parameter y must be chosen such that y^(phi(n)/r) generates a cyclic
+   subgroup of order exactly r in the multiplicative group of units. *)
+Hypothesis x_base_injective : forall (m1 m2 : 'Z_r), 
+  x_base ^+ (m1 : nat) = x_base ^+ (m2 : nat) -> m1 = m2.
+
+(* ========================================================================== *)
+(*                   Secret Key Parameters                                     *)
+(* ========================================================================== *)
+
+
 
 (* Euler's theorem derived from math-comp's Euler_exp_totient.
    
@@ -175,8 +194,6 @@ Qed.
    but this requires changing the type bundle interface. *)
 Hypothesis rand_coprime_n : forall (u : 'Z_n), coprime (u : nat) n.
 
-(* x = y^(φ(n)/r) is the base for discrete log in decryption *)
-Definition x_base : 'Z_n := y ^+ phi_div_r.
 
 (* ========================================================================== *)
 (*                   Discrete Log Search                                       *)
@@ -213,13 +230,6 @@ Proof.
   exact: euler_property y_coprime_n.
 Qed.
 
-(* For the discrete log to succeed, we need x_base^m to be injective on 'Z_r.
-   This requires x_base to have exact order r (not just dividing r).
-   This is a genuine cryptographic assumption about proper key generation:
-   the parameter y must be chosen such that y^(phi(n)/r) generates a cyclic
-   subgroup of order exactly r in the multiplicative group of units. *)
-Hypothesis x_base_injective : forall (m1 m2 : 'Z_r), 
-  x_base ^+ (m1 : nat) = x_base ^+ (m2 : nat) -> m1 = m2.
 
 (* Discrete log correctness: searching for x^m finds m *)
 Lemma discrete_log_correct (m : 'Z_r) :

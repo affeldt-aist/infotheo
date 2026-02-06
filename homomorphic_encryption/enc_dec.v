@@ -40,25 +40,21 @@ Import Prenex Implicits.
 Local Open Scope ring_scope.
 
 (* ========================================================================== *)
-(*                   Encryption/Decryption Mixin                               *)
+(*                   Encryption/Decryption Mixin                              *)
+(*                                                                            *)
+(* This mixin has been instantiated twice in benaloh1994/benaloh_ahe.v and    *)
+(* paillier1999/paillier_ahe.v.                                               *)
 (* ========================================================================== *)
 
 HB.mixin Record isEncDec (T : HETypes) := {
-  (* Encryption: party -> message -> randomness -> ciphertext *)
-  enc : party T -> plain T -> rand T -> party_cipher T ;
+  gen_key : rand T -> key T * key T;
+  enc : key T -> plain T -> rand T -> cipher T ;
+  dec : key T -> cipher T -> option (plain T) ;
   
-  (* Key generation: party -> key type -> secret -> party key *)
-  key : party T -> key_type -> plain T -> pkey T ;
-  
-  (* Decryption: party key -> ciphertext -> optional message *)
-  dec : pkey T -> party_cipher T -> option (plain T) ;
-  
-  (* Decryption correctness: decrypting an encryption yields the message.
-     Note: For concrete instances (Benaloh, Paillier), this may require
-     implementing actual decryption or using an axiom placeholder. *)
-  dec_correct : forall (p : party T) (m : plain T) (r : rand T) (sk : plain T),
-    dec (key p Dec sk) (enc p m r) = Some m
+  dec_correct : forall (rand_for_key rand_for_enc : rand T) (m : plain T),
+    dec ((gen_key rand_for_key).2) (* Note: HB limitation so we cannot use let...in *)
+      (enc (gen_key rand_for_key).1 m rand_for_enc) = Some m ;
 }.
 
-#[short(type=EncDec_scheme)]
+#[short(type=EncDecType)]
 HB.structure Definition EncDec := { T of isEncDec T }.
