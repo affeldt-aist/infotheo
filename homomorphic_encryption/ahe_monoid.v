@@ -49,9 +49,11 @@ Local Open Scope ring_scope.
 
 HB.mixin Record isAHEMonoid (T : AHEncType) := {
   rand_id : rand T ;
+
   Emul_assoc : associative (@Emul T); 
   Emul_comm : commutative (@Emul T);
-  Emul_id : forall k : key T, left_id (E[k; rand_id] 0) (@Emul T);
+  (* Identity: enc of rand_id 0 is identity for Emul *)
+  Emul_id : forall k : key T, left_id (E[ k ; rand_id ] 0) (@Emul T);
 }.
 
 (* ========================================================================== *)
@@ -59,9 +61,9 @@ HB.mixin Record isAHEMonoid (T : AHEncType) := {
 (* ========================================================================== *)
 
 (* The complete AHEMonoid structure bundles all three mixins:
-   - isEncDec      : enc, dec, key, dec_correct
-   - isAHEnc       : Emul, Epow, rand_pow, Emul_addM, Epow_mulM
-   - isAHEMonoid   : Emul_assoc, Emul_com, Emul_id *)
+   - isEncDec
+   - isAHEnc
+   - isAHEMonoid *)
 #[short(type=AHEMonoidType)]
 HB.structure Definition AHEMonoid := { T of isAHEMonoid T }.
 

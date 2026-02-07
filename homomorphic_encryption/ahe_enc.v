@@ -64,18 +64,20 @@ Notation "E[ k ; r ]" := (enc_curry _ k r) (at level 10).
 HB.mixin Record isAHEnc (T : HETypes) of isEncDec T := {
   Emul : cipher T -> cipher T -> cipher T ;
   Epow : cipher T -> plain T -> cipher T ;
+    
+  (* Since rand is a Type, need operations *)
+  rand_pow : rand T -> plain T -> rand T ;
+  rand_mul : rand T -> rand T -> rand T ;
 
-  (* E(m1 + m2) = E(m1) * E(m2) *)
+  (* E(m1 + m2) = E(m1) * E(m2) with extra constraint on randomness *)
   Emul_addM :
-    forall (k : key T) (r : rand T),
-    {morph E[k ; r] : m1 m2 / m1 + m2 >-> Emul m1 m2} ;
+    forall (k : key T) (r1 r2 : rand T),
+    {morph E[k ; (rand_mul r1 r2) ] : m1 m2 / m1 + m2 >-> Emul m1 m2} ;
 
-  (* E(m * j) = E(m) ^ j *)
-  (* NOTE: inverse from usual notation E(m) ^ k = E(m * j) since the
-     morph notation has no <-< direction. *)
+  (* E(m * j) = E(m) ^ j with extra constraint on randomness *)
   Epow_scalarM :
-    forall (k : key T) (r : rand T) (j : plain T),
-    {morph E[k ; r] : m / m * j >-> Epow m j} ;
+    forall (k : key T) (j : plain T) (r : rand T),
+    {morph E[k ; (rand_pow r j) ] : m / m * j >-> Epow m j} ;
 }.
 
 #[short(type=AHEncType)]
@@ -87,16 +89,6 @@ HB.structure Definition AHEnc := { T of isAHEnc T & }.
    doesn't need, is because the ring type guarantees that msg_rand_add works.*)
 Local Notation "x (.) y" := (Emul x y) (at level 40, left associativity).
 Local Notation "x (^) y" := (Epow x y) (at level 40, left associativity).
+Local Notation "x {^} y" := (rand_pow x y) (at level 40, left associativity).
+Local Notation "x {*} y" := (rand_mul x y) (at level 40, left associativity).
 
-(*
-Section test.
-
-Variables  (T : EncDecType) (k : key T) (r : rand T) (j : plain T).
-Variable (Emul : cipher T -> cipher T -> cipher T).
-Variable (Epow : cipher T -> plain T -> cipher T).
-Unset Printing Notations.
-Check  {morph (enc_curry T k r) : m1 m2 / m1 + m2 >-> Emul m1 m2}.
-Check  {morph (enc_curry T k r) : m  / m * j >-> Epow m j}.
-
-End test.
-*)

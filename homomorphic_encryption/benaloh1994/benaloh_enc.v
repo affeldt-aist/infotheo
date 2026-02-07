@@ -5,9 +5,12 @@
 (* This file defines the Benaloh encryption scheme and the core homomorphic   *)
 (* properties using MathComp ring exponentiation lemmas.                      *)
 (*                                                                            *)
-(* Key assumption: y is a unit whose alpha-th power has order exactly r,      *)
-(* where alpha = phi(n)/r. This is the Fazio-Nicolosi condition ensuring      *)
-(* that y^m is distinct for each m in Z_r.                                    *)
+(* We adopt the so-called Fazio-Nicolosi condition (see e.g., Fazio and       *)
+(* Nicolosi, 2002), which was specifically formalized for the Benaloh         *)
+(* cryptosystem's correctness by Fousse et al. (2011):                        *)
+(* - r divides phi(n), and alpha = phi(n)/r                                   *)
+(* - Generator y is a unit with y^r = 1 (order dividing r)                    *)
+(* - For unique decryption: order(y^alpha) = r exactly (not formalized here)  *)
 (*                                                                            *)
 (* == Informal "why it works" (math) ==                                       *)
 (*                                                                            *)
@@ -98,22 +101,36 @@ Section BenalohEuler.
 
 (* Modulus n = p * q *)
 Variable n : nat.
+(* Status: Must be assumed (basic parameter constraint). *)
 Hypothesis n_gt1 : (1 < n)%N.
 
 (* Block size r divides phi(n) *)
 Variable r : nat.
+(* Status: Must be assumed (basic parameter constraint). *)
 Hypothesis r_gt1 : (1 < r)%N.
 
 (* phi(n) via unit group cardinality *)
 Definition phi_n := #|[set: {unit 'Z_n}]|.
 
+(* Fazio-Nicolosi condition: r divides phi(n).
+   Status: Must be assumed (key generation constraint).
+   This is a fundamental requirement for the scheme - cannot be inferred. *)
 Hypothesis r_div_phi : (r %| phi_n)%N.
+
+(* alpha = phi(n) / r *)
+(* The Fazio-Nicolosi condition requires order(y^alpha) = r exactly, ensuring *)
+(* unique decryption. While not directly used in homomorphic proofs below,    *)
+(* this constraint is essential for cryptographic correctness.                *)
 Definition alpha := (phi_n %/ r)%N.
 
 (* Generator y is a unit *)
 Variable y : {unit 'Z_n}.
 
-(* Key cryptographic constraint: y has order dividing r *)
+(* Key cryptographic constraint: y has order dividing r.
+
+   Status: Could potentially be proved if y is defined as z ^+ alpha
+   where z is a generator of the unit group with #[z] = phi_n.
+   Then y^r = z^(alpha*r) = z^phi_n = 1 by Euler's theorem (euler_unit). *)
 Hypothesis y_order_r : (val y) ^+ r = 1.
 
 (* ========================================================================== *)
@@ -192,6 +209,50 @@ Proof.
     have Hlt := Zp_val_ltn (m1 *+ m2)%R.
     by rewrite H modn_small.
   - by rewrite exprM.
+Qed.
+
+(* ========================================================================== *)
+(*                    Fazio-Nicolosi Condition Lemmas                         *)
+(* ========================================================================== *)
+
+(* alpha * r = phi_n (alpha is well-defined) *)
+Lemma alpha_phi : (alpha * r = phi_n)%N.
+Proof. rewrite /alpha. exact: divnK. Qed.
+
+(* r-th powers vanish when raised to alpha (subgroup structure) *)
+Lemma rth_powers_vanish (u : {unit 'Z_n}) : (val u) ^+ r ^+ alpha = 1.
+Proof.
+  rewrite -exprM (mulnC r alpha) alpha_phi.
+  exact: euler_unit.
+Qed.
+
+(* We need a hypothesis about y^alpha having exact order r.
+   This ensures unique decryption - distinct messages give distinct ciphertexts.
+
+   Status: Could potentially be proved if we strengthen the condition on y:
+   - Need #[y] = r exactly (not just y^r = 1, but exact order)
+   - Then #[y^alpha] would need analysis, but with exact order r for y,
+     y^alpha generates a subgroup where the map m -> y^(alpha*m) is injective. *)
+Hypothesis y_alpha_injective : forall (m1 m2 : 'Z_r),
+  (val y) ^+ (alpha * m1) = (val y) ^+ (alpha * m2) -> m1 = m2.
+
+(* Raising ciphertext to alpha strips randomness *)
+Lemma ciphertext_to_alpha (m : 'Z_r) (u : {unit 'Z_n}) :
+  (benaloh_enc m u) ^+ alpha = (val y) ^+ (alpha * m).
+Proof.
+  rewrite /benaloh_enc exprMn_comm; last by apply mulrC.
+  rewrite -!exprM (mulnC (m : nat) alpha).
+  have ->: (val u) ^+ (r * alpha) = (val u) ^+ r ^+ alpha by rewrite exprM.
+  by rewrite rth_powers_vanish mulr1.
+Qed.
+
+(* Distinct messages give distinct alpha-powers (unique decryption) *)
+Lemma decryption_unique (m1 m2 : 'Z_r) (u1 u2 : {unit 'Z_n}) :
+  (benaloh_enc m1 u1) ^+ alpha = (benaloh_enc m2 u2) ^+ alpha ->
+  m1 = m2.
+Proof.
+  rewrite !ciphertext_to_alpha.
+  exact: y_alpha_injective.
 Qed.
 
 End BenalohEuler.

@@ -36,9 +36,10 @@ Import Prenex Implicits.
 Local Open Scope ring_scope.
 
 Record HETypes := MkHE {
-  plain : finComNzRingType ;  (* message/plaintext space *)
-  rand :  ringType ;          (* randomness space,
-                                 ringType enables r1*r2 and r^+k *)
-  cipher : ringType ;         (* raw ciphertext values without party label *)
-  key : finType ;            (* key space *)
+  plain : finComNzRingType ;    (* message/plaintext space *)
+  rand : Type ;                 (* different HE schemes have different
+                                   rand requirements, like {unit 'Z_n}
+                                   for Benaloh, {unit 'Z_n2} for Paillier *)
+  cipher : nzRingType ;         (* raw ciphertext values without party label *)
+  key : finType ;               (* key space *)
 }.
