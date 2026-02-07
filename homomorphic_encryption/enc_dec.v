@@ -47,13 +47,15 @@ Local Open Scope ring_scope.
 (* ========================================================================== *)
 
 HB.mixin Record isEncDec (T : HETypes) := {
-  gen_key : rand T -> key T * key T;
-  enc : key T -> plain T -> rand T -> cipher T ;
-  dec : key T -> cipher T -> option (plain T) ;
+  enc : pub_key T -> plain T -> rand T -> cipher T ;
+  dec : priv_key T -> cipher T -> option (plain T) ;
+
+  (* Associate the pub key and priv key *)
+  (* RSA, ElGamal, ECDSA/ECC, DSA, Kyber, Dilthium also have this property *)
+  pub_of_priv : priv_key T -> pub_key T ;
   
-  dec_correct : forall (rand_for_key rand_for_enc : rand T) (m : plain T),
-    dec ((gen_key rand_for_key).2) (* Note: HB limitation so we cannot use let...in *)
-      (enc (gen_key rand_for_key).1 m rand_for_enc) = Some m ;
+  dec_correct : forall dk r m, 
+    dec dk (enc (pub_of_priv dk) m r) = Some m ;
 }.
 
 #[short(type=EncDecType)]

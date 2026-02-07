@@ -41,5 +41,6 @@ Record HETypes := MkHE {
                                    rand requirements, like {unit 'Z_n}
                                    for Benaloh, {unit 'Z_n2} for Paillier *)
   cipher : nzRingType ;         (* raw ciphertext values without party label *)
-  key : finType ;               (* key space *)
+  pub_key : Type ;              
+  priv_key : Type;
 }.

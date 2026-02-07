@@ -53,7 +53,7 @@ HB.mixin Record isAHEMonoid (T : AHEncType) := {
   Emul_assoc : associative (@Emul T); 
   Emul_comm : commutative (@Emul T);
   (* Identity: enc of rand_id 0 is identity for Emul *)
-  Emul_id : forall k : key T, left_id (E[ k ; rand_id ] 0) (@Emul T);
+  Emul_id : forall k : pub_key T, left_id (E[ k ] (0, rand_id)) (@Emul T);
 }.
 
 (* ========================================================================== *)
@@ -69,7 +69,7 @@ HB.structure Definition AHEMonoid := { T of isAHEMonoid T }.
 
 (* TODO: factory error.
 
-HB.instance Definition _ (T : AHEMonoidType) (k : key T) := 
+HB.instance Definition _ (T : AHEMonoidType) (k : pub_key T) := 
   GRing.isZmodule.Build (cipher T)
     (@Emul_assoc T) 
     (@Emul_comm T) 

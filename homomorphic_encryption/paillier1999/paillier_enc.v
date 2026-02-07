@@ -215,6 +215,11 @@ Qed.
 
 Variable lambda : nat.
 
+(* Decryption: search for m such that g^(lambda*m) = c^lambda.
+   Analogous to Benaloh's benaloh_dec. *)
+Definition paillier_dec (lam : nat) (c : 'Z_n2) : option 'Z_n :=
+  [pick m : 'Z_n | g ^+ (lam * m) == c ^+ lam].
+
 (*
   Carmichael's theorem: r^(n*lambda) = 1 for any unit in Z_{n^2}.
 
@@ -276,6 +281,24 @@ Lemma decryption_unique (m1 m2 : 'Z_n) (r1 r2 : {unit 'Z_n2}) :
 Proof.
   rewrite !ciphertext_to_lambda.
   exact: g_lambda_injective.
+Qed.
+
+(* ========================================================================== *)
+(*                    Decryption Correctness                                   *)
+(* ========================================================================== *)
+
+(* Decryption with the canonical key recovers the original message *)
+Lemma paillier_dec_correct (m : 'Z_n) (r : {unit 'Z_n2}) :
+  paillier_dec lambda (paillier_enc m r) = Some m.
+Proof.
+  rewrite /paillier_dec.
+  case: pickP => [m' /eqP Hm' | Hcontra].
+  - congr Some.
+    rewrite ciphertext_to_lambda in Hm'.
+    exact: g_lambda_injective Hm'.
+  - exfalso.
+    move: (Hcontra m).
+    by rewrite ciphertext_to_lambda eqxx.
 Qed.
 
 End paillier_params.

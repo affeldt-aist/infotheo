@@ -48,18 +48,36 @@ Import Prenex Implicits.
 Local Open Scope ring_scope.
 
 (* Note: Emul Epow require all encrypted values enc by the same enc key *)
-Definition enc_curry (T : EncDecType) (k : key T) (r : rand T) 
-    : plain T -> cipher T :=
-  fun m => enc k m r.
+Definition enc_curry (T : EncDecType) (k : pub_key T) 
+    : (plain T * rand T) -> cipher T :=
+  fun mr => enc k mr.1 mr.2.
+
+Definition mr_bop (T : EncDecType)
+  (mop : plain T -> plain T -> plain T) (rop : rand T -> rand T -> rand T) :
+  (plain T * rand T) ->  (plain T * rand T) ->  (plain T * rand T) :=
+  fun mr1 mr2 => ((mop mr1.1 mr2.1), (rop mr1.2 mr2.2)).
+
+Definition mr_bop_rplain (T : EncDecType)
+  (mop : plain T -> plain T -> plain T)
+  (rpop : rand T -> plain T -> rand T) :
+  (plain T * rand T) -> plain T -> (plain T * rand T) :=
+  fun mr m => (mop mr.1 m, (rpop mr.2 m)).
 
 (* Make T explicit in these definitions *)
 Arguments enc_curry : clear implicits.
+Arguments mr_bop : clear implicits.
+Arguments mr_bop_rplain : clear implicits.
+
 
 (* ========================================================================== *)
 (*                   Homomorphic Operations Mixin                             *)
 (* ========================================================================== *)
 
-Notation "E[ k ; r ]" := (enc_curry _ k r) (at level 10).
+Notation "E[ k ]" := (enc_curry _ k) (at level 10).
+Notation "x {[ o ; p ]} y" := (mr_bop _ o p x y)
+  (at level 50, left associativity).
+Notation "x {< o ; p >} j" := (mr_bop_rplain _ o p x j)
+  (at level 50, left associativity).
 
 HB.mixin Record isAHEnc (T : HETypes) of isEncDec T := {
   Emul : cipher T -> cipher T -> cipher T ;
@@ -71,13 +89,13 @@ HB.mixin Record isAHEnc (T : HETypes) of isEncDec T := {
 
   (* E(m1 + m2) = E(m1) * E(m2) with extra constraint on randomness *)
   Emul_addM :
-    forall (k : key T) (r1 r2 : rand T),
-    {morph E[k ; (rand_mul r1 r2) ] : m1 m2 / m1 + m2 >-> Emul m1 m2} ;
+    forall (k : pub_key T),
+    {morph E[ k ] : mr1 mr2 / mr1 {[ +%R ; rand_mul ]} mr2 >-> Emul mr1 mr2} ;
 
   (* E(m * j) = E(m) ^ j with extra constraint on randomness *)
   Epow_scalarM :
-    forall (k : key T) (j : plain T) (r : rand T),
-    {morph E[k ; (rand_pow r j) ] : m / m * j >-> Epow m j} ;
+    forall (k : pub_key T) (j : plain T),
+    {morph E[ k ] : mr / mr {< *%R ; rand_pow >} j >-> Epow mr j} ;
 }.
 
 #[short(type=AHEncType)]
@@ -89,6 +107,6 @@ HB.structure Definition AHEnc := { T of isAHEnc T & }.
    doesn't need, is because the ring type guarantees that msg_rand_add works.*)
 Local Notation "x (.) y" := (Emul x y) (at level 40, left associativity).
 Local Notation "x (^) y" := (Epow x y) (at level 40, left associativity).
-Local Notation "x {^} y" := (rand_pow x y) (at level 40, left associativity).
-Local Notation "x {*} y" := (rand_mul x y) (at level 40, left associativity).
+Local Notation "x ^r y" := (rand_pow x y) (at level 40, left associativity).
+Local Notation "x *r y" := (rand_mul x y) (at level 40, left associativity).
 

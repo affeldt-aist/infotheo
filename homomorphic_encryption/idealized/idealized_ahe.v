@@ -1,9 +1,9 @@
 (******************************************************************************)
 (*                                                                            *)
-(* Idealized Party-Labeled AHE Instance                                       *)
+(* Idealized AHE Instance                                                     *)
 (*                                                                            *)
-(* This file provides an idealized AHEScheme where encryption is      *)
-(* deterministic: enc(p, m, r) = (p, m). Randomness is ignored.               *)
+(* This file provides an idealized AHEScheme where encryption is              *)
+(* deterministic: enc(pk, m, r) = m. Randomness is ignored.                   *)
 (*                                                                            *)
 (* Use cases:                                                                 *)
 (* - Computational correctness proofs via reflexivity                         *)
@@ -22,7 +22,7 @@ From mathcomp Require Import all_boot all_order all_algebra fingroup finalg ssrf
 Require Import he_types.
 Require Import enc_dec.
 Require Import ahe_enc.
-Require Import ahe_algebra.
+Require Import ahe_monoid.
 
 Import GRing.Theory.
 
@@ -33,121 +33,93 @@ Import Prenex Implicits.
 Local Open Scope ring_scope.
 
 (* ========================================================================== *)
-(*                   Idealized Party AHE Instance                             *)
+(*                   Idealized AHE Instance                                   *)
 (* ========================================================================== *)
 
-Section Idealized_Party_AHE.
+Section Idealized_AHE.
 
-Variable partyT : finType.
 Variable msgT : finComNzRingType.
-
-(* Type definitions *)
-Definition idealized_enc_party := (partyT * msgT)%type.
-Definition idealized_pkey := (partyT * key_type * msgT)%type.
 
 (* ========================================================================== *)
 (*                   Type Bundle                                              *)
 (* ========================================================================== *)
 
-Definition Idealized_HETypes : HETypes := 
-  MkHE partyT       (* party type *)
-       msgT         (* plain type = message space *)
+(* Following the Benaloh/Paillier pattern:
+   MkHE plain rand cipher pub_key priv_key *)
+Definition Idealized_HETypes : HETypes :=
+  MkHE msgT         (* plain type = message space *)
        msgT         (* rand type = message (randomness ignored but needs a type) *)
-       msgT         (* cipher type = message (raw cipher without party label) *)
-       idealized_enc_party  (* party_cipher = (party * msg) *)
-       idealized_pkey.      (* pkey type *)
+       msgT         (* cipher type = message *)
+       msgT         (* pub_key type - trivial *)
+       msgT.        (* priv_key type - trivial *)
 
 (* ========================================================================== *)
 (*                   Encryption/Decryption Operations                         *)
 (* ========================================================================== *)
 
-(* Deterministic encryption: ignores randomness, just pairs party with message *)
-Definition idealized_enc (p : partyT) (m r : msgT) :
-  idealized_enc_party := (p, m).
+(* Deterministic encryption: ignores randomness and key, just returns message *)
+Definition idealized_enc (pk : msgT) (m r : msgT) : msgT := m.
 
-Definition idealized_key (p : partyT) (k : key_type) (s : msgT) :
-  idealized_pkey :=  (p, k, s).
+(* Decryption: just returns the ciphertext as the message *)
+Definition idealized_dec (dk : msgT) (c : msgT) : option msgT := Some c.
 
-Definition idealized_dec (dk : idealized_pkey) (e : idealized_enc_party) :
-  option msgT := match dk, e with
-    | (i, k, _), (j, m) => if (i == j) && (k == Dec) then Some m else None
-    end.
+(* pub_of_priv: identity, since keys are trivial *)
+Definition idealized_pub_of_priv (dk : msgT) : msgT := dk.
 
 (* Decryption correctness - straightforward computation *)
-Lemma idealized_dec_correct : forall (p : partyT) (m r sk : msgT),
-  idealized_dec (idealized_key p Dec sk) (idealized_enc p m r) = Some m.
-Proof.
-  move=> p m r sk.
-  rewrite /idealized_dec /idealized_key /idealized_enc /=.
-  by rewrite eq_refl.
-Qed.
+Lemma idealized_dec_correct : forall (dk : msgT) (r m : msgT),
+  idealized_dec dk (idealized_enc (idealized_pub_of_priv dk) m r) = Some m.
+Proof. by []. Qed.
 
 (* ========================================================================== *)
 (*                   isEncDec Instance                                        *)
 (* ========================================================================== *)
 
-HB.instance Definition Idealized_isEncDec : isEncDec Idealized_HETypes := 
-  @isEncDec.Build Idealized_HETypes 
-    idealized_enc idealized_key idealized_dec
+HB.instance Definition Idealized_isEncDec : isEncDec Idealized_HETypes :=
+  @isEncDec.Build Idealized_HETypes
+    idealized_enc idealized_dec idealized_pub_of_priv
     idealized_dec_correct.
 
 (* ========================================================================== *)
 (*                   Homomorphic Operations                                   *)
 (* ========================================================================== *)
 
-(* Homomorphic addition: adds the message components.
-   Like Benaloh, we take the party from e1 and ignore e2's party.
-   This ensures associativity holds unconditionally. *)
-Definition idealized_Emul (e1 e2 : idealized_enc_party) :
-  idealized_enc_party := 
-    let (p1, m1) := e1 in
-    let (_, m2) := e2 in
-    (p1, m1 + m2).
+(* Homomorphic addition: adds the message components *)
+Definition idealized_Emul (c1 c2 : msgT) : msgT := c1 + c2.
 
 (* Homomorphic scalar multiplication: multiplies message by scalar *)
-Definition idealized_Epow (e : idealized_enc_party) (k : msgT) :
-  idealized_enc_party :=
-    match e with
-    | (p, m) => (p, m * k)
-    end.
+Definition idealized_Epow (c : msgT) (k : msgT) : msgT := c * k.
 
 (* Randomness exponentiation - trivial since randomness is ignored *)
-Definition idealized_rand_pow (r m : msgT) : msgT := r * m.
+Definition idealized_rand_pow (r : msgT) (m : msgT) : msgT := r * m.
+
+(* Randomness multiplication - trivial *)
+Definition idealized_rand_mul (r1 r2 : msgT) : msgT := r1 * r2.
 
 (* -------------------------------------------------------------------------- *)
 (*  Local notations for compact {morph} syntax                                *)
 (* -------------------------------------------------------------------------- *)
 
 Local Notation IT := Idealized_HETypes.
-Local Notation "E[ p ]" := (enc_curry IT p) (at level 10, p at level 9).
-Local Notation "x {+} y" := (msg_rand_add IT x y)
-  (at level 50, left associativity).
-Local Notation "x {^}  y" := (unpair_mul_rand_op IT x y idealized_rand_pow)
-  (at level 50, left associativity).
-Local Notation "x (.) y" := (idealized_Emul x y)
-  (at level 40, left associativity).
-Local Notation "x (^) y" := (idealized_Epow x y)
-  (at level 40, left associativity).
 
-(* Additive homomorphism: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2) 
-   For idealized: (p, m1) *E (p, m2) = (p, m1+m2)
-   Since encryption ignores randomness, this is trivially true. *)
-Lemma idealized_Emul_addM : forall (p : partyT),
-  {morph E[ p ] : x y / x {+} y >-> x (.) y}.
+Lemma idealized_Emul_addM :
+    forall (k : pub_key IT),
+    {morph enc_curry IT k
+      : mr1 mr2 / mr_bop IT +%R idealized_rand_mul mr1 mr2
+      >-> idealized_Emul mr1 mr2}.
 Proof.
   move=> p [m1 r1] [m2 r2].
-  by rewrite /enc_curry /msg_rand_add /idealized_Emul /idealized_enc /=.
+  by rewrite /mr_bop /enc_curry /idealized_Emul /idealized_enc /idealized_rand_mul /=.
 Qed.
 
-(* Scalar multiplication homomorphism:
-   E(m*k, r^k) = E(m,r) ^ k
-   For idealized: (p, m*k) = (p, m) ^ k, which is true by definition. *)
-Lemma idealized_Epow_mulM : forall (p : partyT) (k : msgT),
-  {morph E[ p ] : mr / mr {^} k >-> mr (^) k}.
+Lemma idealized_Epow_scalarM :
+    forall (k : pub_key IT) (j : plain IT),
+    {morph enc_curry IT k
+      : mr / mr_bop_rplain IT *%R idealized_rand_pow mr j
+      >-> idealized_Epow mr j}.
 Proof.
-  move=> p k [m r].
-  rewrite /enc_curry /idealized_Epow /idealized_rand_pow /=.
-  rewrite /idealized_enc /=.
+  move=> p j [m r].
+  rewrite /mr_bop_rplain /enc_curry /idealized_Epow /idealized_rand_pow /idealized_enc /=.
   by rewrite mulrC.
 Qed.
 
@@ -155,54 +127,33 @@ Qed.
 (*                   isAHEnc Instance                                         *)
 (* ========================================================================== *)
 
-HB.instance Definition Idealized_isAHEnc : isAHEnc Idealized_HETypes := 
-  @isAHEnc.Build Idealized_HETypes 
-    idealized_Emul idealized_Epow idealized_rand_pow
-    idealized_Emul_addM idealized_Epow_mulM.
+HB.instance Definition Idealized_isAHEnc : isAHEnc Idealized_HETypes :=
+  @isAHEnc.Build Idealized_HETypes
+    idealized_Emul idealized_Epow idealized_rand_pow idealized_rand_mul
+    idealized_Emul_addM idealized_Epow_scalarM.
 
 (* ========================================================================== *)
-(*                   Algebraic Properties                                      *)
+(*                   Algebraic Properties (isAHEMonoid)                       *)
 (* ========================================================================== *)
 
-(* Associativity: (e1 *E e2) *E e3 = e1 *E (e2 *E e3) *)
-Lemma idealized_Emul_assoc : forall (e1 e2 e3 : idealized_enc_party),
-  idealized_Emul (idealized_Emul e1 e2) e3 = idealized_Emul e1 (idealized_Emul e2 e3).
+Definition idealized_rand_id : msgT := 1.
+
+Lemma idealized_Emul_assoc : associative idealized_Emul.
+Proof. by move=> x y z; rewrite /idealized_Emul addrA. Qed.
+
+Lemma idealized_Emul_comm : commutative idealized_Emul.
+Proof. by move=> x y; rewrite /idealized_Emul addrC. Qed.
+
+Lemma idealized_Emul_id :
+  forall k : pub_key IT, left_id (enc_curry IT k (0, idealized_rand_id)) idealized_Emul.
 Proof.
-  move=> [p1 m1] [p2 m2] [p3 m3].
-  by rewrite /idealized_Emul /= addrA.
+  move=> k x.
+  by rewrite /enc_curry /idealized_enc /idealized_Emul /= add0r.
 Qed.
 
-(* Unit randomness: 1 (or any value, since randomness is ignored) *)
-Definition idealized_rand_unit : msgT := 1.
+HB.instance Definition Idealized_isAHEMonoid : isAHEMonoid Idealized_HETypes :=
+  @isAHEMonoid.Build Idealized_HETypes
+    idealized_rand_id
+    idealized_Emul_assoc idealized_Emul_comm idealized_Emul_id.
 
-(* Right identity: e *E E(p, 0, 1) = e *)
-Lemma idealized_Emul_id : forall (p : partyT) (e : idealized_enc_party),
-  idealized_Emul e (idealized_enc p 0 idealized_rand_unit) = e.
-Proof.
-  move=> p [q m].
-  by rewrite /idealized_Emul /idealized_enc /= addr0.
-Qed.
-
-(* Cipher projection: extracts the message component *)
-Definition idealized_enc_cipher (e : idealized_enc_party) : msgT :=
-  match e with (_, m) => m end.
-
-(* Cipher-level commutativity: the message part commutes *)
-Lemma idealized_Emul_comm_cipher : forall (e1 e2 : idealized_enc_party),
-  idealized_enc_cipher (idealized_Emul e1 e2) = 
-  idealized_enc_cipher (idealized_Emul e2 e1).
-Proof.
-  move=> [p1 m1] [p2 m2].
-  by rewrite /idealized_enc_cipher /idealized_Emul /= addrC.
-Qed.
-
-(* ========================================================================== *)
-(*                   isAHEAlgebra Instance                                    *)
-(* ========================================================================== *)
-
-HB.instance Definition Idealized_isAHEAlgebra : isAHEAlgebra Idealized_HETypes := 
-  @isAHEAlgebra.Build Idealized_HETypes 
-    idealized_Emul_assoc idealized_rand_unit idealized_Emul_id
-    idealized_enc_cipher idealized_Emul_comm_cipher.
-
-End Idealized_Party_AHE.
+End Idealized_AHE.
