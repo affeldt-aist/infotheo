@@ -17,29 +17,29 @@ Import Prenex Implicits.
 
 Section smc_dsdp_session_types.
 
-Variable PHE : AHEScheme.
+Variable AHE : AHEMonoidType.
 
-Let data := di_data (Standard_DSDP_Interface PHE).
-Let e := di_e (Standard_DSDP_Interface PHE).
-Let D := @dec PHE.
+Let data := di_data (Standard_DSDP_Interface AHE).
+Let e := di_e (Standard_DSDP_Interface AHE).
+Let D := @dec AHE.
 
 (* Receive encrypted - pattern match data, use SFail on mismatch *)
 Definition DRecv_enc {party n env} (src : nat)
-    (f : party_cipher PHE -> @sproc dsdp_dtype data party n env)
+    (f : cipher AHE -> @sproc dsdp_dtype data party n env)
     : @sproc dsdp_dtype data party n.+1 (senv_recv env src DT_Enc) :=
   SRecv src DT_Enc (fun d => 
-    match @std_from_enc PHE d with
+    match @std_from_enc AHE d with
     | Some enc => f enc
     | None => SFail
     end).
 
 (* Receive encrypted and decrypt - still tracks as DT_Enc (what's on the wire) *)
 (* NOTE: D returns option msg, so need nested match for decrypt failure *)
-Definition DRecv_dec {party n env} (src : nat) (dk : pkey PHE)
-    (f : plain PHE -> @sproc dsdp_dtype data party n env)
+Definition DRecv_dec {party n env} (src : nat) (dk : priv_key AHE)
+    (f : plain AHE -> @sproc dsdp_dtype data party n env)
     : @sproc dsdp_dtype data party n.+1 (senv_recv env src DT_Enc) :=
   SRecv src DT_Enc (fun d => 
-    match @std_from_enc PHE d with
+    match @std_from_enc AHE d with
     | Some enc => match D dk enc with
                   | Some msg => f msg
                   | None => SFail  (* decrypt failure *)
@@ -52,7 +52,7 @@ Definition DSend {party n env} (dst : nat) (x : data)
     : @sproc dsdp_dtype data party n.+1 (senv_send env dst DT_Enc) :=
   SSend dst DT_Enc x p.
 
-(* Init/Ret wrappers - can init any data kind (msg, enc, key) *)
+(* Init/Ret wrappers - can init any data kind (msg, enc, priv_key) *)
 (* Init doesn't affect session env since it's local storage *)
 Definition DInit {party n env} (x : data) (p : @sproc dsdp_dtype data party n env)
     : @sproc dsdp_dtype data party n.+1 env := 
@@ -67,9 +67,9 @@ Definition DFinish {party : nat} : @sproc dsdp_dtype data party 1 senv_end :=
 End smc_dsdp_session_types.
 
 (* Arguments declarations for implicit parameters *)
-Arguments DRecv_enc {PHE party n env}.
-Arguments DRecv_dec {PHE party n env}.
-Arguments DSend {PHE party n env}.
-Arguments DInit {PHE party n env}.
-Arguments DRet {PHE party}.
-Arguments DFinish {PHE party}.
+Arguments DRecv_enc {AHE party n env}.
+Arguments DRecv_dec {AHE party n env}.
+Arguments DSend {AHE party n env}.
+Arguments DInit {AHE party n env}.
+Arguments DRet {AHE party}.
+Arguments DFinish {AHE party}.

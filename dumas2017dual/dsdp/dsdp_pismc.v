@@ -12,45 +12,45 @@ Local Open Scope ring_scope.
 
 Section smc_dsdp_program.
 
-(* Parameterize by an AHEScheme instance *)
-Variable AHE : AHEScheme.
+(* Parameterize by an AHEMonoidType instance *)
+Variable AHE : AHEMonoidType.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface AHE.
 
 (* Extract types from the scheme *)
-Let partyT := party AHE.
-Let msg := plain AHE.
-Let rand := rand AHE.
-Let encT := party_cipher AHE.
-Let pkey := pkey AHE.
+Let msgT := plain AHE.
+Let randT := rand AHE.
+Let encT := cipher AHE.
+Let priv_keyT := priv_key AHE.
+Let pub_keyT := pub_key AHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
 Let d := di_d DI.
 Let e := di_e DI.
-Let k := di_k DI.
+Let priv_key := di_priv_key DI.
 
 (* HE operations from the scheme - using @ to provide scheme explicitly *)
-Let E := @enc AHE.
-Let K := @key AHE.
-Let D := @dec AHE.
 Let Emul := @Emul AHE.
 Let Epow := @Epow AHE.
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
 
-(* Party identities - variables of the scheme's party type *)
-Variable alice : partyT.
-Variable bob : partyT.
-Variable charlie : partyT.
+(* Party identities *)
+Variable alice : party_id.
+Variable bob : party_id.
+Variable charlie : party_id.
 
 (* Concrete party indices for session type tracking *)
 (* These must be distinct for duality verification to work with native_compute *)
 Definition alice_idx : nat := 0.
 Definition bob_idx : nat := 1.
 Definition charlie_idx : nat := 2.
+
+(* Make dtype and data explicit for sproc type annotations *)
+Arguments sproc dtype data party {_} {_}.
 
 (* Use session-typed wrappers from dsdp_interface directly *)
 Let PInit {party n env} := @DInit AHE party n env.
@@ -61,8 +61,8 @@ Let Recv_enc {party n env} := @DRecv_enc AHE party n env.
 
 (** * Data wrapper shorthand notations *)
 
-(* #x -> (k x) for key *)
-Local Notation "# x" := (k x) (at level 0, x at level 0) : pismc_scope.
+(* #x -> (priv_key x) for private key *)
+Local Notation "# x" := (priv_key x) (at level 0, x at level 0) : pismc_scope.
 (* &x -> (d x) for data/message *)
 Local Notation "& x" := (d x) (at level 0, x at level 0) : pismc_scope.
 (* $x -> (e x) for encrypted *)
@@ -83,12 +83,12 @@ Local Notation "'Recv<' p '>' x '=>' P" :=
 
 Notation "'Recv<' p '>' '#' dk x '=>' P" :=
   (Recv_dec p dk (fun x => P))
-  (in custom pismc at level 85, p constr at level 0, 
+  (in custom pismc at level 85, p constr at level 0,
    dk constr at level 0, x name,
    P custom pismc at level 85, right associativity).
 
 (* Ret - return a value *)
-Local Notation "'Ret' x" := (PRet x) 
+Local Notation "'Ret' x" := (PRet x)
   (in custom pismc at level 80, x constr at level 0).
 
 (* Single Init with continuation *)
@@ -107,13 +107,16 @@ Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" := (PInit x .. (PInit y P) ..
 (** * Each encryption E(party, msg, rand) needs explicit randomness.          *)
 (******************************************************************************)
 
-Print sproc.
-Arguments sproc dtype data party {_} {_}.
-Check sproc.
-About sproc.
+(* Public key mapping: each party has an associated public key *)
+Variable ek : party_id -> pub_key AHE.
+
+(* Party-indexed encryption: maps party to their public key for enc *)
+Definition enc_pub_key (p : party_id) (m : msgT) (r : randT) : encT :=
+  enc (ek p) m r.
+Local Notation E := enc_pub_key.
 
 (* Bob's protocol - using concrete indices for session type duality *)
-Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand) 
+Definition pbob (dk : priv_keyT)(v2 : msgT)(rb1 rb2 : randT)
     : sproc dsdp_dtype data bob_idx :=
   \pi{ Init (#dk, &v2) ;
      Send<alice_idx> $(E bob v2 rb1);
@@ -123,7 +126,7 @@ Definition pbob (dk : pkey)(v2 : msg)(rb1 rb2 : rand)
      Finish }.
 
 (* Charlie's protocol *)
-Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand) 
+Definition pcharlie (dk : priv_keyT)(v3 : msgT)(rc1 rc2 : randT)
     : @sproc dsdp_dtype data charlie_idx _ _ :=
   \pi{ Init (#dk, &v3) ;
      Send<alice_idx> $(E charlie v3 rc1) ;
@@ -132,7 +135,7 @@ Definition pcharlie (dk : pkey)(v3 : msg)(rc1 rc2 : rand)
      Finish }.
 
 (* Alice's protocol *)
-Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand) 
+Definition palice (dk : priv_keyT)(v1 u1 u2 u3 r2 r3: msgT)(ra1 ra2 : randT)
     : @sproc dsdp_dtype data alice_idx _ _ :=
   \pi{ Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
      Recv<bob_idx> c2 =>
@@ -149,17 +152,17 @@ Definition palice (dk : pkey)(v1 u1 u2 u3 r2 r3: msg)(ra1 ra2 : rand)
 (******************************************************************************)
 
 (* Party-to-nat mapping and hypotheses relating it to concrete indices.
-   Unlike SPP where parties are concrete nats, DSDP uses an abstract party type
-   from the HE scheme. We need hypotheses to connect pn with concrete indices. *)
-Variable pn : partyT -> nat.
+   DSDP uses abstract party_id variables. We need hypotheses to connect
+   pn with concrete indices. *)
+Variable pn : party_id -> nat.
 Hypothesis pn_alice : pn alice = alice_idx.
 Hypothesis pn_bob : pn bob = bob_idx.
 Hypothesis pn_charlie : pn charlie = charlie_idx.
 
 (* Import original programs from dsdp_program *)
-Let palice_orig := @dsdp_program.palice AHE bob charlie pn.
-Let pbob_orig := @dsdp_program.pbob AHE alice bob charlie pn.
-Let pcharlie_orig := @dsdp_program.pcharlie AHE alice bob charlie pn.
+Let palice_orig := @dsdp_program.palice AHE bob charlie pn ek.
+Let pbob_orig := @dsdp_program.pbob AHE alice bob charlie pn ek.
+Let pcharlie_orig := @dsdp_program.pcharlie AHE alice bob charlie pn ek.
 
 (* Cross-equality proofs on erased processes (proc, not sproc).
    The sproc types differ in session env indices, but erased procs are equal
@@ -183,8 +186,8 @@ Proof. by rewrite /pcharlie_orig /dsdp_program.pcharlie pn_alice pn_bob. Qed.
 (** * Session Type Duality Verification                                       *)
 (******************************************************************************)
 
-Variables (dk : pkey) (v1 u1 u2 u3 r2 r3 v2 v3 : msg)
-(ra1 ra2 rb1 rb2 rc1 rc2 : rand).
+Variables (dk : priv_keyT) (v1 u1 u2 u3 r2 r3 v2 v3 : msgT)
+(ra1 ra2 rb1 rb2 rc1 rc2 : randT).
 
 (* Wrap in aproc for duality checking *)
 Definition aproc_alice := mk_aproc (palice dk v1 u1 u2 u3 r2 r3 ra1 ra2).
@@ -230,64 +233,13 @@ Definition dsdp_procs : seq (proc data) :=
 Lemma dsdp_max_fuel_ok : [> dsdp_saprocs] = 27.
 Proof. reflexivity. Qed.
 
-(*******************************************************************************)
-(** * Session Environment Convergence for DSDP                                 *)
-(*******************************************************************************)
-
-(* NOTE: The following lemmas cannot currently be proved computationally.
-
-   Unlike SPP (which uses concrete ring types), DSDP uses abstract types from
-   AHEScheme (enc, dec, Emul, Epow, key). These abstract operations
-   prevent native_compute/vm_compute from reducing the interpreter to a
-   concrete final state.
-
-   The lemmas are semantically true for the same reasons as SPP:
-   - dsdp_no_fail: None of the programs use SFail, and all channels are co-dual
-   - dsdp_terminates: With sufficient fuel (27), all programs reach terminal states
-   - dsdp_senv_zero: Follows from the above two via terminated_nonfail_senv_zero
-
-   Possible approaches for future work:
-   1. Instantiate AHEScheme with a concrete implementation for proofs
-   2. Develop a semantic/structural proof that doesn't rely on computation
-   3. Use program extraction and external verification
-
-   For now, these properties are asserted as axioms or left as admitted. *)
-
-(*
-Lemma dsdp_no_fail traces :
-  all_nonfail (interp [> dsdp_saprocs] dsdp_procs traces).1.
-Proof.
-(* Cannot prove computationally due to abstract HE types *)
-Admitted.
-
-Lemma dsdp_terminates traces :
-  all_terminated (interp [> dsdp_saprocs] dsdp_procs traces).1.
-Proof.
-(* Cannot prove computationally due to abstract HE types *)
-Admitted.
-
-Theorem dsdp_senv_zero traces :
-  exists aps' : seq (aproc dsdp_dtype data),
-    erase_aprocs aps' = (interp [> dsdp_saprocs] dsdp_procs traces).1 /\
-    aprocs_senv_depth [:: 0; 1; 2] aps' = 0.
-Proof.
-have [aps' [Hsz [Herase Hsenv]]] :=
-  @senv_bounded _ _ [:: 0; 1; 2] [> dsdp_saprocs] dsdp_saprocs traces (leqnn _).
-exists aps'.
-split; first exact: Herase.
-apply: terminated_nonfail_senv_zero.
-- by rewrite Herase; exact: dsdp_terminates.
-- by rewrite Herase; exact: dsdp_no_fail.
-Qed.
-*)
-
 End smc_dsdp_program.
 
 (*******************************************************************************)
 (** * Session Environment Convergence for DSDP (Idealized Instance)            *)
 (*******************************************************************************)
 
-(* This section instantiates DSDP with the Idealized AHE scheme, where
+(* This section instantiates DSDP with the Idealized AHEMonoidType, where
    enc/dec have concrete computable definitions. This enables native_compute
    proofs for termination properties. *)
 
@@ -297,30 +249,30 @@ Variable m_minus_2 : nat.
 Local Notation m := m_minus_2.+2.
 Local Notation msg := 'F_m.
 
-(* Build the Idealized AHEScheme (same as in dsdp_correctness.v) *)
+(* Build the Idealized AHEMonoidType *)
 Local Definition Idealized_EncDec_instance :=
-  @Idealized_isEncDec party_id msg.
+  @Idealized_isEncDec msg.
 
 Local Definition Idealized_AHEnc_instance :=
-  @Idealized_isAHEnc party_id msg.
+  @Idealized_isAHEnc msg.
 
-Local Definition Idealized_AHEAlgebra_instance :=
-  @Idealized_isAHEAlgebra party_id msg.
+Local Definition Idealized_AHEMonoid_instance :=
+  @Idealized_isAHEMonoid msg.
 
-Local Definition Idealized_EncDec_local : EncDec_scheme :=
-  @EncDec.Pack (Idealized_HETypes party_id msg)
-    (@EncDec.Class (Idealized_HETypes party_id msg) Idealized_EncDec_instance).
+Local Definition Idealized_EncDec_local : EncDecType :=
+  @EncDec.Pack (Idealized_HETypes msg)
+    (@EncDec.Class (Idealized_HETypes msg) Idealized_EncDec_instance).
 
-Local Definition Idealized_AHEnc_local : AHEnc_scheme :=
-  @AHEnc.Pack (Idealized_HETypes party_id msg)
-    (@AHEnc.Class (Idealized_HETypes party_id msg)
+Local Definition Idealized_AHEnc_local : AHEncType :=
+  @AHEnc.Pack (Idealized_HETypes msg)
+    (@AHEnc.Class (Idealized_HETypes msg)
       Idealized_EncDec_instance Idealized_AHEnc_instance).
 
-Local Definition Idealized_AHEAlgebra_local : AHEScheme :=
-  @AHEAlgebra.Pack Idealized_AHEnc_local
-    (@AHEAlgebra.Class Idealized_AHEnc_local Idealized_AHEAlgebra_instance).
+Local Definition Idealized_AHEMonoid_local : AHEMonoidType :=
+  @AHEMonoid.Pack Idealized_AHEnc_local
+    (@AHEMonoid.Class Idealized_AHEnc_local Idealized_AHEMonoid_instance).
 
-Let AHE : AHEScheme := Idealized_AHEAlgebra_local.
+Let AHE : AHEMonoidType := Idealized_AHEMonoid_local.
 Let DI := Standard_DSDP_Interface AHE.
 Let data := di_data DI.
 
@@ -334,17 +286,27 @@ Let pn : party_id -> nat := party_id_to_nat.
 Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
 Let runit : rand AHE := 1.
 
-Let dk := @key AHE Alice Dec k_a.
+(* Private keys are just msg values in idealized *)
+Let dk_a : priv_key AHE := k_a.
+Let dk_b : priv_key AHE := k_b.
+Let dk_c : priv_key AHE := k_c.
+
+(* Public keys derived from private keys via pub_of_priv *)
+Let ek (p : party_id) : pub_key AHE :=
+  match p with
+  | Alice => pub_of_priv dk_a
+  | Bob => pub_of_priv dk_b
+  | Charlie => pub_of_priv dk_c
+  | NoParty => pub_of_priv dk_a
+  end.
 
 (* Instantiate programs from dsdp_program.v *)
 Let palice_inst :=
-  @dsdp_program.palice AHE bob charlie pn dk v1 u1 u2 u3 r2 r3 runit runit.
+  @dsdp_program.palice AHE bob charlie pn ek dk_a v1 u1 u2 u3 r2 r3 runit runit.
 Let pbob_inst :=
-  @dsdp_program.pbob AHE alice bob charlie pn (@key AHE Bob Dec k_b) v2
-    runit runit.
+  @dsdp_program.pbob AHE alice bob charlie pn ek dk_b v2 runit runit.
 Let pcharlie_inst :=
-  @dsdp_program.pcharlie AHE alice bob charlie pn
-    (@key AHE Charlie Dec k_c) v3 runit runit.
+  @dsdp_program.pcharlie AHE alice bob charlie pn ek dk_c v3 runit runit.
 
 Local Open Scope sproc_scope.
 Local Open Scope proc_scope.

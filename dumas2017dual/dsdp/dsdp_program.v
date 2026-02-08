@@ -44,52 +44,49 @@ Definition alice_idx : nat := 0.
 Definition bob_idx : nat := 1.
 Definition charlie_idx : nat := 2.
 
-(* Parameterize by an AHEScheme instance *)
-Variable AHE : AHEScheme.
+(* Parameterize by an AHEMonoidType instance *)
+Variable AHE : AHEMonoidType.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface AHE.
 
-(* Extract types from the scheme *)
-Let partyT := party AHE.
+(* Extract types from the AHEMonoidType *)
 Let msgT := plain AHE.
 Let randT := rand AHE.
-Let encT := party_cipher AHE.
-Let pkeyT := pkey AHE.
+Let encT := cipher AHE.
+Let priv_keyT := priv_key AHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
 Let d := di_d DI.
 Let e := di_e DI.
-Let k := di_k DI.
+Let k := di_priv_key DI.
 Let Recv_dec := @di_Recv_dec AHE DI.
 Let Recv_enc := @di_Recv_enc AHE DI.
 
-(* HE operations from the scheme - using @ to provide scheme explicitly *)
-Let E := @enc AHE.
-Let K := @key AHE.
-Let D := @dec AHE.
+(* HE operations from the AHEMonoidType - using @ to provide AHEMonoidType explicitly *)
 Let Emul := @Emul AHE.
 Let Epow := @Epow AHE.
-
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
 
-(* Party identities - these are variables of the scheme's party type.
-   For concrete instances like Benaloh_Party_HE, partyT = party. *)
-Variable alice : partyT.
-Variable bob : partyT.
-Variable charlie : partyT.
+Variable alice : party_id.
+Variable bob : party_id.
+Variable charlie : party_id.
 
 (* Party to nat mapping for Send/Recv indices *)
-Variable pn : partyT -> nat.
+Variable pn : party_id -> nat.
 
-(* Decryption correctness: D inverts E for matching party and Dec key *)
-Hypothesis D_correct : forall p m r k,
-  D (K p Dec k) (E p m r) = Some m.
+(* Public key mapping: each party has an associated public key *)
+Variable ek : party_id -> pub_key AHE.
 
-Definition pbob (dk : pkeyT)(v2 : msgT)(rb1 rb2 : randT) :
+(* Party-indexed encryption: maps party to their public key for enc *)
+Definition enc_pk (p : party_id) (m : msgT) (r : randT) : encT :=
+  enc (ek p) m r.
+Local Notation E := enc_pk.
+
+Definition pbob (dk : priv_keyT)(v2 : msgT)(rb1 rb2 : randT) :
   @sproc dsdp_dtype data bob_idx _ _ :=
   DInit (k dk) (
   DInit (d v2) (
@@ -99,7 +96,7 @@ Definition pbob (dk : pkeyT)(v2 : msgT)(rb1 rb2 : randT) :
     DSend (pn charlie) (e (a3 *h (E charlie d2 rb2))) (
   DFinish)))))).
 
-Definition pcharlie (dk : pkeyT)(v3 : msgT)(rc1 rc2 : randT) :
+Definition pcharlie (dk : priv_keyT)(v3 : msgT)(rc1 rc2 : randT) :
   @sproc dsdp_dtype data charlie_idx _ _ :=
   DInit (k dk) (
   DInit (d v3) (
@@ -108,7 +105,7 @@ Definition pcharlie (dk : pkeyT)(v3 : msgT)(rc1 rc2 : randT) :
     DSend (pn alice) (e (E alice d3 rc2))
   DFinish))))).
 
-Definition palice (dk : pkeyT)(v1 u1 u2 u3 r2 r3: msgT)(ra1 ra2 : randT) :
+Definition palice (dk : priv_keyT)(v1 u1 u2 u3 r2 r3: msgT)(ra1 ra2 : randT) :
   @sproc dsdp_dtype data alice_idx _ _ :=
   DInit (k dk) (
   DInit (d v1) (
@@ -128,12 +125,8 @@ Definition palice (dk : pkeyT)(v1 u1 u2 u3 r2 r3: msgT)(ra1 ra2 : randT) :
   
 (* Randomness variables for each party's encryptions *)
 Variables (rb1 rb2 rc1 rc2 ra1 ra2 : randT).
-Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msgT).
-
-(* Keys constructed using the scheme's K operation *)
-Let dk_a : pkeyT := K alice Dec k_a.
-Let dk_b : pkeyT := K bob Dec k_b.
-Let dk_c : pkeyT := K charlie Dec k_c.
+Variables (dk_a dk_b dk_c : priv_keyT).
+Variables (v1 v2 v3 u1 u2 u3 r2 r3 : msgT).
 
 (* Session-typed processes packed via [aprocs ...].
 
@@ -172,10 +165,15 @@ Definition dsdp_max_fuel : nat := 27.
 (* Algebraic correctness proof using homomorphic properties                    *)
 (* ========================================================================== *)
 
-(* The homomorphic properties from AHEScheme - using mixin directly *)
+(* The homomorphic properties from AHEMonoidType - using mixin directly *)
 Let Emul_eq_add := @Emul_addM AHE.
-Let Epow_eq_mul := @Epow_mulM AHE.
-Let enc_curry_eq := @enc_as_curry AHE.
+Let Epow_eq_mul := @Epow_scalarM AHE.
+
+(* enc k m r = enc_curry _ k (m, r) is definitional, but morphism
+   rewriting needs syntactic enc_curry form *)
+Local Lemma enc_curry_eq (kk : pub_key AHE) (m : msgT) (r : randT) :
+  enc kk m r = ahe_enc.enc_curry AHE kk (m, r).
+Proof. by []. Qed.
 
 (* 
    Protocol correctness theorem (algebraic version):
@@ -215,7 +213,7 @@ Definition alice_a3 : encT :=
 Lemma alice_a2_value : exists rr,
   alice_a2 = E bob (v2 * u2 + r2) rr.
 Proof.
-  rewrite /alice_a2 /bob_encrypted_input /Epow /E /Emul.
+  rewrite /alice_a2 /bob_encrypted_input /Epow /enc_pk /Emul.
   rewrite !enc_curry_eq.
   rewrite -Epow_eq_mul -Emul_eq_add.
   by eexists.
@@ -225,7 +223,7 @@ Qed.
 Lemma alice_a3_value : exists rr,
   alice_a3 = E charlie (v3 * u3 + r3) rr.
 Proof.
-  rewrite /alice_a3 /charlie_encrypted_input /Epow /E /Emul.
+  rewrite /alice_a3 /charlie_encrypted_input /Epow /enc_pk /Emul.
   rewrite !enc_curry_eq.
   rewrite -Epow_eq_mul -Emul_eq_add.
   by eexists.
@@ -242,9 +240,9 @@ Definition bob_combined (a3_enc : encT) : encT :=
 Lemma bob_combined_value : exists rr,
   bob_combined alice_a3 = E charlie (v3 * u3 + r3 + d2_value) rr.
 Proof.
-  rewrite /bob_combined /Emul /E.
+  rewrite /bob_combined /Emul /enc_pk.
   have [rr3 Ha3] := alice_a3_value.
-  rewrite /E in Ha3.
+  rewrite /enc_pk in Ha3.
   rewrite Ha3 !enc_curry_eq -Emul_eq_add.
   by eexists.
 Qed.

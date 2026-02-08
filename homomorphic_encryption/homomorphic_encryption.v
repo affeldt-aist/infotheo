@@ -61,10 +61,11 @@ Reserved Notation "u *h w" (at level 40).
 Reserved Notation "u ^h w" (at level 40).
 
 (* AHE types and structures *)
+Require Export key_type.
 Require Export he_types.
 Require Export enc_dec.
 Require Export ahe_enc.
-Require Export ahe_algebra.
+Require Export ahe_monoid.
 
 (* ========================================================================== *)
 (*                          Party and Type Definitions                         *)

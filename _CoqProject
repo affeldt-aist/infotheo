@@ -103,6 +103,7 @@ du2002/spp_program.v
 du2002/spp_pismc.v
 du2002/spp_proof.v
 du2002/spp_session_types.v
+homomorphic_encryption/key_type.v
 homomorphic_encryption/he_types.v
 homomorphic_encryption/enc_dec.v
 homomorphic_encryption/ahe_enc.v

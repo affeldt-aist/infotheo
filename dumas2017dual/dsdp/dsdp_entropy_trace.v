@@ -41,52 +41,52 @@ Reserved Notation "u ^h w" (at level 40).
 
 Section dsdp_traces.
 
-(* Parameterize by an AHEScheme instance *)
-Variable PHE : AHEScheme.
+(* Parameterize by an AHEMonoidType instance *)
+Variable AHE : AHEMonoidType.
 
 (* Use standard DSDP interface for data types *)
-Let DI := Standard_DSDP_Interface PHE.
+Let DI := Standard_DSDP_Interface AHE.
 
 (* Extract types from the scheme *)
-Let partyT := party PHE.
-Let msg := plain PHE.
-Let rand := rand PHE.
-Let encT := party_cipher PHE.
-Let pkey := pkey PHE.
+Let msgT := plain AHE.
+Let randT := rand AHE.
+Let encT := cipher AHE.
+Let priv_keyT := priv_key AHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
 Let d := di_d DI.
 Let e := di_e DI.
-Let k := di_k DI.
+Let k := di_priv_key DI.
 
 (* HE operations from the scheme *)
-Let E := @enc PHE.
-Let K := @key PHE.
-Let D := @dec PHE.
-Let Emul := @Emul PHE.
-Let Epow := @Epow PHE.
+Let Emul := @Emul AHE.
+Let Epow := @Epow AHE.
 
 Notation "u *h w" := (Emul u w).
 Notation "u ^h w" := (Epow u w).
 
 (* Party identities *)
-Variable alice : partyT.
-Variable bob : partyT.
-Variable charlie : partyT.
+Variable alice : party_id.
+Variable bob : party_id.
+Variable charlie : party_id.
+
+(* Public key mapping and encryption wrapper *)
+Variable ek : party_id -> pub_key AHE.
+Definition enc_pk (p : party_id) (m : msgT) (r : randT) : encT :=
+  enc (ek p) m r.
+Local Notation E := enc_pk.
 
 (* Trace types for DSDP protocol *)
 Notation dsdp_traceT := (15.-bseq data).
 Notation dsdp_tracesT := (3.-tuple dsdp_traceT).
 
 (* Message and randomness variables *)
-Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
-Variables (rb1 rb2 rc1 rc2 ra1 ra2 : rand).
+Variables (v1 v2 v3 u1 u2 u3 r2 r3 : msgT).
+Variables (rb1 rb2 rc1 rc2 ra1 ra2 : randT).
 
-(* Decryption keys constructed using the scheme's K operation *)
-Let dk_a : pkey := K alice Dec k_a. 
-Let dk_b : pkey := K bob Dec k_b. 
-Let dk_c : pkey := K charlie Dec k_c. 
+(* Private keys *)
+Variables (dk_a : priv_keyT) (dk_b : priv_keyT) (dk_c : priv_keyT).
 
 (* Protocol traces - now include randomness in encryption calls *)
 Definition dsdp_traces : dsdp_tracesT :=
@@ -114,7 +114,7 @@ End dsdp_traces.
 (*                                                                            *)
 (* NOTE: The trace-based entropy analysis relied on the idealized encryption  *)
 (* model where enc = (party * msg) and E' is deterministic. With the new      *)
-(* AHEScheme interface where encryption requires randomness, the      *)
+(* AHEMonoidType interface where encryption requires randomness, the      *)
 (* trace structure becomes more complex.                                      *)
 (*                                                                            *)
 (* The entropy equivalence lemmas (centropy_AliceTraces_AliceView, etc.)      *)
@@ -124,36 +124,17 @@ End dsdp_traces.
 
 Section trace_entropy_analysis.
 
-(* Parameterize by an AHEScheme instance *)
-Variable PHE : AHEScheme.
+(* Parameterize by an AHEMonoidType instance *)
+Variable AHE : AHEMonoidType.
 
 (* Use standard DSDP interface for data types *)
-Let DI := Standard_DSDP_Interface PHE.
+Let DI := Standard_DSDP_Interface AHE.
 
 (* Extract types from the scheme *)
-Let partyT := party PHE.
-Let msg := plain PHE.
-Let rand := rand PHE.
-Let encT := party_cipher PHE.
-Let pkey := pkey PHE.
+Let msgT := plain AHE.
 
 (* Data type and constructors from interface *)
 Let data := di_data DI.
-Let d := di_d DI.
-Let e := di_e DI.
-Let k := di_k DI.
-
-(* HE operations from the scheme *)
-Let E := @enc PHE.
-Let K := @key PHE.
-Let D := @dec PHE.
-Let Emul := @Emul PHE.
-Let Epow := @Epow PHE.
-
-(* Party identities *)
-Variable alice : partyT.
-Variable bob : partyT.
-Variable charlie : partyT.
 
 Notation dsdp_traceT := (15.-bseq data).
 Notation dsdp_tracesT := (3.-tuple dsdp_traceT).
@@ -163,15 +144,15 @@ Variable T : finType.
 Variable P : R.-fdist T.
 
 (* Random variable definitions for messages *)
-Variables (V1 V2 V3 U1 U2 U3 R2 R3 : {RV P -> msg}).
+Variables (V1 V2 V3 U1 U2 U3 R2 R3 : {RV P -> msgT}).
 
 (* Intermediate values *)
-Let VU2 : {RV P -> msg} := V2 \* U2.
-Let VU3 : {RV P -> msg} := V3 \* U3.
-Let D2  : {RV P -> msg} := VU2 \+ R2.
-Let VU3R : {RV P -> msg} := VU3 \+ R3.
-Let D3 : {RV P -> msg} := VU3R \+ D2.
-Let S : {RV P -> msg} := D3 \- R2 \- R3 \+ U1 \* V1.
+Let VU2 : {RV P -> msgT} := V2 \* U2.
+Let VU3 : {RV P -> msgT} := V3 \* U3.
+Let D2  : {RV P -> msgT} := VU2 \+ R2.
+Let VU3R : {RV P -> msgT} := VU3 \+ R3.
+Let D3 : {RV P -> msgT} := VU3R \+ D2.
+Let S : {RV P -> msgT} := D3 \- R2 \- R3 \+ U1 \* V1.
 
 (* The protocol correctness theorem: the sum S equals the dot product.
    This is proved algebraically without depending on trace structure. *)

@@ -21,6 +21,7 @@ Import Num.Theory.
 (* - Algebraic correctness (generic): defined in dsdp_program.v               *)
 (* - Computational correctness (idealized): Section dsdp_computational        *)
 (* - Computational correctness (Benaloh): Section dsdp_computational_benaloh  *)
+(* - Computational correctness (Paillier): Section dsdp_computational_paillier*)
 (*                                                                            *)
 (* Based on:                                                                  *)
 (* Dumas, J. G., Lafourcade, P., Orfila, J. B., & Puys, M. (2017).            *)
@@ -43,35 +44,11 @@ Local Open Scope vec_ext_scope.
 Local Open Scope proc_scope.
 Local Open Scope sproc_scope.
 
-(******************************************************************************)
-(** * Algebraic Correctness (from dsdp_program.v)                             *)
-(******************************************************************************)
-
-(* The algebraic correctness proof for DSDP is defined in dsdp_program.v.
-   
-   Key theorem (exported from dsdp_program.v):
-   
-     dsdp.dsdp_computes_dot_product : 
-       forall (AHE : AHEScheme) 
-              (alice bob charlie : party AHE)
-              (pn : party AHE -> nat)
-              (D_correct : forall p m r k, dec (key p Dec k) (enc p m r) = Some m)
-              (rb1 rb2 rc1 rc2 ra1 ra2 : rand AHE)
-              (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),
-         alice_result = u1 * v1 + u2 * v2 + u3 * v3.
-   
-   Supporting definitions also exported:
-   - bob_encrypted_input, charlie_encrypted_input
-   - alice_a2, alice_a3, alice_a2_value, alice_a3_value  
-   - d2_value, bob_combined, bob_combined_value
-   - g_value, alice_result
-*)
-
 (* ========================================================================== *)
 (* Computational Correctness Proofs using Idealized_HETypes                   *)
 (*                                                                            *)
-(* This section uses the idealized encryption model from idealized_party_ahe  *)
-(* where enc = (party, msg) and encryption is deterministic (no randomness).  *)
+(* This section uses the idealized encryption model from idealized_ahe.v      *)
+(* where enc(pk, m, r) = m and encryption is deterministic.                   *)
 (* This enables computational proofs via reflexivity.                         *)
 (*                                                                            *)
 (* Programs are instantiated from dsdp_program.v with unit randomness.        *)
@@ -85,46 +62,43 @@ Local Notation m := m_minus_2.+2.
 Local Notation msg := 'F_m.  (* Finite field with m elements *)
 
 (* ========================================================================== *)
-(* Build Idealized_HETypes as AHEScheme                               *)
+(* Build Idealized_HETypes as AHEMonoidType                                   *)
 (* ========================================================================== *)
 
-Local Definition Idealized_EncDec_instance := 
-  @Idealized_isEncDec party_id msg.
+Local Definition Idealized_EncDec_instance :=
+  @Idealized_isEncDec msg.
 
-Local Definition Idealized_AHEnc_instance := 
-  @Idealized_isAHEnc party_id msg.
+Local Definition Idealized_AHEnc_instance :=
+  @Idealized_isAHEnc msg.
 
-Local Definition Idealized_AHEAlgebra_instance := 
-  @Idealized_isAHEAlgebra party_id msg.
+Local Definition Idealized_AHEMonoid_instance :=
+  @Idealized_isAHEMonoid msg.
 
 (* Build the type hierarchy *)
-Local Definition Idealized_EncDec_local : EncDec_scheme := 
-  @EncDec.Pack (Idealized_HETypes party_id msg) 
-    (@EncDec.Class (Idealized_HETypes party_id msg) Idealized_EncDec_instance).
+Local Definition Idealized_EncDec_local : EncDecType :=
+  @EncDec.Pack (Idealized_HETypes msg)
+    (@EncDec.Class (Idealized_HETypes msg) Idealized_EncDec_instance).
 
-Local Definition Idealized_AHEnc_local : AHEnc_scheme := 
-  @AHEnc.Pack (Idealized_HETypes party_id msg) 
-    (@AHEnc.Class (Idealized_HETypes party_id msg) 
+Local Definition Idealized_AHEnc_local : AHEncType :=
+  @AHEnc.Pack (Idealized_HETypes msg)
+    (@AHEnc.Class (Idealized_HETypes msg)
       Idealized_EncDec_instance Idealized_AHEnc_instance).
 
-Local Definition Idealized_AHEAlgebra_local : AHEScheme := 
-  @AHEAlgebra.Pack Idealized_AHEnc_local 
-    (@AHEAlgebra.Class Idealized_AHEnc_local Idealized_AHEAlgebra_instance).
+Local Definition Idealized_AHEMonoid_local : AHEMonoidType :=
+  @AHEMonoid.Pack Idealized_AHEnc_local
+    (@AHEMonoid.Class Idealized_AHEnc_local Idealized_AHEMonoid_instance).
 
 (* The idealized scheme *)
-Let PHE : AHEScheme := Idealized_AHEAlgebra_local.
+Let AHE : AHEMonoidType := Idealized_AHEMonoid_local.
 
 (* Use standard interface from dsdp_interface.v *)
-Let DI := Standard_DSDP_Interface PHE.
+Let DI := Standard_DSDP_Interface AHE.
 
 (* Extract type aliases for readability *)
 Let data := di_data DI.
 Let d := di_d DI.
 Let e := di_e DI.
-Let k := di_k DI.
-
-(* Local encryption alias - deterministic, ignores randomness *)
-Let E := @enc PHE.
+Let k := di_priv_key DI.
 
 (* Party definitions *)
 Definition alice : party_id := Alice.
@@ -134,11 +108,6 @@ Definition charlie : party_id := Charlie.
 (* Party to nat mapping - use party_id_to_nat from homomorphic_encryption.v *)
 Let pn : party_id -> nat := party_id_to_nat.
 
-(* Decryption correctness - use lemma from idealized_party_ahe.v *)
-Let D_correct : forall p m r k, 
-  @dec PHE (@key PHE p Dec k) (E p m r) = Some m.
-Proof. exact: idealized_dec_correct. Qed.
-
 (* ========================================================================== *)
 (* Instantiate programs from dsdp_program.v with unit randomness              *)
 (* ========================================================================== *)
@@ -146,21 +115,31 @@ Proof. exact: idealized_dec_correct. Qed.
 Variables (k_a k_b k_c v1 v2 v3 u1 u2 u3 r2 r3 : msg).
 
 (* Unit randomness - value doesn't matter since idealized scheme ignores it *)
-Let runit : rand PHE := 1.
+Let runit : rand AHE := 1.
 
-(* Keys constructed via the scheme's key operation *)
-Let dk_a := @key PHE Alice Dec k_a.
-Let dk_b := @key PHE Bob Dec k_b.
-Let dk_c := @key PHE Charlie Dec k_c.
+(* Private keys are just msg values in idealized *)
+Let dk_a : priv_key AHE := k_a.
+Let dk_b : priv_key AHE := k_b.
+Let dk_c : priv_key AHE := k_c.
 
-(* Instantiate generic programs from dsdp_program.v 
+(* Public keys derived from private keys via pub_of_priv *)
+Let pkof := @enc_dec.pub_of_priv AHE.
+Let ek (p : party_id) : pub_key AHE :=
+  match p with
+  | Alice => pkof dk_a
+  | Bob => pkof dk_b
+  | Charlie => pkof dk_c
+  | NoParty => pkof dk_a
+  end.
+
+(* Instantiate generic programs from dsdp_program.v
    Note: Coq only generalizes section variables that are actually used:
    - palice uses bob, charlie (not alice)
-   - pbob uses alice, bob, charlie  
+   - pbob uses alice, bob, charlie
    - pcharlie uses alice, bob, charlie *)
-Let palice_inst := @palice PHE bob charlie pn dk_a v1 u1 u2 u3 r2 r3 runit runit.
-Let pbob_inst := @pbob PHE alice bob charlie pn dk_b v2 runit runit.
-Let pcharlie_inst := @pcharlie PHE alice bob charlie pn dk_c v3 runit runit.
+Let palice_inst := @palice AHE bob charlie pn ek dk_a v1 u1 u2 u3 r2 r3 runit runit.
+Let pbob_inst := @pbob AHE alice bob charlie pn ek dk_b v2 runit runit.
+Let pcharlie_inst := @pcharlie AHE alice bob charlie pn ek dk_c v3 runit runit.
 
 (* Session-typed processes packed via [aprocs ...].
    See dsdp_program.v for detailed explanation of why this pattern is needed. *)
@@ -173,18 +152,19 @@ Let dsdp_procs : seq (proc data) := erase_aprocs dsdp_saprocs.
 Definition dsdp h := interp h dsdp_procs [::[::];[::];[::]].
 
 (* Protocol execution result: running dsdp for 15 steps produces the expected
-   final state with all parties finished and their respective traces. *)
+   final state with all parties finished and their respective traces.
+   In the idealized scheme, enc(pk, m, r) = m, so ciphertexts are just messages. *)
 Lemma dsdp_ok :
-  dsdp 15 = 
+  dsdp 15 =
   ([:: Finish; Finish; Finish],
    [:: [:: d (v3 * u3 + r3 + (v2 * u2 + r2) - r2 - r3 + u1 * v1);
-           e (E alice (v3 * u3 + r3 + (v2 * u2 + r2)) runit); 
-           e (E charlie v3 runit);
-           e (E bob v2 runit);
+           e (v3 * u3 + r3 + (v2 * u2 + r2));
+           e v3;
+           e v2;
            d r3; d r2; d u3; d u2; d u1; d v1; k dk_a];
-       [:: e (E charlie (v3 * u3 + r3) runit);
-           e (E bob (v2 * u2 + r2) runit); d v2; k dk_b];
-       [:: e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2)) runit); d v3; k dk_c]
+       [:: e (v3 * u3 + r3);
+           e (v2 * u2 + r2); d v2; k dk_b];
+       [:: e (v3 * u3 + r3 + (v2 * u2 + r2)); d v3; k dk_c]
   ]).
 Proof. reflexivity. Qed.
 
@@ -197,15 +177,15 @@ Definition dsdp_traces : dsdp_tracesT :=
 
 Definition is_dsdp (trs : dsdp_tracesT) :=
   let '(s, u3, u2, u1, v1) :=
-    if tnth trs 0 is Bseq [:: inl (inl s); _; _; _; _; _;
-                           inl (inl u3); inl (inl u2); inl (inl u1);
-                           inl (inl v1); _] _
+    if tnth trs 0 is Bseq [:: inl (inl (inl s)); _; _; _;
+                           _; _; inl (inl (inl u3)); inl (inl (inl u2));
+                           inl (inl (inl u1)); inl (inl (inl v1)); _] _
     then (s, u3, u2, u1, v1) else (0, 0, 0, 0, 0) in
   let '(v2) :=
-    if tnth trs 1 is Bseq [:: _; _; inl (inl v2); _] _
+    if tnth trs 1 is Bseq [:: _; _; inl (inl (inl v2)); _] _
     then (v2) else (0) in
   let '(_v3) :=
-    if tnth trs 2 is Bseq [:: _; inl (inl v3); _] _
+    if tnth trs 2 is Bseq [:: _; inl (inl (inl v3)); _] _
     then (v3) else (0) in
   s = v3 * u3 + v2 * u2 + v1 * u1.
 
@@ -214,13 +194,13 @@ Lemma dsdp_traces_ok :
   dsdp_traces =
     [tuple
        [bseq d (v3 * u3 + r3 + (v2 * u2 + r2) - r2 - r3 + u1 * v1);
-             e (E alice (v3 * u3 + r3 + (v2 * u2 + r2)) runit);
-             e (E charlie v3 runit);
-             e (E bob v2 runit);
+             e (v3 * u3 + r3 + (v2 * u2 + r2));
+             e v3;
+             e v2;
              d r3; d r2; d u3; d u2; d u1; d v1; k dk_a];
-       [bseq e (E charlie (v3 * u3 + r3) runit);
-             e (E bob (v2 * u2 + r2) runit); d v2; k dk_b];
-       [bseq e (E charlie (v3 * u3 + r3 + (v2 * u2 + r2)) runit); d v3; k dk_c]].
+       [bseq e (v3 * u3 + r3);
+             e (v2 * u2 + r2); d v2; k dk_b];
+       [bseq e (v3 * u3 + r3 + (v2 * u2 + r2)); d v3; k dk_c]].
 Proof. by apply/val_inj/(inj_map val_inj); rewrite interp_traces_ok. Qed.
 
 (* Protocol correctness:
@@ -234,113 +214,44 @@ End dsdp_computational.
 (* ========================================================================== *)
 (* Computational Correctness Proofs using Benaloh Encryption                  *)
 (*                                                                            *)
-(* This section instantiates the generic dsdp_correctness proofs with the     *)
-(* concrete Benaloh AHEScheme. All cryptographic hypotheses required  *)
-(* for a valid Benaloh instantiation are provided explicitly.                 *)
+(* This section instantiates the algebraic dsdp_computes_dot_product theorem  *)
+(* with the concrete Benaloh AHEMonoidType.                                   *)
+(*                                                                            *)
+(* The parameters n, r, n_gt1, r_gt1 are needed to construct the type         *)
+(* hierarchy (plain AHE = 'Z_r). The algebraic theorem itself only uses       *)
+(* ring operations on plain AHE, so no keys or encryption are involved.       *)
 (* ========================================================================== *)
 
 Section dsdp_computational_benaloh.
 
 (* Benaloh scheme parameters *)
 Variables (n r : nat).
-
-(* n_gt1: The modulus n must be > 1 for Z_n to be non-trivial.
-   In practice, n = p*q for large primes p, q. *)
 Hypothesis n_gt1 : (1 < n)%N.
-
-(* r_gt1: The message space size r must be > 1.
-   r divides phi(n) and determines the "block size" of messages. *)
 Hypothesis r_gt1 : (1 < r)%N.
 
-Variable y : 'Z_n.
+(* Build the Benaloh AHEMonoidType instance *)
+Local Definition Benaloh_EncDec_local : EncDecType :=
+  @EncDec.Pack (BenalohHETypes n r)
+    (@EncDec.Class (BenalohHETypes n r) (@Benaloh_isEncDec n r)).
 
-(* y_order_r: y is an r-th root of unity in Z_n, i.e., y^r = 1 mod n.
-   This is essential for the homomorphic properties:
-   - E(m1)*E(m2) = E(m1+m2) requires y^(m1+m2) = y^m1 * y^m2
-   - E(m)^k = E(m*k) requires (y^m)^k = y^(m*k) *)
-Hypothesis y_order_r : y ^+ r = 1.
+Local Definition Benaloh_AHEnc_local : AHEncType :=
+  @AHEnc.Pack (BenalohHETypes n r)
+    (@AHEnc.Class (BenalohHETypes n r)
+      (@Benaloh_isEncDec n r) (@Benaloh_isAHEnc n r r_gt1)).
 
-(* y_coprime_n: y must be a unit in Z_n (coprime to n).
-   Required for Euler's theorem to apply in decryption. *)
-Hypothesis y_coprime_n : coprime (y : nat) n.
+Local Definition Benaloh_AHEMonoid_local : AHEMonoidType :=
+  @AHEMonoid.Pack Benaloh_AHEnc_local
+    (@AHEMonoid.Class Benaloh_AHEnc_local (@Benaloh_isAHEMonoid n r r_gt1)).
 
-Variable phi_div_r : nat.
-
-(* phi_eq_totient: phi_div_r = phi(n)/r, where phi is Euler's totient.
-   This parameter is used in decryption: c^(phi(n)/r) removes randomness. *)
-Hypothesis phi_eq_totient : r * phi_div_r = totient n.
-
-(* rand_coprime_n: All randomness is sampled from Z_n^* (units coprime to n).
-   In practice, for n = p*q, the probability of picking a non-unit is
-   negligible: Pr[gcd(u,n) != 1] <= 2/min(p,q).
-   We model this as a hypothesis for a "valid" instantiation. *)
-Hypothesis rand_coprime_n : forall (u : 'Z_n), coprime (u : nat) n.
-
-(* x_base_injective: x_base = y^(phi(n)/r) has exact order r.
-   This ensures the discrete log search in decryption is well-defined.
-   This is a key assumption about proper Benaloh key generation. *)
-Hypothesis x_base_injective : forall (m1 m2 : 'Z_r), 
-  benaloh_ahe.x_base y phi_div_r ^+ (m1 : nat) = 
-  benaloh_ahe.x_base y phi_div_r ^+ (m2 : nat) -> m1 = m2.
-
-(* ========================================================================== *)
-(* Build the Benaloh AHEScheme instance                               *)
-(*                                                                            *)
-(* The HB instances from benaloh_ahe.v are parameterized by all the           *)
-(* cryptographic hypotheses. We apply them here to get a proper instance.     *)
-(* ========================================================================== *)
-
-(* Register the HB instances with all hypotheses *)
-Local Definition Benaloh_EncDec_instance := 
-  @Benaloh_isEncDec party_id n r n_gt1 y phi_div_r phi_eq_totient 
-    rand_coprime_n x_base_injective.
-
-Local Definition Benaloh_AHEnc_instance := 
-  @Benaloh_isAHEnc party_id n r n_gt1 r_gt1 y y_order_r phi_div_r 
-    phi_eq_totient rand_coprime_n x_base_injective.
-
-Local Definition Benaloh_AHEAlgebra_instance := 
-  @Benaloh_isAHEAlgebra party_id n r n_gt1 r_gt1 y y_order_r phi_div_r 
-    phi_eq_totient rand_coprime_n x_base_injective.
-
-(* Build the type hierarchy step by step *)
-(* First: EncDec_scheme (HETypes + isEncDec) *)
-Local Definition Benaloh_EncDec_local : EncDec_scheme := 
-  @EncDec.Pack (Benaloh_HETypes party_id n r) 
-    (@EncDec.Class (Benaloh_HETypes party_id n r) Benaloh_EncDec_instance).
-
-(* Second: AHEnc_scheme (HETypes + isEncDec + isAHEnc) *)
-Local Definition Benaloh_AHEnc_local : AHEnc_scheme := 
-  @AHEnc.Pack (Benaloh_HETypes party_id n r) 
-    (@AHEnc.Class (Benaloh_HETypes party_id n r) 
-      Benaloh_EncDec_instance Benaloh_AHEnc_instance).
-
-(* Third: AHEScheme (AHEnc_scheme + isAHEAlgebra) *)
-Local Definition Benaloh_AHEAlgebra_local : AHEScheme := 
-  @AHEAlgebra.Pack Benaloh_AHEnc_local 
-    (@AHEAlgebra.Class Benaloh_AHEnc_local Benaloh_AHEAlgebra_instance).
-
-(* The Benaloh scheme as an AHEScheme *)
-Let PHE : AHEScheme := Benaloh_AHEAlgebra_local.
-
-(* ========================================================================== *)
-(* Instantiate the generic dsdp_correctness theorem                           *)
-(*                                                                            *)
-(* The generic theorem from dsdp_correctness section has signature:           *)
-(*   dsdp_computes_dot_product : forall (AHE : AHEScheme)             *)
-(*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                 *)
-(*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3           *)
-(* ========================================================================== *)
+Let AHE : AHEMonoidType := Benaloh_AHEMonoid_local.
 
 (* Message variables *)
-Variables (v1 v2 v3 u1 u2 u3 r2 r3 : plain PHE).
+Variables (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE).
 
 (* Main theorem: DSDP computes the dot product using Benaloh encryption *)
 Theorem dsdp_computes_dot_product_benaloh :
-  @alice_result PHE v1 v2 v3 u1 u2 u3 r2 r3 = u1 * v1 + u2 * v2 + u3 * v3.
-Proof.
-  exact: (@dsdp_computes_dot_product PHE v1 v2 v3 u1 u2 u3 r2 r3).
-Qed.
+  @alice_result AHE v1 v2 v3 u1 u2 u3 r2 r3 = u1 * v1 + u2 * v2 + u3 * v3.
+Proof. exact: @dsdp_computes_dot_product. Qed.
 
 End dsdp_computational_benaloh.
 
@@ -348,129 +259,42 @@ End dsdp_computational_benaloh.
 (* ========================================================================== *)
 (* Computational Correctness Proofs using Paillier Encryption                 *)
 (*                                                                            *)
-(* This section instantiates the generic dsdp_correctness proofs with the     *)
-(* concrete Paillier AHEScheme. All cryptographic hypotheses required *)
-(* for a valid Paillier instantiation are provided explicitly.                *)
+(* This section instantiates the algebraic dsdp_computes_dot_product theorem  *)
+(* with the concrete Paillier AHEMonoidType.                                  *)
+(*                                                                            *)
+(* The parameters n, n_gt1 are needed to construct the type hierarchy         *)
+(* (plain AHE = 'Z_n). The algebraic theorem itself only uses ring            *)
+(* operations on plain AHE, so no keys or encryption are involved.            *)
 (* ========================================================================== *)
 
 Section dsdp_computational_paillier.
 
 (* Paillier scheme parameters *)
 Variable n : nat.
-
-(* n_gt1: The modulus n must be > 1 for Z_{n^2} to be non-trivial.
-   In practice, n = p*q for large primes p, q. *)
 Hypothesis n_gt1 : (1 < n)%N.
 
-Let n2 := (n * n)%N.
+(* Build the Paillier AHEMonoidType instance *)
+Local Definition Paillier_EncDec_local : EncDecType :=
+  @EncDec.Pack (PaillierHETypes n)
+    (@EncDec.Class (PaillierHETypes n) (@Paillier_isEncDec n)).
 
-Variable g : 'Z_n2.
+Local Definition Paillier_AHEnc_local : AHEncType :=
+  @AHEnc.Pack (PaillierHETypes n)
+    (@AHEnc.Class (PaillierHETypes n)
+      (@Paillier_isEncDec n) (@Paillier_isAHEnc n n_gt1)).
 
-(* g_order_n ensures g is an n-th root of unity in Z_{n^2}.
-   With standard choice g = 1 + n, this holds because:
-     (1+n)^n = 1 + n*n = 1 (mod n^2)
-   This is required for the homomorphic properties:
-   - enc_mul_dist: E(m1,r1) * E(m2,r2) = E(m1+m2, r1*r2)
-   - enc_exp_dist: E(m,r)^k = E(m*k, r^k)
-   Without this, g^(m1+m2) != g^m1 * g^m2 in general. *)
-Hypothesis g_order_n : g ^+ n = 1.
+Local Definition Paillier_AHEMonoid_local : AHEMonoidType :=
+  @AHEMonoid.Pack Paillier_AHEnc_local
+    (@AHEMonoid.Class Paillier_AHEnc_local (@Paillier_isAHEMonoid n n_gt1)).
 
-(* Paillier decryption uses the L-function and private key (λ, μ):
-     m = L(c^λ mod n²) · μ mod n
-   where L(x) = (x - 1) / n
-   
-   The decryption algorithm:
-   1. λ = lcm(p-1, q-1) where n = p·q (Carmichael function)
-   2. μ = L(g^λ mod n²)^(-1) mod n
-   3. c^λ removes randomness: (g^m * r^n)^λ = g^(m·λ) (since r^(n·λ) = 1)
-   4. L(g^(m·λ)) · μ extracts m *)
-
-Variable lambda : nat.
-
-(* Carmichael's theorem: r^(n·λ) = 1 in Z*_{n²} *)
-Hypothesis carmichael_property : forall (r : 'Z_n2), r ^+ (n * lambda) = 1.
-
-(* Key property: L(g^k) extracts k mod n.
-   Uses L_func from paillier_ahe which computes L(x) = (x-1)/n.
-
-   Proof sketch (requires detailed modular arithmetic):
-   1. g = 1 + n in Z_{n²}
-   2. g^k = (1+n)^k = 1 + k·n (mod n²) by binomial theorem
-   3. (g^k - 1) / n = k (exact integer division)
-   4. k mod n gives the result in Z_n
-
-   We state this as a hypothesis since the full proof requires
-   establishing the binomial expansion for 'Z_n2 arithmetic. *)
-Hypothesis L_of_g_power : forall (k : nat),
-  @paillier_ahe.L_func n (g ^+ k) = inZp k.
-
-Variable mu : 'Z_n.
-
-(* μ satisfies: λ · μ = 1 (mod n), i.e., μ = λ^(-1) mod n *)
-Hypothesis lambda_mu_inverse : (inZp lambda : 'Z_n) * mu = 1.
-
-(* ========================================================================== *)
-(* Build the Paillier AHEScheme instance                              *)
-(*                                                                            *)
-(* We use the HB instances exported from paillier_ahe.v, instantiated with    *)
-(* our section variables and cryptographic hypotheses.                        *)
-(* ========================================================================== *)
-
-(* Build isEncDec instance using paillier_ahe definitions *)
-Local Definition Paillier_EncDec_instance :
-  isEncDec (Paillier_HETypes party_id n) :=
-  @Paillier_isEncDec party_id n g lambda carmichael_property
-    mu L_of_g_power lambda_mu_inverse.
-
-(* Build isAHEnc instance using paillier_ahe lemmas *)
-Local Definition Paillier_AHEnc_instance :
-  isAHEnc (Paillier_HETypes party_id n) :=
-  @Paillier_isAHEnc party_id n n_gt1 g g_order_n lambda carmichael_property
-    mu L_of_g_power lambda_mu_inverse.
-
-(* Build isAHEAlgebra instance using paillier_ahe lemmas *)
-Local Definition Paillier_AHEAlgebra_instance :
-  isAHEAlgebra (Paillier_HETypes party_id n) :=
-  @Paillier_isAHEAlgebra party_id n n_gt1 g g_order_n lambda carmichael_property
-    mu L_of_g_power lambda_mu_inverse.
-
-(* Build the type hierarchy step by step *)
-(* First: EncDec_scheme (HETypes + isEncDec) *)
-Local Definition Paillier_EncDec_local : EncDec_scheme :=
-  @EncDec.Pack (Paillier_HETypes party_id n)
-    (@EncDec.Class (Paillier_HETypes party_id n) Paillier_EncDec_instance).
-
-(* Second: AHEnc_scheme (HETypes + isEncDec + isAHEnc) *)
-Local Definition Paillier_AHEnc_local : AHEnc_scheme :=
-  @AHEnc.Pack (Paillier_HETypes party_id n)
-    (@AHEnc.Class (Paillier_HETypes party_id n)
-      Paillier_EncDec_instance Paillier_AHEnc_instance).
-
-(* Third: AHEScheme (AHEnc_scheme + isAHEAlgebra) *)
-Local Definition Paillier_AHEAlgebra_local : AHEScheme :=
-  @AHEAlgebra.Pack Paillier_AHEnc_local
-    (@AHEAlgebra.Class Paillier_AHEnc_local Paillier_AHEAlgebra_instance).
-
-(* The Paillier scheme as an AHEScheme *)
-Let PHE : AHEScheme := Paillier_AHEAlgebra_local.
-
-(* ========================================================================== *)
-(* Instantiate the generic dsdp_correctness theorem                           *)
-(*                                                                            *)
-(* The generic theorem from dsdp_correctness section has signature:           *)
-(*   dsdp_computes_dot_product : forall (AHE : AHEScheme)             *)
-(*     (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE),                                 *)
-(*     alice_result v1 v2 v3 u1 u2 u3 r2 r3 = u1*v1 + u2*v2 + u3*v3           *)
-(* ========================================================================== *)
+Let AHE : AHEMonoidType := Paillier_AHEMonoid_local.
 
 (* Message variables *)
-Variables (v1 v2 v3 u1 u2 u3 r2 r3 : plain PHE).
+Variables (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE).
 
 (* Main theorem: DSDP computes the dot product using Paillier encryption *)
 Theorem dsdp_computes_dot_product_paillier :
-  @alice_result PHE v1 v2 v3 u1 u2 u3 r2 r3 = u1 * v1 + u2 * v2 + u3 * v3.
-Proof.
-  exact: (@dsdp_computes_dot_product PHE v1 v2 v3 u1 u2 u3 r2 r3).
-Qed.
+  @alice_result AHE v1 v2 v3 u1 u2 u3 r2 r3 = u1 * v1 + u2 * v2 + u3 * v3.
+Proof. exact: @dsdp_computes_dot_product. Qed.
 
 End dsdp_computational_paillier.

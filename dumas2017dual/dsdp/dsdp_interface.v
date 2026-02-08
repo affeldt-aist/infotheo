@@ -72,33 +72,36 @@ HB.instance Definition _ := hasDecEq.Build dsdp_dtype dsdp_dtype_eqP.
 (* ========================================================================== *)
 
 (** Parameterized record bundling all DSDP data operations.
-    This eliminates the need to repeat data/d/e/k/from_enc/Recv_dec/Recv_enc
+    This eliminates the need to repeat
+    data/d/e/priv_key/pub_key/from_enc/Recv_dec/Recv_enc
     definitions in every DSDP file. *)
-Record DSDP_Interface (AHE : AHEScheme) := MkDSDP_Interface {
+Record DSDP_Interface (AHE : AHEMonoidType) := MkDSDP_Interface {
   (* The carrier data type *)
   di_data : Type ;
   
-  (* Constructors: wrap msg/enc/pkey into data *)
+  (* Constructors: wrap msg/enc/priv_key into data *)
   di_d : plain AHE -> di_data ;
-  di_e : party_cipher AHE -> di_data ;
-  di_k : pkey AHE -> di_data ;
+  di_e : cipher AHE -> di_data ;
+  di_priv_key : priv_key AHE -> di_data ;
+  di_pub_key : pub_key AHE -> di_data ;
   
   (* Extractor: get enc from data *)
-  di_from_enc : di_data -> option (party_cipher AHE) ;
+  di_from_enc : di_data -> option (cipher AHE) ;
   
   (* Specialized Recv operations (proc is now unindexed) *)
   di_Recv_dec : 
-    nat -> pkey AHE -> (plain AHE -> proc di_data) -> 
+    nat -> priv_key AHE -> (plain AHE -> proc di_data) -> 
     proc di_data ;
   di_Recv_enc :
-    nat -> (party_cipher AHE -> proc di_data) -> 
+    nat -> (cipher AHE -> proc di_data) -> 
     proc di_data ;
 }.
 
 Arguments di_data {AHE} _.
 Arguments di_d {AHE} _ _.
 Arguments di_e {AHE} _ _.
-Arguments di_k {AHE} _ _.
+Arguments di_priv_key {AHE} _ _.
+Arguments di_pub_key {AHE} _ _.
 Arguments di_from_enc {AHE} _ _.
 Arguments di_Recv_dec {AHE} _ _ _ _.
 Arguments di_Recv_enc {AHE} _ _ _.
@@ -109,28 +112,34 @@ Arguments di_Recv_enc {AHE} _ _ _.
 
 Section Standard_DSDP_Interface.
 
-Variable AHE : AHEScheme.
+Variable AHE : AHEMonoidType.
 
 Let msgT := plain AHE.
-Let encT := party_cipher AHE.
-Let pkeyT := pkey AHE.
+Let encT := cipher AHE.
+Let priv_keyT := priv_key AHE.
+Let pub_keyT := pub_key AHE.
 Let D := @dec AHE.
 
-(* Standard sum-type data encoding: (msgT + encT + pkeyT) *)
-Definition std_data := (msgT + encT + pkeyT)%type.
-Definition std_d (x : msgT) : std_data := inl (inl x).
-Definition std_e (x : encT) : std_data := inl (inr x).
-Definition std_k (x : pkeyT) : std_data := inr x.
-
+(* Standard sum-type data encoding *)
+Definition std_data := (msgT + encT + priv_keyT + pub_keyT)%type.
+Definition std_d (x : msgT) : std_data := inl (inl (inl x)).
+Definition std_e (x : encT) : std_data := inl (inl (inr x)).
+Definition std_priv_key (x : priv_keyT) : std_data := inl (inr x).
+Definition std_pub_key (x : pub_keyT) : std_data := inr x.
 Definition std_from_enc (x : std_data) : option encT :=
-  if x is inl (inr v) then Some v else None.
+  if x is inl (inl (inr v)) then Some v else None.
 
 (* Recv-and-decrypt: extract ciphertext, decrypt, continue with plaintext *)
-Definition std_Recv_dec (frm : nat) (dk : pkeyT) 
+Definition std_Recv_dec (frm : nat) (dk : priv_keyT) 
     (f : msgT -> proc std_data) : proc std_data :=
   Recv_param std_data (obind (D dk) \o std_from_enc) frm f.
 
 (* Recv-for-HE: extract ciphertext, continue with it for HE computation *)
+(* We assume public key of the sender is known to the receiver,
+   so we don't explicitly send it along with the ciphertext.
+   Rather, the receiver uses the public key of the sender
+  to perform the HE computation inside the function f.
+*)
 Definition std_Recv_enc (frm : nat) 
     (f : encT -> proc std_data) : proc std_data :=
   Recv_param std_data std_from_enc frm f.
@@ -140,7 +149,8 @@ Definition Standard_DSDP_Interface : DSDP_Interface AHE := {|
   di_data := std_data ;
   di_d := std_d ;
   di_e := std_e ;
-  di_k := std_k ;
+  di_priv_key := std_priv_key ;
+  di_pub_key := std_pub_key ;
   di_from_enc := std_from_enc ;
   di_Recv_dec := @std_Recv_dec ;
   di_Recv_enc := @std_Recv_enc ;
@@ -154,10 +164,10 @@ End Standard_DSDP_Interface.
 
 Section Standard_Interface_Properties.
 
-Variable AHE : AHEScheme.
+Variable AHE : AHEMonoidType.
 Let DI := Standard_DSDP_Interface AHE.
 
-Lemma std_from_enc_e (x : party_cipher AHE) : 
+Lemma std_from_enc_e (x : cipher AHE) : 
   di_from_enc DI (di_e DI x) = Some x.
 Proof. by []. Qed.
 
@@ -165,12 +175,11 @@ Lemma std_from_enc_d (x : plain AHE) :
   di_from_enc DI (di_d DI x) = None.
 Proof. by []. Qed.
 
-Lemma std_from_enc_k (x : pkey AHE) : 
-  di_from_enc DI (di_k DI x) = None.
+Lemma std_from_enc_k (x : priv_key AHE) : 
+  di_from_enc DI (di_priv_key DI x) = None.
 Proof. by []. Qed.
 
 End Standard_Interface_Properties.
-
 
 (* ========================================================================== *)
 (* Notation shortcuts for use in client files                                 *)
@@ -180,4 +189,5 @@ End Standard_Interface_Properties.
 Notation "'data_of' DI" := (di_data DI) (at level 10, only parsing).
 Notation "'d_of' DI" := (di_d DI) (at level 10, only parsing).
 Notation "'e_of' DI" := (di_e DI) (at level 10, only parsing).
-Notation "'k_of' DI" := (di_k DI) (at level 10, only parsing).
+Notation "'priv_key_of' DI" := (di_priv_key DI) (at level 10, only parsing).
+Notation "'pub_key_of' DI" := (di_pub_key DI) (at level 10, only parsing).
