@@ -67,11 +67,73 @@ HB.mixin Record isAHEMonoid (T : AHEncType) := {
 #[short(type=AHEMonoidType)]
 HB.structure Definition AHEMonoid := { T of isAHEMonoid T }.
 
-(* TODO: factory error.
+Declare Scope emul_scope.
+Delimit Scope emul_scope with E.
 
-HB.instance Definition _ (T : AHEMonoidType) (k : pub_key T) := 
-  GRing.isZmodule.Build (cipher T)
-    (@Emul_assoc T) 
-    (@Emul_comm T) 
-    (@Emul_id T k).
-*)
+(* Notation for Emul operation - consistent with local notation in ahe_enc.v *)
+Notation "x (.) y" := (Emul x y) (at level 40, left associativity) : emul_scope.
+
+Section cipher_monoid.
+
+Variable (T : AHEMonoidType) (k : pub_key T).
+
+Definition e_id := E[k](0, rand_id).
+
+HB.instance Definition _ := @Monoid.isComLaw.Build
+  (cipher T) e_id Emul Emul_assoc Emul_comm (Emul_id k).
+
+End cipher_monoid.
+
+(* Notation for cipher monoid identity - use 1%E *)
+Notation "1" := (e_id _) : emul_scope.
+
+(* === Custom bigop notations (like \sum_, \prod_ in MathComp) === *)
+(* The key k is explicit because the identity e_id depends on it. *)
+
+Reserved Notation "\Emul[ k ]_ ( i <- r | P ) F"
+  (at level 41, F at level 41, k at level 0, i, r at level 50,
+   format "'[' \Emul[ k ]_ ( i  <-  r  |  P ) '/  '  F ']'").
+Reserved Notation "\Emul[ k ]_ ( i <- r ) F"
+  (at level 41, F at level 41, k at level 0, i, r at level 50,
+   format "'[' \Emul[ k ]_ ( i  <-  r ) '/  '  F ']'").
+Reserved Notation "\Emul[ k ]_ ( i < n | P ) F"
+  (at level 41, F at level 41, k at level 0, i, n at level 50,
+   format "'[' \Emul[ k ]_ ( i  <  n  |  P ) '/  '  F ']'").
+Reserved Notation "\Emul[ k ]_ ( i < n ) F"
+  (at level 41, F at level 41, k at level 0, i, n at level 50,
+   format "'[' \Emul[ k ]_ ( i  <  n ) '/  '  F ']'").
+
+Notation "\Emul[ k ]_ ( i <- r | P ) F" :=
+  (\big[Emul/e_id k]_(i <- r | P) F) : emul_scope.
+Notation "\Emul[ k ]_ ( i <- r ) F" :=
+  (\big[Emul/e_id k]_(i <- r) F) : emul_scope.
+Notation "\Emul[ k ]_ ( i < n | P ) F" :=
+  (\big[Emul/e_id k]_(i < n | P) F) : emul_scope.
+Notation "\Emul[ k ]_ ( i < n ) F" :=
+  (\big[Emul/e_id k]_(i < n) F) : emul_scope.
+
+Section test_bigop.
+
+Variable (T : AHEMonoidType) (k : pub_key T).
+
+Local Open Scope emul_scope.
+
+(* Bigop over a finite index *)
+Variable (n : nat) (f : 'I_n -> cipher T).
+Check \Emul[k]_(i < n) f i.
+
+(* Bigop over a list of ciphertexts *)
+Variable (cs : seq (cipher T)).
+Check \Emul[k]_(c <- cs) c.
+
+(* Folding encrypted values: sum of encryptions *)
+Variable (ms : seq (plain T)) (rs : seq (rand T)).
+Check \Emul[k]_(mr <- zip ms rs) E[k](mr.1, mr.2).
+
+(* Simple lemma using monoid properties *)
+Lemma Emul_big_cons (c : cipher T) :
+  \Emul[k]_(x <- c :: cs) x = c (.) (\Emul[k]_(x <- cs) x).
+Proof. by rewrite big_cons. Qed.
+
+End test_bigop.
+
