@@ -53,9 +53,7 @@ Definition charlie_idx : nat := 2.
 Arguments sproc dtype data party {_} {_}.
 
 (* Use session-typed wrappers from dsdp_interface directly *)
-Let PInit {party n env} := @DInit AHE party n env.
 Let PSend {party n env} := @DSend AHE party n env.
-Let PRet {party} := @DRet AHE party.
 Let Recv_dec {party n env} := @DRecv_dec AHE party n env.
 Let Recv_enc {party n env} := @DRecv_enc AHE party n env.
 
@@ -68,8 +66,9 @@ Local Notation "& x" := (d x) (at level 0, x at level 0) : pismc_scope.
 (* $x -> (e x) for encrypted *)
 Local Notation "$ x" := (e x) (at level 0, x at level 0) : pismc_scope.
 
-(* Finish - terminal state (session-typed) *)
-Notation "'Finish'" := SFinish (in custom pismc at level 0).
+(* Finish, Init, and generic Ret notations are shared from pismc.v.
+   Data wrapper notations (#, &, $) are parsed in constr scope
+   within the shared Init/Ret notations. *)
 
 Notation "'Send<' p '>' x ; P" := (PSend p x P)
   (in custom pismc at level 85, p constr at level 0, x constr at level 0,
@@ -85,21 +84,6 @@ Notation "'Recv<' p '>' '#' dk x '=>' P" :=
   (Recv_dec p dk (fun x => P))
   (in custom pismc at level 85, p constr at level 0,
    dk constr at level 0, x name,
-   P custom pismc at level 85, right associativity).
-
-(* Ret - return a value *)
-Local Notation "'Ret' x" := (PRet x)
-  (in custom pismc at level 80, x constr at level 0).
-
-(* Single Init with continuation *)
-Notation "'Init' x ; P" := (PInit x P)
-  (in custom pismc at level 85, x constr at level 0,
-   P custom pismc at level 85, right associativity).
-
-(* Multi-var Init using tuple syntax *)
-Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" := (PInit x .. (PInit y P) ..)
-  (in custom pismc at level 85,
-   x constr at level 0, y constr at level 0,
    P custom pismc at level 85, right associativity).
 
 (******************************************************************************)
@@ -127,7 +111,7 @@ Definition pbob (dk : priv_keyT)(v2 : msgT)(rb1 rb2 : randT)
 
 (* Charlie's protocol *)
 Definition pcharlie (dk : priv_keyT)(v3 : msgT)(rc1 rc2 : randT)
-    : @sproc dsdp_dtype data charlie_idx _ _ :=
+    : sproc dsdp_dtype data charlie_idx :=
   \pi{ Init (#dk, &v3) ;
      Send<alice_idx> $(E charlie v3 rc1) ;
      Recv<bob_idx> #dk d3 =>
@@ -136,7 +120,7 @@ Definition pcharlie (dk : priv_keyT)(v3 : msgT)(rc1 rc2 : randT)
 
 (* Alice's protocol *)
 Definition palice (dk : priv_keyT)(v1 u1 u2 u3 r2 r3: msgT)(ra1 ra2 : randT)
-    : @sproc dsdp_dtype data alice_idx _ _ :=
+    : sproc dsdp_dtype data alice_idx :=
   \pi{ Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
      Recv<bob_idx> c2 =>
      Recv<charlie_idx> c3 =>

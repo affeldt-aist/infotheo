@@ -27,8 +27,6 @@ Let SRecv_one {TX VX party n env} := @spp_interface.SRecv_one TX VX party n env.
 Let SRecv_vec {TX VX party n env} := @spp_interface.SRecv_vec TX VX party n env.
 Let SPSendVec {TX VX party n env} := @spp_interface.SPSendVec TX VX party n env.
 Let SPSendOne {TX VX party n env} := @spp_interface.SPSendOne TX VX party n env.
-Let SPInit {TX VX party n env} := @spp_interface.SPInit TX VX party n env.
-Let SPRet {party} := @spp_interface.SPRet TX VX party.
 
 Local Notation "& x" := (vec x) (at level 0, x at level 0) : pismc_scope.
 Local Notation "! x" := (one x) (at level 0, x at level 0) : pismc_scope.
@@ -52,31 +50,15 @@ Local Notation "'Recv<' p '>' '!' x '=>' P" :=
   (in custom pismc at level 85, p constr at level 0, x name,
    P custom pismc at level 85, right associativity).
 
-(* Return notation for scalar values *)
+(* Protocol-specific Ret notations - more specific than generic Ret from pismc.v *)
 Local Notation "'Ret' '!' x" := (SRet (one x))
   (in custom pismc at level 80, x constr).
 Local Notation "'Ret' '&' x" := (SRet (vec x))
   (in custom pismc at level 80, x constr).
 
-(* Finish notation *)
-Local Notation "'Finish'" := SFinish (in custom pismc at level 0).
-
-(* Single Init with continuation *)
-Notation "'Init' '&' x ; P" := (SPInit (vec x) P)
-  (in custom pismc at level 85, x constr at level 0,
-   P custom pismc at level 85, right associativity).
-Notation "'Init' '!' x ; P" := (SPInit (one x) P)
-  (in custom pismc at level 85, x constr at level 0,
-   P custom pismc at level 85, right associativity).
-
-(* Multi-var Init using tuple syntax - data values directly *)
-(* x and y are parsed in constr where
-   &/! notations are defined in pismc_scope *)
-Local Notation "'Init' '(' x ',' .. ',' y ')' ; P" :=
-  (SPInit x .. (SPInit y P) ..)
-  (in custom pismc at level 85,
-   x constr at level 0, y constr at level 0,
-   P custom pismc at level 85, right associativity).
+(* Finish, Init, and generic Ret notations are shared from pismc.v.
+   Data wrapper notations (& x, ! x) are parsed in constr scope
+   within the shared Init notation. *)
 
 (******************************************************************************)
 (** * SMC-SPP Programs - piSMC Version                                        *)
