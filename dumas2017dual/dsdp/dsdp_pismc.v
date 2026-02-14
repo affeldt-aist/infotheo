@@ -12,8 +12,8 @@ Local Open Scope ring_scope.
 
 Section smc_dsdp_program.
 
-(* Parameterize by an AHEMonoidType instance *)
-Variable AHE : AHEMonoidType.
+(* Parameterize by an AHEncType instance *)
+Variable AHE : AHEncType.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface AHE.
@@ -223,7 +223,7 @@ End smc_dsdp_program.
 (** * Session Environment Convergence for DSDP (Idealized Instance)            *)
 (*******************************************************************************)
 
-(* This section instantiates DSDP with the Idealized AHEMonoidType, where
+(* This section instantiates DSDP with the Idealized AHEncType, where
    enc/dec have concrete computable definitions. This enables native_compute
    proofs for termination properties. *)
 
@@ -233,15 +233,12 @@ Variable m_minus_2 : nat.
 Local Notation m := m_minus_2.+2.
 Local Notation msg := 'F_m.
 
-(* Build the Idealized AHEMonoidType *)
+(* Build the Idealized AHEncType *)
 Local Definition Idealized_EncDec_instance :=
   @Idealized_isEncDec msg.
 
 Local Definition Idealized_AHEnc_instance :=
   @Idealized_isAHEnc msg.
-
-Local Definition Idealized_AHEMonoid_instance :=
-  @Idealized_isAHEMonoid msg.
 
 Local Definition Idealized_EncDec_local : EncDecType :=
   @EncDec.Pack (Idealized_HETypes msg)
@@ -252,11 +249,7 @@ Local Definition Idealized_AHEnc_local : AHEncType :=
     (@AHEnc.Class (Idealized_HETypes msg)
       Idealized_EncDec_instance Idealized_AHEnc_instance).
 
-Local Definition Idealized_AHEMonoid_local : AHEMonoidType :=
-  @AHEMonoid.Pack Idealized_AHEnc_local
-    (@AHEMonoid.Class Idealized_AHEnc_local Idealized_AHEMonoid_instance).
-
-Let AHE : AHEMonoidType := Idealized_AHEMonoid_local.
+Let AHE : AHEncType := Idealized_AHEnc_local.
 Let DI := Standard_DSDP_Interface AHE.
 Let data := di_data DI.
 

@@ -44,13 +44,13 @@ Definition alice_idx : nat := 0.
 Definition bob_idx : nat := 1.
 Definition charlie_idx : nat := 2.
 
-(* Parameterize by an AHEMonoidType instance *)
-Variable AHE : AHEMonoidType.
+(* Parameterize by an AHEncType instance *)
+Variable AHE : AHEncType.
 
 (* Use standard DSDP interface for data types *)
 Let DI := Standard_DSDP_Interface AHE.
 
-(* Extract types from the AHEMonoidType *)
+(* Extract types from the AHEncType *)
 Let msgT := plain AHE.
 Let randT := rand AHE.
 Let encT := cipher AHE.
@@ -64,7 +64,7 @@ Let k := di_priv_key DI.
 Let Recv_dec := @di_Recv_dec AHE DI.
 Let Recv_enc := @di_Recv_enc AHE DI.
 
-(* HE operations from the AHEMonoidType - using @ to provide AHEMonoidType explicitly *)
+(* HE operations from the AHEncType - using @ to provide AHEncType explicitly *)
 Let Emul := @Emul AHE.
 Let Epow := @Epow AHE.
 
@@ -165,7 +165,7 @@ Definition dsdp_max_fuel : nat := 27.
 (* Algebraic correctness proof using homomorphic properties                    *)
 (* ========================================================================== *)
 
-(* The homomorphic properties from AHEMonoidType - using mixin directly *)
+(* The homomorphic properties from AHEncType - using mixin directly *)
 Let Emul_eq_add := @Emul_addM AHE.
 Let Epow_eq_mul := @Epow_scalarM AHE.
 

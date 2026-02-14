@@ -56,14 +56,6 @@ HB.mixin Record isAHEMonoid (T : AHEncType) := {
   Emul_id : forall k : pub_key T, left_id (E[ k ] (0, rand_id)) (@Emul T);
 }.
 
-(* ========================================================================== *)
-(*                   Final Party_AHE Structure                                 *)
-(* ========================================================================== *)
-
-(* The complete AHEMonoid structure bundles all three mixins:
-   - isEncDec
-   - isAHEnc
-   - isAHEMonoid *)
 #[short(type=AHEMonoidType)]
 HB.structure Definition AHEMonoid := { T of isAHEMonoid T }.
 

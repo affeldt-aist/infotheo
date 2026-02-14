@@ -75,7 +75,7 @@ HB.instance Definition _ := hasDecEq.Build dsdp_dtype dsdp_dtype_eqP.
     This eliminates the need to repeat
     data/d/e/priv_key/pub_key/from_enc/Recv_dec/Recv_enc
     definitions in every DSDP file. *)
-Record DSDP_Interface (AHE : AHEMonoidType) := MkDSDP_Interface {
+Record DSDP_Interface (AHE : AHEncType) := MkDSDP_Interface {
   (* The carrier data type *)
   di_data : Type ;
   
@@ -112,7 +112,7 @@ Arguments di_Recv_enc {AHE} _ _ _.
 
 Section Standard_DSDP_Interface.
 
-Variable AHE : AHEMonoidType.
+Variable AHE : AHEncType.
 
 Let msgT := plain AHE.
 Let encT := cipher AHE.
@@ -164,7 +164,7 @@ End Standard_DSDP_Interface.
 
 Section Standard_Interface_Properties.
 
-Variable AHE : AHEMonoidType.
+Variable AHE : AHEncType.
 Let DI := Standard_DSDP_Interface AHE.
 
 Lemma std_from_enc_e (x : cipher AHE) : 

@@ -62,7 +62,7 @@ Local Notation m := m_minus_2.+2.
 Local Notation msg := 'F_m.  (* Finite field with m elements *)
 
 (* ========================================================================== *)
-(* Build Idealized_HETypes as AHEMonoidType                                   *)
+(* Build Idealized_HETypes as AHEncType                                   *)
 (* ========================================================================== *)
 
 Local Definition Idealized_EncDec_instance :=
@@ -70,9 +70,6 @@ Local Definition Idealized_EncDec_instance :=
 
 Local Definition Idealized_AHEnc_instance :=
   @Idealized_isAHEnc msg.
-
-Local Definition Idealized_AHEMonoid_instance :=
-  @Idealized_isAHEMonoid msg.
 
 (* Build the type hierarchy *)
 Local Definition Idealized_EncDec_local : EncDecType :=
@@ -84,12 +81,8 @@ Local Definition Idealized_AHEnc_local : AHEncType :=
     (@AHEnc.Class (Idealized_HETypes msg)
       Idealized_EncDec_instance Idealized_AHEnc_instance).
 
-Local Definition Idealized_AHEMonoid_local : AHEMonoidType :=
-  @AHEMonoid.Pack Idealized_AHEnc_local
-    (@AHEMonoid.Class Idealized_AHEnc_local Idealized_AHEMonoid_instance).
-
 (* The idealized scheme *)
-Let AHE : AHEMonoidType := Idealized_AHEMonoid_local.
+Let AHE : AHEncType := Idealized_AHEnc_local.
 
 (* Use standard interface from dsdp_interface.v *)
 Let DI := Standard_DSDP_Interface AHE.
@@ -215,7 +208,7 @@ End dsdp_computational.
 (* Computational Correctness Proofs using Benaloh Encryption                  *)
 (*                                                                            *)
 (* This section instantiates the algebraic dsdp_computes_dot_product theorem  *)
-(* with the concrete Benaloh AHEMonoidType.                                   *)
+(* with the concrete Benaloh AHEncType.                                   *)
 (*                                                                            *)
 (* The parameters n, r, n_gt1, r_gt1 are needed to construct the type         *)
 (* hierarchy (plain AHE = 'Z_r). The algebraic theorem itself only uses       *)
@@ -229,7 +222,7 @@ Variables (n r : nat).
 Hypothesis n_gt1 : (1 < n)%N.
 Hypothesis r_gt1 : (1 < r)%N.
 
-(* Build the Benaloh AHEMonoidType instance *)
+(* Build the Benaloh AHEncType instance *)
 Local Definition Benaloh_EncDec_local : EncDecType :=
   @EncDec.Pack (BenalohHETypes n r)
     (@EncDec.Class (BenalohHETypes n r) (@Benaloh_isEncDec n r)).
@@ -239,11 +232,7 @@ Local Definition Benaloh_AHEnc_local : AHEncType :=
     (@AHEnc.Class (BenalohHETypes n r)
       (@Benaloh_isEncDec n r) (@Benaloh_isAHEnc n r r_gt1)).
 
-Local Definition Benaloh_AHEMonoid_local : AHEMonoidType :=
-  @AHEMonoid.Pack Benaloh_AHEnc_local
-    (@AHEMonoid.Class Benaloh_AHEnc_local (@Benaloh_isAHEMonoid n r r_gt1)).
-
-Let AHE : AHEMonoidType := Benaloh_AHEMonoid_local.
+Let AHE : AHEncType := Benaloh_AHEnc_local.
 
 (* Message variables *)
 Variables (v1 v2 v3 u1 u2 u3 r2 r3 : plain AHE).

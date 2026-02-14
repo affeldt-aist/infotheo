@@ -17,7 +17,7 @@ Import Prenex Implicits.
 
 Section smc_dsdp_session_types.
 
-Variable AHE : AHEMonoidType.
+Variable AHE : AHEncType.
 
 Let data := di_data (Standard_DSDP_Interface AHE).
 Let e := di_e (Standard_DSDP_Interface AHE).

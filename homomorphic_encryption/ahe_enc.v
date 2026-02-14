@@ -97,6 +97,7 @@ HB.mixin Record isAHEnc (T : HETypes) of isEncDec T := {
     forall (k : pub_key T) (j : plain T),
     {morph E[ k ] : mr / mr {< *%R ; rand_pow >} j >-> Epow mr j} ;
 }.
+(* TODO: math-comp/boot/monoid.v; for PairMagma *)
 
 #[short(type=AHEncType)]
 HB.structure Definition AHEnc := { T of isAHEnc T & }.
@@ -109,4 +110,3 @@ Local Notation "x (.) y" := (Emul x y) (at level 40, left associativity).
 Local Notation "x (^) y" := (Epow x y) (at level 40, left associativity).
 Local Notation "x ^r y" := (rand_pow x y) (at level 40, left associativity).
 Local Notation "x *r y" := (rand_mul x y) (at level 40, left associativity).
-
