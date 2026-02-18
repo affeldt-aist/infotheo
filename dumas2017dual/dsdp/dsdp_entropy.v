@@ -344,7 +344,7 @@ Qed.
    Combined with the conditional entropy result H(V2,V3 | view) = log(m),
    this shows DSDP leaks log(m) bits but preserves log(m) bits of entropy.
    
-   The security argument (privacy_by_bonded_leakage at end of file) shows
+   The security argument (joint_centropy_reduction at end of file) shows
    that H(V2,V3 | AliceView) = H(V2 | AliceView), i.e., knowing V3 given
    the constraint adds no information beyond knowing V2. *)
 Lemma dsdp_var_entropy :
@@ -589,7 +589,7 @@ apply: boolp.funext => i //=.
 ring.
 Qed.
 
-Section bonded_leakage_privacy.
+Section functional_determination.
 
 (* Functional Determination of V3:
    
@@ -686,10 +686,9 @@ rewrite divrr //.
 by rewrite mulr1.
 Qed.
 
-(* TODO: put an assumption so the lemma
+(* Future work: put an assumption so the lemma
    V3_determined_centropy_v2 can be applied
-   when the assumption is true.
-*)
+   when the assumption is true. *)
 
 (** * Fundamental Principle of Constraint-Based Security
     
@@ -721,7 +720,7 @@ have ->: `H( V2 | [% V1, U1, U2, U3, S]) =
 by [].
 Qed.
 
-End bonded_leakage_privacy.
+End functional_determination.
 
 Hypothesis U3_coprime_m :
   forall t, coprime (val (U3 t)) m.
@@ -739,7 +738,7 @@ Hypothesis V3_determined :
    independence.
    Given: X is conditionally independent of [Dk_a, R2, R3] given CondRV
    Proves: H(X | AliceView) = H(X | CondRV)
-   This is reused in dsdp_security.v for the bounded leakage proof. *)
+   This is reused in dsdp_security.v for the entropic security proof. *)
 Lemma alice_view_to_cond (A : finType) (Xvar : {RV P -> A}) :
   (P |= [% Dk_a, R2, R3] _|_ Xvar | [% V1, U1, U2, U3, S]) ->
   `H(Xvar | AliceView) = `H(Xvar | [% V1, U1, U2, U3, S]).
@@ -818,11 +817,10 @@ rewrite H_assoc.
 exact: (cinde_centropy_eq cinde_X).
 Qed.
 
-(* Privacy via bounded leakage: knowing (V2,V3) given Alice's view is
-   equivalent to knowing just V2.
-   V3 adds no additional information because it is determined by V2 and the
-   constraint. This is the core privacy guarantee for Bob's input V2. *)
-Lemma privacy_by_bonded_leakage :
+(* Joint conditional entropy reduction: H(V2,V3 | AliceView) = H(V2 | AliceView).
+   V3 adds no additional entropy because it is functionally determined by V2
+   and the constraint. Used in the entropic security proof (dsdp_security.v). *)
+Lemma joint_centropy_reduction :
   `H([% V2, V3] | AliceView ) = `H(V2 | AliceView).
 Proof.
 rewrite (alice_view_to_cond cinde_V2V3) (alice_view_to_cond cinde_V2).

@@ -104,28 +104,4 @@ Notation "\Emul[ k ]_ ( i < n | P ) F" :=
 Notation "\Emul[ k ]_ ( i < n ) F" :=
   (\big[Emul/e_id k]_(i < n) F) : emul_scope.
 
-Section test_bigop.
-
-Variable (T : AHEMonoidType) (k : pub_key T).
-
-Local Open Scope emul_scope.
-
-(* Bigop over a finite index *)
-Variable (n : nat) (f : 'I_n -> cipher T).
-Check \Emul[k]_(i < n) f i.
-
-(* Bigop over a list of ciphertexts *)
-Variable (cs : seq (cipher T)).
-Check \Emul[k]_(c <- cs) c.
-
-(* Folding encrypted values: sum of encryptions *)
-Variable (ms : seq (plain T)) (rs : seq (rand T)).
-Check \Emul[k]_(mr <- zip ms rs) E[k](mr.1, mr.2).
-
-(* Simple lemma using monoid properties *)
-Lemma Emul_big_cons (c : cipher T) :
-  \Emul[k]_(x <- c :: cs) x = c (.) (\Emul[k]_(x <- cs) x).
-Proof. by rewrite big_cons. Qed.
-
-End test_bigop.
 

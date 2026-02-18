@@ -182,7 +182,7 @@ Record scalar_product_random_inputs :=
        other necessary independence premises can be proven from these
        primitive ones.
 
-       TODO: the type difference between vector and scalar prevents us
+       Future work: the type difference between vector and scalar prevents us
        from having something like:
 
        Hindep : {homo nth x1 [:: x1; x2; s1; s2; r1; y2] :
@@ -449,15 +449,11 @@ Let proof_alice := pi2_alice_is_leakage_free_proof
       s2_x1s1r1x2_indep
       x1s1r1_x2_indep pnegy2_unif (ps2_unif inputs).
 
-Check proof_alice.
-
 Let proof_bob := pi2_bob_is_leakage_free_proof
       (card_rVTX:=card_VX)(r1:=r1)(y2:=y2)
       x1x2s2x1'r2_y2_indepP
       x1x2s2x1'_r2_indep
       s1_x1x2s2_indep x2s2_x1_indep (ps1_unif inputs).
-
-Check proof_bob.
 
 Theorem scalar_product_is_leakage_freeP :
   scalar_product_is_leakage_free.

@@ -540,5 +540,3 @@ End unicode_vs_ascii.
      &x                         - (d x) data/message wrapper  
      $x                         - (e x) encrypted wrapper
 *)
-
-Print test_combined.

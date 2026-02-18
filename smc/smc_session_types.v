@@ -269,49 +269,27 @@ Definition party1 : nat := 1.
 Definition test1 : @sproc test_dtype test_data party0 _ _ :=
   SFinish.
 
-Check test1.
-(* Should show: sproc ... party0 1 senv_end *)
-
-(* TEST 2: Send then Finish - should infer fuel=2, env with one Send *)
 Definition test2 : @sproc test_dtype test_data party0 _ _ :=
   SSend party1 DT_A 42 SFinish.
 
-Check test2.
-(* Should show: sproc ... party0 2 (senv_send senv_end party1 DT_A) *)
-
-(* TEST 3: Two Sends then Finish *)
 Definition test3 : @sproc test_dtype test_data party0 _ _ :=
   SSend party1 DT_B 1 (SSend party1 DT_A 2 SFinish).
 
-Check test3.
-
-(* TEST 4: Init then Send then Finish *)
 Definition test4 : @sproc test_dtype test_data party0 _ _ :=
   SInit 100 (SSend party1 DT_A 42 SFinish).
 
-Check test4.
-
-(* TEST 5: Recv then Finish - need explicit dtype *)
 Definition test5 : @sproc test_dtype test_data party0 _ _ :=
   SRecv party1 DT_A (fun _ => SFinish).
 
-Check test5.
-
-(* TEST 6: Send to party1, Recv from party1 - mixed communication *)
 Definition test6 : @sproc test_dtype test_data party0 _ _ :=
   SSend party1 DT_A 10 (SRecv party1 DT_B (fun _ => SFinish)).
 
-Check test6.
-
-(* TEST 7: More complex - communication with multiple parties *)
 Definition party2 : nat := 2.
 
 Definition test7 : @sproc test_dtype test_data party0 _ _ :=
   SRecv party2 DT_A (fun x =>
   SRecv party2 DT_B (fun y =>
   SSend party1 DT_A (x + y) SFinish)).
-
-Check test7.
 
 (* Verify we can extract session type information *)
 Definition get_stype {dtype : eqType} {data : Type}
@@ -323,18 +301,6 @@ Definition get_stype {dtype : eqType} {data : Type}
 Definition get_fuel {dtype : eqType} {data : Type}
     {party : nat} {n : nat} {env : senv dtype} 
     (p : @sproc dtype data party n env) : nat := n.
-
-(* Check session type of test7 with party1 *)
-Eval compute in get_stype test7 party1.
-(* Should show: STSend DT_A STEnd *)
-
-(* Check session type of test7 with party2 *)
-Eval compute in get_stype test7 party2.
-(* Should show: STRecv DT_A (STRecv DT_B STEnd) *)
-
-(* Check inferred fuel of test7 *)
-Eval compute in get_fuel test7.
-(* Should show: 4 *)
 
 End test_inference.
 
@@ -1371,20 +1337,10 @@ Let data := test_data.
 
 (* Test erasure on simple process *)
 Definition erase_test1 : proc data := erase test1.
-Check erase_test1.
 
 Definition erase_test2 : proc data := erase test2.
-Check erase_test2.
 
-(* Test fuel extraction *)
-Eval compute in get_fuel test1.  (* Should be: 1 *)
-Eval compute in get_fuel test2.  (* Should be: 2 *)
-Eval compute in get_fuel test7.  (* Should be: 4 *)
-
-(* Example: run two-party protocol with AUTOMATIC fuel computation *)
-(* The fuel [> ...] is computed from the inferred fuel indices *)
 Definition test_procs := [aprocs proto_p0; proto_p1].
-Eval compute in [> test_procs].  (* Should be: 4 (= 2 + 2) *)
 
 (* Run with automatic fuel - no manual "100" needed! *)
 Definition test_run := run_sprocs test_procs.

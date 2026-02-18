@@ -1,2 +1,1 @@
-(* TODO: notations for the piSMC language (DSDP alt syntax) 
-*)
+(* Future work: notations for the piSMC language (DSDP alt syntax) *)

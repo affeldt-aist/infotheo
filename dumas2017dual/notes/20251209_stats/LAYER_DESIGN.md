@@ -160,8 +160,8 @@ This layer has two parallel modules, both depending only on Layer 2:
 | Theorem | Statement |
 |---------|-----------|
 | `dsdp_centropy_uniform_solutions` | H((V2,V3) \| constraint) = log(m) |
-| `privacy_by_bonded_leakage` | H((V2,V3) \| AliceView) = H(V2 \| AliceView) |
-| `dsdp_security_bounded_leakage` | H(V2 \| AliceView) = log(m) > 0 |
+| `joint_centropy_reduction` | H((V2,V3) \| AliceView) = H(V2 \| AliceView) |
+| `dsdp_entropic_security` | H(V2 \| AliceView) = log(m) > 0 |
 
 ## Design Principles
 

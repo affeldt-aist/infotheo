@@ -168,21 +168,6 @@ have[Hy _ |Hy <- //] := eqVneq `Pr[ Y = y ] 0; last by field.
 by rewrite pfwd1_domin_RV1 Hy// mulr0.
 Qed.
 
-Lemma cinde_rv_cprP : P |= X _|_ Y | Z <->
-  forall x y z, `Pr[[%Y, Z] = (y, z) ] != 0 ->
-    `Pr[ X = x | [%Y, Z] = (y, z)] = `Pr[ X = x | Z = z].
-Proof.
-split.
-  move => H x y z YZne0.
-  apply: cinde_alt.
-  exact: H.
-  exact: YZne0.
-move => H x y z.
-move: (H x y z) => H2.
-apply: inde_RV2_cinde.
-rewrite /inde_RV => [[_a _b] _c].
-Abort.
-
 End more_inde_RV_lemmas.
 
 Section more_indep_lemmas.

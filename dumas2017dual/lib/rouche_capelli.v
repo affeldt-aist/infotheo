@@ -9,7 +9,6 @@ Unset Printing Implicit Defensive.
 Open Scope ring_scope.
 Import GRing.Theory.
 Import VectorInternalTheory.
-(*Import passmx.*)
 
 HB.mixin Record isFinVector
   (R : nzRingType) (V : Type) of Vector R V & Finite V := {}.
@@ -20,8 +19,6 @@ HB.structure Definition FinVector
 
 HB.instance Definition _ (K : finFieldType) m n := isFinVector.Build K 'M[K]_(m,n).
 HB.instance Definition _ (K : finFieldType) m := isFinVector.Build K {poly_m K}.
-(*HB.instance Definition _ (K : fieldType) (fvT : finVectType K)
-  := [Finite of {vspace fvT} by <:].*)
 HB.instance Definition _ (K : fieldType) (fvT : finVectType K) (U : {vspace fvT}) :=
   [Finite of subvs_of U by <:].
 HB.instance Definition _ (K : fieldType) (fvT : finVectType K) (U : {vspace fvT}) :=

@@ -97,7 +97,7 @@ HB.mixin Record isAHEnc (T : HETypes) of isEncDec T := {
     forall (k : pub_key T) (j : plain T),
     {morph E[ k ] : mr / mr {< *%R ; rand_pow >} j >-> Epow mr j} ;
 }.
-(* TODO: math-comp/boot/monoid.v; for PairMagma *)
+(* Future work: math-comp/boot/monoid.v; for PairMagma *)
 
 #[short(type=AHEncType)]
 HB.structure Definition AHEnc := { T of isAHEnc T & }.

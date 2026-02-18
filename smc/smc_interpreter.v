@@ -257,7 +257,7 @@ by rewrite -index_mem size_tuple Hidx.
 Qed.
 
 (* Injecting with disjoint lenses commutes *)
-(* TODO: Complete this proof - the structure is correct but SSReflect rewriting is complex *)
+(* Future work: Complete this proof - the structure is correct but SSReflect rewriting is complex *)
 Lemma inject_disjoint_comm n m1 m2 (T : eqType) (l1 : lens n m1) (l2 : lens n m2)
     (ps : n.-tuple T) (ps1 : m1.-tuple T) (ps2 : m2.-tuple T) :
   lens_disjoint l1 l2 ->

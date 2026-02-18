@@ -35,8 +35,6 @@ Proof. decide equality. Defined.
 Definition party_eqb (p1 p2: party) : bool :=
   if party_eqb_subproof p1 p2 then true else false.
 
-Print Module Equality.
-
 Lemma party_eqP : Equality.axiom party_eqb.
 Proof.
 move=> p1 p2.
@@ -135,7 +133,7 @@ Variable P : R.-fdist T.
 Variable TX : finComRingType.
 Variable VX : lmodType TX.
 
-(* TODO: TX VX type issue (sum type?) *)
+(* Future work: TX VX type issue (sum type?) *)
 
 HB.instance Definition _ := gen_eqMixin {RV P -> VX}.
 HB.instance Definition _ := gen_choiceMixin {RV P -> VX}.
@@ -145,10 +143,6 @@ HB.instance Definition _ := gen_choiceMixin {RV P -> VX}.
 Variables (x1 : {RV P -> VX})(x2 : {RV P -> VX}).
 
 Definition partymap := {fset ({RV P -> VX} * seq bool)%type}.
-
-Print cid.
-Print constructive_indefinite_description.
-About sigW.
 
 Hypothesis inde_between_parties : forall (f : partymap) (a b : {RV P -> VX}) (pa pb : seq bool),
   (a, pa) \in f -> (b, pb) \in f -> foldr andb true (map (uncurry andb) (zip pa pb)) = false ->  inde_rv a b.

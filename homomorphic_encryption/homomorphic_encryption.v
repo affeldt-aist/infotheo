@@ -174,7 +174,7 @@ HB.instance Definition _ := [isNew for @party_key_v p k T].
 
 End party_key_def.
 
-(* TODO: it confuses math-comp contributors since this style is used for dep types *)
+(* Future work: it confuses math-comp contributors since this style is used for dep types *)
 Notation "p .-key k" := (party_key p k)
   (at level 2, format "p .-key k") : type_scope.
 
@@ -281,9 +281,8 @@ Hypothesis E_enc_unif : forall (T : finType) (P : R.-fdist T)
 Hypothesis E_enc_inde : forall (A B : finType) (p : party_id)
   (X : {RV P -> p.-enc A}) (Y : {RV P -> B}),
   P |= X _|_ Y.
-(* TODO: what if B is (p.-enc A) ? Whether we need a way to
-   judge if B is (p.-enc A) or not?
-*)
+(* Future work: what if B is (p.-enc A) ? Whether we need a way to
+   judge if B is (p.-enc A) or not? *)
 
 (*
   "Ciphertext conditioning contract":

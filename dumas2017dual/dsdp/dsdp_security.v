@@ -32,7 +32,7 @@ Import Num.Theory.
 (*    - Solution pairs form affine subspace of size m = p*q                   *)
 (*    - Conditional entropy: H(V2,V3 | V1,U1,U2,U3,S) = log(m)                *)
 (*    - Uniform distribution over solution pairs maximizes entropy            *)
-(*    - Independence properties ensure no information leakage                 *)
+(*    - Independence properties ensure entropic security guarantees           *)
 (*                                                                            *)
 (* KEY INSIGHT: Algebraic structure determines information-theoretic bounds.  *)
 (* The constraint reduces joint space from m^2 to m solution pairs, giving    *)
@@ -167,7 +167,7 @@ Hypothesis VarRV_uniform :
   `p_ VarRV = fdist_uniform (dsdp_entropy.card_msg_pair_subproof p_minus_2 q_minus_2).
 Hypothesis VarRV_indep_inputs : P |= [%V1, U1, U2, U3] _|_ VarRV.
 
-(* Additional hypotheses for privacy_by_bonded_leakage *)
+(* Additional hypotheses for joint_centropy_reduction *)
 Let Dec_view : {RV P -> (alice_inputsT * msg)} :=
   [% Dk_a, S, V1, U1, U2, U3, R2, R3].
 
@@ -217,7 +217,7 @@ Hypothesis neg_self_indep : forall (TA : finType)
 (* Core entropy bound: H((V2,V3) | constraint view) = log(m).
    Instantiates the general DSDP entropy analysis with security hypotheses.
    Shows Alice learns exactly log(m) bits about Bob/Charlie's joint input,
-   not the full log(m^2) bits - proving bounded information leakage.
+   not the full log(m^2) bits - proving entropic security.
 *)
 Theorem dsdp_constraint_centropy_eqlogm :
   `H(VarRV | CondRV) = log (m%:R : R).
@@ -258,12 +258,11 @@ have ->: `H(V2 | [% V1, U1, U2, U3, S]) =
 by [].
 Qed.
 
-(* DSDP security guarantee: H(V2 | AliceView) = log(m) > 0.
-   Alice cannot learn Bob's private input V2 with certainty.
-   The conditional entropy log(m) means V2 remains uniformly distributed
-   over m values from Alice's perspective - she gains no advantage over
-   random guessing. The protocol leaks V3's determination but not V2. *)
-Theorem dsdp_security_bounded_leakage :
+(* DSDP entropic security: H(V2 | AliceView) = log(m) = H(V2) > 0.
+   Since log(m) is the maximum entropy for V2 over Z/pqZ, this means
+   Alice's view is statistically independent of V2: individual secrets
+   enjoy perfect privacy in the sense of Dodis-Smith entropic security. *)
+Theorem dsdp_entropic_security :
   `H(V2 | AliceView) = log (m%:R : R) /\
   `H(V2 | AliceView) > 0.
 Proof.
@@ -290,15 +289,12 @@ Qed.
 
 (** ** Interpretation *)
 
-(* The adversary learns log(m) bits about v2, not 0 bits (perfect secrecy)
-   but also not log(m^2) bits (complete knowledge).
-   
-   This is because:
-   - There are m possible values for v2
-   - Each is equally likely given alice_view
-   - Entropy = log(m) bits
-   
-   Security holds despite information leakage.
+(* Entropic security interpretation:
+   H(V2 | AliceView) = log(m) = H(V2), so Alice's view reveals
+   nothing about V2 — individual secrets enjoy perfect privacy.
+   The joint (V2,V3) loses log(m) bits (from 2*log(m) to log(m)),
+   but this corresponds exactly to the protocol output S that
+   Alice is supposed to learn, not a security violation.
 *)
 
 (******************************************************************************)

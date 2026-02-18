@@ -133,19 +133,6 @@ Variables (sa sb: VX) (ra yb: TX) (xa xb: VX).
 Definition scalar_product h :=
   interp h [:: palice xa; pbob xb; pcoserv sa sb ra yb].
 
-Goal scalar_product 16 = [:: Fail; Fail; Fail].
-cbv -[GRing.add GRing.opp].
-rewrite /scalar_product.
-rewrite (lock (14 : nat)) /=.
-rewrite -lock (lock (12 : nat)) /=.
-rewrite -lock (lock (10 : nat)) /=.
-rewrite -lock (lock (8 : nat)) /=.
-rewrite -lock (lock (6 : nat)) /=.
-rewrite -lock (lock (4 : nat)) /=.
-rewrite -lock (lock (2 : nat)) /=.
-rewrite -lock /=.
-Abort.
-
 Lemma scalar_product_ok :
   scalar_product 16 =
   [:: Ret (one ((xa + sa) *d xb + (sa *d sb - ra) - yb - (xb + sb) *d sa + ra));
