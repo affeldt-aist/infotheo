@@ -4,6 +4,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix interval.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
 From mathcomp Require Import ssrnum archimedean ereal interval_inference.
+From mathcomp Require Import realfun.
 From mathcomp Require Import ring lra reals.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 From mathcomp Require vector.

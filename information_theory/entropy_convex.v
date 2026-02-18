@@ -244,7 +244,7 @@ have cnH2: {within `[x, y], continuous (- H2)}%classic.
 apply/RNconcave_function_at.
 rewrite /convex_function_at /=.
 rewrite -!mc_convRE.
-apply: (@analysis.convex.second_derivative_convex _ (fun z => - (H2 z))).
+apply: (@second_derivative_convex _ (fun z => - (H2 z))).
 - move=> z xzy.
   have/zxyoo01 z01: z \in `]x, y[%classic by rewrite inE.
   by rewrite DDnH2E// DDnH2_nonneg.
