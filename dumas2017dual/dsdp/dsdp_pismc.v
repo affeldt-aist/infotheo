@@ -49,6 +49,8 @@ Definition alice_idx : nat := 0.
 Definition bob_idx : nat := 1.
 Definition charlie_idx : nat := 2.
 
+Coercion nat_to_party_id : nat >-> party_id.
+
 (* Make dtype and data explicit for sproc type annotations *)
 Arguments sproc dtype data party {_} {_}.
 
@@ -103,19 +105,19 @@ Local Notation E := enc_pub_key.
 Definition pbob (dk : priv_keyT)(v2 : msgT)(rb1 rb2 : randT)
     : sproc dsdp_dtype data bob_idx :=
   \pi{ Init (#dk, &v2) ;
-     Send<alice_idx> $(E bob v2 rb1);
+     Send<alice_idx> $(E bob_idx v2 rb1);
      Recv<alice_idx> #dk d2 =>
      Recv<alice_idx> a3 =>
-     Send<charlie_idx> $(a3 *h (E charlie d2 rb2)) ;
+     Send<charlie_idx> $(a3 *h (E charlie_idx d2 rb2)) ;
      Finish }.
 
 (* Charlie's protocol *)
 Definition pcharlie (dk : priv_keyT)(v3 : msgT)(rc1 rc2 : randT)
     : sproc dsdp_dtype data charlie_idx :=
   \pi{ Init (#dk, &v3) ;
-     Send<alice_idx> $(E charlie v3 rc1) ;
+     Send<alice_idx> $(E charlie_idx v3 rc1) ;
      Recv<bob_idx> #dk d3 =>
-     Send<alice_idx> $(E alice d3 rc2) ;
+     Send<alice_idx> $(E alice_idx d3 rc2) ;
      Finish }.
 
 (* Alice's protocol *)
@@ -124,8 +126,8 @@ Definition palice (dk : priv_keyT)(v1 u1 u2 u3 r2 r3: msgT)(ra1 ra2 : randT)
   \pi{ Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
      Recv<bob_idx> c2 =>
      Recv<charlie_idx> c3 =>
-     Send<bob_idx> $(c2 ^h u2 *h (E bob r2 ra1)) ;
-     Send<bob_idx> $(c3 ^h u3 *h (E charlie r3 ra2)) ;
+     Send<bob_idx> $(c2 ^h u2 *h (E bob_idx r2 ra1)) ;
+     Send<bob_idx> $(c3 ^h u3 *h (E charlie_idx r3 ra2)) ;
      Recv<charlie_idx> #dk g =>
      Ret &(g - r2 - r3 + u1 * v1) }.
 
@@ -142,6 +144,9 @@ Variable pn : party_id -> nat.
 Hypothesis pn_alice : pn alice = alice_idx.
 Hypothesis pn_bob : pn bob = bob_idx.
 Hypothesis pn_charlie : pn charlie = charlie_idx.
+Hypothesis np_alice : nat_to_party_id alice_idx = alice.
+Hypothesis np_bob : nat_to_party_id bob_idx = bob.
+Hypothesis np_charlie : nat_to_party_id charlie_idx = charlie.
 
 (* Import original programs from dsdp_program *)
 Let palice_orig := @dsdp_program.palice AHE bob charlie pn ek.
@@ -154,17 +159,26 @@ Let pcharlie_orig := @dsdp_program.pcharlie AHE alice bob charlie pn ek.
 Lemma alice_cross_eq dk' v1' u1' u2' u3' r2' r3' ra1' ra2' :
   erase (palice dk' v1' u1' u2' u3' r2' r3' ra1' ra2') =
   erase (palice_orig dk' v1' u1' u2' u3' r2' r3' ra1' ra2').
-Proof. by rewrite /palice_orig /dsdp_program.palice pn_bob pn_charlie. Qed.
+Proof.
+by rewrite /palice /palice_orig /dsdp_program.palice pn_bob pn_charlie
+           /enc_pub_key /dsdp_program.enc_pk np_bob np_charlie.
+Qed.
 
 Lemma bob_cross_eq dk' v2' rb1' rb2' :
   erase (pbob dk' v2' rb1' rb2') =
   erase (pbob_orig dk' v2' rb1' rb2').
-Proof. by rewrite /pbob_orig /dsdp_program.pbob pn_alice pn_charlie. Qed.
+Proof.
+by rewrite /pbob /pbob_orig /dsdp_program.pbob pn_alice pn_charlie
+           /enc_pub_key /dsdp_program.enc_pk np_bob np_charlie.
+Qed.
 
 Lemma charlie_cross_eq dk' v3' rc1' rc2' :
   erase (pcharlie dk' v3' rc1' rc2') =
   erase (pcharlie_orig dk' v3' rc1' rc2').
-Proof. by rewrite /pcharlie_orig /dsdp_program.pcharlie pn_alice pn_bob. Qed.
+Proof.
+by rewrite /pcharlie /pcharlie_orig /dsdp_program.pcharlie pn_alice pn_bob
+           /enc_pub_key /dsdp_program.enc_pk np_alice np_charlie.
+Qed.
 
 (******************************************************************************)
 (** * Session Type Duality Verification                                       *)
