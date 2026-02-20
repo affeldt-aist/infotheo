@@ -106,25 +106,25 @@ Lemma map_extract n m A B (l : lens n m) (f : A -> B) v :
 Proof. by apply: eq_from_tnth => i; rewrite !tnth_map. Qed.
 
 (* Relational reduction - single step reductions *)
-Inductive rred {n} : forall {m}, lens n m ->
+Inductive rstep {n} : forall {m}, lens n m ->
       m.-tuple proc -> m.-tuple proc -> m.-tuple (seq data) -> Prop :=
-  | rinit i x p : rred [tuple i] [tuple Init x p] [tuple p] [tuple [:: x]]
-  | rret i x : rred [tuple i] [tuple Ret x] [tuple Finish] [tuple [:: x]]
+  | rinit i x p : rstep [tuple i] [tuple Init x p] [tuple p] [tuple [:: x]]
+  | rret i x : rstep [tuple i] [tuple Ret x] [tuple Finish] [tuple [:: x]]
   | rcomm i j x pi pj :
-    rred [tuple i; j] [tuple Send j x pi; Recv i pj] [tuple pi; pj x]
-         [tuple nil; [:: x]].
+    rstep [tuple i; j] [tuple Send j x pi; Recv i pj] [tuple pi; pj x]
+          [tuple nil; [:: x]].
 
-(* Reflexive transitive closure of rred *)
-Inductive rstep {n} :
+(* Reflexive transitive closure of rstep *)
+Inductive rsteps {n} :
       n.-tuple proc -> n.-tuple proc -> n.-tuple (seq data) -> Prop :=
   | rone m (l : lens n m) ps ps' traces :
-    rred l (extract l ps) ps' traces ->
-    rstep ps (inject l ps ps') (inject l [tuple nil | _ < n] traces)
-  | rrefl ps : rstep ps ps [tuple nil | _ < n]
+    rstep l (extract l ps) ps' traces ->
+    rsteps ps (inject l ps ps') (inject l [tuple nil | _ < n] traces)
+  | rrefl ps : rsteps ps ps [tuple nil | _ < n]
   | rtrans ps1 ps2 ps3 tr1 tr2 tr3 :
-    rstep ps1 ps2 tr1 -> rstep ps2 ps3 tr2 ->
+    rsteps ps1 ps2 tr1 -> rsteps ps2 ps3 tr2 ->
     tr3 = [tuple tr2 !_ i ++ tr1 !_ i | i < n] ->
-    rstep ps1 ps3 tr3.
+    rsteps ps1 ps3 tr3.
 
 (* Helper: reintroduce trace argument after executing step *)
 Definition add_trace tr (res : (proc * seq data * bool)) :=
@@ -212,9 +212,9 @@ Definition red_spec_at {n} (ps : n.-tuple proc) (i : 'I_n) : option (red_spec n)
 Definition red_applies {n} (ps : n.-tuple proc) (r : red_spec n) : Prop :=
   extract (red_spec_lens r) ps = red_spec_input r :> seq _.
 
-(* red_spec yields valid rred *)
+(* red_spec yields valid rstep *)
 Lemma red_spec_valid n (r : red_spec n) :
-  rred (red_spec_lens r) (red_spec_input r) (red_spec_output r)
+  rstep (red_spec_lens r) (red_spec_input r) (red_spec_output r)
        (red_spec_traces r).
 Proof. by case: r => *; constructor. Qed.
 
@@ -262,7 +262,7 @@ Lemma inject_disjoint_comm n m1 m2 (T : eqType) (l1 : lens n m1) (l2 : lens n m2
     (ps : n.-tuple T) (ps1 : m1.-tuple T) (ps2 : m2.-tuple T) :
   lens_disjoint l1 l2 ->
   inject l1 (inject l2 ps ps2) ps1 = inject l2 (inject l1 ps ps1) ps2.
-Proof. Admitted.
+Proof. Abort.
 
 Lemma step_trace n (ps : n.-tuple proc) tr i :
   step ps tr i = add_trace tr (step ps nil i).
@@ -278,8 +278,8 @@ case Hp: (nth default_proc ps i) => [d next|dst w next|frm f|d||] //=.
 Qed.
 
 (* The step function does all possible reductions at once *)
-Lemma rred_ok n m (l : lens n m) ps ps' traces' :
-  rred l (extract l ps) ps' traces' ->
+Lemma step_complete n m (l : lens n m) ps ps' traces' :
+  rstep l (extract l ps) ps' traces' ->
   let res := extract l [tuple step ps nil i | i < n] in
   map_tuple (fun r => r.1.1) res = ps' /\
   map_tuple (fun r => r.1.2) res = traces'.
@@ -299,10 +299,10 @@ case: H Hps => /=.
     by rewrite -tnth_nth (Hi,Hj) -tnth_nth (Hi,Hj) eqxx.
 Qed.
 
-Lemma rred_disjoint n m p (ps : n.-tuple proc) (l1 : lens n m) (l2 : lens n p)
+Lemma rstep_disjoint n m p (ps : n.-tuple proc) (l1 : lens n m) (l2 : lens n p)
   psl1 psl2 ps1 tr1 ps2 tr2 :
   psl1 = extract l1 ps -> psl2 = extract l2 ps ->
-  rred l1 psl1 ps1 tr1 -> rred l2 psl2 ps2 tr2 ->
+  rstep l1 psl1 ps1 tr1 -> rstep l2 psl2 ps2 tr2 ->
   l1 == l2 :> seq _ /\ ps1 = ps2 :> seq _ /\ tr1 = tr2 :> seq _
   \/ {in l1 & l2, forall a b, a != b}.
 Proof.
@@ -327,8 +327,8 @@ case: Hred2 Hpsl2 => [i' j' pi' | i' x' | i' j' x' pi' pj'] /(f_equal val) /=[];
 Qed.
 
 Lemma comm_disjoint n (ps : n.-tuple proc) i j k l ps1 tr1 ps2 tr2 :
-  rred [tuple i; j] (extract [tuple i; j] ps) ps1 tr1 ->
-  rred [tuple k; l] (extract [tuple k; l] ps) ps2 tr2 ->
+  rstep [tuple i; j] (extract [tuple i; j] ps) ps1 tr1 ->
+  rstep [tuple k; l] (extract [tuple k; l] ps) ps2 tr2 ->
   (i == k) /\ (j == l) \/ (i != k) /\ (j != l).
 Proof.
 inversion 1; inversion 1; subst.
@@ -340,12 +340,12 @@ move: H11; rewrite (tnth_nth Fail) -jl -tnth_nth -H4 => -[ki] _.
 exact/eqP/val_inj.
 Qed.
   
-(* Soundness: step implements rstep *)
+(* Soundness: mapping step over all processes can be simulated by rsteps *)
 Lemma step_sound n (ps : n.-tuple proc) :
   let res := [tuple step ps nil i | i < n] in
   let ps' := map_tuple (fun r => r.1.1) res in
   let tr := map_tuple (fun r => r.1.2) res in
-  rstep ps ps' tr.
+  rsteps ps ps' tr.
 Proof.
 pose pss := [fset x : 'I_n | true].
 pose res' (s : {fset 'I_n}) (ps : n.-tuple proc) :=
@@ -354,7 +354,7 @@ move=> res.
 have -> : res = res' pss ps.
   by apply: eq_from_tnth => i; rewrite !tnth_mktuple ifT // !inE.
 have : forall i j ps' traces,
-    rred [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
+    rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
     (i \in pss) = (j \in pss)
     by move=> *; rewrite !inE.
 elim/finSet_rect: pss {res} => /= pss IH Hpss.
@@ -537,7 +537,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
     move=> a b ps' traces.
     rewrite !inE.
     have [-> | ai] := eqVneq a i; have [-> | bi] // := eqVneq b i.
-    * (* a = i, b != i: rred would require i to have Send/Init/Ret, but it has Recv *)
+    * (* a = i, b != i: rstep would require i to have Send/Init/Ret, but it has Recv *)
       inversion 1; subst.
       (* For rcomm, H3 says ps !_ i = Send _ _ _, contradicts Hpi: ps !_ i = Recv _ _ *)
       by rewrite Hpi in H3.
@@ -746,25 +746,25 @@ End termination.
 The lemma `step_sound` establishes the fundamental **soundness** of the interpreter's single-step execution
 function with respect to the relational semantics. Specifically, it proves that for any tuple `ps` of `n`
 processes, executing one step via the `step` function (applied to all processes in parallel) yields a
-configuration that is reachable via the relational semantics (`rstep`).
+configuration that is reachable via the relational semantics (`rsteps`).
 
 ### Formal Statement
 ```coq
 Lemma step_sound n (ps : n.-tuple proc) :
   let res := [tuple step ps nil i | i < n] in
-  rstep ps (map_tuple (fun r => r.1.1) res) (map_tuple (fun r => r.1.2) res).
+  rsteps ps (map_tuple (fun r => r.1.1) res) (map_tuple (fun r => r.1.2) res).
 ```
 
 The lemma shows that:
 - Starting from process configuration `ps`
 - Applying `step` to each process (collecting results)
 - Extracting the resulting processes and traces
-- This configuration transition is justified by `rstep` (the relational semantics)
+- This configuration transition is justified by `rsteps` (the relational semantics)
 
 ### Why This Is Important for Academic Paper
 
 1. **Correctness Bridge**: This lemma bridges the operational interpreter (`step` function) with the formal
-   relational semantics (`rstep`). It certifies that the actual execution engine faithfully implements the
+   relational semantics (`rsteps`). It certifies that the actual execution engine faithfully implements the
    high-level abstract reduction rules.
 
 2. **Proof Strategy Foundation**: The proof uses **finite set induction** over the set of processes that
@@ -794,7 +794,7 @@ processes that have already reduced. For each process in the set:
 - **Unmatched Send/Recv**: Process is skipped (removed from active set, waiting for communication partner)
 - **Ret/Finish/Fail**: Terminal states handled by recursion on reduced set
 
-This structure ensures that all possible atomic reductions in the system are captured by individual `rred`
+This structure ensures that all possible atomic reductions in the system are captured by individual `rstep`
 steps, whose composition via `rtrans` produces the overall system transition.
 
 *)
@@ -827,14 +827,14 @@ interp: nat -> seq proc -> seq (seq data) -> (seq proc * seq (seq data))
 ### 2. Relational Semantics (Abstract Specification - lines 108-127)
 
 ```coq
-rred: m.-tuple proc -> m.-tuple proc -> m.-tuple (seq data) -> Prop
-rstep: n.-tuple proc -> n.-tuple proc -> n.-tuple (seq data) -> Prop
+rstep: m.-tuple proc -> m.-tuple proc -> m.-tuple (seq data) -> Prop
+rsteps: n.-tuple proc -> n.-tuple proc -> n.-tuple (seq data) -> Prop
 ```
 
 **What it is**: The **specification of valid reductions**
 - Declarative/relational rules specifying *which* execution paths are allowed
-- `rred`: Single atomic reduction rules (Init, Ret, Send-Recv communication)
-- `rstep`: Reflexive-transitive closure allowing sequences of reductions
+- `rstep`: Single atomic reduction rules (Init, Ret, Send-Recv communication)
+- `rsteps`: Reflexive-transitive closure allowing sequences of reductions
 - More abstract and easier to reason about in proofs
 
 ### Comparison: Operational vs Relational
@@ -853,15 +853,15 @@ rstep: n.-tuple proc -> n.-tuple proc -> n.-tuple (seq data) -> Prop
 ```coq
 Lemma step_sound n (ps : n.-tuple proc) :
   let res := [tuple step ps nil i | i < n] in
-  rstep ps (map_tuple (fun r => r.1.1) res) (map_tuple (fun r => r.1.2) res).
+  rsteps ps (map_tuple (fun r => r.1.1) res) (map_tuple (fun r => r.1.2) res).
 ```
 
-This says: **Whatever the concrete `step` function produces is justified by the abstract `rstep` semantics.**
+This says: **Whatever the concrete `step` function produces is justified by the abstract `rsteps` semantics.**
 
 ### Practical Workflow
 
 1. **Prove high-level properties** about relational semantics (cleaner, more abstract)
-   - Example: "protocol preserves confidentiality with respect to `rstep`"
+   - Example: "protocol preserves confidentiality with respect to `rsteps`"
 
 2. **Use `step_sound`** to lift results to the concrete interpreter
    - Example: "the actual `interp` function also preserves confidentiality"
@@ -883,23 +883,23 @@ It enables:
 *)
 
 (******************************************************************************)
-(** * Deep Dive: rred vs rstep                                               *)
+(** * Deep Dive: rstep vs rsteps                                               *)
 (******************************************************************************)
 
 (**md
 
-## `rred`: Single Atomic Reduction Rules
+## `rstep`: Single Atomic Reduction Rules
 
-`rred` defines the **smallest possible execution steps** - atomic actions that a single process or pair 
+`rstep` defines the **smallest possible execution steps** - atomic actions that a single process or pair 
 of processes can perform.
 
 ```coq
-Inductive rred {n} : forall {m}, lens n m ->
+Inductive rstep {n} : forall {m}, lens n m ->
       m.-tuple proc -> m.-tuple proc -> m.-tuple (seq data) -> Prop :=
-  | rinit i x p : rred [tuple i] [tuple Init x p] [tuple p] [tuple [:: x]]
-  | rret i x : rred [tuple i] [tuple Ret x] [tuple Finish] [tuple [:: x]]
+  | rinit i x p : rstep [tuple i] [tuple Init x p] [tuple p] [tuple [:: x]]
+  | rret i x : rstep [tuple i] [tuple Ret x] [tuple Finish] [tuple [:: x]]
   | rcomm i j x pi pj :
-    rred [tuple i; j] [tuple Send j x pi; Recv i pj] [tuple pi; pj x]
+    rstep [tuple i; j] [tuple Send j x pi; Recv i pj] [tuple pi; pj x]
          [tuple nil; [:: x]].
 ```
 
@@ -927,42 +927,42 @@ Inductive rred {n} : forall {m}, lens n m ->
      - Process `j` becomes `pi` (continues after sending)
    - **Traces**: Process `j` gets empty trace `[]`, process `i` gets `[:: x]` (the received value)
 
-**Key point**: Each `rred` rule is **completely deterministic** and involves only a small subset of processes 
+**Key point**: Each `rstep` rule is **completely deterministic** and involves only a small subset of processes 
 (1 or 2 processes).
 
-## `rstep`: Reflexive-Transitive Closure
+## `rsteps`: Reflexive-Transitive Closure
 
-`rstep` builds on top of `rred` to allow **sequences of reductions**:
+`rsteps` builds on top of `rstep` to allow **sequences of reductions**:
 
 ```coq
-Inductive rstep {n} :
+Inductive rsteps {n} :
       n.-tuple proc -> n.-tuple proc -> n.-tuple (seq data) -> Prop :=
   | rone m (l : lens n m) ps ps' traces :
-    rred l (extract l ps) ps' traces ->
-    rstep ps (inject l ps ps') (inject l [tuple nil | _ < n] traces)
-  | rrefl ps : rstep ps ps [tuple nil | _ < n]
+    rstep l (extract l ps) ps' traces ->
+    rsteps ps (inject l ps ps') (inject l [tuple nil | _ < n] traces)
+  | rrefl ps : rsteps ps ps [tuple nil | _ < n]
   | rtrans ps1 ps2 ps3 tr1 tr2 tr3 :
-    rstep ps1 ps2 tr1 -> rstep ps2 ps3 tr2 ->
+    rsteps ps1 ps2 tr1 -> rsteps ps2 ps3 tr2 ->
     tr3 = [tuple tr2 !_ i ++ tr1 !_ i | i < n] ->
-    rstep ps1 ps3 tr3.
+    rsteps ps1 ps3 tr3.
 ```
 
 ### The Three Constructors:
 
 1. **`rone` (Single Reduction)**
-   - Apply one atomic `rred` rule to a subset of processes
+   - Apply one atomic `rstep` rule to a subset of processes
    - Uses a **lens** `l` to select which processes participate
    - `extract l ps`: Extract the relevant processes
    - `inject l ps ps'`: Put the updated processes back into the full tuple
-   - **Multiple reductions in parallel**: All non-overlapping `rred` rules can be applied simultaneously
+   - **Multiple reductions in parallel**: All non-overlapping `rstep` rules can be applied simultaneously
 
 2. **`rrefl` (Reflexivity)**
-   - Do nothing: `rstep ps ps [tuple nil | _ < n]`
+   - Do nothing: `rsteps ps ps [tuple nil | _ < n]`
    - A system can transition to itself with no trace changes
    - This allows **zero or more** steps (not just one)
 
 3. **`rtrans` (Transitivity)**
-   - Compose two `rstep` transitions into one
+   - Compose two `rsteps` transitions into one
    - Go from `ps1` → `ps2` → `ps3`
    - Traces are **concatenated**: `tr3 = [tuple tr2 !_ i ++ tr1 !_ i | i < n]`
    - For each process `i`, combine traces from both steps
@@ -971,19 +971,19 @@ Inductive rstep {n} :
 
 Suppose you have 3 processes and want to execute them:
 
-### Using `rred` alone:
+### Using `rstep` alone:
 ```
-ps1 ──[rred: Init at i=0]──> ps2 ──[rred: Send-Recv at i=1,2]──> ps3
+ps1 ──[rstep: Init at i=0]──> ps2 ──[rstep: Send-Recv at i=1,2]──> ps3
 ```
-You're limited to sequences of single `rred` applications.
+You're limited to sequences of single `rstep` applications.
 
-### Using `rstep` (with composition):
+### Using `rsteps` (with composition):
 ```
-ps1 ──[rstep: multiple parallel redex]──> ps3
+ps1 ──[rsteps: multiple parallel redex]──> ps3
 ```
 
-A single `rstep` can represent:
-- Multiple independent `rred` rules applied in parallel (via `rone` with different lenses)
+A single `rsteps` can represent:
+- Multiple independent `rstep` rules applied in parallel (via `rone` with different lenses)
 - Or a sequence of such parallel steps (via `rtrans`)
 
 ### Concrete Example:
@@ -993,13 +993,13 @@ If you have:
 - Process 1: `Send 2 y p1` (waiting for receiver at position 2)
 - Process 2: `Recv 1 p2` (waiting for sender at position 1)
 
-**With `rstep`**, you could:
+**With `rsteps`**, you could:
 1. **Step 1**: Process 0 initializes (`Init`) AND processes 1-2 communicate (one `Send-Recv`) in parallel
 2. This is possible because their participating indices don't overlap
 
 ## Key Differences Summary
 
-| Aspect | `rred` | `rstep` |
+| Aspect | `rstep` | `rsteps` |
 |--------|--------|--------|
 | **Scope** | One atomic action | Sequence of actions |
 | **Processes affected** | 1 or 2 processes | Subset or all n processes |
@@ -1010,8 +1010,8 @@ If you have:
 
 ## Why Both?
 
-- **`rred`**: Clean specification of what can happen (like a grammar)
-- **`rstep`**: Composable semantics for reasoning about programs (like derivations in a grammar)
+- **`rstep`**: Clean specification of what can happen (like a grammar)
+- **`rsteps`**: Composable semantics for reasoning about programs (like derivations in a grammar)
 - **`step_sound`**: Connects the concrete algorithm to this abstract framework
 
 *)
@@ -1043,7 +1043,7 @@ A **lens** is an `m`-tuple of indices selecting `m` positions from an `n`-tuple:
 ### Why This Matters for `step_sound`
 
 The proof must establish that when we execute `step` on the entire process tuple,
-the result is justified by `rstep`. The key challenge: `rred` operates on **subsets** of processes.
+the result is justified by `rsteps`. The key challenge: `rstep` operates on **subsets** of processes.
 
 **Without lenses**: We'd need to reason about how individual reductions fit together.
 
@@ -1057,9 +1057,9 @@ the result is justified by `rstep`. The key challenge: `rred` operates on **subs
    extract [tuple i] ps = [tuple Init x p]  // Extract process at position i
    ```
 
-3. **Application of rred** (lines 216-219): Apply the atomic rule to the extracted subset:
+3. **Application of rstep** (lines 216-219): Apply the atomic rule to the extracted subset:
    ```coq
-   rred l (extract l ps) ps' traces  // Apply rule to selected processes
+   rstep l (extract l ps) ps' traces  // Apply rule to selected processes
    ```
 
 4. **Reinjection** (lines 382, 431, 508): Put the updated processes back:
@@ -1092,7 +1092,7 @@ The proof structure uses lenses at multiple points:
    - Each case (Init, Send-Recv, Ret, etc.) uses a lens to extract the active process(es)
    - The `rone` constructor (line 120-122) packages the reduction:
      ```coq
-     rstep ps (inject l ps ps') (inject l [tuple nil | _ < n] traces)
+     rsteps ps (inject l ps ps') (inject l [tuple nil | _ < n] traces)
      ```
 
 3. **Lines 413, 486**: Disjointness check ensures Send-Recv pairs don't overlap with other 
@@ -1111,7 +1111,7 @@ The proof structure uses lenses at multiple points:
 - **Modularity**: Different reductions can be reasoned about independently, then combined via `rtrans`
 
 In summary: **Lenses are the glue** that allows the proof to reason about disjoint parallel 
-reductions locally, then compose them into a single `rstep` transition that matches the 
+reductions locally, then compose them into a single `rsteps` transition that matches the 
 `step` function's behavior. This makes the soundness argument compositional rather than 
 requiring a monolithic proof that handles all interactions at once.
 
@@ -1132,7 +1132,7 @@ on two insights: first, we identify exactly which processes can reduce at a
 given step; second, we check that the step function implements the required
 logic for Send-Recv matching and properly accumulates traces. These local
 reductions are then composed into a global transition using the
-reflexive-transitive closure (rstep), which allows multiple independent
+reflexive-transitive closure (rsteps), which allows multiple independent
 reductions to occur in parallel. This approach transforms a complex
 algorithmic proof into a modular inductive argument: rather than attempting to
 reason about all process interactions at once, we handle each reduction type
@@ -1144,33 +1144,33 @@ We provide two complementary semantic models for protocol execution. The
 operational semantics—implemented by step and interp—characterize how the
 interpreter actually computes process states and traces, through deterministic
 pattern matching and sequential updates. The relational semantics, given by
-rred and rstep, instead abstractly specify which execution paths are permitted
+rstep and rsteps, instead abstractly specify which execution paths are permitted
 by the protocol rules. The step_sound lemma bridges these models by proving
-that every configuration reachable via step is also reachable via rstep. This
+that every configuration reachable via step is also reachable via rsteps. This
 correspondence allows us to verify high-level properties (e.g.,
 confidentiality, information flow) at the more abstract relational level,
 without engaging the complexity of the implementation. The key benefit is that
-properties proven about rstep—which is cleaner and more modular—automatically
+properties proven about rsteps—which is cleaner and more modular—automatically
 lift to the interpreter via step_sound. Our verification thus remains both
 compositional and robust to future changes in implementation.
 
-3. Atomic Reductions (rred) Composed via Reflexive-Transitive Closure (rstep)
+3. Atomic Reductions (rstep) Composed via Reflexive-Transitive Closure (rsteps)
 
-We distinguish between rred and rstep as follows. The rred relation captures
+We distinguish between rstep and rsteps as follows. The rstep relation captures
 the basic, atomic steps processes can perform—initialization, return, and
-two-party communication. The rstep relation extends rred by permitting
-sequences and (parallel) composition of these atomic steps. Each rred rule
+two-party communication. The rsteps relation extends rstep by permitting
+sequences and (parallel) composition of these atomic steps. Each rstep rule
 encodes a single protocol action: rinit moves a process from Init x p to p
 while recording value x; rret transitions from Ret x to Finish while recording
 x; rcomm performs a synchronous Send-Recv exchange between two processes.
-Three constructors define rstep: rone packages a single rred step for some
+Three constructors define rsteps: rone packages a single rstep step for some
 subset of processes (selected by a lens); rrefl allows zero-step transitions
-(reflexivity); and rtrans composes two rstep derivations, concatenating their
+(reflexivity); and rtrans composes two rsteps derivations, concatenating their
 traces. This design separates the logical specification of actions from the
 operational semantics of execution runs. Such separation is crucial for our
 proof: we can verify that step implements each atomic rule in isolation, then
 show that composing these via rtrans yields exactly those global transitions
-allowed by rstep.
+allowed by rsteps.
 
 4. Lenses as the Architecture for Selective Process Updates
 
@@ -1178,7 +1178,7 @@ Lenses are the central architectural device that make the soundness proof
 compositional and enable parallel reductions. Lenses are tuples of indices
 selecting m positions out of an n-tuple of processes. We use extract l ps to
 isolate the processes involved in a reduction—e.g., extract [tuple i] ps pulls
-out just process i for an Init or Ret action—on which the appropriate rred
+out just process i for an Init or Ret action—on which the appropriate rstep
 rule is applied. After the reduction, inject l ps ps' re-integrates the
 updated processes into the global system configuration. The lens_disjoint
 predicate certifies when two lenses do not overlap, which allows us to verify
@@ -1219,16 +1219,16 @@ As the proof progresses through each case (Init, Send-Recv, Ret, Finish, Fail), 
 *)
 
 (*
-rstep is called the "reflexive-transitive closure" of rred because it has three constructors that correspond exactly to these properties:
+rsteps is called the "reflexive-transitive closure" of rstep because it has three constructors that correspond exactly to these properties:
 Reflexive (line 123): The rrefl constructor states that any configuration can transition to itself:
-   rrefl ps : rstep ps ps [tuple nil | _ < n]
+   rrefl ps : rsteps ps ps [tuple nil | _ < n]
 This allows zero-step transitions, which is the reflexive property.
-Transitive (lines 124-127): The rtrans constructor allows composing two rstep transitions into a single transition:
-   rtrans ps1 ps2 ps3 tr1 tr2 tr3 :     rstep ps1 ps2 tr1 -> rstep ps2 ps3 tr2 ->     tr3 = [tuple tr2 !_ i ++ tr1 !_ i | i < n] ->     rstep ps1 ps3 tr3.
+Transitive (lines 124-127): The rtrans constructor allows composing two rsteps transitions into a single transition:
+   rtrans ps1 ps2 ps3 tr1 tr2 tr3 :     rsteps ps1 ps2 tr1 -> rsteps ps2 ps3 tr2 ->     tr3 = [tuple tr2 !_ i ++ tr1 !_ i | i < n] ->     rsteps ps1 ps3 tr3.
 This is the transitive property: if ps1 → ps2 and ps2 → ps3, then ps1 → ps3.
-Closure of rred (lines 120-122): The rone constructor applies a single rred rule:
-   rone m (l : lens n m) ps ps' traces :     rred l (extract l ps) ps' traces ->     rstep ps (inject l ps ps') (inject l [tuple nil | _ < n] traces)
-This ensures that every rred reduction is also an rstep transition.
-Together, these three constructors define rstep as the smallest relation containing rred that is both reflexive and transitive — precisely the definition of a reflexive-transitive closure. This allows rstep to represent execution runs that consist of zero or more rred steps composed together.
+Closure of rstep (lines 120-122): The rone constructor applies a single rstep rule:
+   rone m (l : lens n m) ps ps' traces :     rstep l (extract l ps) ps' traces ->     rsteps ps (inject l ps ps') (inject l [tuple nil | _ < n] traces)
+This ensures that every rstep reduction is also an rsteps transition.
+Together, these three constructors define rsteps as the smallest relation containing rstep that is both reflexive and transitive — precisely the definition of a reflexive-transitive closure. This allows rsteps to represent execution runs that consist of zero or more rstep steps composed together.
 
 *)
