@@ -99,25 +99,27 @@ Variable ek : party_id -> pub_key AHE.
 (* Party-indexed encryption: maps party to their public key for enc *)
 Definition enc_pub_key (p : party_id) (m : msgT) (r : randT) : encT :=
   enc (ek p) m r.
-Local Notation E := enc_pub_key.
+Local Notation "'E<' r '>' p m" := (enc_pub_key p m r)
+  (at level 10, r constr at level 0, p constr at level 0, m constr at level 0,
+   format "'E<' r '>'  p  m").
 
 (* Bob's protocol - using concrete indices for session type duality *)
 Definition pbob (dk : priv_keyT)(v2 : msgT)(rb1 rb2 : randT)
     : sproc dsdp_dtype data bob_idx :=
   \pi{ Init (#dk, &v2) ;
-     Send<alice_idx> $(E bob_idx v2 rb1);
+     Send<alice_idx> $(E<rb1> bob_idx v2);
      Recv<alice_idx> #dk d2 =>
      Recv<alice_idx> a3 =>
-     Send<charlie_idx> $(a3 *h (E charlie_idx d2 rb2)) ;
+     Send<charlie_idx> $(a3 *h (E<rb2> charlie_idx d2)) ;
      Finish }.
 
 (* Charlie's protocol *)
 Definition pcharlie (dk : priv_keyT)(v3 : msgT)(rc1 rc2 : randT)
     : sproc dsdp_dtype data charlie_idx :=
   \pi{ Init (#dk, &v3) ;
-     Send<alice_idx> $(E charlie_idx v3 rc1) ;
+     Send<alice_idx> $(E<rc1> charlie_idx v3) ;
      Recv<bob_idx> #dk d3 =>
-     Send<alice_idx> $(E alice_idx d3 rc2) ;
+     Send<alice_idx> $(E<rc2> alice_idx d3) ;
      Finish }.
 
 (* Alice's protocol *)
@@ -126,8 +128,8 @@ Definition palice (dk : priv_keyT)(v1 u1 u2 u3 r2 r3: msgT)(ra1 ra2 : randT)
   \pi{ Init (#dk, &v1, &u1, &u2, &u3, &r2, &r3) ;
      Recv<bob_idx> c2 =>
      Recv<charlie_idx> c3 =>
-     Send<bob_idx> $(c2 ^h u2 *h (E bob_idx r2 ra1)) ;
-     Send<bob_idx> $(c3 ^h u3 *h (E charlie_idx r3 ra2)) ;
+     Send<bob_idx> $(c2 ^h u2 *h (E<ra1> bob_idx r2)) ;
+     Send<bob_idx> $(c3 ^h u3 *h (E<ra2> charlie_idx r3)) ;
      Recv<charlie_idx> #dk g =>
      Ret &(g - r2 - r3 + u1 * v1) }.
 
