@@ -12,7 +12,6 @@
 (* == Operations ==                                                           *)
 (*                                                                            *)
 (*   enc : party -> msg -> rand -> enc    (encryption)                        *)
-(*   key : party -> key -> msg -> pkey    (key generation)                    *)
 (*   dec : pkey -> enc -> option msg      (decryption)                        *)
 (*                                                                            *)
 (* == Properties ==                                                           *)
