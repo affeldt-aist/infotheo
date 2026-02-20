@@ -147,10 +147,7 @@ Lemma unitrK (x y : msg) :
   x \is a GRing.unit -> x * y / x = y.
 Proof.
 move=> Hunit.
-(* x * y / x = x * y * x^-1 *)
-(* = x * (y * x^-1) = x * (x^-1 * y) = (x * x^-1) * y = 1 * y = y *)
 rewrite -mulrA [y * x^-1]mulrC mulrA.
-(* Goal: x / x * y = y, i.e., x * x^-1 * y = y *)
 rewrite mulrV //.
 by rewrite mul1r.
 Qed.
@@ -167,13 +164,10 @@ Proof.
 move=> Hui_unit Hdot.
 (* Expand dot product isolating index i *)
 rewrite (dotmul_bigD1 u v i) in Hdot.
-(* Hdot: u ord0 i * v ord0 i + sum = target *)
-(* Goal: v ord0 i = (target - sum) * (u ord0 i)^-1 *)
 have Heq: u ord0 i * v ord0 i = target - \sum_(j < n | j != i) u ord0 j *
                                            v ord0 j.
   by rewrite -Hdot addrK.
 rewrite -Heq.
-(* Goal: v ord0 i = u ord0 i * v ord0 i / u ord0 i *)
 by rewrite unitrK.
 Qed.
 
@@ -198,10 +192,7 @@ rewrite inE /make_fiber_elem.
 apply/eqP.
 (* Expand dot product at index i *)
 rewrite (dotmul_bigD1 _ _ i).
-(* Goal: u ord0 i * (row...)_i + sum = target *)
-(* Row access: (\row_j f j) ord0 k = f k *)
 rewrite mxE /= eqxx.
-(* Let S := \sum_(j != i) u_j * free_j *)
 set S := \sum_(j < n | j != i) u ord0 j * free j.
 set pivot := (target - S) / u ord0 i.
 (* Simplify the sum: for j != i, row element is free j *)
@@ -210,11 +201,8 @@ have Hsum_eq: \sum_(j < n | j != i) u ord0 j *
   rewrite /S; apply: eq_bigr => j Hji.
   by rewrite mxE /= (negbTE Hji).
 rewrite Hsum_eq.
-(* Now: u_i * pivot + S = target *)
 rewrite /pivot mulrCA mulrV //.
-(* Goal: (target - S) * 1 + S = target *)
 rewrite mulr1.
-(* Goal: target - S + S = target *)
 by rewrite subrK.
 Qed.
 
@@ -236,8 +224,6 @@ case: (altP (j =P i)) => [->|Hji].
   move: Hv1 Hv2; rewrite !inE => /eqP Hdot1 /eqP Hdot2.
   rewrite (pivot_solveE Hui_unit Hdot1).
   rewrite (pivot_solveE Hui_unit Hdot2).
-  (* Goal: (target - sum1) / u_i = (target - sum2) / u_i *)
-  (* Since sum1 = sum2 (by Hsame_free), they're equal *)
   congr (_ * _).
   congr (_ - _).
   apply: eq_bigr => k Hk.
@@ -626,8 +612,6 @@ apply/val_inj.
 rewrite /crt_elem /proj_Fp /proj_Fq /=.
 rewrite !Zp_modn_p !Zp_modn_q Zm_modn_m.
 have Hx_lt := val_msg_lt_m x.
-(* Goal: chinese p q (x %% p) (x %% q) %% m = x *)
-(* Use chinese_mod: x = chinese p q (x %% p) (x %% q) %[mod m] *)
 apply/eqP.
 rewrite eq_sym -chinese_mod //.
 by rewrite modn_small.
@@ -815,7 +799,6 @@ apply/idP/imsetP.
   move=> [v Hv ->].
   move: Hv; rewrite inE => /eqP Hdot.
   apply/eqP.
-  (* Goal: u2 * (row_to_pair v).1 + u3 * (row_to_pair v).2 = target *)
   rewrite -Hdot.
   rewrite -dotmul_pair_eq.
   by rewrite pair_to_rowK.
