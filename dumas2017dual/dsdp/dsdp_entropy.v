@@ -360,6 +360,174 @@ End dsdp_var_entropy.
 
 End dsdp_entropy.
 
+(* ========================================================================== *)
+(* N-party entropy analysis                                                    *)
+(* ========================================================================== *)
+
+(* Generalization of the 3-party entropy result to N parties.
+
+   For n_relay.+2 total parties (Alice + n_relay.+1 relays):
+   - VarRV : {RV P -> {ffun 'I_n_relay.+1 -> msg}} — relay inputs
+   - CondRV : (v0, u0, u_relay_vec, s) — constraint parameters
+   - Fiber: \sum u_i * v_i = s - u0*v0  (n_relay.+1 unknowns, 1 equation)
+   - |fiber| = m^n_relay  (n_relay free variables)
+   - H(VarRV | CondRV) = log(m^n_relay) = n_relay * log(m)
+*)
+
+Section dsdp_entropy_n.
+
+Context {R : realType}.
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+Variable n_relay : nat.
+
+Variable T : finType.
+Variable P : R.-fdist T.
+
+Let m_gt0 : (0 < m)%N.
+Proof. by rewrite muln_gt0 prime_gt0 // prime_gt0. Qed.
+
+Let card_ffun_msg : #|{ffun 'I_n_relay.+1 -> msg}| = (m ^ n_relay.+1).-1.+1.
+Proof. by rewrite prednK ?expn_gt0 ?m_gt0 // card_ffun !card_ord Zp_cast. Qed.
+
+(* Fiber for N-party constraint:
+   s - u0*v0 = \sum_(i < n_relay.+1) u_rel(i) * v_rel(i) *)
+Definition dsdp_fiber_n (u_rel : {ffun 'I_n_relay.+1 -> msg}) (target : msg)
+    : {set {ffun 'I_n_relay.+1 -> msg}} :=
+  @linear_fiber_nd p_minus_2 q_minus_2 n_relay u_rel target.
+
+(* Condition type: (v0, u0, u_relay_vector, s) *)
+Let CondT_n := (msg * msg * {ffun 'I_n_relay.+1 -> msg} * msg)%type.
+(* Input type: everything except s (which is determined by constraint) *)
+Let InputT_n := (msg * msg * {ffun 'I_n_relay.+1 -> msg})%type.
+
+Variable VarRV : {RV P -> {ffun 'I_n_relay.+1 -> msg}}.
+Variable CondRV : {RV P -> CondT_n}.
+Variable InputRV : {RV P -> InputT_n}.
+
+Let dsdp_fiber_fn_n (cond : CondT_n) : {set {ffun 'I_n_relay.+1 -> msg}} :=
+  let '(v0, u0, u_rel, s) := cond in
+  dsdp_fiber_n u_rel (s - u0 * v0).
+
+Let dsdp_proj_input_n (cond : CondT_n) : InputT_n :=
+  let '(v0, u0, u_rel, _) := cond in (v0, u0, u_rel).
+
+Hypothesis constraint_fiber_n :
+  forall t, VarRV t \in dsdp_fiber_fn_n (CondRV t).
+
+Hypothesis InputRV_proj_n :
+  forall t, InputRV t = dsdp_proj_input_n (CondRV t).
+
+Hypothesis VarRV_uniform_n :
+  `p_ VarRV = fdist_uniform card_ffun_msg.
+
+Hypothesis VarRV_indep_inputs_n :
+  P |= InputRV _|_ VarRV.
+
+Hypothesis joint_eq_input_n :
+  forall (cond : CondT_n) (var : {ffun 'I_n_relay.+1 -> msg}),
+    var \in dsdp_fiber_fn_n cond ->
+    `Pr[[%VarRV, CondRV] = (var, cond)] =
+    `Pr[[%VarRV, InputRV] = (var, dsdp_proj_input_n cond)].
+
+(* Fiber cardinality for N-party *)
+Lemma dsdp_fiber_card_n (v0 u0 s : msg)
+    (u_rel : {ffun 'I_n_relay.+1 -> msg}) :
+  (0 < val (u_rel ord_max))%N ->
+  (val (u_rel ord_max) < minn p q)%N ->
+  #|dsdp_fiber_fn_n (v0, u0, u_rel, s)| = (m ^ n_relay)%N.
+Proof.
+move=> Hu_pos Hu_lt.
+rewrite /dsdp_fiber_fn_n /dsdp_fiber_n.
+have Heta : linear_fiber_nd u_rel (s - u0 * v0) =
+            @linear_fiber_nd p_minus_2 q_minus_2 n_relay
+              (fun i => u_rel i) (s - u0 * v0) by [].
+rewrite Heta.
+apply linear_fiber_nd_card => //.
+Qed.
+
+(* Per-conditioning-value entropy *)
+Lemma dsdp_centropy1_uniform_n (v0 u0 s : msg)
+    (u_rel : {ffun 'I_n_relay.+1 -> msg}) :
+  (0 < val (u_rel ord_max))%N ->
+  (val (u_rel ord_max) < minn p q)%N ->
+  `Pr[CondRV = (v0, u0, u_rel, s)] != 0 ->
+  `H[ VarRV | CondRV = (v0, u0, u_rel, s) ] = log ((m ^ n_relay)%:R : R).
+Proof.
+move=> Hu_pos Hu_lt Hcond_pos.
+have Hcard := @dsdp_fiber_card_n v0 u0 s u_rel Hu_pos Hu_lt.
+(* Build uniform hypothesis using gen_cPr_uniform_fiber *)
+have Hsol_unif: forall w : {ffun 'I_n_relay.+1 -> msg},
+    w \in dsdp_fiber_fn_n (v0, u0, u_rel, s) ->
+    `Pr[VarRV = w | CondRV = (v0, u0, u_rel, s)] =
+    #|dsdp_fiber_fn_n (v0, u0, u_rel, s)|%:R^-1.
+  move=> w Hin.
+  have Hcpr := @gen_cPr_uniform_fiber R T P
+                 ({ffun 'I_n_relay.+1 -> msg} : finType) _ card_ffun_msg
+                 VarRV InputT_n InputRV CondT_n CondRV
+                 dsdp_fiber_fn_n dsdp_proj_input_n
+                 constraint_fiber_n InputRV_proj_n
+                 VarRV_uniform_n VarRV_indep_inputs_n
+                 joint_eq_input_n
+                 (v0, u0, u_rel, s) w Hcond_pos Hin.
+  by [].
+(* Build zero-outside hypothesis *)
+have Hnonsol_zero: forall w : {ffun 'I_n_relay.+1 -> msg},
+    w \notin dsdp_fiber_fn_n (v0, u0, u_rel, s) ->
+    `Pr[VarRV = w | CondRV = (v0, u0, u_rel, s)] = 0.
+  move=> w Hnotin.
+  set constraint := fun c v => v \in dsdp_fiber_fn_n c.
+  exact: (cond_prob_zero_outside_constraint
+            (constraint := constraint) constraint_fiber_n Hcond_pos Hnotin).
+rewrite (@centropy1_uniform_over_set R T P _ _ VarRV CondRV
+           (dsdp_fiber_fn_n (v0, u0, u_rel, s)) (v0, u0, u_rel, s)
+           Hcond_pos Hsol_unif Hnonsol_zero); first by rewrite Hcard.
+by rewrite Hcard expn_gt0 m_gt0.
+Qed.
+
+(* Extract relay coefficient vector from condition tuple *)
+Let u_of_cond (c : CondT_n) : {ffun 'I_n_relay.+1 -> msg} :=
+  let '(_, _, u_rel, _) := c in u_rel.
+
+(* Main N-party entropy result:
+   H(V_relay | CondRV) = log(m^n_relay)
+   where V_relay are the relay parties' private inputs. *)
+Theorem dsdp_centropy_uniform_n :
+  (forall t, (0 < val (u_of_cond (CondRV t) ord_max))%N) ->
+  (forall t, (val (u_of_cond (CondRV t) ord_max) < minn p q)%N) ->
+  `H(VarRV | CondRV) = log ((m ^ n_relay)%:R : R).
+Proof.
+move=> HU_pos HU_lt.
+rewrite centropy_RVE' /=.
+transitivity (\sum_(a : CondT_n)
+               `Pr[ CondRV = a ] * log ((m ^ n_relay)%:R : R)).
+  apply: eq_bigr => [] [[[v0 u0] u_rel] s] _.
+  have [->|Hcond_pos] := eqVneq (`Pr[CondRV = (v0, u0, u_rel, s)]) 0.
+    by rewrite !mul0r.
+  have Hu_pos: (0 < val (u_rel ord_max))%N.
+    move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
+    move: Ht; rewrite inE => /eqP Ht.
+    have := HU_pos t; rewrite Ht /=.
+    by [].
+  have Hu_lt: (val (u_rel ord_max) < minn p q)%N.
+    move/pfwd1_neq0: Hcond_pos => [t [Ht _]].
+    move: Ht; rewrite inE => /eqP Ht.
+    have := HU_lt t; rewrite Ht /=.
+    by [].
+  by rewrite (dsdp_centropy1_uniform_n Hu_pos Hu_lt Hcond_pos).
+under eq_bigr do rewrite mulrC.
+by rewrite -big_distrr /= sum_pfwd1 mulr1.
+Qed.
+
+End dsdp_entropy_n.
+
 
 (* For finite field (F_m) approach, see dsdp_entropy_field.v *)
 
