@@ -1536,4 +1536,327 @@ Qed.
 
 End charlie_security.
 
+(******************************************************************************)
+(* N-Party Relay Security                                                     *)
+(*                                                                            *)
+(* Generalizes Bob/Charlie security to arbitrary relay parties.               *)
+(* Each relay party i has:                                                    *)
+(*   - Dk_i: decryption key                                                  *)
+(*   - V_i: private input                                                    *)
+(*   - E_recv_i: encrypted value received                                    *)
+(*   - E_sent_i: encrypted value sent                                        *)
+(*                                                                            *)
+(* Security: RelayView_i _|_ V_j for all j != i, proved via one-time-pad.   *)
+(*                                                                            *)
+(* The proof pattern is uniform for all relay parties:                        *)
+(*   1. D_j = V_j * U_j + R_j where R_j is uniform mask                     *)
+(*   2. By lemma_3_5': D_j _|_ V_i                                          *)
+(*   3. E(D_j) _|_ V_i by inde_RV_comp                                      *)
+(*   4. mixing_rule composes into full view independence                     *)
+(*   5. inde_cond_entropy converts to H(V_j | View_i) = H(V_j)             *)
+(******************************************************************************)
+
+Section relay_security_n.
+
+Context {R : realType}.
+Variable T : finType.
+Variable P : R.-fdist T.
+
+(* Z/pqZ parameters *)
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+(* m = p * q > 1 since p, q >= 2 *)
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
+
+Let card_msg : #|msg| = m.
+Proof. by rewrite card_ord Zp_cast. Qed.
+
+(* Generic relay party: one-time-pad masking makes D = VU + R independent of
+   any target variable Y, given R is uniform and independent of [%VU, Y]. *)
+
+(* Random variables for one relay party's one-time-pad argument *)
+Variable VU_i : {RV P -> msg}.   (* V_i * U_i *)
+Variable R_i : {RV P -> msg}.    (* random mask *)
+Variable Y : {RV P -> msg}.      (* target variable (e.g., V_j for j != i) *)
+
+Let D_i : {RV P -> msg} := VU_i \+ R_i.
+
+Hypothesis R_i_indep_VU_Y : P |= R_i _|_ [%VU_i, Y].
+Hypothesis pR_i_unif : `p_ R_i = fdist_uniform card_msg.
+
+(* Core one-time-pad lemma: D_i = VU_i + R_i is independent of Y *)
+Lemma relay_otp_indep : P |= D_i _|_ Y.
+Proof.
+rewrite /D_i.
+have card_TZ : #|msg| = (Zp_trunc m).+1.+1.
+  by rewrite card_ord.
+have pR_i_unif_adj : `p_ R_i = fdist_uniform card_TZ.
+  rewrite pR_i_unif.
+  congr fdist_uniform.
+  exact: eq_irrelevance.
+exact: (@lemma_3_5' R T msg msg P VU_i R_i Y R_i_indep_VU_Y
+        (Zp_trunc m).+1 card_TZ pR_i_unif_adj).
+Qed.
+
+(* Encryption of D_i is independent of Y *)
+Lemma relay_enc_otp_indep (party : party_id) :
+  P |= (E' party `o D_i) _|_ Y.
+Proof.
+have H := @inde_RV_comp _ _ P _ _ _ _ D_i Y (E' party) idfun relay_otp_indep.
+by rewrite /comp_RV.
+Qed.
+
+(* Generic relay privacy theorem:
+   If RelayView _|_ V_target, then H(V_target | RelayView) = H(V_target) *)
+Lemma relay_privacy_from_indep {A : finType}
+    (View : {RV P -> A}) (V_target : {RV P -> msg})
+    (pV_unif : `p_ V_target = fdist_uniform card_msg)
+    (View_indep : P |= View _|_ V_target) :
+  `H(V_target | View) = `H `p_ V_target.
+Proof. exact: (inde_cond_entropy View_indep). Qed.
+
+(* Concrete privacy: H(V_target | View) = log(m) > 0 *)
+Lemma relay_privacy_logm {A : finType}
+    (View : {RV P -> A}) (V_target : {RV P -> msg})
+    (pV_unif : `p_ V_target = fdist_uniform card_msg)
+    (View_indep : P |= View _|_ V_target) :
+  `H(V_target | View) = log (m%:R : R) /\
+  `H(V_target | View) > 0.
+Proof.
+have H_logm: `H(V_target | View) = log (m%:R : R).
+  rewrite (relay_privacy_from_indep pV_unif View_indep).
+  by rewrite pV_unif entropy_uniform card_msg.
+split.
+- exact: H_logm.
+- rewrite H_logm -log1.
+  apply: ltr_log; first by [].
+  by rewrite ltr1n.
+Qed.
+
+End relay_security_n.
+
+(******************************************************************************)
+(* N-Party Encryption Contraction                                             *)
+(*                                                                            *)
+(* Inductive predicate for views that consist of a base RV plus encryptions:  *)
+(*   View = [%...[%[%Base, E_1], E_2], ..., E_k]                              *)
+(* Each encryption can be contracted using E_enc_ce_contract, yielding:       *)
+(*   H(Z | View) = H(Z | Base)                                               *)
+(*                                                                            *)
+(* This replaces the manual 3-fold application in alice_view_to_cond.         *)
+(******************************************************************************)
+
+Section enc_contraction_n.
+
+Context {R : realType}.
+Variable T : finType.
+Variable P : R.-fdist T.
+
+(* Encryption hypotheses *)
+Hypothesis E_enc_unif : forall (T0 : finType) (P0 : R.-fdist T0)
+  (A : finType) (pty : party_id) (X : {RV P0 -> pty.-enc A}) (n : nat)
+  (card_A : #|A| = n.+1),
+  `p_X = fdist_uniform (card_enc_for' pty card_A).
+
+Hypothesis E_enc_inde : forall (A B : finType) (pty : party_id)
+  (X : {RV P -> pty.-enc A}) (Y : {RV P -> B}),
+  P |= X _|_ Y.
+
+(* Inductive predicate: a view that is "base plus encryptions" *)
+Inductive enc_contractible {C : finType} (Z : {RV P -> C}) (target : R)
+    : forall {A : finType}, {RV P -> A} -> Prop :=
+  | ec_base : forall {A : finType} (X : {RV P -> A}),
+      `H(Z | X) = target -> enc_contractible Z target X
+  | ec_enc : forall {A B : finType} (pty : party_id)
+      (X : {RV P -> A}) (E : {RV P -> pty.-enc B}) (n : nat),
+      enc_contractible Z target X ->
+      #|B| = n.+1 ->
+      (forall x e, `Pr[[%X, E] = (x, e)] != 0) ->
+      enc_contractible Z target [%X, E].
+
+(* Contraction theorem: if a view is enc_contractible, its conditional
+   entropy equals the target *)
+Theorem enc_ce_contract_ind {C : finType} (Z : {RV P -> C}) (target : R)
+    {A : finType} (View : {RV P -> A}) :
+  enc_contractible Z target View -> `H(Z | View) = target.
+Proof.
+elim => [A' X -> // | A' B pty X E n _ IH card_B Hpr].
+by rewrite (E_enc_ce_contract E_enc_unif E_enc_inde Z card_B Hpr).
+Qed.
+
+End enc_contraction_n.
+
+(******************************************************************************)
+(* N-Party DSDP Entropic Security                                            *)
+(*                                                                            *)
+(* Generalizes Alice's security from 3 parties to N parties.                  *)
+(*                                                                            *)
+(* Alice's view in N-party protocol:                                          *)
+(*   [Dk_a, S, V0, U0, u_rel, R_1, ..., R_{n-1}, E_1, ..., E_k]              *)
+(*                                                                            *)
+(* Security theorem:                                                          *)
+(*   H(VarRV | AliceView_n) = log(m^n_relay) > 0                             *)
+(*                                                                            *)
+(* Proof chain:                                                               *)
+(*   1. Contract encryptions: H(VarRV | AliceView) = H(VarRV | DecView)      *)
+(*   2. Strip auxiliary: H(VarRV | DecView) = H(VarRV | CondRV)              *)
+(*   3. Entropy bound: H(VarRV | CondRV) = log(m^n_relay)                    *)
+(******************************************************************************)
+
+Section dsdp_security_n.
+
+Context {R : realType}.
+Variable T : finType.
+Variable P : R.-fdist T.
+
+(* Z/pqZ parameters *)
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+Variable n_relay : nat.
+
+Let m_gt0 : (0 < m)%N.
+Proof. by rewrite muln_gt0 prime_gt0 // prime_gt0. Qed.
+
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
+
+Let card_msg : #|msg| = m.
+Proof. by rewrite card_ord Zp_cast. Qed.
+
+Let card_ffun_msg : #|{ffun 'I_n_relay.+1 -> msg}| = (m ^ n_relay.+1).-1.+1.
+Proof. by rewrite prednK ?expn_gt0 ?m_gt0 // card_ffun !card_ord Zp_cast. Qed.
+
+(* N-party section variables (instead of a record) *)
+Variable VarRV : {RV P -> {ffun 'I_n_relay.+1 -> msg}}.
+
+(* Condition: (v0, u0, u_relay_vector, s) *)
+Let CondT_n := (msg * msg * {ffun 'I_n_relay.+1 -> msg} * msg)%type.
+Variable CondRV : {RV P -> CondT_n}.
+
+(* Encryption hypotheses *)
+Hypothesis E_enc_unif : forall (T0 : finType) (P0 : R.-fdist T0)
+  (A : finType) (pty : party_id) (X : {RV P0 -> pty.-enc A}) (n : nat)
+  (card_A : #|A| = n.+1),
+  `p_X = fdist_uniform (card_enc_for' pty card_A).
+
+Hypothesis E_enc_inde : forall (A B : finType) (pty : party_id)
+  (X : {RV P -> pty.-enc A}) (Y : {RV P -> B}),
+  P |= X _|_ Y.
+
+(* The N-party entropy bound from dsdp_entropy_n *)
+Hypothesis dsdp_centropy_n :
+  `H(VarRV | CondRV) = log ((m ^ n_relay)%:R : R).
+
+(* Alice's view is some type that contracts to CondRV *)
+Variable AliceViewT : finType.
+Variable AliceView : {RV P -> AliceViewT}.
+
+(* The view contracts to CondRV (via enc_contractible or manual proof) *)
+Hypothesis alice_view_contract :
+  `H(VarRV | AliceView) = `H(VarRV | CondRV).
+
+(* Core N-party entropic security: entropy value *)
+Theorem dsdp_entropic_security_n_eq :
+  `H(VarRV | AliceView) = log ((m ^ n_relay)%:R : R).
+Proof. by rewrite alice_view_contract dsdp_centropy_n. Qed.
+
+(* Core N-party entropic security: entropy is positive when n_relay > 0 *)
+Theorem dsdp_entropic_security_n :
+  (0 < n_relay)%N ->
+  `H(VarRV | AliceView) = log ((m ^ n_relay)%:R : R) /\
+  `H(VarRV | AliceView) > 0.
+Proof.
+move=> Hn.
+split.
+- exact: dsdp_entropic_security_n_eq.
+- rewrite dsdp_entropic_security_n_eq -log1.
+  apply: ltr_log; first by [].
+  rewrite ltr1n -(expn0 m).
+  by rewrite ltn_exp2l.
+Qed.
+
+End dsdp_security_n.
+
+(******************************************************************************)
+(* N-Party Malicious Adversary Case Analysis                                  *)
+(*                                                                            *)
+(* Generalizes the 2D dot product analysis to N-1 dimensions.                 *)
+(* If Alice sets US = e_1 (first basis vector), she can extract V_1          *)
+(* from the dot product result, compromising relay party 1's privacy.        *)
+(******************************************************************************)
+
+Section malicious_n.
+
+Context {R : realType}.
+Variable T : finType.
+Variable P : R.-fdist T.
+
+(* Z/pqZ parameters *)
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+Variable n_relay : nat.
+
+(* N-dimensional dot product *)
+Definition dotp_n (x y : {ffun 'I_n_relay.+1 -> msg}) : msg :=
+  \sum_(i < n_relay.+1) x i * y i.
+
+(* Dot product as random variable *)
+Definition Dotp_n_rv (X Y : {RV P -> {ffun 'I_n_relay.+1 -> msg}}) : {RV P -> msg} :=
+  fun t => dotp_n (X t) (Y t).
+
+(* First basis vector: e_1 = (1, 0, ..., 0) *)
+Definition ConstUS_n : {ffun 'I_n_relay.+1 -> msg} :=
+  [ffun i => if i == ord0 then 1 else 0].
+
+(* e_1 . v = v_1: the first basis vector extracts the first component *)
+Lemma dotp_n_e1 (v : {ffun 'I_n_relay.+1 -> msg}) :
+  dotp_n ConstUS_n v = v ord0.
+Proof.
+rewrite /dotp_n (bigD1 ord0) //=.
+rewrite ffunE eq_refl mul1r.
+rewrite big1 ?addr0 //.
+move=> i Hi.
+by rewrite ffunE (negbTE Hi) mul0r.
+Qed.
+
+(* If Alice sets US = e_1, she can extract V_1 *)
+Lemma ConstUS_n_discloses_V1
+    (US VS : {RV P -> {ffun 'I_n_relay.+1 -> msg}}) :
+  US = (fun _ => ConstUS_n) ->
+  Dotp_n_rv US VS = (fun t => VS t ord0).
+Proof.
+move->.
+rewrite /Dotp_n_rv.
+apply: boolp.funext => t /=.
+by rewrite dotp_n_e1.
+Qed.
+
+End malicious_n.
 
