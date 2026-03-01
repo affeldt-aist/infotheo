@@ -350,3 +350,183 @@ by move=> x y _ _; apply: crt_proj_pair_inj.
 Qed.
 
 End fiber_2d.
+
+(******************************************************************************)
+(*  N-dimensional linear fiber over composite modulus Z/pqZ                   *)
+(*                                                                            *)
+(*  Main result: linear_fiber_nd_card                                         *)
+(*    |{v : 'I_{n+1} -> Z_m | \sum u_i * v_i = target}| = m^n               *)
+(*    (when u_{last} is coprime to m, i.e., 0 < u_last < min(p,q))           *)
+(*                                                                            *)
+(*  Approach: Direct bijection via unit inverse. Since u_last is a unit in    *)
+(*  Z_m, for any choice of the first n variables, the last variable is        *)
+(*  uniquely determined by the constraint. This gives a bijection between     *)
+(*  Z_m^n (the free variables) and the fiber (n+1 constrained variables).     *)
+(******************************************************************************)
+
+Section fiber_nd.
+
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+Let m_gt1 : (1 < m)%N.
+Proof.
+by rewrite (leq_trans (prime_gt1 prime_p)) // leq_pmulr // prime_gt0.
+Qed.
+
+Variable n : nat.
+
+(* N-dimensional linear fiber: solutions to \sum u_i * v_i = target over Z_m.
+   n.+1 unknowns (indexed by 'I_{n.+1}), 1 equation, n free variables. *)
+Definition linear_fiber_nd (u : 'I_n.+1 -> msg) (target : msg)
+    : {set {ffun 'I_n.+1 -> msg}} :=
+  [set v : {ffun 'I_n.+1 -> msg} | \sum_(i < n.+1) u i * v i == target].
+
+(* Compute the last variable given the first n *)
+Definition solve_last (u : 'I_n.+1 -> msg) (target : msg)
+    (w : {ffun 'I_n -> msg}) : msg :=
+  (u ord_max)^-1 * (target - \sum_(j < n) u (lift ord_max j) * w j).
+
+(* Extend first n variables to a full solution *)
+Definition extend_to_fiber (u : 'I_n.+1 -> msg) (target : msg)
+    (w : {ffun 'I_n -> msg}) : {ffun 'I_n.+1 -> msg} :=
+  [ffun i : 'I_n.+1 =>
+    match unlift ord_max i with
+    | Some j => w j
+    | None => solve_last u target w
+    end].
+
+(* Project fiber element to first n variables *)
+Definition project_fiber (v : {ffun 'I_n.+1 -> msg}) : {ffun 'I_n -> msg} :=
+  [ffun j : 'I_n => v (lift ord_max j)].
+
+(* 0 < u < min(p,q) implies u is coprime to m = p*q *)
+Lemma lt_minpq_coprime (a : msg) :
+  (0 < val a)%N -> (val a < minn p q)%N -> coprime (val a) m.
+Proof.
+move=> Ha_pos Ha_lt.
+have Ha_lt_p : (val a < p)%N by apply: (leq_trans Ha_lt); apply: geq_minl.
+have Ha_lt_q : (val a < q)%N by apply: (leq_trans Ha_lt); apply: geq_minr.
+have Hcop_p : coprime (val a) p.
+  rewrite coprime_sym prime_coprime //.
+  apply/negP => Hdvd.
+  by have := dvdn_leq Ha_pos Hdvd; rewrite leqNgt Ha_lt_p.
+have Hcop_q : coprime (val a) q.
+  rewrite coprime_sym prime_coprime //.
+  apply/negP => Hdvd.
+  by have := dvdn_leq Ha_pos Hdvd; rewrite leqNgt Ha_lt_q.
+by rewrite coprimeMr Hcop_p Hcop_q.
+Qed.
+
+(* coprime to m implies unit in Z_m *)
+Lemma coprime_unitZm (a : msg) : coprime (val a) m -> a \is a GRing.unit.
+Proof.
+move=> Hcop.
+by rewrite -[a]natr_Zp unitZpE // coprime_sym.
+Qed.
+
+(* Reindex sum: split at ord_max and reindex rest via lift *)
+Lemma widen_lift_ord_max (i : 'I_n) :
+  widen_ord (leqnSn n) i = lift ord_max i :> 'I_n.+1.
+Proof. by apply/val_inj/eqP; rewrite /= /bump leqNgt ltn_ord. Qed.
+
+Lemma sum_split_last (F : 'I_n.+1 -> msg) :
+  \sum_(i < n.+1) F i =
+  F ord_max + \sum_(j < n) F (lift ord_max j).
+Proof.
+rewrite big_ord_recr addrC; congr (_ + _).
+by apply: eq_bigr => i _; rewrite widen_lift_ord_max.
+Qed.
+
+(* extend_to_fiber produces a fiber element *)
+Lemma extend_in_fiber (u : 'I_n.+1 -> msg) (target : msg)
+    (w : {ffun 'I_n -> msg}) :
+  u ord_max \is a GRing.unit ->
+  extend_to_fiber u target w \in linear_fiber_nd u target.
+Proof.
+move=> Hunit; rewrite inE; apply/eqP.
+rewrite big_ord_recr /= /extend_to_fiber ffunE unlift_none.
+under eq_bigr do rewrite ffunE widen_lift_ord_max liftK.
+rewrite /solve_last.
+set S := \sum_(j < n) _.
+by rewrite (mulVKr Hunit) addrC subrK.
+Qed.
+
+(* project then extend is identity *)
+Lemma project_extend_id (u : 'I_n.+1 -> msg) (target : msg)
+    (w : {ffun 'I_n -> msg}) :
+  project_fiber (extend_to_fiber u target w) = w.
+Proof.
+apply/ffunP => j.
+by rewrite /project_fiber /extend_to_fiber !ffunE liftK.
+Qed.
+
+(* extend then project is identity for fiber elements *)
+Lemma extend_project_id (u : 'I_n.+1 -> msg) (target : msg)
+    (v : {ffun 'I_n.+1 -> msg}) :
+  u ord_max \is a GRing.unit ->
+  v \in linear_fiber_nd u target ->
+  extend_to_fiber u target (project_fiber v) = v.
+Proof.
+move=> Hunit; rewrite inE => /eqP Hconstr.
+apply/ffunP => i.
+rewrite /extend_to_fiber ffunE.
+case: (unliftP ord_max i) => [j -> | ->].
+- by rewrite /project_fiber ffunE.
+- rewrite /solve_last /project_fiber.
+  have -> : \sum_(j < n) u (lift ord_max j) * [ffun j => v (lift ord_max j)] j =
+            \sum_(j < n) u (lift ord_max j) * v (lift ord_max j).
+    by apply: eq_bigr => j _; rewrite ffunE.
+  set S := \sum_(j < n) _.
+  have Huv : u ord_max * v ord_max = target - S.
+    suff : u ord_max * v ord_max + S = target.
+      by move/eqP; rewrite eq_sym -subr_eq => /eqP.
+    rewrite /S.
+    transitivity (\sum_(i < n.+1) u i * v i); last exact: Hconstr.
+    rewrite big_ord_recr addrC; congr (_ + _).
+    by apply: eq_bigr => j _; rewrite widen_lift_ord_max.
+  (* Goal: (u ord_max)^-1 * (target - S) = v ord_max *)
+  (* Rewrite target - S = u_max * v_max, then cancel *)
+  by rewrite -Huv mulrA; set ui := _^-1; rewrite mulVr // mul1r.
+Qed.
+
+(* extend_to_fiber is injective *)
+Lemma extend_fiber_inj (u : 'I_n.+1 -> msg) (target : msg) :
+  injective (extend_to_fiber u target).
+Proof.
+by move=> w1 w2 /(congr1 project_fiber); rewrite !project_extend_id.
+Qed.
+
+(* Main result: N-dimensional fiber cardinality = m^n *)
+Lemma linear_fiber_nd_card (u : 'I_n.+1 -> msg) (target : msg) :
+  (0 < val (u ord_max))%N -> (val (u ord_max) < minn p q)%N ->
+  #|linear_fiber_nd u target| = (m ^ n)%N.
+Proof.
+move=> Hu_pos Hu_lt.
+have Hunit : u ord_max \is a GRing.unit.
+  by apply: coprime_unitZm; apply: lt_minpq_coprime.
+(* Bijection: extend_to_fiber maps {ffun 'I_n -> msg} injectively to fiber,
+   and project_fiber is its inverse on fiber elements *)
+have Himg : linear_fiber_nd u target =
+            [set extend_to_fiber u target w | w : {ffun 'I_n -> msg}].
+  apply/setP => v; apply/idP/imsetP.
+  - move=> Hv.
+    exists (project_fiber v) => //.
+    by rewrite (extend_project_id Hunit Hv).
+  - by move=> [w _ ->]; apply: extend_in_fiber.
+rewrite Himg card_imset; last exact: extend_fiber_inj.
+by rewrite card_ffun !card_ord Zp_cast.
+Qed.
+
+(* Specialization: 2D fiber is a special case of N-d fiber (n=1) *)
+(* The 2D result linear_fiber_2d_card uses a different representation
+   (msg * msg vs {ffun 'I_2 -> msg}), so the connection is via
+   cardinality equality rather than definitional equality. *)
+
+End fiber_nd.
