@@ -210,6 +210,68 @@ Proof.
 by native_compute.
 Qed.
 
+(******************************************************************************)
+(** * N-Party Protocol Templates (from Algorithm 2)                           *)
+(******************************************************************************)
+
+(* P₂: first relay party — recv_dec + recv_enc from P₁ *)
+Definition DParty_first (self downstream : nat)
+    (dk : priv_keyT) (v : msgT) (r1 r2 : randT)
+    : sproc dsdp_dtype data self :=
+  \pi{ Init (#dk, &v) ;
+       Send<alice_idx> $(E<r1> self v) ;
+       Recv<alice_idx> #dk d_val =>
+       Recv<alice_idx> a_next =>
+       Send<downstream> $(a_next *h (E<r2> downstream d_val)) ;
+       Finish }.
+
+(* Pᵢ (3≤i≤n-1): intermediate relay — recv_enc from P₁ + recv_dec from upstream *)
+Definition DParty_intermediate (self alice_src upstream downstream : nat)
+    (dk : priv_keyT) (v : msgT) (r1 r2 : randT)
+    : sproc dsdp_dtype data self :=
+  \pi{ Init (#dk, &v) ;
+       Send<alice_src> $(E<r1> self v) ;
+       Recv<alice_src> a_next =>
+       Recv<upstream> #dk d_val =>
+       Send<downstream> $(a_next *h (E<r2> downstream d_val)) ;
+       Finish }.
+
+(* Pₙ: last party — recv_dec from upstream, re-encrypt, send to P₁ *)
+Definition DParty_last (self upstream : nat)
+    (dk : priv_keyT) (v : msgT) (r1 r2 : randT)
+    : sproc dsdp_dtype data self :=
+  \pi{ Init (#dk, &v) ;
+       Send<alice_idx> $(E<r1> self v) ;
+       Recv<upstream> #dk d_val =>
+       Send<alice_idx> $(E<r2> alice_idx d_val) ;
+       Finish }.
+
+(* Cross-equality: existing 3-party definitions are instances of templates *)
+Lemma pbob_is_first dk' v2' rb1' rb2' :
+  pbob dk' v2' rb1' rb2' =
+  DParty_first bob_idx charlie_idx dk' v2' rb1' rb2'.
+Proof. reflexivity. Qed.
+
+Lemma pcharlie_is_last dk' v3' rc1' rc2' :
+  pcharlie dk' v3' rc1' rc2' =
+  DParty_last charlie_idx bob_idx dk' v3' rc1' rc2'.
+Proof. reflexivity. Qed.
+
+(* Duality verification on templated protocols *)
+Definition aproc_bob_tmpl :=
+  mk_aproc (DParty_first bob_idx charlie_idx dk v2 rb1 rb2).
+Definition aproc_charlie_tmpl :=
+  mk_aproc (DParty_last charlie_idx bob_idx dk v3 rc1 rc2).
+
+Lemma alice_bob_tmpl_dual : channels_dual aproc_alice aproc_bob_tmpl.
+Proof. by native_compute. Qed.
+
+Lemma alice_charlie_tmpl_dual : channels_dual aproc_alice aproc_charlie_tmpl.
+Proof. by native_compute. Qed.
+
+Lemma bob_charlie_tmpl_dual : channels_dual aproc_bob_tmpl aproc_charlie_tmpl.
+Proof. by native_compute. Qed.
+
 (*******************************************************************************)
 (** * Interpreter Integration                                                  *)
 (*******************************************************************************)

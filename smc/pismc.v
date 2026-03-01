@@ -34,3 +34,16 @@ Notation "'Init' '(' x ',' .. ',' y ')' ; P" :=
    x constr at level 0, y constr at level 0,
    P custom pismc at level 85, right associativity).
 
+(* ForEach - iterate over finType elements using sproc_iter.
+   Usage: ForEach 'I_n as f, i => (fun n env cont => ...) ; P
+   - fT: the finType to enumerate
+   - f: bound variable for each element
+   - i: bound variable for the index
+   - body: function (n : nat) (env : senv dtype) (cont : sproc ...) -> sproc ...
+   - fuel_step = S (hardcoded); use sproc_iter directly for other fuel steps *)
+Notation "'ForEach' fT 'as' f ',' i '=>' body ; P" :=
+  (sproc_iter _ S _ (fun f i => body) (enum fT) 0 P)
+  (in custom pismc at level 85, fT constr at level 0, f name, i name,
+   body constr at level 0,
+   P custom pismc at level 85, right associativity).
+
