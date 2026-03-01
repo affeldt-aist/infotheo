@@ -261,4 +261,37 @@ Proof.
   ring.
 Qed.
 
+(* ========================================================================== *)
+(* N-party generalization of algebraic correctness                            *)
+(* ========================================================================== *)
+
+(* N-party DSDP: n_relay.+2 total parties (Alice + n_relay.+1 relays).
+   n_relay = 1 gives the standard 3-party protocol. *)
+Section dsdp_n.
+
+Variable n_relay : nat.
+
+Variable v : 'I_n_relay.+2 -> msgT.
+Variable u : 'I_n_relay.+2 -> msgT.
+Variable r : 'I_n_relay.+1 -> msgT.
+
+(* Accumulated ciphertext value that Alice receives from the relay chain.
+   Each relay party i (indexed 1..n_relay.+1) contributes u_i * v_i + r_i. *)
+Definition g_value_n : msgT :=
+  \sum_(i : 'I_n_relay.+1) (u (lift ord0 i) * v (lift ord0 i) + r i).
+
+(* Alice's final computation: subtract all masking values, add own term *)
+Definition alice_result_n : msgT :=
+  g_value_n - \sum_(i : 'I_n_relay.+1) r i + u ord0 * v ord0.
+
+(* N-party correctness: Alice computes the dot product *)
+Theorem dsdp_computes_dot_product_n :
+  alice_result_n = \sum_(i < n_relay.+2) u i * v i.
+Proof.
+rewrite /alice_result_n /g_value_n big_split /= big_ord_recl.
+by rewrite addrAC subrr add0r.
+Qed.
+
+End dsdp_n.
+
 End dsdp.

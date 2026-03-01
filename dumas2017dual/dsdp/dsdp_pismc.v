@@ -272,6 +272,88 @@ Proof. by native_compute. Qed.
 Lemma bob_charlie_tmpl_dual : channels_dual aproc_bob_tmpl aproc_charlie_tmpl.
 Proof. by native_compute. Qed.
 
+(******************************************************************************)
+(** * N-Party Alice Protocol                                                  *)
+(******************************************************************************)
+
+Section dsdp_n_party.
+
+Variable n_relay : nat.
+
+(* Destination for Alice's i-th send: relays 0 and 1 both go to party 1
+   (first relay receives two messages), relay j >= 2 goes to party j *)
+Definition alice_send_dest (j : nat) : nat := maxn 1 j.
+
+(* N-party Alice using sproc_iter for the interleaved recv/send loop.
+   n = n_relay.+2 total parties: Alice (party 0) + n_relay.+1 relays.
+   For each relay j, Alice receives encrypted v_{j+1} from party j+1,
+   computes a_j = c_j^{u_{j+1}} * E(party_{j+1}, r_j, rand_j),
+   and sends a_j to dest(j). Finally receives the accumulated result
+   from the last relay and computes the dot product. *)
+Definition palice_n
+    (dk : priv_keyT) (v0 : msgT)
+    (u : 'I_n_relay.+2 -> msgT)
+    (r : 'I_n_relay.+1 -> msgT)
+    (rand_a : 'I_n_relay.+1 -> randT)
+    : sproc dsdp_dtype data alice_idx :=
+  DInit (priv_key dk) (
+  DInit (d v0) (
+  sproc_iter alice_idx (fun k => k.+2)
+    (fun (j : 'I_n_relay.+1) (env : senv dsdp_dtype) =>
+      senv_recv (senv_send env (alice_send_dest j) DT_Enc) j.+1 DT_Enc)
+    (fun (j : 'I_n_relay.+1) (_ : nat) (_ : nat) (_ : senv dsdp_dtype) cont =>
+      SRecv j.+1 DT_Enc (fun dd =>
+        match @std_from_enc AHE dd with
+        | Some c =>
+          SSend (alice_send_dest j) DT_Enc
+            (e ((c ^h (u (lift ord0 j))) *h
+                (enc_pub_key j.+1 (r j) (rand_a j))))
+            cont
+        | None => SFail
+        end))
+    (enum 'I_n_relay.+1) 0
+  (DRecv_dec n_relay.+1 dk (fun g =>
+    DRet (d (g - \sum_(j < n_relay.+1) r j + u ord0 * v0)))))).
+
+(* Map relay index j to the appropriate relay template (first/intermediate/last).
+   Requires n_relay >= 1 (at least 3 parties). *)
+Definition relay_aproc (j : nat)
+    (dk_j : priv_keyT) (v_j : msgT) (r1_j r2_j : randT)
+    : aproc dsdp_dtype data :=
+  if j == 0 then
+    mk_aproc (DParty_first j.+1 j.+2 dk_j v_j r1_j r2_j)
+  else if j == n_relay then
+    mk_aproc (DParty_last j.+1 j dk_j v_j r1_j r2_j)
+  else
+    mk_aproc (DParty_intermediate j.+1 alice_idx j j.+2 dk_j v_j r1_j r2_j).
+
+(* Build the full N-party aproc list: Alice + n_relay.+1 relay parties.
+   Assumes n_relay >= 1 (at least 3 total parties). *)
+Definition dsdp_n_saprocs
+    (dk : priv_keyT) (v0 : msgT)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (rand_a : 'I_n_relay.+1 -> randT)
+    (dk_relay : 'I_n_relay.+1 -> priv_keyT)
+    (v_relay : 'I_n_relay.+1 -> msgT)
+    (r1_relay r2_relay : 'I_n_relay.+1 -> randT)
+    : seq (aproc dsdp_dtype data) :=
+  mk_aproc (palice_n n_relay dk v0 u r rand_a) ::
+  map (fun j : 'I_n_relay.+1 =>
+    relay_aproc j (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j))
+    (enum 'I_n_relay.+1).
+
+Definition dsdp_n_procs
+    (dk : priv_keyT) (v0 : msgT)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (rand_a : 'I_n_relay.+1 -> randT)
+    (dk_relay : 'I_n_relay.+1 -> priv_keyT)
+    (v_relay : 'I_n_relay.+1 -> msgT)
+    (r1_relay r2_relay : 'I_n_relay.+1 -> randT)
+    : seq (proc data) :=
+  erase_aprocs (dsdp_n_saprocs dk v0 u r rand_a dk_relay v_relay r1_relay r2_relay).
+
+End dsdp_n_party.
+
 (*******************************************************************************)
 (** * Interpreter Integration                                                  *)
 (*******************************************************************************)
@@ -405,3 +487,261 @@ apply: terminated_nonfail_senv_zero.
 Qed.
 
 End dsdp_idealized_termination.
+
+(*******************************************************************************)
+(** * N-Party Session Type Duality Verification (Idealized, 4-party)           *)
+(*******************************************************************************)
+
+Section dsdp_n4_idealized_duality.
+
+Variable m_minus_2 : nat.
+Local Notation m := m_minus_2.+2.
+Local Notation msg := 'F_m.
+
+(* Idealized AHE setup *)
+Local Definition N4_EncDec_instance :=
+  @Idealized_isEncDec msg.
+
+Local Definition N4_AHEnc_instance :=
+  @Idealized_isAHEnc msg.
+
+Local Definition N4_EncDec_local : EncDecType :=
+  @EncDec.Pack (Idealized_HETypes msg)
+    (@EncDec.Class (Idealized_HETypes msg) N4_EncDec_instance).
+
+Local Definition N4_AHEnc_local : AHEncType :=
+  @AHEnc.Pack (Idealized_HETypes msg)
+    (@AHEnc.Class (Idealized_HETypes msg)
+      N4_EncDec_instance N4_AHEnc_instance).
+
+Let AHE : AHEncType := N4_AHEnc_local.
+Let DI := Standard_DSDP_Interface AHE.
+Let data := di_data DI.
+
+(* Party keys *)
+Variables (k0 k1 k2 k3 : msg).
+Let dk0 : priv_key AHE := k0.
+Let dk1 : priv_key AHE := k1.
+Let dk2 : priv_key AHE := k2.
+Let dk3 : priv_key AHE := k3.
+Let runit : rand AHE := 1.
+
+(* Public key mapping for 4 parties (party 3 = NoParty) *)
+Let ek4 (p : party_id) : pub_key AHE :=
+  match p with
+  | Alice => pub_of_priv dk0
+  | Bob => pub_of_priv dk1
+  | Charlie => pub_of_priv dk2
+  | NoParty => pub_of_priv dk3
+  end.
+
+(* Program variables *)
+Variables (v0 v1 v2 v3 : msg).
+Variables (u0' u1' u2' u3' : msg).
+Variables (r0' r1' r2' : msg).
+
+(* Index functions for palice_n *)
+Let u4 : 'I_4 -> msg := fun i =>
+  match val i with 0 => u0' | 1 => u1' | 2 => u2' | _ => u3' end.
+Let r4_3 : 'I_3 -> msg := fun i =>
+  match val i with 0 => r0' | 1 => r1' | _ => r2' end.
+Let rand4_3 : 'I_3 -> rand AHE := fun _ => runit.
+
+(* 4-party programs: Alice + first relay + intermediate + last relay *)
+Let palice_4 := @palice_n AHE ek4 2 dk0 v0 u4 r4_3 rand4_3.
+Let pfirst_4 := @DParty_first AHE ek4 1 2 dk1 v1 runit runit.
+Let pinter_4 := @DParty_intermediate AHE ek4 2 0 1 3 dk2 v2 runit runit.
+Let plast_4 := @DParty_last AHE ek4 3 2 dk3 v3 runit runit.
+
+Local Open Scope sproc_scope.
+Local Open Scope proc_scope.
+
+(* Wrap as aprocs for duality checking *)
+Definition ap_alice_n4 := mk_aproc palice_4.
+Definition ap_first_n4 := mk_aproc pfirst_4.
+Definition ap_inter_n4 := mk_aproc pinter_4.
+Definition ap_last_n4 := mk_aproc plast_4.
+
+(* 4-party duality verification: all 6 pairs *)
+Lemma alice_first_dual_n4 : channels_dual ap_alice_n4 ap_first_n4.
+Proof. by native_compute. Qed.
+
+Lemma alice_inter_dual_n4 : channels_dual ap_alice_n4 ap_inter_n4.
+Proof. by native_compute. Qed.
+
+Lemma alice_last_dual_n4 : channels_dual ap_alice_n4 ap_last_n4.
+Proof. by native_compute. Qed.
+
+Lemma first_inter_dual_n4 : channels_dual ap_first_n4 ap_inter_n4.
+Proof. by native_compute. Qed.
+
+Lemma first_last_dual_n4 : channels_dual ap_first_n4 ap_last_n4.
+Proof. by native_compute. Qed.
+
+Lemma inter_last_dual_n4 : channels_dual ap_inter_n4 ap_last_n4.
+Proof. by native_compute. Qed.
+
+(* Cross-check: generic builder produces same erased procs as hand-written *)
+Let dk_relay_4 : 'I_3 -> priv_key AHE := fun i =>
+  match val i with 0 => dk1 | 1 => dk2 | _ => dk3 end.
+Let v_relay_4 : 'I_3 -> plain AHE := fun i =>
+  match val i with 0 => v1 | 1 => v2 | _ => v3 end.
+Let r1_relay_4 : 'I_3 -> rand AHE := fun _ => runit.
+Let r2_relay_4 : 'I_3 -> rand AHE := fun _ => runit.
+
+Lemma dsdp_n4_builder_correct :
+  dsdp_n_procs 2 dk0 v0 u4 r4_3 rand4_3 dk_relay_4 v_relay_4 r1_relay_4 r2_relay_4 =
+  erase_aprocs [aprocs palice_4; pfirst_4; pinter_4; plast_4].
+Proof. by native_compute. Qed.
+
+(* 4-party saprocs for interpreter integration *)
+Definition dsdp_n4_saprocs : seq (aproc dsdp_dtype data) :=
+  [aprocs palice_4; pfirst_4; pinter_4; plast_4].
+
+Definition dsdp_n4_procs : seq (proc data) :=
+  erase_aprocs dsdp_n4_saprocs.
+
+Lemma dsdp_n4_max_fuel_ok : [> dsdp_n4_saprocs] = 31.
+Proof. reflexivity. Qed.
+
+(* 4-party termination: after interpretation, all processes are terminal *)
+Lemma dsdp_n4_terminates traces :
+  all_terminated (interp [> dsdp_n4_saprocs] dsdp_n4_procs traces).1.
+Proof. by native_compute. Qed.
+
+(* 4-party no-fail: after interpretation, no process is Fail *)
+Lemma dsdp_n4_no_fail traces :
+  all_nonfail (interp [> dsdp_n4_saprocs] dsdp_n4_procs traces).1.
+Proof. by native_compute. Qed.
+
+(* 4-party session environment convergence *)
+Theorem dsdp_n4_senv_zero traces :
+  exists aps' : seq (aproc dsdp_dtype data),
+    erase_aprocs aps' =
+      (interp [> dsdp_n4_saprocs] dsdp_n4_procs traces).1 /\
+    aprocs_senv_depth [:: 0; 1; 2; 3] aps' = 0.
+Proof.
+have [aps' [Hsz [Herase Hsenv]]] :=
+  @senv_bounded _ _ [:: 0; 1; 2; 3] [> dsdp_n4_saprocs]
+    dsdp_n4_saprocs traces (leqnn _).
+exists aps'.
+split; first exact: Herase.
+apply: terminated_nonfail_senv_zero.
+- by rewrite Herase; exact: dsdp_n4_terminates.
+- by rewrite Herase; exact: dsdp_n4_no_fail.
+Qed.
+
+End dsdp_n4_idealized_duality.
+
+(*******************************************************************************)
+(** * N-Party Session Type Duality Verification (Idealized, 5-party)           *)
+(*******************************************************************************)
+
+Section dsdp_n5_idealized_duality.
+
+Variable m_minus_2 : nat.
+Local Notation m := m_minus_2.+2.
+Local Notation msg := 'F_m.
+
+(* Idealized AHE setup *)
+Local Definition N5_AHEnc_local : AHEncType :=
+  @AHEnc.Pack (Idealized_HETypes msg)
+    (@AHEnc.Class (Idealized_HETypes msg)
+      (@Idealized_isEncDec msg) (@Idealized_isAHEnc msg)).
+
+Let AHE : AHEncType := N5_AHEnc_local.
+Let DI := Standard_DSDP_Interface AHE.
+Let data := di_data DI.
+
+(* Party keys (parties 3 and 4 both map to NoParty via nat_to_party_id) *)
+Variables (k0 k1 k2 k3 k4 : msg).
+Let dk0 : priv_key AHE := k0.
+Let dk1 : priv_key AHE := k1.
+Let dk2 : priv_key AHE := k2.
+Let dk3 : priv_key AHE := k3.
+Let dk4 : priv_key AHE := k4.
+Let runit : rand AHE := 1.
+
+(* Public key mapping for 5 parties
+   (parties 3,4 share NoParty — values don't affect duality) *)
+Let ek5 (p : party_id) : pub_key AHE :=
+  match p with
+  | Alice => pub_of_priv dk0
+  | Bob => pub_of_priv dk1
+  | Charlie => pub_of_priv dk2
+  | NoParty => pub_of_priv dk3
+  end.
+
+Variables (v0 v1 v2 v3 v4 : msg).
+Variables (u0' u1' u2' u3' u4' : msg).
+Variables (r0' r1' r2' r3' : msg).
+
+Let u5 : 'I_5 -> msg := fun i =>
+  match val i with 0 => u0' | 1 => u1' | 2 => u2' | 3 => u3' | _ => u4' end.
+Let r5_4 : 'I_4 -> msg := fun i =>
+  match val i with 0 => r0' | 1 => r1' | 2 => r2' | _ => r3' end.
+Let rand5_4 : 'I_4 -> rand AHE := fun _ => runit.
+
+(* 5-party programs *)
+Let palice_5 := @palice_n AHE ek5 3 dk0 v0 u5 r5_4 rand5_4.
+Let pfirst_5 := @DParty_first AHE ek5 1 2 dk1 v1 runit runit.
+Let pinter2_5 := @DParty_intermediate AHE ek5 2 0 1 3 dk2 v2 runit runit.
+Let pinter3_5 := @DParty_intermediate AHE ek5 3 0 2 4 dk3 v3 runit runit.
+Let plast_5 := @DParty_last AHE ek5 4 3 dk4 v4 runit runit.
+
+Local Open Scope sproc_scope.
+Local Open Scope proc_scope.
+
+Definition ap_alice_n5 := mk_aproc palice_5.
+Definition ap_first_n5 := mk_aproc pfirst_5.
+Definition ap_inter2_n5 := mk_aproc pinter2_5.
+Definition ap_inter3_n5 := mk_aproc pinter3_5.
+Definition ap_last_n5 := mk_aproc plast_5.
+
+(* 5-party duality: all 10 pairs *)
+Lemma alice_first_dual_n5 : channels_dual ap_alice_n5 ap_first_n5.
+Proof. by native_compute. Qed.
+
+Lemma alice_inter2_dual_n5 : channels_dual ap_alice_n5 ap_inter2_n5.
+Proof. by native_compute. Qed.
+
+Lemma alice_inter3_dual_n5 : channels_dual ap_alice_n5 ap_inter3_n5.
+Proof. by native_compute. Qed.
+
+Lemma alice_last_dual_n5 : channels_dual ap_alice_n5 ap_last_n5.
+Proof. by native_compute. Qed.
+
+Lemma first_inter2_dual_n5 : channels_dual ap_first_n5 ap_inter2_n5.
+Proof. by native_compute. Qed.
+
+Lemma first_inter3_dual_n5 : channels_dual ap_first_n5 ap_inter3_n5.
+Proof. by native_compute. Qed.
+
+Lemma first_last_dual_n5 : channels_dual ap_first_n5 ap_last_n5.
+Proof. by native_compute. Qed.
+
+Lemma inter2_inter3_dual_n5 : channels_dual ap_inter2_n5 ap_inter3_n5.
+Proof. by native_compute. Qed.
+
+Lemma inter2_last_dual_n5 : channels_dual ap_inter2_n5 ap_last_n5.
+Proof. by native_compute. Qed.
+
+Lemma inter3_last_dual_n5 : channels_dual ap_inter3_n5 ap_last_n5.
+Proof. by native_compute. Qed.
+
+(* 5-party saprocs and termination *)
+Definition dsdp_n5_saprocs : seq (aproc dsdp_dtype data) :=
+  [aprocs palice_5; pfirst_5; pinter2_5; pinter3_5; plast_5].
+
+Definition dsdp_n5_procs : seq (proc data) :=
+  erase_aprocs dsdp_n5_saprocs.
+
+Lemma dsdp_n5_terminates traces :
+  all_terminated (interp [> dsdp_n5_saprocs] dsdp_n5_procs traces).1.
+Proof. by native_compute. Qed.
+
+Lemma dsdp_n5_no_fail traces :
+  all_nonfail (interp [> dsdp_n5_saprocs] dsdp_n5_procs traces).1.
+Proof. by native_compute. Qed.
+
+End dsdp_n5_idealized_duality.
