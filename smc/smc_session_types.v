@@ -62,6 +62,35 @@ Definition senv_send (env : senv) (dst : nat) (d : dtype) : senv :=
 Definition senv_recv (env : senv) (src : nat) (d : dtype) : senv :=
   fun p => if p == src then STRecv d (env p) else env p.
 
+(* Fold over a list, applying element-dependent environment transformations.
+   Used with sproc_iter for protocol iteration over finType elements.
+   Applies the first element outermost (matching sproc_iter's left-to-right order). *)
+Fixpoint fold_senv {T} (step : T -> senv -> senv)
+    (elems : seq T) (env : senv) : senv :=
+  match elems with
+  | [::] => env
+  | x :: rest => step x (fold_senv step rest env)
+  end.
+
+(* Definitional unfolding: empty list is identity.
+   Holds by computation (fold_senv matches on [::]). *)
+Lemma fold_senv_nil {T} (step : T -> senv -> senv) (env : senv) :
+  fold_senv step [::] env = env.
+Proof. by []. Qed.
+
+(* Definitional unfolding: cons applies step outermost.
+   Holds by computation (fold_senv matches on x :: rest). *)
+Lemma fold_senv_cons {T} (step : T -> senv -> senv)
+    (x : T) (xs : seq T) (env : senv) :
+  fold_senv step (x :: xs) env = step x (fold_senv step xs env).
+Proof. by []. Qed.
+
+(* Concatenation splits into nested folds. *)
+Lemma fold_senv_cat {T} (step : T -> senv -> senv)
+    (xs ys : seq T) (env : senv) :
+  fold_senv step (xs ++ ys) env = fold_senv step xs (fold_senv step ys env).
+Proof. by elim: xs => //= x xs ->. Qed.
+
 End stype_def.
 
 (* Make stype arguments explicit for clarity *)
@@ -179,6 +208,12 @@ case: (i == src) => /=.
 - by [].
 Qed.
 
+Lemma senv_depth_fold_senv_mono {T} (step : T -> senv dtype -> senv dtype)
+    (elems : seq T) (env : senv dtype) (parties : seq nat) :
+  (forall x e, senv_depth e parties <= senv_depth (step x e) parties) ->
+  senv_depth env parties <= senv_depth (fold_senv step elems env) parties.
+Proof. by elim: elems => //= x xs IH Hmono; apply: (leq_trans (IH Hmono)). Qed.
+
 End stype_depth_def.
 
 Arguments stype_depth {dtype}.
@@ -232,6 +267,76 @@ Arguments SInit {dtype data party n env}.
 Arguments SSend {dtype data party n env} dst dt.
 Arguments SRecv {dtype data party n env} src dt.
 Arguments SFail {dtype data party n env}.
+
+(******************************************************************************)
+(** * Iteration over Element Lists (sproc_iter)                               *)
+(******************************************************************************)
+
+Section sproc_iter_def.
+
+Variables (dtype : eqType) (data : Type).
+
+(* Dependent fold over a list of elements, building nested sproc constructors.
+   Each element applies body, which wraps one layer of sproc constructors.
+   Type equations are all definitional — no eq_rect/transport needed.
+
+   Key reductions (all definitional):
+   - fold_senv env_step (f :: rest) env = env_step f (fold_senv env_step rest env)
+   - iter (size (f :: rest)) fuel_step n = fuel_step (iter (size rest) fuel_step n)
+
+   This works with native_compute when elems is concrete (e.g., enum fT). *)
+Fixpoint sproc_iter {T} (party : nat)
+    (fuel_step : nat -> nat)
+    (env_step : T -> senv dtype -> senv dtype)
+    (body : forall (f : T) (idx : nat) (n : nat) (env : senv dtype),
+            @sproc dtype data party n env ->
+            @sproc dtype data party (fuel_step n) (env_step f env))
+    (elems : seq T) (start_idx : nat) {struct elems}
+    : forall (n : nat) (env : senv dtype),
+        @sproc dtype data party n env ->
+        @sproc dtype data party (iter (size elems) fuel_step n)
+                                (fold_senv env_step elems env) :=
+  match elems as l return
+    forall (n : nat) (env : senv dtype),
+      @sproc dtype data party n env ->
+      @sproc dtype data party (iter (size l) fuel_step n)
+                              (fold_senv env_step l env)
+  with
+  | [::] => fun n env cont => cont
+  | f :: rest => fun n env cont =>
+      body f start_idx _ _
+        (@sproc_iter T party fuel_step env_step body rest start_idx.+1 n env cont)
+  end.
+
+End sproc_iter_def.
+
+Arguments sproc_iter {dtype data T} party fuel_step env_step body elems
+  start_idx {n env} cont.
+
+(* Definitional unfolding: empty list returns the continuation unchanged.
+   Holds by computation (sproc_iter matches on [::]). *)
+Lemma sproc_iter_nil {dtype : eqType} {data : Type} {T}
+    (party : nat) fuel_step env_step
+    (body : forall (f : T) (idx : nat) (n : nat) (env : senv dtype),
+            @sproc dtype data party n env ->
+            @sproc dtype data party (fuel_step n) (env_step f env))
+    (start_idx : nat) {n} {env} (cont : @sproc dtype data party n env) :
+  sproc_iter party fuel_step env_step body [::] start_idx cont = cont.
+Proof. by []. Qed.
+
+(* Definitional unfolding: cons applies body to the head, recurses on tail.
+   Holds by computation (sproc_iter matches on f :: rest). *)
+Lemma sproc_iter_cons {dtype : eqType} {data : Type} {T}
+    (party : nat) fuel_step env_step
+    (body : forall (f : T) (idx : nat) (n : nat) (env : senv dtype),
+            @sproc dtype data party n env ->
+            @sproc dtype data party (fuel_step n) (env_step f env))
+    (f : T) (rest : seq T) (start_idx : nat)
+    {n} {env} (cont : @sproc dtype data party n env) :
+  sproc_iter party fuel_step env_step body (f :: rest) start_idx cont =
+  body f start_idx _ _
+    (sproc_iter party fuel_step env_step body rest start_idx.+1 cont).
+Proof. by []. Qed.
 
 (******************************************************************************)
 (** * Phase 1 Test: Minimal Example to Verify Unification                     *)
@@ -533,6 +638,23 @@ Fixpoint erase {party : nat} {n : nat} {env : senv dtype}
   | @SRecv _ _ _ _ _ src _ f => Recv src (fun d => erase (f d))
   | @SFail _ _ _ _ _ => Fail
   end.
+
+(* Erasure commutes with sproc_iter: if each body step has a uniform erasure
+   (independent of type indices n/env), then erasing the whole iteration gives
+   a foldr over the erased body steps. *)
+Lemma erase_sproc_iter {T} (party : nat) fuel_step env_step
+    (body : forall (f : T) (idx : nat) (n : nat) (env : senv dtype),
+            @sproc dtype data party n env ->
+            @sproc dtype data party (fuel_step n) (env_step f env))
+    (erase_body : T -> nat -> smc_interpreter.proc data -> smc_interpreter.proc data)
+    (Hbody : forall f i n env (p : @sproc dtype data party n env),
+       erase (body f i n env p) = erase_body f i (erase p))
+    (elems : seq T) (start_idx : nat)
+    {n : nat} {env : senv dtype} (cont : @sproc dtype data party n env) :
+  erase (sproc_iter party fuel_step env_step body elems start_idx cont) =
+  foldr (fun fi p => erase_body fi.1 fi.2 p) (erase cont)
+        (zip elems (iota start_idx (size elems))).
+Proof. by elim: elems start_idx n env cont => //= x xs IH si n env c; rewrite Hbody IH. Qed.
 
 (* Erase session-typed aproc to proc *)
 Definition erase_aproc (ap : aproc dtype data) : smc_interpreter.proc data :=
