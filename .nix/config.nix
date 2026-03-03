@@ -111,6 +111,16 @@
         };
       };
 
+      "9.0-mc25" = {
+        rocqPackages = {
+          rocq-core.override.version = "9.0";
+        };
+        coqPackages = common-bundle // {
+          coq.override.version = "9.0";
+          mathcomp.override.version = "2.5.0";
+        };
+      };
+
       "9.1" = {
         rocqPackages = {
           rocq-core.override.version = "9.1";

@@ -1,0 +1,63 @@
+# Automatically create a PR to rocq-stats to update documentation
+# when the dumas2017dual branch is pushed.
+#
+# See: https://github.com/weng-chenghui/rocq-stats#adding-or-updating-a-project
+
+name: Sync rocq-stats documentation
+
+on:
+  push:
+    branches:
+      - dumas2017dual
+
+jobs:
+  update-rocq-stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout infotheo
+        uses: actions/checkout@v4
+
+      - name: Get commit info
+        id: commit_info
+        run: |
+          echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "message=$(git log -1 --pretty=%s | head -c 50)" >> $GITHUB_OUTPUT
+
+      - name: Checkout rocq-stats
+        uses: actions/checkout@v4
+        with:
+          repository: weng-chenghui/rocq-stats
+          path: rocq-stats
+          token: ${{ secrets.ROCQ_STATS_PAT }}
+
+      - name: Update project YAML
+        run: |
+          cd rocq-stats
+          
+          # Update the commit hash in the YAML file
+          # Using sed to replace the commit line
+          sed -i 's/commit: "[a-f0-9]\{40\}"/commit: "${{ steps.commit_info.outputs.sha }}"/' projects/dsdp.yaml
+          
+          # Show the change
+          echo "Updated projects/dsdp.yaml:"
+          cat projects/dsdp.yaml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          path: rocq-stats
+          token: ${{ secrets.ROCQ_STATS_PAT }}
+          commit-message: "dsdp: update to ${{ steps.commit_info.outputs.short_sha }}"
+          title: "dsdp: update to ${{ steps.commit_info.outputs.short_sha }}"
+          body: |
+            Automatic documentation update from [infotheo](https://github.com/affeldt-aist/infotheo).
+            
+            **Source commit:** [`${{ steps.commit_info.outputs.short_sha }}`](https://github.com/affeldt-aist/infotheo/commit/${{ github.sha }})
+            **Commit message:** ${{ steps.commit_info.outputs.message }}
+            
+            ---
+            *This PR was created automatically by the [sync-rocq-stats workflow](https://github.com/affeldt-aist/infotheo/blob/dumas2017dual/.github/workflows/sync-rocq-stats.yml).*
+          branch: update-dsdp-${{ steps.commit_info.outputs.short_sha }}
+          delete-branch: true
+
