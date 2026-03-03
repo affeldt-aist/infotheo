@@ -290,30 +290,24 @@ Definition alice_send_dest (j : nat) : nat := maxn 1 j.
    computes a_j = c_j^{u_{j+1}} * E(party_{j+1}, r_j, rand_j),
    and sends a_j to dest(j). Finally receives the accumulated result
    from the last relay and computes the dot product. *)
+Let alice_env_step (j : 'I_n_relay.+1) (env : senv dsdp_dtype) :=
+  senv_recv (senv_send env (alice_send_dest j) DT_Enc) j.+1 DT_Enc.
+
 Definition palice_n
+    (relays : seq 'I_n_relay.+1)
     (dk : priv_keyT) (v0 : msgT)
     (u : 'I_n_relay.+2 -> msgT)
     (r : 'I_n_relay.+1 -> msgT)
     (rand_a : 'I_n_relay.+1 -> randT)
     : sproc dsdp_dtype data alice_idx :=
-  DInit (priv_key dk) (
-  DInit (d v0) (
-  sproc_iter alice_idx (fun k => k.+2)
-    (fun (j : 'I_n_relay.+1) (env : senv dsdp_dtype) =>
-      senv_recv (senv_send env (alice_send_dest j) DT_Enc) j.+1 DT_Enc)
-    (fun (j : 'I_n_relay.+1) (_ : nat) (_ : nat) (_ : senv dsdp_dtype) cont =>
-      SRecv j.+1 DT_Enc (fun dd =>
-        match @std_from_enc AHE dd with
-        | Some c =>
-          SSend (alice_send_dest j) DT_Enc
-            (e ((c ^h (u (lift ord0 j))) *h
-                (enc_pub_key j.+1 (r j) (rand_a j))))
-            cont
-        | None => SFail
-        end))
-    (enum 'I_n_relay.+1) 0
-  (DRecv_dec n_relay.+1 dk (fun g =>
-    DRet (d (g - \sum_(j < n_relay.+1) r j + u ord0 * v0)))))).
+  \pi{ Init (#dk, &v0) ;
+     ForList relays step (fun k => k.+2) enstep alice_env_step as j cont k =>
+       (Recv_enc j.+1 (fun c =>
+         PSend (alice_send_dest j)
+           $(c ^h (u (lift ord0 j)) *h (enc_pub_key j.+1 (r j) (rand_a j)))
+           k)) ;
+     Recv<(n_relay.+1)> #dk g =>
+     Ret &(g - \sum_(j < n_relay.+1) r j + u ord0 * v0) }.
 
 (* Map relay index j to the appropriate relay template (first/intermediate/last).
    Requires n_relay >= 1 (at least 3 parties). *)
@@ -330,6 +324,7 @@ Definition relay_aproc (j : nat)
 (* Build the full N-party aproc list: Alice + n_relay.+1 relay parties.
    Assumes n_relay >= 1 (at least 3 total parties). *)
 Definition dsdp_n_saprocs
+    (relays : seq 'I_n_relay.+1)
     (dk : priv_keyT) (v0 : msgT)
     (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
     (rand_a : 'I_n_relay.+1 -> randT)
@@ -337,12 +332,13 @@ Definition dsdp_n_saprocs
     (v_relay : 'I_n_relay.+1 -> msgT)
     (r1_relay r2_relay : 'I_n_relay.+1 -> randT)
     : seq (aproc dsdp_dtype data) :=
-  mk_aproc (palice_n n_relay dk v0 u r rand_a) ::
+  mk_aproc (palice_n relays dk v0 u r rand_a) ::
   map (fun j : 'I_n_relay.+1 =>
     relay_aproc j (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j))
-    (enum 'I_n_relay.+1).
+    relays.
 
 Definition dsdp_n_procs
+    (relays : seq 'I_n_relay.+1)
     (dk : priv_keyT) (v0 : msgT)
     (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
     (rand_a : 'I_n_relay.+1 -> randT)
@@ -350,7 +346,7 @@ Definition dsdp_n_procs
     (v_relay : 'I_n_relay.+1 -> msgT)
     (r1_relay r2_relay : 'I_n_relay.+1 -> randT)
     : seq (proc data) :=
-  erase_aprocs (dsdp_n_saprocs dk v0 u r rand_a dk_relay v_relay r1_relay r2_relay).
+  erase_aprocs (dsdp_n_saprocs relays dk v0 u r rand_a dk_relay v_relay r1_relay r2_relay).
 
 End dsdp_n_party.
 
@@ -548,7 +544,9 @@ Let r4_3 : 'I_3 -> msg := fun i =>
 Let rand4_3 : 'I_3 -> rand AHE := fun _ => runit.
 
 (* 4-party programs: Alice + first relay + intermediate + last relay *)
-Let palice_4 := @palice_n AHE ek4 2 dk0 v0 u4 r4_3 rand4_3.
+Let palice_4 := @palice_n AHE ek4 2
+  [:: @Ordinal 3 0 isT; @Ordinal 3 1 isT; @Ordinal 3 2 isT]
+  dk0 v0 u4 r4_3 rand4_3.
 Let pfirst_4 := @DParty_first AHE ek4 1 2 dk1 v1 runit runit.
 Let pinter_4 := @DParty_intermediate AHE ek4 2 0 1 3 dk2 v2 runit runit.
 Let plast_4 := @DParty_last AHE ek4 3 2 dk3 v3 runit runit.
@@ -590,7 +588,9 @@ Let r1_relay_4 : 'I_3 -> rand AHE := fun _ => runit.
 Let r2_relay_4 : 'I_3 -> rand AHE := fun _ => runit.
 
 Lemma dsdp_n4_builder_correct :
-  dsdp_n_procs 2 dk0 v0 u4 r4_3 rand4_3 dk_relay_4 v_relay_4 r1_relay_4 r2_relay_4 =
+  @dsdp_n_procs AHE ek4 2
+    [:: @Ordinal 3 0 isT; @Ordinal 3 1 isT; @Ordinal 3 2 isT]
+    dk0 v0 u4 r4_3 rand4_3 dk_relay_4 v_relay_4 r1_relay_4 r2_relay_4 =
   erase_aprocs [aprocs palice_4; pfirst_4; pinter_4; plast_4].
 Proof. by native_compute. Qed.
 
@@ -683,7 +683,9 @@ Let r5_4 : 'I_4 -> msg := fun i =>
 Let rand5_4 : 'I_4 -> rand AHE := fun _ => runit.
 
 (* 5-party programs *)
-Let palice_5 := @palice_n AHE ek5 3 dk0 v0 u5 r5_4 rand5_4.
+Let palice_5 := @palice_n AHE ek5 3
+  [:: @Ordinal 4 0 isT; @Ordinal 4 1 isT; @Ordinal 4 2 isT; @Ordinal 4 3 isT]
+  dk0 v0 u5 r5_4 rand5_4.
 Let pfirst_5 := @DParty_first AHE ek5 1 2 dk1 v1 runit runit.
 Let pinter2_5 := @DParty_intermediate AHE ek5 2 0 1 3 dk2 v2 runit runit.
 Let pinter3_5 := @DParty_intermediate AHE ek5 3 0 2 4 dk3 v3 runit runit.
