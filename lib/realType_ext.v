@@ -85,44 +85,43 @@ Section onem.
 Variable R : realFieldType.
 Implicit Types r s : R.
 
-Lemma onem_le r s : (r <= s) = (`1-s <= `1-r).
+Lemma onem_le r s : (r <= s) = (s.~ <= r.~).
 Proof.
 apply/idP/idP => [|?]; first exact: lerB.
 by rewrite -(opprK r) lerNl -(lerD2l 1).
 Qed.
 
-Lemma onem_lt  r s : (r < s) = (`1-s < `1-r).
+Lemma onem_lt r s : (r < s) = (s.~ < r.~).
 Proof.
 apply/idP/idP => [rs|]; first by rewrite ler_ltB.
 by rewrite ltrBrDl addrCA -ltrBrDl subrr subr_lt0.
 Qed.
 
-Lemma onemE r : `1-r = 1 - r.  Proof. by []. Qed.
+Lemma onemE r : r.~ = 1 - r.  Proof. by []. Qed.
 
-Lemma onem_div r s : s != 0 -> `1-(r / s) = (s - r) / s.
+Lemma onem_div r s : s != 0 -> (r / s).~ = (s - r) / s.
 Proof. by rewrite !onemE => q0; rewrite mulrDl mulNr divff. Qed.
 
-Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
+Lemma onem_prob r : 0 <= r <= 1 -> 0 <= r.~ <= 1.
 Proof.
 by move=> /andP[r0 r1]; apply/andP; split; [rewrite onem_ge0|rewrite onem_le1].
 Qed.
 
-Lemma onem_eq0 r : (`1-r = 0) <-> (r = 1).
+Lemma onem_eq0 r : (r.~ = 0) <-> (r = 1).
 Proof. by rewrite /onem; split => [/subr0_eq//|->]; rewrite subrr. Qed.
 
-Lemma onem_neq0 (r : R) : (`1-r != 0) <-> (r != 1).
+Lemma onem_neq0 (r : R) : (r.~ != 0) <-> (r != 1).
 Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
-Lemma onem_eq1 r : `1-r = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
+Lemma onem_eq1 r : r.~ = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
 
-Lemma onem_oprob r : 0 < r < 1 -> 0 < `1-r < 1.
+Lemma onem_oprob r : 0 < r < 1 -> 0 < r.~ < 1.
 Proof. by move=> /andP [? ?]; apply/andP; rewrite onem_gt0 // onem_lt1. Qed.
 
-Lemma subr_onem r s : r - `1-s = r + s - 1.
+Lemma subr_onem r s : r - s.~ = r + s - 1.
 Proof. by rewrite /onem opprB addrA. Qed.
 
 End onem.
-Notation "p '.~'" := (onem p).
 
 Section about_the_pow_function.
 

@@ -1492,7 +1492,7 @@ rewrite -!Ind_bigcap big_const.
   have [m ->] : exists m, (n.+1 - i)%nat = m.+1.
     by exists (n.+1 - i).-1; rewrite prednK // subn_gt0.
   rewrite iterSr iter_fix ?setIT ?setIid //.
-rewrite -Ind_cap -/Efull.
+rewrite -Ind_setI -/Efull.
 suff : \bigcap_(j0 in j) S j0 \subset Efull by move/setIidPr->.
 rewrite /Efull.
 pose i0 := odflt ord0 (pick (mem j)).
