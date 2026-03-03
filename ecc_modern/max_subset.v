@@ -7,6 +7,7 @@ From mathcomp Require Import all_ssreflect.
 (******************************************************************************)
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 

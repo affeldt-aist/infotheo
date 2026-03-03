@@ -26,6 +26,7 @@ Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,
 Declare Scope divergence_scope.
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 

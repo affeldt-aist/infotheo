@@ -65,6 +65,7 @@ Reserved Notation "'<&>_' d f" (at level 36, f at level 36, d at level 0,
 Reserved Notation "x <& p &> y" (format "x  <& p &>  y", at level 49).
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 

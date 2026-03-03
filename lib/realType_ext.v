@@ -37,6 +37,7 @@ Reserved Notation "[ 'p_of' r , s ]" (format "[ 'p_of'  r ,  s ]").
 Reserved Notation "[ 'q_of' r , s ]" (format "[ 'q_of'  r ,  s ]").
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 

@@ -16,6 +16,7 @@ Require Import ssralg_ext hamming linearcode decoding channel_code.
 Import GRing.Theory.
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
