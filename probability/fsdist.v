@@ -48,6 +48,7 @@ Reserved Notation "{ 'dist' T }" (at level 0, format "{ 'dist'  T }").
 Reserved Notation "R '.-dist' T" (at level 2, format "R '.-dist'  T").
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 

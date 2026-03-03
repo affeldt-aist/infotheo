@@ -30,6 +30,7 @@ Reserved Notation "t '.-'rV[' R ]_ n" (at level 2).
 Reserved Notation "'\omega_(' f , a , e )" (at level 0).
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 

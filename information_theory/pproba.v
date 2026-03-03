@@ -30,6 +30,7 @@ Reserved Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" (at level 1,
 Reserved Notation "P .-receivable W" (at level 2, format "P .-receivable  W").
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 

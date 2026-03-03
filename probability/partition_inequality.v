@@ -13,6 +13,7 @@ Require Import fdist divergence log_sum variation_dist.
 (******************************************************************************)
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 

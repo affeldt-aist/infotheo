@@ -21,6 +21,7 @@ Reserved Notation "'\BCHomega_(' a , e )" (at level 0).
 Declare Scope bch_scope.
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 

@@ -20,6 +20,7 @@ Require Import fdist proba entropy divergence log_sum source_code.
 (******************************************************************************)
 
 Set Implicit Arguments.
+Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
