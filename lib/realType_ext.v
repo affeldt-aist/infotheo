@@ -80,6 +80,8 @@ Lemma prodr_gt0 (R : numDomainType) (A : finType) (F : A -> R) :
   (forall a, 0 < F a) -> 0 < \prod_(a : A) F a.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
 
+Notation "p '.~'" := (onem p). (* TODO: remove when dropping support for MCA < 1.15.0 *)
+
 (* PR to mathcomp_extra.v? *)
 Section onem.
 Variable R : realFieldType.
@@ -320,9 +322,6 @@ Global Hint Resolve prob_le1 : core.
   exact/prob_le1 : core.
 #[export] Hint Extern 0 (is_true (@Order.le ring_display _ _ _)) =>
   exact/prob_ge0 : core.
-
-Arguments prob0 {R}.
-Arguments prob1 {R}.
 
 Lemma prob_invn {R : realType} (m : nat) :
   0 <= ((1 + m)%:R^-1 : R) <= 1.

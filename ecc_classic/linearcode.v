@@ -877,8 +877,7 @@ Coercion lcode_coercion (A B : finFieldType) (n : nat) (M : finType) (c : Lcode.
  let: Lcode.mk v _ _ _ := c in v.
 
 Section AboutCasts.
-
-Variable R : comRingType.
+Variable R : comPzRingType.
 
 Definition cast_cols {rows} {f : nat -> nat -> nat} {P : nat -> nat -> Type}
   (HPf : forall k n, P k n -> f k n = n) {k n} (HP : P k n) :
