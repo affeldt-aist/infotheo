@@ -302,10 +302,11 @@ Definition palice_n
     : sproc dsdp_dtype data alice_idx :=
   \pi{ Init (#dk, &v0) ;
      ForList relays step (fun k => k.+2) enstep alice_env_step as j cont k =>
-       (Recv_enc j.+1 (fun c =>
-         PSend (alice_send_dest j)
-           $(c ^h (u (lift ord0 j)) *h (enc_pub_key j.+1 (r j) (rand_a j)))
-           k)) ;
+       Recv<(j.+1)> c =>
+       Send<(alice_send_dest j)>
+         $(c ^h (u (lift ord0 j)) *h (enc_pub_key j.+1 (r j) (rand_a j))) ;
+       k
+     end ;
      Recv<(n_relay.+1)> #dk g =>
      Ret &(g - \sum_(j < n_relay.+1) r j + u ord0 * v0) }.
 

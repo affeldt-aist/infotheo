@@ -15,6 +15,10 @@ Notation "'\pi{' e '}'" := e (e custom pismc at level 99) : pismc_scope.
    Send/Recv notations are protocol-specific (dtype-dependent) and
    remain in each protocol's _pismc.v file. *)
 
+(* Lift identifiers into the pismc custom entry.
+   Allows bare variables (e.g., loop continuation) in pismc positions. *)
+Notation "x" := x (in custom pismc at level 0, x ident).
+
 (* Terminal state *)
 Notation "'Finish'" := SFinish (in custom pismc at level 0).
 
@@ -74,9 +78,9 @@ Notation "'ForList' ls 'step' s 'enstep' es 'as' f ',' i '=>' body ; P" :=
    es constr at level 0, f name, i name, body constr at level 0,
    P custom pismc at level 85, right associativity).
 
-Notation "'ForList' ls 'step' s 'enstep' es 'as' f 'cont' k '=>' body ; P" :=
+Notation "'ForList' ls 'step' s 'enstep' es 'as' f 'cont' k '=>' body 'end' ; P" :=
   (sproc_iter _ s es (fun f _ _ _ k => body) ls 0 P)
   (in custom pismc at level 85, ls constr at level 0, s constr at level 0,
-   es constr at level 0, f name, k name, body constr at level 0,
+   es constr at level 0, f name, k name, body custom pismc at level 85,
    P custom pismc at level 85, right associativity).
 
