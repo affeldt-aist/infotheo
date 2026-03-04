@@ -863,19 +863,3 @@ Lemma s_of_gt0_oprob p q : 0 < [s_of (OProb.p p), (OProb.p q)]%:num.
 Proof. by rewrite s_of_gt0// oprob_neq0. Qed.
 
 End oprob_lemmas2.
-
-Section i01_prob.
-Variable R : realType.
-
-#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
-Definition i01_of_prob (p : {prob R}) : {i01 R} := p.
-#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
-Definition prob_of_i01 (p : {i01 R}) : {prob R} := p.
-#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
-Lemma i01_of_probK : cancel i01_of_prob prob_of_i01.
-Proof. by []. Qed.
-#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
-Lemma prob_of_i01K : cancel prob_of_i01 i01_of_prob.
-Proof. by []. Qed.
-
-End i01_prob.

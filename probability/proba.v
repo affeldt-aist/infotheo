@@ -119,7 +119,7 @@ Reserved Notation "X `+ Y" (at level 50).
 Reserved Notation "X `- Y" (at level 50).
 Reserved Notation "X '`+cst' m" (at level 50).
 Reserved Notation "X '`-cst' m" (at level 50).
-Reserved Notation "X '`^2' " (at level 49).
+Reserved Notation "X '`^2' " (at level 1).
 Reserved Notation "'`--' P" (at level 5).
 Reserved Notation "'`log' P" (at level 5).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
@@ -129,7 +129,7 @@ Reserved Notation "'`E'" (at level 0).
 Reserved Notation "'`V'" (at level 0).
 Reserved Notation "`Pr_ P [ A | B ]" (at level 0, P, A, B at next level,
   format "`Pr_ P [ A  |  B ]").
-Reserved Notation "`Pr_[ A | B ]" (at level 6, A, B at next level,
+Reserved Notation "`Pr_[ A | B ]" (at level 0, A, B at next level,
   format "`Pr_[ A  |  B ]").
 Reserved Notation "`E_[ X | B ]" (at level 6, X, B at next level,
   format "`E_[ X  |  B ]").
