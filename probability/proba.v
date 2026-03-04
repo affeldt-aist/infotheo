@@ -131,7 +131,7 @@ Reserved Notation "`Pr_ P [ A | B ]" (at level 0, P, A, B at next level,
   format "`Pr_ P [ A  |  B ]").
 Reserved Notation "`Pr_[ A | B ]" (at level 0, A, B at next level,
   format "`Pr_[ A  |  B ]").
-Reserved Notation "`E_[ X | B ]" (at level 6, X, B at next level,
+Reserved Notation "`E_[ X | B ]" (at level 0, X, B at next level,
   format "`E_[ X  |  B ]").
 Reserved Notation "`Pr[ X = a | Y = b ]" (at level 0, X, Y, a, b at next level,
   format "`Pr[  X  =  a  |  Y  =  b  ]").
