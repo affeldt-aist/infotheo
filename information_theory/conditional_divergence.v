@@ -12,8 +12,7 @@ Require Import jfdist_cond.
 
 Reserved Notation "P '|-' V '<<' W" (at level 5, V, W at next level).
 Reserved Notation "P '|-' V '<<b' W" (at level 5, V, W at next level).
-Reserved Notation "'D(' V '||' W '|' P ')'"
-  (at level 50, V, W, P at next level).
+Reserved Notation "'D(' V '||' W '|' P ')'" (at level 50, V, W, P at next level).
 
 Set Implicit Arguments.
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)

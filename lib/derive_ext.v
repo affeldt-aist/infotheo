@@ -2,8 +2,8 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_ssreflect ssralg ssrnum interval.
 From mathcomp Require Import ring lra.
-From mathcomp Require Import unstable mathcomp_extra boolp classical_sets functions.
-From mathcomp Require Import set_interval.
+From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
+From mathcomp Require Import functions set_interval.
 From mathcomp Require Import reals topology normedtype.
 From mathcomp Require Import realfun derive exp.
 Require Import realType_ext ssralg_ext.
@@ -117,7 +117,8 @@ apply: (He `|e'|).
 - exact: ltW.
 Qed.
 
-Local Notation DQ f v a h := (h^-1 *: (f (h *: v + a) - f a)).
+Let DQ (R : numFieldType) (V W : normedModType R) (f : V -> W) v a h :=
+  (h^-1 *: (f (h *: v + a) - f a)).
 
 Let near_eq_difference_quotient (R : numFieldType) (V W : normedModType R)
   (f g : V -> W) (a v : V) :
@@ -144,7 +145,8 @@ have fg0: \forall h \near (0^')%classic, f (h *: v + a) = g (h *: v + a).
     rewrite opprD addrCA subrr addr0 normrN !normrZ !normr_id.
     rewrite mulrCA ltr_pMl// ?mulr_gt0// ?normr_gt0//.
     by rewrite [ltLHS](_ : 1 = 1%:R)// normr_nat ltr_nat.
-have:= fg0 => /filterS; apply=> h ->.
+have:= fg0 => /filterS.
+rewrite /DQ; apply=> h ->.
 move: fg.
 by rewrite -nbhs_nearE nbhsE=> -[] U [] oU Ua /(_ a Ua) ->.
 Qed.

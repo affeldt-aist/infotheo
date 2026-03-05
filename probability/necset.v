@@ -80,16 +80,16 @@ Require Import realType_ext classical_sets_ext fdist fsdist convex.
 
 Declare Scope latt_scope.
 
-Reserved Notation "x %:ne" (at level 0, format "x %:ne").
+Reserved Notation "x %:ne" (at level 1, format "x %:ne").
 Reserved Notation "x <| p |>: Y" (format "x  <| p |>:  Y", at level 49).
 Reserved Notation "X :<| p |>: Y" (format "X  :<| p |>:  Y", at level 49).
 Reserved Notation "x [+] y" (format "x  [+]  y", at level 50).
 Reserved Notation "'|_|' f" (at level 36, f at level 36, format "|_|  f").
 Reserved Notation "{ 'necset' T }" (at level 0, format "{ 'necset'  T }").
 Reserved Notation "{ 'Biglub_morph' T '->' R }"
-  (at level 36, T, R at next level, format "{ 'Biglub_morph'  T  '->'  R }").
+  (at level 0, T, R at next level, format "{ 'Biglub_morph'  T  '->'  R }").
 Reserved Notation "{ 'Biglub_affine' T '->' R }"
-  (at level 36, T, R at next level, format "{ 'Biglub_affine'  T  '->'  R }").
+  (at level 0, T, R at next level, format "{ 'Biglub_affine'  T  '->'  R }").
 
 Set Implicit Arguments.
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)

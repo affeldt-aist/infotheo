@@ -38,10 +38,10 @@ Unset Strict Implicit.
 Import Prenex Implicits.
 
 Reserved Notation "'`H'" (at level 0).
-Reserved Notation "`H( X , Y )" (at level 10, X, Y at next level,
+Reserved Notation "`H( X , Y )" (at level 0, X, Y at next level,
   format "`H( X ,  Y )").
-Reserved Notation "`H( Y | X )" (at level 10, Y, X at next level).
-Reserved Notation "`I( X ; Y )" (at level 50, format "`I( X ;  Y )").
+Reserved Notation "`H( Y | X )" (at level 0, Y, X at next level).
+Reserved Notation "`I( X ; Y )" (at level 0, format "`I( X ;  Y )").
 Reserved Notation "`H[ Y | X = a ]" (at level 0, Y, X, a at next level,
   format "`H[  Y  |  X  =  a  ]").
 

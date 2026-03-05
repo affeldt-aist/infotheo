@@ -81,49 +81,50 @@ Lemma prodr_gt0 (R : numDomainType) (A : finType) (F : A -> R) :
   (forall a, 0 < F a) -> 0 < \prod_(a : A) F a.
 Proof. by move=> F0; elim/big_ind : _ => // x y ? ?; exact: mulr_gt0. Qed.
 
+Notation "p '.~'" := (onem p). (* TODO: remove when dropping support for MCA < 1.15.0 *)
+
 (* PR to mathcomp_extra.v? *)
 Section onem.
 Variable R : realFieldType.
 Implicit Types r s : R.
 
-Lemma onem_le r s : (r <= s) = (`1-s <= `1-r).
+Lemma onem_le r s : (r <= s) = (s.~ <= r.~).
 Proof.
 apply/idP/idP => [|?]; first exact: lerB.
 by rewrite -(opprK r) lerNl -(lerD2l 1).
 Qed.
 
-Lemma onem_lt  r s : (r < s) = (`1-s < `1-r).
+Lemma onem_lt r s : (r < s) = (s.~ < r.~).
 Proof.
 apply/idP/idP => [rs|]; first by rewrite ler_ltB.
 by rewrite ltrBrDl addrCA -ltrBrDl subrr subr_lt0.
 Qed.
 
-Lemma onemE r : `1-r = 1 - r.  Proof. by []. Qed.
+Lemma onemE r : r.~ = 1 - r.  Proof. by []. Qed.
 
-Lemma onem_div r s : s != 0 -> `1-(r / s) = (s - r) / s.
+Lemma onem_div r s : s != 0 -> (r / s).~ = (s - r) / s.
 Proof. by rewrite !onemE => q0; rewrite mulrDl mulNr divff. Qed.
 
-Lemma onem_prob r : 0 <= r <= 1 -> 0 <= onem r <= 1.
+Lemma onem_prob r : 0 <= r <= 1 -> 0 <= r.~ <= 1.
 Proof.
 by move=> /andP[r0 r1]; apply/andP; split; [rewrite onem_ge0|rewrite onem_le1].
 Qed.
 
-Lemma onem_eq0 r : (`1-r = 0) <-> (r = 1).
+Lemma onem_eq0 r : (r.~ = 0) <-> (r = 1).
 Proof. by rewrite /onem; split => [/subr0_eq//|->]; rewrite subrr. Qed.
 
-Lemma onem_neq0 (r : R) : (`1-r != 0) <-> (r != 1).
+Lemma onem_neq0 (r : R) : (r.~ != 0) <-> (r != 1).
 Proof. by split; apply: contra => /eqP/onem_eq0/eqP. Qed.
 
-Lemma onem_eq1 r : `1-r = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
+Lemma onem_eq1 r : r.~ = 1 <-> r = 0. Proof. rewrite onemE; lra. Qed.
 
-Lemma onem_oprob r : 0 < r < 1 -> 0 < `1-r < 1.
+Lemma onem_oprob r : 0 < r < 1 -> 0 < r.~ < 1.
 Proof. by move=> /andP [? ?]; apply/andP; rewrite onem_gt0 // onem_lt1. Qed.
 
-Lemma subr_onem r s : r - `1-s = r + s - 1.
+Lemma subr_onem r s : r - s.~ = r + s - 1.
 Proof. by rewrite /onem opprB addrA. Qed.
 
 End onem.
-Notation "p '.~'" := (onem p).
 
 Section about_the_pow_function.
 
@@ -322,9 +323,6 @@ Global Hint Resolve prob_le1 : core.
   exact/prob_le1 : core.
 #[export] Hint Extern 0 (is_true (@Order.le ring_display _ _ _)) =>
   exact/prob_ge0 : core.
-
-Arguments prob0 {R}.
-Arguments prob1 {R}.
 
 Lemma prob_invn {R : realType} (m : nat) :
   0 <= ((1 + m)%:R^-1 : R) <= 1.
@@ -866,19 +864,3 @@ Lemma s_of_gt0_oprob p q : 0 < [s_of (OProb.p p), (OProb.p q)]%:num.
 Proof. by rewrite s_of_gt0// oprob_neq0. Qed.
 
 End oprob_lemmas2.
-
-Section i01_prob.
-Variable R : realType.
-
-#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
-Definition i01_of_prob (p : {prob R}) : {i01 R} := p.
-#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
-Definition prob_of_i01 (p : {i01 R}) : {prob R} := p.
-#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
-Lemma i01_of_probK : cancel i01_of_prob prob_of_i01.
-Proof. by []. Qed.
-#[deprecated(since="infotheo 0.9.7", note="{prob R} and {i01 R} are identical")]
-Lemma prob_of_i01K : cancel prob_of_i01 i01_of_prob.
-Proof. by []. Qed.
-
-End i01_prob.

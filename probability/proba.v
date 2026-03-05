@@ -97,7 +97,7 @@ Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 (*                                                                            *)
 (******************************************************************************)
 
-Reserved Notation "E `*T" (at level 40).
+Reserved Notation "E `*T" (at level 1).
 Reserved Notation "T`* F" (at level 40).
 Reserved Notation "{ 'RV' d -> T }" (at level 0, d, T at level 1,
   format "{ 'RV'  d  ->  T }").
@@ -119,7 +119,7 @@ Reserved Notation "X `+ Y" (at level 50).
 Reserved Notation "X `- Y" (at level 50).
 Reserved Notation "X '`+cst' m" (at level 50).
 Reserved Notation "X '`-cst' m" (at level 50).
-Reserved Notation "X '`^2' " (at level 49).
+Reserved Notation "X '`^2' " (at level 1).
 Reserved Notation "'`--' P" (at level 5).
 Reserved Notation "'`log' P" (at level 5).
 Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
@@ -127,11 +127,11 @@ Reserved Notation "'[%' x , y , .. , z ']'" (at level 0,
 Reserved Notation "X '\=sum' Xs" (at level 50).
 Reserved Notation "'`E'" (at level 0).
 Reserved Notation "'`V'" (at level 0).
-Reserved Notation "`Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
+Reserved Notation "`Pr_ P [ A | B ]" (at level 0, P, A, B at next level,
   format "`Pr_ P [ A  |  B ]").
-Reserved Notation "`Pr_[ A | B ]" (at level 6, A, B at next level,
+Reserved Notation "`Pr_[ A | B ]" (at level 0, A, B at next level,
   format "`Pr_[ A  |  B ]").
-Reserved Notation "`E_[ X | B ]" (at level 6, X, B at next level,
+Reserved Notation "`E_[ X | B ]" (at level 0, X, B at next level,
   format "`E_[ X  |  B ]").
 Reserved Notation "`Pr[ X = a | Y = b ]" (at level 0, X, Y, a, b at next level,
   format "`Pr[  X  =  a  |  Y  =  b  ]").
@@ -1493,7 +1493,7 @@ rewrite -!Ind_bigcap big_const.
   have [m ->] : exists m, (n.+1 - i)%nat = m.+1.
     by exists (n.+1 - i).-1; rewrite prednK // subn_gt0.
   rewrite iterSr iter_fix ?setIT ?setIid //.
-rewrite -Ind_cap -/Efull.
+rewrite -Ind_setI -/Efull.
 suff : \bigcap_(j0 in j) S j0 \subset Efull by move/setIidPr->.
 rewrite /Efull.
 pose i0 := odflt ord0 (pick (mem j)).
@@ -2704,7 +2704,7 @@ Let XY : {RV P -> (TA * TB)%type} := fun x => (X' x, Y' x).
 Lemma prod_dist_inde_RV : P |= X' _|_ Y'.
 Proof.
 apply/inde_RV_events => x y.
-rewrite (_ : [set _ | _ ] = finset (X @^-1 x) `*T); last first.
+rewrite (_ : [set _ | _ ] = (finset (X @^-1 x)) `*T); last first.
   by apply/setP => -[a b]; rewrite !inE.
 rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)); last first.
   by apply/setP => -[a b]; rewrite !inE.
@@ -2739,7 +2739,7 @@ rewrite (_ : [set x0 | _] =
     finset (X @^-1 x) `* finset (Y @^-1 y))%set; last first.
   by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
 rewrite Pr_fdist_prod_of_rV
-    (_ : [set x0 | _] = finset (X @^-1 x) `*T); last first.
+    (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
   by apply/setP => a; rewrite !inE.
 rewrite Pr_fdist_prod_of_rV1.
 rewrite (_ : [set x0 | _] = T`* finset (Y @^-1 y)); last first.

@@ -160,7 +160,7 @@ Reserved Notation "\ssum_ ( i < n ) F"
   (at level 41, F at level 41, i, n at level 50,
   format "'[' \ssum_ ( i  <  n ) '/  '  F ']'").
 Reserved Notation "{ 'affine' T '->' R }"
-  (at level 36, T, R at next level, format "{ 'affine'  T  '->'  R }").
+  (at level 0, T, R at next level, format "{ 'affine'  T  '->'  R }").
 Reserved Notation "p *: a" (at level 40).
 
 Declare Scope convex_scope.
@@ -2516,7 +2516,7 @@ HB.structure Definition ConvexFunction {R : realType} {d : Order.disp_t} (U : co
 Arguments convex_functionP {R d U V} s.
 
 Notation "{ 'convex' T '->' R }" :=
-  (ConvexFunction.type T R) (at level 36, T, R at next level,
+  (ConvexFunction.type T R) (at level 0, T, R at next level,
     format "{ 'convex'  T  '->'  R }") : convex_scope.
 
 Section convex_function_prop'.
@@ -2657,7 +2657,7 @@ HB.structure Definition ConcaveFunction {R : realType} {d : Order.disp_t}
 Arguments concave_functionP {R d U V} s.
 
 Notation "{ 'concave' T '->' R }" :=
-  (ConvexFunction.type T R) (at level 36, T, R at next level,
+  (ConvexFunction.type T R) (at level 0, T, R at next level,
     format "{ 'concave'  T  '->'  R }") : convex_scope.
 
 Section concave_function_prop.

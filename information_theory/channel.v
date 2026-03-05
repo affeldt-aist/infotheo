@@ -53,12 +53,12 @@ Reserved Notation "W '``(|' x ')'" (at level 1, x at next level).
 Reserved Notation "W '``(' y '|' x ')'" (at level 1, y, x at next level).
 Reserved Notation "'`O(' P , W )" (at level 0, P, W at next level,
   format "'`O(' P ,  W )").
-Reserved Notation "'`H(' P '`o' W )" (at level 10, P, W at next level,
+Reserved Notation "'`H(' P '`o' W )" (at level 0, P, W at next level,
   format "'`H(' P  '`o'  W )").
-Reserved Notation "`H( P , W )" (at level 10, P, W at next level,
+Reserved Notation "`H( P , W )" (at level 0, P, W at next level,
   format "`H( P ,  W )").
-Reserved Notation "`H( W | P )" (at level 10, W, P at next level).
-Reserved Notation "`I( P , W )" (at level 50, format "`I( P ,  W )").
+Reserved Notation "`H( W | P )" (at level 0, W, P at next level).
+Reserved Notation "`I( P , W )" (at level 0, format "`I( P ,  W )").
 
 (* TODO: generalize the channel notations to (R:realType) *)
 Notation "{ 'fdist' T }" := ((Rdefinitions.R).-fdist T) : fdist_scope.
