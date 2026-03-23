@@ -748,3 +748,182 @@ Lemma dsdp_n5_no_fail traces :
 Proof. by native_compute. Qed.
 
 End dsdp_n5_idealized_duality.
+
+(*******************************************************************************)
+(** * N-Party rsteps Verification Infrastructure                               *)
+(*******************************************************************************)
+
+Section dsdp_n_rsteps.
+
+(* Parameterize by an AHEncType instance *)
+Variable AHE : AHEncType.
+
+(* Public key mapping *)
+Variable ek : party_id -> pub_key AHE.
+
+(* Re-establish type abbreviations *)
+Let DI := Standard_DSDP_Interface AHE.
+Let msgT := plain AHE.
+Let randT := rand AHE.
+Let encT := cipher AHE.
+Let priv_keyT := priv_key AHE.
+Let data := di_data DI.
+Let d := di_d DI.
+Let e := di_e DI.
+Let priv_key := di_priv_key DI.
+Let Emul := @Emul AHE.
+Let Epow := @Epow AHE.
+Let enc_pub_key (p : party_id) (m : msgT) (r : randT) : encT :=
+  enc (ek p) m r.
+
+Local Notation "u *h w" := (Emul u w).
+Local Notation "u ^h w" := (Epow u w).
+
+Variable n_relay : nat.
+
+(* Re-define alice_env_step (was Let in dsdp_n_party section) *)
+Let alice_env_step (j : 'I_n_relay.+1) (env : senv dsdp_dtype) :=
+  senv_recv (senv_send env (alice_send_dest j) DT_Enc) j.+1 DT_Enc.
+
+(* Local aliases for proc constructors that conflict with pismc notations *)
+Let pInit := @smc_interpreter.Init data.
+Let pSend := @smc_interpreter.Send data.
+Let pRecv := @smc_interpreter.Recv data.
+Let pRet  := @smc_interpreter.Ret data.
+
+(** ** Size of dsdp_n_procs *)
+Lemma size_dsdp_n_procs relays dk0 v0 u0 r0 rand_a dk_relay v_relay r1_relay r2_relay :
+  size (@dsdp_n_procs AHE ek n_relay relays dk0 v0 u0 r0 rand_a dk_relay v_relay r1_relay r2_relay) =
+  (size relays).+1.
+Proof. by rewrite /dsdp_n_procs /dsdp_n_saprocs /erase_aprocs /= !size_map. Qed.
+
+(** ** Alice erasure body and tail *)
+
+(* The erased body of Alice's ForList loop: Recv cipher, compute, Send result *)
+Definition alice_erase_body
+  (u' : 'I_n_relay.+2 -> msgT) (r' : 'I_n_relay.+1 -> msgT) (rand_a' : 'I_n_relay.+1 -> randT)
+  (j : 'I_n_relay.+1) (idx : nat) (k : proc data) : proc data :=
+  pRecv j.+1 (fun d0 : data =>
+    match std_from_enc (AHE:=AHE) d0 with
+    | Some enc0 => pSend (alice_send_dest j)
+        (e (Epow enc0 (u' (lift ord0 j)) *h enc_pub_key j.+1 (r' j) (rand_a' j)))
+        k
+    | None => Fail
+    end).
+
+(* The erased tail of Alice's program: final Recv + decrypt + Ret *)
+Definition alice_erase_tail (dk' : priv_keyT) (v0' : msgT)
+  (u' : 'I_n_relay.+2 -> msgT) (r' : 'I_n_relay.+1 -> msgT) : proc data :=
+  pRecv n_relay.+1 (fun g : data =>
+    match std_from_enc (AHE:=AHE) g with
+    | Some enc0 => match dec dk' enc0 with
+                   | Some m0 => pRet (d (m0 - \sum_(j < n_relay.+1) r' j + u' ord0 * v0'))
+                   | None => Fail
+                   end
+    | None => Fail
+    end).
+
+(* Alice's erased program decomposes via erase_sproc_iter *)
+Lemma palice_n_erase relays dk' v0' u' r' rand_a' :
+  erase (@palice_n AHE ek n_relay relays dk' v0' u' r' rand_a') =
+  pInit (priv_key dk', d v0')
+    (foldr (fun (fi : 'I_n_relay.+1 * nat) (cont : proc data) =>
+              alice_erase_body u' r' rand_a' fi.1 fi.2 cont)
+           (alice_erase_tail dk' v0' u' r')
+           (zip relays (iota 0 (size relays)))).
+Proof.
+rewrite /palice_n /=.
+congr (pInit _ _).
+rewrite (@erase_sproc_iter _ _ _ alice_idx _ (alice_env_step n_relay) _
+  (fun j idx k => alice_erase_body u' r' rand_a' j idx k)).
+- congr (foldr _ _ _).
+  rewrite /alice_erase_tail /DRecv_dec.
+  cbn [erase].
+  congr (pRecv _ _).
+  apply: funext => g.
+  case: (std_from_enc (AHE:=AHE) g) => [enc0|] //.
+  by case: (dec dk' enc0).
+- move=> j idx n0 env0 p.
+  rewrite /alice_erase_body /DRecv_enc /DSend.
+  cbn [erase].
+  congr (pRecv _ _).
+  apply: funext => d0.
+  by case: (std_from_enc (AHE:=AHE) d0).
+Qed.
+
+(** ** Relay erasure lemmas *)
+
+(* First relay: Init dk; Init v; Send E(v) to Alice; Recv dec from Alice;
+   Recv enc from Alice; Send product to downstream *)
+Lemma DParty_first_erase self downstream dk' v' r1' r2' :
+  erase (@DParty_first AHE ek self downstream dk' v' r1' r2') =
+  pInit (priv_key dk')
+    (pInit (d v')
+      (pSend alice_idx (e (enc (ek self) v' r1'))
+        (pRecv alice_idx (fun d0 : data =>
+          match std_from_enc (AHE:=AHE) d0 with
+          | Some enc0 =>
+              match dec dk' enc0 with
+              | Some m0 =>
+                  pRecv alice_idx (fun d1 : data =>
+                    match std_from_enc (AHE:=AHE) d1 with
+                    | Some enc1 =>
+                        pSend downstream
+                          (e (Emul enc1 (enc (ek downstream) m0 r2')))
+                          Finish
+                    | None => Fail
+                    end)
+              | None => Fail
+              end
+          | None => Fail
+          end)))).
+Proof. by rewrite /DParty_first /DRecv_dec /DRecv_enc /DSend /PSend; cbn [erase]. Qed.
+
+(* Last relay: Init dk; Init v; Send E(v) to Alice;
+   Recv dec from upstream; Send re-encrypted to Alice *)
+Lemma DParty_last_erase self upstream dk' v' r1' r2' :
+  erase (@DParty_last AHE ek self upstream dk' v' r1' r2') =
+  pInit (priv_key dk')
+    (pInit (d v')
+      (pSend alice_idx (e (enc (ek self) v' r1'))
+        (pRecv upstream (fun d0 : data =>
+          match std_from_enc (AHE:=AHE) d0 with
+          | Some enc0 =>
+              match dec dk' enc0 with
+              | Some m0 =>
+                  pSend alice_idx (e (enc (ek alice_idx) m0 r2')) Finish
+              | None => Fail
+              end
+          | None => Fail
+          end)))).
+Proof. by rewrite /DParty_last /DRecv_dec /DSend /PSend; cbn [erase]. Qed.
+
+(* Intermediate relay: Init dk; Init v; Send E(v) to Alice;
+   Recv enc from Alice; Recv dec from upstream; Send product to downstream *)
+Lemma DParty_intermediate_erase self alice_src upstream downstream dk' v' r1' r2' :
+  erase (@DParty_intermediate AHE ek self alice_src upstream downstream dk' v' r1' r2') =
+  pInit (priv_key dk')
+    (pInit (d v')
+      (pSend alice_src (e (enc (ek self) v' r1'))
+        (pRecv alice_src (fun d0 : data =>
+          match std_from_enc (AHE:=AHE) d0 with
+          | Some enc0 =>
+              pRecv upstream (fun d1 : data =>
+                match std_from_enc (AHE:=AHE) d1 with
+                | Some enc1 =>
+                    match dec dk' enc1 with
+                    | Some m0 =>
+                        pSend downstream
+                          (e (Emul enc0 (enc (ek downstream) m0 r2')))
+                          Finish
+                    | None => Fail
+                    end
+                | None => Fail
+                end)
+          | None => Fail
+          end)))).
+Proof.
+by rewrite /DParty_intermediate /DRecv_enc /DRecv_dec /DSend /PSend; cbn [erase].
+Qed.
+
+End dsdp_n_rsteps.
