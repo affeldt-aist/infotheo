@@ -404,6 +404,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
   apply: IH => //.
   move=> a b ps' traces.
   rewrite !inE.
+  (* TODO: rstep dep type - rstep_spec Inductive type to make refactoring *)
   have [-> | ai] := eqVneq a i; have [-> | bi] // := eqVneq b i.
   + by inversion 1; subst; rewrite Hpi in H3.
   + by inversion 1; subst; rewrite Hpi in H4.
