@@ -192,6 +192,34 @@ have bi : b != i by apply/negP => /eqP bi; subst; exact: (Hrecv a pj Hb).
 by rewrite !inE (negbTE ai) (negbTE bi) (Hpss _ _ _ _ Hr).
 Qed.
 
+(* When two parties communicate via rcomm, any other 2-party rstep that
+   does not involve these same two parties preserves membership in pss \ a \ b.
+   This factors out the Hpss obligation that appears in both Send-Recv and
+   Recv-Send communication subcases. *)
+Lemma rstep_pss_remove2 n (ps : n.-tuple proc) (sender recver : 'I_n)
+    (pss : {fset 'I_n}) ps1 tr1
+    (Hpss : forall a b ps' traces,
+      rstep [tuple a; b] (extract [tuple a; b] ps) ps' traces ->
+      (a \in pss) = (b \in pss))
+    (Hr : rstep [tuple sender; recver] (extract [tuple sender; recver] ps)
+                ps1 tr1) :
+  forall a b ps' traces,
+    rstep [tuple a; b] (extract [tuple a; b] ps) ps' traces ->
+    (a \in pss `\ sender `\ recver) = (b \in pss `\ sender `\ recver).
+Proof.
+move=> a b ps' traces /[dup] H /rstep2P [x pi pj Ha Hb].
+rewrite !inE.
+case: (comm_disjoint Hr H) => -[].
+  by move=> /eqP <- /eqP <-; rewrite !eqxx !andbF.
+rewrite eq_sym (eq_sym _ b) => -> ->.
+have /rstep2P [xs pis pjs Hsnd Hrcv] := Hr.
+have [ar|_] := eqVneq a recver.
+  by rewrite ar Hrcv in Ha.
+have [bs|_] := eqVneq b sender.
+  by rewrite bs Hsnd in Hb.
+exact: (Hpss _ _ _ _ H).
+Qed.
+
 (* step_res computes the result of one round of step for all parties in set s.
    For i \in s, it runs step; for i \notin s, it returns the unchanged process.
    This is used in step_sound to relate the functional step to relational rsteps
@@ -294,6 +322,83 @@ have [<- | bk] /= := eqVneq b k.
 done.
 Qed.
 
+(* The communication case of step_sound: when sender and recver form a matching
+   Send/Recv pair, construct the rcomm rstep and apply the inductive hypothesis
+   on the smaller set pss \ sender \ recver. *)
+Lemma step_sound_comm n (ps : n.-tuple proc) (pss : {fset 'I_n})
+    (IH : forall Y : {fset 'I_n}, Y `<` pss ->
+      (forall (i j : 'I_n) (ps' : 2.-tuple proc) (traces : 2.-tuple (seq data)),
+        rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
+        (i \in Y) = (j \in Y)) ->
+      rsteps ps
+        (map_tuple (fun r : proc * seq data * bool => r.1.1) (step_res Y ps))
+        (map_tuple (fun r : proc * seq data * bool => r.1.2) (step_res Y ps)))
+    (Hpss : forall (i j : 'I_n) (ps' : 2.-tuple proc)
+        (traces : 2.-tuple (seq data)),
+      rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
+      (i \in pss) = (j \in pss))
+    (sender recver : 'I_n) (x0 : data) (pi0 : proc) (pj0 : data -> proc) :
+  sender \in pss -> recver \in pss -> sender != recver ->
+  ps !_ sender = Send recver x0 pi0 ->
+  ps !_ recver = Recv sender pj0 ->
+  rsteps ps (map_tuple (fun r => r.1.1) (step_res pss ps))
+            (map_tuple (fun r => r.1.2) (step_res pss ps)).
+Proof.
+move=> Hsnd_in Hrcv_in sr_neq Hsnd Hrcv.
+have Hstep_snd: step ps [::] sender = (pi0, [::], true).
+  by rewrite /step /default_proc -tnth_nth Hsnd -tnth_nth Hrcv eqxx.
+have Hstep_rcv: step ps [::] recver = (pj0 x0, [:: x0], true).
+  by rewrite /step /default_proc -tnth_nth Hrcv -tnth_nth Hsnd eqxx.
+have Hr : rstep [tuple sender; recver]
+                (extract [tuple sender; recver] ps)
+                [tuple pi0; pj0 x0] [tuple nil; [:: x0]].
+  have -> : extract [tuple sender; recver] ps =
+            [tuple Send recver x0 pi0; Recv sender pj0].
+    by apply/val_inj => /=; rewrite Hsnd Hrcv.
+  exact: rcomm.
+pose pss' := pss `\ sender `\ recver.
+have H': pss' `<` pss.
+  exact/(fsub_proper_trans (B:=pss `\ sender))/fproperD1/Hsnd_in/fsubD1set.
+apply: (rtrans (IH _ H' _)); last 3 first.
++ exact: rstep_pss_remove2 Hpss Hr.
++ move: (rcomm sender recver x0 pi0 pj0).
+  set ps'' := map_tuple _ _.
+  rewrite (_ : [tuple Send _ _ _; _] = extract [tuple sender; recver] ps'');
+    last first.
+    apply/val_inj; rewrite /= /ps'' !(tnth_mktuple,tnth_map) !inE !eqxx /=.
+    by rewrite (negbTE sr_neq) andbF Hsnd Hrcv.
+  move/rone. rewrite (step_res_inject2 Hsnd_in Hrcv_in sr_neq Hstep_snd Hstep_rcv).
+  exact.
++ exact: (step_res_trace2 Hsnd_in Hrcv_in sr_neq Hstep_snd Hstep_rcv).
+Qed.
+
+(* The inert case of step_sound: when step leaves party i unchanged
+   (Finish, Fail, or no matching partner), remove i from the active set. *)
+Lemma step_sound_inert n (ps : n.-tuple proc) (pss : {fset 'I_n}) (i : 'I_n)
+    (IH : forall Y : {fset 'I_n}, Y `<` pss ->
+      (forall (i j : 'I_n) (ps' : 2.-tuple proc) (traces : 2.-tuple (seq data)),
+        rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
+        (i \in Y) = (j \in Y)) ->
+      rsteps ps
+        (map_tuple (fun r : proc * seq data * bool => r.1.1) (step_res Y ps))
+        (map_tuple (fun r : proc * seq data * bool => r.1.2) (step_res Y ps)))
+    (Hpss : forall (i j : 'I_n) (ps' : 2.-tuple proc)
+        (traces : 2.-tuple (seq data)),
+      rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
+      (i \in pss) = (j \in pss))
+    (Hi : i \in pss) :
+  step ps [::] i = (ps !_ i, [::], false) ->
+  (forall j x pi, ps !_ i <> Send j x pi) ->
+  (forall j pj, ps !_ i <> Recv j pj) ->
+  rsteps ps (map_tuple (fun r => r.1.1) (step_res pss ps))
+            (map_tuple (fun r => r.1.2) (step_res pss ps)).
+Proof.
+move=> Hstep Hns Hnr.
+rewrite (step_res_inert Hi Hstep).
+apply: IH; first exact: fproperD1.
+exact: rstep_pss_remove Hpss Hns Hnr.
+Qed.
+
 (* Soundness: mapping step over all processes can be simulated by rsteps *)
 Lemma step_sound n (ps : n.-tuple proc) :
   let res := [tuple step ps nil i | i < n] in
@@ -344,36 +449,13 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       by rewrite nth_default ?size_tuple // in Hpj.
     case/boolP: (i == Ordinal jn) => ij /=.
       by rewrite (eqP ij) (tnth_nth Fail) Hpj in Hpi.
-    have := rcomm i (Ordinal jn) x p pj.
-    rewrite (_ : [tuple Send _ _ _; _] = extract [tuple i; Ordinal jn] ps);
-      last by apply/val_inj => /=; rewrite Hpi (tnth_nth Fail) Hpj.
-    move=> Hr.
-    have Hj : Ordinal jn \in pss by move/Hpss: Hr => <-.
-    have Hstepi: step ps [::] i = (p, [::], true)
-      by rewrite /step /default_proc -tnth_nth Hpi Hpj eqxx.
-    have Hstepj: step ps [::] (Ordinal jn) = (pj x, [:: x], true)
-      by rewrite /step /default_proc Hpj -tnth_nth Hpi eqxx.
-    pose pss' := pss `\ i `\ Ordinal jn.
-    have H': pss' `<` pss.
-      exact/(fsub_proper_trans (B:=pss `\ i))/fproperD1/Hi/fsubD1set.
-    apply: (rtrans (IH _ H' _)); last 3 first.
-    * move=> k k' ps0 traces /[dup] H /rstep2P [x'' pi'' pj'' Hk Hk'].
-      rewrite !inE.
-      case: (comm_disjoint Hr H) => -[].
-        by move => /eqP <- /eqP <-; rewrite !eqxx !andbF.
-      rewrite eq_sym (eq_sym _ k') => -> ->.
-      have [kj|_] := eqVneq k (Ordinal jn).
-        by rewrite kj (tnth_nth Fail) Hpj in Hk.
-      have [k'i|_] := eqVneq k' i; first by rewrite k'i Hpi in Hk'.
-      exact: (Hpss _ _ _ _ H).
-    * move: (rcomm i (Ordinal jn) x p pj).
-      set ps'' := map_tuple _ _.
-      rewrite (_ : [tuple Send _ _ _; _] = extract [tuple i; Ordinal jn] ps'');
-        last first.
-        apply/val_inj; rewrite /=/ps'' !(tnth_mktuple,tnth_map) !inE !eqxx /=.
-        by rewrite andbF Hpi (tnth_nth Fail) Hpj.
-      move/rone. rewrite (step_res_inject2 Hi Hj ij Hstepi Hstepj). exact.
-    * exact: (step_res_trace2 Hi Hj ij Hstepi Hstepj).
+    have Hj : Ordinal jn \in pss.
+      move: (rcomm i (Ordinal jn) x p pj).
+      rewrite (_ : [tuple Send _ _ _; _] = extract [tuple i; Ordinal jn] ps);
+        last by apply/val_inj => /=; rewrite Hpi (tnth_nth Fail) Hpj.
+      by move/Hpss => <-.
+    have Hrcv: ps !_ (Ordinal jn) = Recv i pj by rewrite (tnth_nth Fail) Hpj.
+    exact: (step_sound_comm IH Hpss Hi Hj ij Hpi Hrcv).
   + (* Send but no matching Recv - skip this process *)
     have Hstep: step ps [::] i = (ps !_ i, [::], false).
       rewrite /step -tnth_nth Hpi.
@@ -402,49 +484,15 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
       by rewrite nth_default ?size_tuple // in Hpj.
     case/boolP: (i == Ordinal jn) => ij /=.
       by rewrite (eqP ij) (tnth_nth Fail) Hpj in Hpi.
-    move: (rcomm (Ordinal jn) i v pj' f).
-    rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps);
-      last by apply/val_inj => /=; rewrite (tnth_nth Fail) Hpj Hpi.
-    move=> Hr.
-    have Hj : Ordinal jn \in pss by move/Hpss: Hr => ->.
-    have ji : Ordinal jn != i by rewrite eq_sym.
-    have Hstepj: step ps [::] (Ordinal jn) = (pj', [::], true)
-      by rewrite /step /default_proc /= Hpj -tnth_nth Hpi eqxx.
-    have Hstepi: step ps [::] i = (f v, [:: v], true)
-      by rewrite /step /default_proc -tnth_nth Hpi /= Hpj eqxx.
-    pose pss' := pss `\ i `\ Ordinal jn.
-    have H': pss' `<` pss.
-      exact/(fsub_proper_trans (B:=pss `\ i))/fproperD1/Hi/fsubD1set.
-    apply: (rtrans (IH _ H' _)); last 3 first.
-    * move=> k k' ps0 traces /[dup] H /rstep2P [x'' pi'' pj'' Hk Hk'].
-      rewrite !inE.
-      case: (comm_disjoint Hr H) => -[].
-        by move => /eqP <- /eqP <-; rewrite !eqxx !andbF.
-      rewrite eq_sym (eq_sym _ k') => -> ->.
-      have [ki|_] := eqVneq k i.
-        by rewrite ki Hpi in Hk.
-      have [k'j|_] := eqVneq k' (Ordinal jn).
-        by rewrite k'j (tnth_nth Fail) Hpj in Hk'.
-      exact: (Hpss _ _ _ _ H).
-    * (* The reduction: Send j sends to Recv i *)
+    have Hj : Ordinal jn \in pss.
       move: (rcomm (Ordinal jn) i v pj' f).
-      set ps'' := map_tuple _ _.
-      rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps'');
-        last first.
-        apply/val_inj; rewrite /=/ps'' !(tnth_mktuple,tnth_map) !inE !eqxx /=.
-        by rewrite (tnth_nth Fail) Hpj ij Hpi.
-      move/rone.
-      have -> : inject [tuple Ordinal jn; i] ps'' [tuple pj'; f v] =
-           map_tuple (fun r : proc * seq data * bool => r.1.1) (step_res pss ps).
-        rewrite /ps'' /pss'.
-        have -> : (pss `\ i `\ Ordinal jn) = (pss `\ Ordinal jn `\ i)
-          by apply/fsetP => z; rewrite !inE andbCA.
-        exact: (step_res_inject2 Hj Hi ji Hstepj Hstepi).
-      exact.
-    * rewrite /pss'.
-      have -> : (pss `\ i `\ Ordinal jn) = (pss `\ Ordinal jn `\ i)
-        by apply/fsetP => z; rewrite !inE andbCA.
-      exact: (step_res_trace2 Hj Hi ji Hstepj Hstepi).
+      rewrite (_ : [tuple Send _ _ _; _] = extract [tuple Ordinal jn; i] ps);
+        last by apply/val_inj => /=; rewrite (tnth_nth Fail) Hpj Hpi.
+      by move/Hpss => ->.
+    have Hsnd: ps !_ (Ordinal jn) = Send i v pj'
+      by rewrite (tnth_nth Fail) Hpj.
+    have ji: Ordinal jn != i by rewrite eq_sym.
+    exact: (step_sound_comm IH Hpss Hj Hi ji Hsnd Hpi).
   + (* Recv but no matching Send - skip this process *)
     have Hstep: step ps [::] i = (ps !_ i, [::], false).
       rewrite /step -tnth_nth Hpi.
@@ -475,17 +523,11 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
     move/rone. rewrite (step_res_inject1 Hi Hstep). exact.
   + exact: (step_res_trace1 Hi Hstep).
 (* Case Finish - does nothing, just remove from set *)
-- have Hstep: step ps [::] i = (ps !_ i, [::], false)
-    by rewrite /step -tnth_nth Hpi.
-  rewrite (step_res_inert Hi Hstep).
-  apply: IH; first exact: fproperD1.
-  apply: rstep_pss_remove Hpss _ _ => [j' x' pi'|j' pj']; by rewrite Hpi.
+- apply: (step_sound_inert IH Hpss Hi);
+    [by rewrite /step -tnth_nth Hpi|by rewrite Hpi|by rewrite Hpi].
 (* Case Fail - does nothing, just remove from set *)
-- have Hstep: step ps [::] i = (ps !_ i, [::], false)
-    by rewrite /step -tnth_nth Hpi.
-  rewrite (step_res_inert Hi Hstep).
-  apply: IH; first exact: fproperD1.
-  apply: rstep_pss_remove Hpss _ _ => [j' x' pi'|j' pj']; by rewrite Hpi.
+- apply: (step_sound_inert IH Hpss Hi);
+    [by rewrite /step -tnth_nth Hpi|by rewrite Hpi|by rewrite Hpi].
 Qed.
 End interp.
 
