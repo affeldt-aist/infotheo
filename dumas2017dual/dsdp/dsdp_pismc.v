@@ -948,27 +948,26 @@ Qed.
 End dsdp_n_rsteps.
 
 (*******************************************************************************)
-(** * Step iteration and rsteps derivation                                     *)
+(** * Interpreter soundness w.r.t. rsteps                                      *)
 (*******************************************************************************)
 
-Section step_iter_section.
+Section interp_sound_section.
 Variable data : eqType.
 
-(* List-based step iteration — no tuples, efficient for vm_compute.
-   Mirrors interp but always passes nil as trace. *)
-Fixpoint step_iter_seq (ps : seq (proc data)) (h : nat)
+(* Trace-free interpreter iteration: mirrors interp but always passes nil
+   as trace. Used as a computational bridge between interp and rsteps. *)
+Fixpoint interp1 (ps : seq (proc data)) (h : nat)
   : seq (proc data) :=
   if h is h.+1 then
     let ps_trs := [seq smc_interpreter.step ps nil i
                   | i <- iota 0 (size ps)] in
     if has snd ps_trs then
-      step_iter_seq (unzip1 (unzip1 ps_trs)) h
+      interp1 (unzip1 (unzip1 ps_trs)) h
     else ps
   else ps.
 
-(* step_iter_seq preserves list length *)
-Lemma size_step_iter_seq ps h :
-  size (step_iter_seq ps h) = size ps.
+Lemma size_interp1 ps h :
+  size (interp1 ps h) = size ps.
 Proof.
 elim: h ps => [|h IH] ps //=.
 case: ifP => _ //.
@@ -976,7 +975,7 @@ by rewrite IH /unzip1 -map_comp !size_map size_iota.
 Qed.
 
 (* The process component of step is independent of the trace argument. *)
-Lemma step_proc_indep (ps : seq (proc data)) tr1 tr2 i :
+Lemma step_proc_trace_indep (ps : seq (proc data)) tr1 tr2 i :
   (smc_interpreter.step ps tr1 i).1.1 =
   (smc_interpreter.step ps tr2 i).1.1.
 Proof.
@@ -986,7 +985,7 @@ case: (nth _ ps i) => [d0 p|dst d0 p|frm f|d0||] //=;
 Qed.
 
 (* The progress flag of step is independent of the trace argument. *)
-Lemma step_progress_indep (ps : seq (proc data)) tr1 tr2 i :
+Lemma step_progress_trace_indep (ps : seq (proc data)) tr1 tr2 i :
   (smc_interpreter.step ps tr1 i).2 =
   (smc_interpreter.step ps tr2 i).2.
 Proof.
@@ -995,91 +994,57 @@ case: (nth _ ps i) => [d0 p|dst d0 p|frm f|d0||] //=;
   by case: (nth _ ps _) => [? ?|? ? ?|? ?|?||] //=; case: ifP.
 Qed.
 
-(* step_iter_seq computes the same processes as interp *)
-Lemma step_iter_seq_interp h ps traces :
+(* interp1 computes the same processes as interp *)
+Lemma interp1E h ps traces :
   size traces = size ps ->
-  step_iter_seq ps h = (interp h ps traces).1.
+  interp1 ps h = (interp h ps traces).1.
 Proof.
 elim: h ps traces => [|h IH] ps traces Hsz //=.
 set res_nil := map _ _; set res_tr := map _ _.
 have Hprog : has snd res_nil = has snd res_tr.
   rewrite /res_nil /res_tr !has_map; apply: eq_in_has => i.
   rewrite mem_iota /= => Hi.
-  exact: step_progress_indep.
+  exact: step_progress_trace_indep.
 rewrite Hprog; case: ifP => // _.
 have Hproc : unzip1 (unzip1 res_nil) = unzip1 (unzip1 res_tr).
-  rewrite /res_nil /res_tr /unzip1 -!map_comp.
-  apply: eq_in_map => i; rewrite mem_iota add0n => Hi.
-  exact: step_proc_indep.
+  rewrite /res_nil /res_tr /unzip1 -!map_comp; apply: eq_map => i /=.
+  exact: step_proc_trace_indep.
 rewrite Hproc; apply: IH.
-by rewrite /unzip2 /res_tr -map_comp size_map size_iota.
+by rewrite /res_tr /unzip1 /unzip2 !size_map.
 Qed.
 
-(* The seq-level step matches the tuple-level step from step_sound *)
-Lemma step_iter_seq_step_sound_eq n (ps : n.-tuple (proc data)) :
-  let res := [tuple smc_interpreter.step (tval ps) nil i | i < n] in
-  unzip1 (unzip1 [seq smc_interpreter.step (tval ps) nil i
-                  | i <- iota 0 (size (tval ps))]) =
-  tval (map_tuple (fun r => r.1.1) res).
-Proof.
-move=> /= res.
-rewrite /res val_map_tuple /unzip1 -!map_comp val_mktuple /= size_tuple.
-apply: eq_from_nth (smc_interpreter.Fail data) _ _.
-  by rewrite !size_map size_iota size_enum_ord.
-move=> i Hi.
-rewrite !size_map size_iota in Hi.
-rewrite -!map_comp.
-rewrite (nth_map 0); last by rewrite size_iota.
-rewrite nth_iota // add0n.
-rewrite (nth_map (Ordinal (n:=n) (m:=0) (ltn0Sn _))); last by rewrite size_enum_ord.
-by rewrite nth_enum_ord.
-Qed.
+(* step_sound gives rsteps using tuples; we need to connect that to
+   the seq-level interp1 which uses iota. These two lemmas bridge
+   the iota/enum gap. *)
+Lemma step_iota_enum n (ps : seq (proc data)) :
+  [seq smc_interpreter.step ps nil i | i <- iota 0 n] =
+  [seq smc_interpreter.step ps nil (val i) | i <- enum 'I_n].
+Proof. by rewrite -(val_enum_ord n) -map_comp. Qed.
 
-Lemma step_iter_seq_progress_eq n (ps : n.-tuple (proc data)) :
-  let res := [tuple smc_interpreter.step (tval ps) nil i | i < n] in
-  has snd [seq smc_interpreter.step (tval ps) nil i
-          | i <- iota 0 (size (tval ps))] =
-  has (fun r => r.2) (tval res).
-Proof.
-move=> /= res.
-rewrite /res !has_map size_tuple.
-apply: eq_in_has => i.
-rewrite mem_iota /= => Hi.
-rewrite /snd /=.
-rewrite (nth_map (Ordinal (n:=n) (m:=0) (ltn0Sn _))); last by rewrite size_enum_ord.
-congr ((smc_interpreter.step _ _ _).2).
-  by rewrite val_mktuple.
-by rewrite nth_enum_ord.
-Qed.
-
-(* step_iter_seq result matches step_sound iteration *)
-Lemma step_iter_seq_rsteps n h (ps : n.-tuple (proc data)) :
+(* Interpreter soundness: h rounds of interp produce an rsteps proof *)
+Lemma interp_sound n h (ps : n.-tuple (proc data)) :
   exists (final : n.-tuple (proc data)) tr,
     rsteps ps final tr /\
-    tval final = step_iter_seq (tval ps) h.
+    tval final = interp1 (tval ps) h.
 Proof.
 elim: h ps => [|h IH] ps.
   exists ps, [tuple nil | _ < n]; split; first exact: rrefl.
   by [].
 (* h.+1 case *)
-simpl step_iter_seq.
-set res := [tuple smc_interpreter.step (tval ps) nil i | i < n].
-set ps' := map_tuple (fun r => r.1.1) res.
-rewrite -(step_iter_seq_progress_eq ps).
+simpl interp1; rewrite size_tuple (step_iota_enum n).
+set ps' := map_tuple (fun r => r.1.1)
+             [tuple smc_interpreter.step ps nil i | i < n].
+have Hss := step_sound ps.
 case Hprog: (has snd _).
-  (* Progress: compose step_sound with IH *)
-  have Hss := step_sound ps.
-  rewrite (step_iter_seq_step_sound_eq ps) in Hprog |- *.
   have [final [tr2 [Htr2 Hfinal]]] := IH ps'.
-  exists final.
-  eexists; split; last exact: Hfinal.
+  exists final; eexists; split; last first.
+    rewrite Hfinal /ps' /=.
+    by congr (interp1 _ h); rewrite /unzip1 -!map_comp.
   exact: (rtrans Hss Htr2 erefl).
-(* No progress *)
-exists ps, [tuple nil | _ < n]; split; first exact: rrefl.
-by [].
+by exists ps, [tuple nil | _ < n]; split; [exact: rrefl|].
 Qed.
 
-End step_iter_section.
+End interp_sound_section.
 
 (*******************************************************************************)
 (** * Idealized 3-Party DSDP rsteps Proof                                      *)
@@ -1190,12 +1155,9 @@ Theorem dsdp_3party_rsteps :
     all_nonfail (tval final).
 Proof.
 have [final [tr [Hrsteps Hfinal]]] :=
-  @step_iter_seq_rsteps data 3 27 procs3.
+  @interp_sound data 3 27 procs3.
 exists final, tr; split; first exact: Hrsteps.
-rewrite Hfinal (step_iter_seq_interp 27 (nseq 3 [::])) ?size_nseq //.
-split.
-- exact: dsdp_3party_terminates.
-- exact: dsdp_3party_no_fail.
+by rewrite Hfinal (@interp1E data 27 _ (nseq 3 [::])) ?size_nseq.
 Qed.
 
 End dsdp_3party_rsteps.
