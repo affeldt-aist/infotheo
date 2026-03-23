@@ -288,8 +288,8 @@ Definition alice_result_n : msgT :=
 Theorem dsdp_computes_dot_product_n :
   alice_result_n = \sum_(i < n_relay.+2) u i * v i.
 Proof.
-rewrite /alice_result_n /g_value_n big_split /= big_ord_recl.
-by rewrite addrAC subrr add0r.
+rewrite /alice_result_n /g_value_n big_split /= addrK [RHS]big_ord_recl.
+by rewrite addrC.
 Qed.
 
 End dsdp_n.
