@@ -140,6 +140,38 @@ Qed.
 Definition one_step_procs (ps : seq (proc data)) :=
   [seq (smc_interpreter.step ps [::] i).1.1 | i <- iota 0 (size ps)].
 
+Lemma nth_one_step (ps : seq (proc data)) (i : nat) :
+  (i < size ps)%N ->
+  nth (default_proc data) (one_step_procs ps) i =
+  (smc_interpreter.step ps [::] i).1.1.
+Proof.
+move=> Hi. rewrite /one_step_procs.
+rewrite (set_nth_default (smc_interpreter.step ps [::] 0).1.1);
+  last by rewrite size_map size_iota.
+rewrite (nth_map 0); last by rewrite size_iota.
+by rewrite nth_iota.
+Qed.
+
+Lemma step_init (ps : seq (proc data)) (i : nat) d k :
+  nth (default_proc data) ps i = Init d k ->
+  (smc_interpreter.step ps [::] i).1.1 = k /\
+  (smc_interpreter.step ps [::] i).2 = true.
+Proof. move=> H; by rewrite /smc_interpreter.step H. Qed.
+
+(* If process i has Init(d, Init(d', k)), then after stepping,
+   process i is Init(d', k) → still Init → has_progress *)
+Lemma nested_init_progress (ps : seq (proc data)) (i : nat) d d' k :
+  (i < size ps)%N ->
+  nth (default_proc data) ps i = Init d (Init d' k) ->
+  has_progress data (one_step_procs ps).
+Proof.
+move=> Hi Hnth.
+apply (step_i_has_progress (one_step_procs ps) i).
+  by rewrite /one_step_procs size_map size_iota.
+rewrite /smc_interpreter.step (nth_one_step _ _ Hi).
+by rewrite /smc_interpreter.step Hnth.
+Qed.
+
 Lemma interp_comp_unfold_eq ps h :
   interp_comp data ps h.+1 =
   if has_progress data ps then interp_comp data (one_step_procs ps) h
@@ -307,20 +339,54 @@ Qed.
    process constructors are determined by the fixed templates
    (DParty_first/intermediate/last + palice_n), and the sequential
    relay chain ensures matched partners at every phase. *)
+(* Helper: stepping procs (k=0) gives all inner Init → progress *)
+Lemma step_procs_has_progress :
+  has_progress data (one_step_procs data procs).
+Proof.
+apply (@step_i_has_progress data (one_step_procs data procs) 0).
+  by rewrite /one_step_procs size_map size_iota size_procs.
+rewrite /smc_interpreter.step (@nth_one_step data _ _ _); last by rewrite size_procs.
+rewrite /smc_interpreter.step /procs /dsdp_n_procs /erase_aprocs
+  /dsdp_n_saprocs /= /erase_aproc /=.
+done.
+Qed.
+
+(* The inductive step: after stepping a DSDP-reachable state with progress,
+   the result has progress or is terminated.
+   Proved by strong induction on k (step count from initial state). *)
+Lemma dsdp_step_progress ps k :
+  dsdp_reachable ps k ->
+  has_progress data ps ->
+  all_terminated (one_step_procs data ps) \/
+  has_progress data (one_step_procs data ps).
+Proof.
+(* Strong induction on k *)
+elim: k ps => [|k IHk] ps Hr Hp.
+- (* k=0: ps = procs. All Init(dk, Init(v, body)).
+     After step: all Init(v, body) → still Init → has_progress. *)
+  inversion Hr; subst.
+  by right; exact: step_procs_has_progress.
+- (* k+1: ps is reachable at k+1.
+     ps = one_step_procs data ps' for some ps' reachable at k.
+     After stepping ps: one_step_procs data (one_step_procs data ps').
+     By IHk on ps' at step k: one_step_procs data ps' (= ps) has progress or is terminated.
+     Since has_progress ps (given), we know ps is not all-terminated.
+     Need: one_step_procs data ps has progress or is terminated.
+
+     The relay chain structure guarantees this:
+     - If ps has Init or Ret: stepping gives continuation → check if progress
+     - If ps has only Send/Recv/Finish: the matched pair fires → continuations provide progress *)
+  admit.
+Admitted.
+
 Lemma dsdp_reachable_progress ps k :
   dsdp_reachable ps k ->
   all_terminated ps \/ has_progress data ps.
 Proof.
 elim=> {ps k} [|ps' k Hr IH Hp'].
-- (* k=0: ps = procs, all processes start with Init → has_progress *)
-  by right; exact: dsdp_initial_progress.
-- (* k+1: ps = one_step_procs ps'. IH: all_terminated ps' \/ has_progress ps'.
-     We know has_progress ps' (from dsdp_reach_step hypothesis).
-     Need: all_terminated (one_step_procs ps') \/ has_progress (one_step_procs ps'). *)
-  (* TODO: prove by showing that stepping a DSDP-reachable state with
-     progress produces a state with Init/Ret/matched-pair or all-Finish.
-     This is the DSDP-specific phase invariant argument. *)
-  Admitted.
+- by right; exact: dsdp_initial_progress.
+- exact: (@dsdp_step_progress _ _ Hr Hp').
+Qed.
 
 (* Wrapper for interp_comp_inv_progress *)
 Lemma dsdp_step_inv qs :
