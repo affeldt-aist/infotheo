@@ -313,6 +313,15 @@ rewrite nth_iota //.
 exact: (@step_preserves_proc_wf AHE ps i Hwf Hi).
 Qed.
 
+(* proc_wf is preserved through one_step_procs *)
+Lemma one_step_preserves_proc_wf ps :
+  @all_proc_wf AHE ps -> @all_proc_wf AHE (one_step_procs data ps).
+Proof.
+move=> Hwf i; rewrite (@size_one_step data) => Hi.
+rewrite (@nth_one_step data _ _ Hi).
+exact: (@step_preserves_proc_wf AHE ps i Hwf Hi).
+Qed.
+
 (*******************************************************************************)
 (** ** Main theorem                                                            *)
 (*******************************************************************************)
@@ -323,6 +332,15 @@ Inductive dsdp_reachable : seq (proc data) -> nat -> Prop :=
 | dsdp_reach_step : forall ps k,
     dsdp_reachable ps k -> has_progress data ps ->
     dsdp_reachable (one_step_procs data ps) k.+1.
+
+(* all_proc_wf for DSDP-reachable states *)
+Lemma dsdp_reachable_proc_wf ps k :
+  dsdp_reachable ps k -> @all_proc_wf AHE ps.
+Proof.
+elim=> {ps k} [|ps' k' Hr IH Hp'].
+- exact: dsdp_initial_proc_wf.
+- exact: (@one_step_preserves_proc_wf _ IH).
+Qed.
 
 (* DSDP initial state has progress (all Init) *)
 Lemma dsdp_initial_progress :
@@ -449,8 +467,11 @@ elim: k ps => [|k IHk] ps Hr Hp.
          exact: (pw_ret _ _ _ Hisz Hnth).
       -- (* kk = Finish → process i terminated. Check other processes. *)
          admit.
-      -- (* kk = Fail → contradiction with proc_wf/nofail *)
-         admit.
+      -- (* kk = Fail → contradiction: proc_wf (Init d Fail) = proc_wf Fail = False *)
+         exfalso.
+         have Hwf := @dsdp_reachable_proc_wf _ _ Hr.
+         have := Hwf i Hi.
+         by rewrite Hn.
     * (* Ret at i in ps. After step: Finish at i.
          Need another witness for progress in one_step_procs ps. *)
       admit.
