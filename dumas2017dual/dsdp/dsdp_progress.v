@@ -140,6 +140,10 @@ Qed.
 Definition one_step_procs (ps : seq (proc data)) :=
   [seq (smc_interpreter.step ps [::] i).1.1 | i <- iota 0 (size ps)].
 
+Lemma size_one_step (ps : seq (proc data)) :
+  size (one_step_procs ps) = size ps.
+Proof. by rewrite /one_step_procs size_map size_iota. Qed.
+
 Lemma nth_one_step (ps : seq (proc data)) (i : nat) :
   (i < size ps)%N ->
   nth (default_proc data) (one_step_procs ps) i =
@@ -167,7 +171,7 @@ Lemma nested_init_progress (ps : seq (proc data)) (i : nat) d d' k :
 Proof.
 move=> Hi Hnth.
 apply (step_i_has_progress (one_step_procs ps) i).
-  by rewrite /one_step_procs size_map size_iota.
+  by rewrite size_one_step.
 rewrite /smc_interpreter.step (nth_one_step _ _ Hi).
 by rewrite /smc_interpreter.step Hnth.
 Qed.
@@ -344,7 +348,7 @@ Lemma step_procs_has_progress :
   has_progress data (one_step_procs data procs).
 Proof.
 apply (@step_i_has_progress data (one_step_procs data procs) 0).
-  by rewrite /one_step_procs size_map size_iota size_procs.
+  by rewrite size_one_step size_procs.
 rewrite /smc_interpreter.step (@nth_one_step data _ _ _); last by rewrite size_procs.
 rewrite /smc_interpreter.step /procs /dsdp_n_procs /erase_aprocs
   /dsdp_n_saprocs /= /erase_aproc /=.
@@ -391,7 +395,7 @@ elim: k ps => [|k IHk] ps Hr Hp.
   inversion Hr; subst.
   right.
   eapply (pw_init (one_step_procs data procs) 0).
-  + by rewrite /one_step_procs size_map size_iota size_procs.
+  + by rewrite size_one_step size_procs.
   + rewrite (@nth_one_step data _ _ _); last by rewrite size_procs.
     rewrite /smc_interpreter.step /procs /dsdp_n_procs /erase_aprocs
       /dsdp_n_saprocs /= /erase_aproc /=.
@@ -404,17 +408,49 @@ elim: k ps => [|k IHk] ps Hr Hp.
   (* IHk on ps0: one_step_procs ps0 (= ps) has terminated or pw *)
   have IH0 := IHk ps0 Hr0 Hp0.
   case: IH0 => [Ht0|Hpw0].
-  + (* one_step_procs ps0 all_terminated but has_progress ps. Contradiction. *)
-    exfalso.
-    (* all_terminated ps and has_progress ps can't both hold *)
-    admit.
+  + (* one_step_procs ps0 (= ps) all_terminated.
+       Stepping an all_terminated state gives all_terminated
+       (Finish → Finish, Ret → Finish, Fail → Fail). *)
+    left.
+    apply/(all_nthP (default_proc data)) => i Hi.
+    rewrite size_one_step in Hi.
+    rewrite (@nth_one_step data _ _ Hi).
+    move/(all_nthP (default_proc data)): Ht0 => /(_ i Hi).
+    rewrite /smc_interpreter.step.
+    by case: (nth _ _ i) => [? ?|? ? ?|? ?|?||].
   + (* one_step_procs ps0 (= ps) has progress_witness. *)
     (* Case on the witness to trace the next step *)
     case: Hpw0 => [i d kk Hi Hn | i d Hi Hn | i j v kk f Hi Hj Hsi Hrj].
-    * (* Init at i in ps. After stepping ps: process i becomes kk.
-         If kk is Init → pw_init for one_step_procs ps.
-         Otherwise: need to find another witness. *)
-      admit.
+    * (* Init(d, kk) at i in ps. After stepping: process i becomes kk. *)
+      set ps := one_step_procs data ps0 in Hi Hn Hp Hr *.
+      case: kk Hn => [d' kk'|dst v kk'|frm f'|d'||] Hn.
+      -- (* kk = Init d' kk' → pw_init for one_step_procs ps *)
+         right.
+         have Hnth : nth (default_proc data) (one_step_procs data ps) i = Init d' kk'.
+           rewrite (@nth_one_step data ps i Hi).
+           by rewrite /smc_interpreter.step Hn.
+         have Hisz : (i < size (one_step_procs data ps))%N.
+           by rewrite (@size_one_step data).
+         exact: (pw_init _ _ _ _ Hisz Hnth).
+      -- (* kk = Send dst v kk' → process i becomes Send.
+            Need to find matching Recv or another witness. *)
+         admit.
+      -- (* kk = Recv frm f' → process i becomes Recv.
+            Need to find matching Send or another witness. *)
+         admit.
+      -- (* kk = Ret d' → pw_ret for one_step_procs ps *)
+         right.
+         have His : (i < size ps)%N := Hi.
+         have Hisz : (i < size (one_step_procs data ps))%N.
+           by rewrite (@size_one_step data).
+         have Hnth : nth (default_proc data) (one_step_procs data ps) i = Ret d'.
+           rewrite (@nth_one_step data ps i His).
+           by rewrite /smc_interpreter.step Hn.
+         exact: (pw_ret _ _ _ Hisz Hnth).
+      -- (* kk = Finish → process i terminated. Check other processes. *)
+         admit.
+      -- (* kk = Fail → contradiction with proc_wf/nofail *)
+         admit.
     * (* Ret at i in ps. After step: Finish at i.
          Need another witness for progress in one_step_procs ps. *)
       admit.
