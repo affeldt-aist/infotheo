@@ -393,7 +393,21 @@ Lemma dsdp_no_quiescent_send ps k i dst v kc :
   (i < size ps)%N ->
   nth (default_proc data) ps i = Send dst v kc ->
   False.
-Proof. Admitted.
+Proof.
+move=> Hr Hnp Hwf Hi Hpi.
+(* At quiescence: step ps nil i returns false for Send.
+   This means ps[dst] is NOT Recv(i, f).
+   But by DSDP template structure, Send at position i targets
+   a partner whose template has matching Recv.
+   Since all_proc_wf ensures no Fail branches, the partner must
+   be at its matching Recv → progress → contradiction. *)
+(* The Send at i came from a specific DSDP template (Alice or relay j).
+   Each template's Send targets a specific partner:
+   - Alice Send(dest_j) → targets relay at position dest_j
+   - Relay j Send(0) → targets Alice at position 0
+   - Relay j Send(downstream) → targets relay j+1 at position downstream
+   In each case, the partner's template has matching Recv. *)
+Admitted.
 
 Lemma dsdp_no_quiescent_recv ps k i frm fc :
   dsdp_reachable ps k ->
@@ -402,7 +416,10 @@ Lemma dsdp_no_quiescent_recv ps k i frm fc :
   (i < size ps)%N ->
   nth (default_proc data) ps i = Recv frm fc ->
   False.
-Proof. Admitted.
+Proof.
+move=> Hr Hnp Hwf Hi Hpi.
+(* Symmetric to dsdp_no_quiescent_send. *)
+Admitted.
 
 (* Core DSDP-specific lemma: at every DSDP-reachable state,
    either all_terminated or there exists a progress witness.
