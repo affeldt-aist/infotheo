@@ -374,159 +374,67 @@ rewrite /smc_interpreter.step /procs /dsdp_n_procs /erase_aprocs
 done.
 Qed.
 
-(* DSDP deadlock-freedom axioms: no Send or Recv at quiescence.
-   These encode the relay chain structure: the sequential processing
-   of relays ensures every Send has a matching Recv partner and vice
-   versa. At quiescence (~~ has_progress), no unmatched Send/Recv
-   can exist because the partner would be at the matching operation.
+(* Core DSDP progress lemma: every reachable state is terminated or has progress.
+   Proved by elim on dsdp_reachable. The step case uses the IH to get
+   terminated ∨ progress for the previous state, then shows the property
+   is preserved by stepping.
 
-   Proof requires ~100 lines of template analysis:
-   - Each Send in DSDP targets a specific partner (Alice↔relay or relay↔relay)
-   - The partner's template has a Recv at the matching position
-   - At quiescence, the partner must be at its Recv (otherwise it
-     would have an Init/Ret/matched-pair → progress → contradiction)
-   - The sequential relay chain (Alice processes relays one at a time)
-     prevents circular waiting *)
-Lemma dsdp_no_quiescent_send ps k i dst v kc :
-  dsdp_reachable ps k ->
-  ~~ has_progress data ps ->
-  @all_proc_wf AHE ps ->
-  (i < size ps)%N ->
-  nth (default_proc data) ps i = Send dst v kc ->
-  False.
-Proof.
-move=> Hr Hnp Hwf Hi Hpi.
-(* At quiescence: step ps nil i returns false for Send.
-   This means ps[dst] is NOT Recv(i, f).
-   But by DSDP template structure, Send at position i targets
-   a partner whose template has matching Recv.
-   Since all_proc_wf ensures no Fail branches, the partner must
-   be at its matching Recv → progress → contradiction. *)
-(* The Send at i came from a specific DSDP template (Alice or relay j).
-   Each template's Send targets a specific partner:
-   - Alice Send(dest_j) → targets relay at position dest_j
-   - Relay j Send(0) → targets Alice at position 0
-   - Relay j Send(downstream) → targets relay j+1 at position downstream
-   In each case, the partner's template has matching Recv. *)
-Admitted.
-
-Lemma dsdp_no_quiescent_recv ps k i frm fc :
-  dsdp_reachable ps k ->
-  ~~ has_progress data ps ->
-  @all_proc_wf AHE ps ->
-  (i < size ps)%N ->
-  nth (default_proc data) ps i = Recv frm fc ->
-  False.
-Proof.
-move=> Hr Hnp Hwf Hi Hpi.
-(* Symmetric to dsdp_no_quiescent_send. *)
-Admitted.
-
-(* Core DSDP-specific lemma: at every DSDP-reachable state,
-   either all_terminated or there exists a progress witness.
-   The witness carries enough information to trace continuations. *)
-Lemma dsdp_step_progress ps k :
-  dsdp_reachable ps k ->
-  has_progress data ps ->
-  all_terminated (one_step_procs data ps) \/
-  has_progress data (one_step_procs data ps).
-Proof.
-elim: k ps => [|k IHk] ps Hr Hp.
-- (* k=0: ps = procs. After step: all Init(v, body). Still Init → pw_init. *)
-  inversion Hr; subst.
-  by right; exact: step_procs_has_progress.
-- (* k+1: ps = one_step_procs data ps0 for some ps0 reachable at k.
-     IHk gives: for ps0 at step k with progress,
-       one_step_procs ps0 has terminated or progress_witness.
-     ps = one_step_procs ps0. Need: one_step_procs ps has terminated or pw. *)
-  inversion Hr as [|ps0 k0 Hr0 Hp0 Heq1 Heq2]; subst.
-  (* IHk on ps0: one_step_procs ps0 (= ps) has terminated or pw *)
-  have IH0 := IHk ps0 Hr0 Hp0.
-  case: IH0 => [Ht0|Hpw0].
-  + (* one_step_procs ps0 (= ps) all_terminated.
-       Stepping an all_terminated state gives all_terminated
-       (Finish → Finish, Ret → Finish, Fail → Fail). *)
-    left.
-    apply/(all_nthP (default_proc data)) => i Hi.
-    rewrite size_one_step in Hi.
-    rewrite (@nth_one_step data _ _ Hi).
-    move/(all_nthP (default_proc data)): Ht0 => /(_ i Hi).
-    rewrite /smc_interpreter.step.
-    by case: (nth _ _ i) => [? ?|? ? ?|? ?|?||].
-  + (* Previous step has_progress (= current state ps has progress).
-       After stepping ps: need progress or terminated for one_step ps.
-
-       Use contradiction: if ~~ all_terminated AND ~~ has_progress for
-       one_step ps, then one_step ps is a "deadlocked" state. But DSDP
-       states are deadlock-free: at the fixed point, all_nonfail holds
-       (from dsdp_interp_nofail), and with sufficient fuel all processes
-       terminate (by the fuel argument below).
-
-       Key: one_step ps is DSDP-reachable at step k+2. The interpreter
-       interp_comp procs (k+2) equals one_step ps (since has_progress
-       at every step 0..k+1). So all_nonfail (one_step ps) follows
-       from dsdp_interp_nofail. And if ~~ has_progress (one_step ps),
-       then one_step ps is the fixed point, and interp_comp procs h
-       for h >= k+2 equals one_step ps. In particular for h >= [>saprocs]:
-       interp_comp procs h = one_step ps. But interp_comp_quiescent
-       gives ~~ has_progress (already have). And we need all_terminated.
-
-       This reduces to: at the fixed point with all_nonfail and all_proc_wf,
-       all_terminated. I.e., no unmatched Send/Recv in DSDP. *)
-    case Hp1: (has_progress data (one_step_procs data (one_step_procs data ps0))).
-    * by right.
-    * left.
-      (* ~~ has_progress at one_step ps. Show all_terminated. *)
-      set ps1 := one_step_procs data (one_step_procs data ps0).
-      have Hnp1 : ~~ has_progress data ps1 by rewrite Hp1.
-      (* ps1 is DSDP-reachable at step k+2. *)
-      have Hr1 : dsdp_reachable ps1 k.+2.
-        exact: (@dsdp_reach_step _ _ (@dsdp_reach_step _ _ Hr0 Hp0) Hpw0).
-      (* all_proc_wf for ps1 *)
-      have Hwf1 := @dsdp_reachable_proc_wf _ _ Hr1.
-      (* all_nonfail for ps1: follows from all_proc_wf *)
-      have Hnf1 : all_nonfail ps1.
-        apply/(all_nthP (default_proc data)) => i Hi.
-        by have := @proc_wf_nonfail AHE _ (Hwf1 i Hi).
-      (* Each process is Finish (terminal): no Init, no Ret, no Fail, no Send/Recv *)
-      apply/(all_nthP (default_proc data)) => i Hi.
-      have Hwfi := Hwf1 i Hi.
-      have Hnfi : is_nonfail (nth (default_proc data) ps1 i).
-        by move/(all_nthP (default_proc data)): Hnf1 => /(_ i Hi).
-      (* Step on process i returns false (no progress) *)
-      have Hstep_false : (smc_interpreter.step ps1 [::] i).2 = false.
-        apply/negbTE/negP => Hstep_true.
-        move/negP: Hnp1; apply.
-        exact: (@step_i_has_progress data ps1 i Hi Hstep_true).
-      (* Case on process i's constructor *)
-      case Hpi: (nth (default_proc data) ps1 i) => [d0 kc|dst v0' kc|frm fc|d0||].
-      -- (* Init: step returns true → contradiction *)
-         exfalso; have : (smc_interpreter.step ps1 [::] i).2 = true.
-           by rewrite /smc_interpreter.step Hpi.
-         by rewrite Hstep_false.
-      -- (* Send at quiescence: contradicts DSDP deadlock-freedom *)
-         exfalso.
-         exact: (@dsdp_no_quiescent_send _ _ _ _ _ _ Hr1 Hnp1 Hwf1 Hi Hpi).
-      -- (* Recv at quiescence: contradicts DSDP deadlock-freedom *)
-         exfalso.
-         exact: (@dsdp_no_quiescent_recv _ _ _ _ _ Hr1 Hnp1 Hwf1 Hi Hpi).
-      -- (* Ret: step returns true → contradiction *)
-         exfalso; have : (smc_interpreter.step ps1 [::] i).2 = true.
-           by rewrite /smc_interpreter.step Hpi.
-         by rewrite Hstep_false.
-      -- (* Finish: terminal *) done.
-      -- (* Fail: contradicts nonfail *)
-         by move: Hnfi; rewrite Hpi.
-Qed.
-
+   The "all_terminated preserved by stepping" case is straightforward.
+   The "has_progress → has_progress after stepping" case uses contradiction:
+   if ~~ has_progress after stepping, each process must be Finish
+   (Init/Ret would step, Fail ruled out by proc_wf, Send/Recv would
+   need a matching partner). *)
 Lemma dsdp_reachable_progress ps k :
   dsdp_reachable ps k ->
   all_terminated ps \/ has_progress data ps.
 Proof.
 elim=> {ps k} [|ps' k Hr IH Hp'].
-- by right; exact: dsdp_initial_progress.
-- exact: (@dsdp_step_progress _ _ Hr Hp').
-Qed.
+- (* k=0: procs = all Init → has_progress *)
+  by right; exact: dsdp_initial_progress.
+- (* k+1: ps = one_step ps'. IH: terminated ps' ∨ progress ps'.
+     Since has_progress ps' (from Hp'): IH right.
+     Goal: terminated (one_step ps') ∨ progress (one_step ps'). *)
+  case Hp1: (has_progress data (one_step_procs data ps')).
+  + by right.
+  + (* ~~ has_progress (one_step ps'). Show all_terminated. *)
+    left.
+    set ps1 := one_step_procs data ps'.
+    have Hnp1 : ~~ has_progress data ps1 by rewrite Hp1.
+    have Hr1 : dsdp_reachable ps1 k.+1.
+      exact: (@dsdp_reach_step _ _ Hr Hp').
+    have Hwf1 := @dsdp_reachable_proc_wf _ _ Hr1.
+    apply/(all_nthP (default_proc data)) => i Hi.
+    have Hwfi := Hwf1 i Hi.
+    have Hstep_false : (smc_interpreter.step ps1 [::] i).2 = false.
+      apply/negbTE/negP => Hstep_true.
+      move/negP: Hnp1; apply.
+      exact: (@step_i_has_progress data ps1 i Hi Hstep_true).
+    case Hpi: (nth (default_proc data) ps1 i) => [d0 kc|dst v0' kc|frm fc|d0||].
+    + (* Init → step true → contradiction *) exfalso.
+      have : (smc_interpreter.step ps1 [::] i).2 = true by rewrite /smc_interpreter.step Hpi.
+      by rewrite Hstep_false.
+    + (* Send → step false means unmatched. Derive False by IH. *)
+      (* ps1 = one_step ps'. ps1 reachable at k+1. By the OUTER elim's IH
+         applied recursively, every reachable state at step ≤ k has
+         terminated ∨ progress. But we need it for step k+1 = ps1.
+         This is the CURRENT step, so we can't use the IH.
+
+         However: ps1 has ~~ has_progress. If ps1 has Send at i, then
+         step ps1 nil i returned false. This means ps1[dst] is not
+         Recv(i, ...). The question: why is this impossible for DSDP?
+
+         TEMPLATE ARGUMENT: at the quiescent state, if Send exists,
+         its target must have a matching Recv (by relay chain structure).
+         But matching Recv would give has_progress → contradiction. *)
+      admit.
+    + (* Recv → same argument as Send *) admit.
+    + (* Ret → step true → contradiction *) exfalso.
+      have : (smc_interpreter.step ps1 [::] i).2 = true by rewrite /smc_interpreter.step Hpi.
+      by rewrite Hstep_false.
+    + (* Finish → terminal *) done.
+    + (* Fail → contradicts proc_wf *)
+      exfalso. by have := @proc_wf_nonfail AHE _ Hwfi; rewrite Hpi.
+Admitted.
 
 (* Wrapper for interp_comp_inv_progress *)
 Lemma dsdp_step_inv qs :
