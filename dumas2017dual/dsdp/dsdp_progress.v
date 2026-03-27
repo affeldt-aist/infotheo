@@ -384,19 +384,15 @@ Qed.
 
    Proof by the invariant: all_proc_wf is preserved by stepping, and
    DSDP templates with Hn_relay ensure no deadlock. *)
-Lemma dsdp_step_terminated_or_progress ps :
+Lemma dsdp_step_terminated_or_progress ps k :
+  dsdp_reachable ps k ->
   @all_proc_wf AHE ps ->
   has_progress data ps ->
   all_terminated (one_step_procs data ps) \/
   has_progress data (one_step_procs data ps).
 Proof.
-(* This requires showing: after stepping ps, the result either
-   has all processes at Finish/Ret/Fail (terminated) or some
-   process steps (has_progress).
-
-   The key DSDP argument: templates ensure continuations
-   always provide Init/Ret or a matched pair. With Hn_relay >= 1,
-   Alice's 2 sends to relay 0 match DParty_first's 2 receives. *)
+(* TODO: prove by phase invariant tracking frontier relay index.
+   Uses Hn_relay + template erasure lemmas + proc_wf + dec_total. *)
 admit.
 Admitted.
 
@@ -409,7 +405,7 @@ elim=> {ps k} [|ps' k Hr IH Hp'].
 - by right; exact: dsdp_initial_progress.
 - (* ps = one_step ps'. IH: terminated ps' ∨ progress ps'. Hp': progress ps'. *)
   have Hwf := @dsdp_reachable_proc_wf _ _ Hr.
-  exact: (@dsdp_step_terminated_or_progress _ Hwf Hp').
+  exact: (@dsdp_step_terminated_or_progress _ _ Hr Hwf Hp').
 Qed.
 
 (* Wrapper for interp_comp_inv_progress *)
