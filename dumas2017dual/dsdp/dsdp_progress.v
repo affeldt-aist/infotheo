@@ -351,32 +351,79 @@ rewrite /smc_interpreter.step /procs /dsdp_n_procs /erase_aprocs
 done.
 Qed.
 
-(* The inductive step: after stepping a DSDP-reachable state with progress,
-   the result has progress or is terminated.
-   Proved by strong induction on k (step count from initial state). *)
+(* Progress witness: identifies WHY a process list has progress.
+   Carrying this through the induction lets us trace template continuations. *)
+Inductive progress_witness (ps : seq (proc data)) : Prop :=
+| pw_init : forall i d k,
+    (i < size ps)%N ->
+    nth (default_proc data) ps i = Init d k ->
+    progress_witness ps
+| pw_ret : forall i d,
+    (i < size ps)%N ->
+    nth (default_proc data) ps i = Ret d ->
+    progress_witness ps
+| pw_comm : forall i j v k f,
+    (i < size ps)%N -> (j < size ps)%N ->
+    nth (default_proc data) ps i = Send j v k ->
+    nth (default_proc data) ps j = Recv i f ->
+    progress_witness ps.
+
+Lemma pw_has_progress ps : progress_witness ps -> has_progress data ps.
+Proof.
+case.
+- move=> i d k Hi Hn. exact: (@has_init_progress data ps i d k Hi Hn).
+- move=> i d Hi Hn. exact: (@has_ret_progress data ps i d Hi Hn).
+- move=> i j v k f Hi Hj Hsi Hrj.
+  exact: (@has_comm_progress data ps i j v k f Hi Hsi Hrj).
+Qed.
+
+(* Strengthened induction: at every DSDP-reachable state,
+   either all_terminated or there exists a progress witness.
+   The witness carries enough information to trace continuations. *)
 Lemma dsdp_step_progress ps k :
   dsdp_reachable ps k ->
   has_progress data ps ->
   all_terminated (one_step_procs data ps) \/
-  has_progress data (one_step_procs data ps).
+  progress_witness (one_step_procs data ps).
 Proof.
-(* Strong induction on k *)
 elim: k ps => [|k IHk] ps Hr Hp.
-- (* k=0: ps = procs. All Init(dk, Init(v, body)).
-     After step: all Init(v, body) → still Init → has_progress. *)
+- (* k=0: ps = procs. After step: all Init(v, body). Still Init → pw_init. *)
   inversion Hr; subst.
-  by right; exact: step_procs_has_progress.
-- (* k+1: ps is reachable at k+1.
-     ps = one_step_procs data ps' for some ps' reachable at k.
-     After stepping ps: one_step_procs data (one_step_procs data ps').
-     By IHk on ps' at step k: one_step_procs data ps' (= ps) has progress or is terminated.
-     Since has_progress ps (given), we know ps is not all-terminated.
-     Need: one_step_procs data ps has progress or is terminated.
-
-     The relay chain structure guarantees this:
-     - If ps has Init or Ret: stepping gives continuation → check if progress
-     - If ps has only Send/Recv/Finish: the matched pair fires → continuations provide progress *)
-  admit.
+  right.
+  eapply (pw_init (one_step_procs data procs) 0).
+  + by rewrite /one_step_procs size_map size_iota size_procs.
+  + rewrite (@nth_one_step data _ _ _); last by rewrite size_procs.
+    rewrite /smc_interpreter.step /procs /dsdp_n_procs /erase_aprocs
+      /dsdp_n_saprocs /= /erase_aproc /=.
+    done.
+- (* k+1: ps = one_step_procs data ps0 for some ps0 reachable at k.
+     IHk gives: for ps0 at step k with progress,
+       one_step_procs ps0 has terminated or progress_witness.
+     ps = one_step_procs ps0. Need: one_step_procs ps has terminated or pw. *)
+  inversion Hr as [|ps0 k0 Hr0 Hp0 Heq1 Heq2]; subst.
+  (* IHk on ps0: one_step_procs ps0 (= ps) has terminated or pw *)
+  have IH0 := IHk ps0 Hr0 Hp0.
+  case: IH0 => [Ht0|Hpw0].
+  + (* one_step_procs ps0 all_terminated but has_progress ps. Contradiction. *)
+    exfalso.
+    (* all_terminated ps and has_progress ps can't both hold *)
+    admit.
+  + (* one_step_procs ps0 (= ps) has progress_witness. *)
+    (* Case on the witness to trace the next step *)
+    case: Hpw0 => [i d kk Hi Hn | i d Hi Hn | i j v kk f Hi Hj Hsi Hrj].
+    * (* Init at i in ps. After stepping ps: process i becomes kk.
+         If kk is Init → pw_init for one_step_procs ps.
+         Otherwise: need to find another witness. *)
+      admit.
+    * (* Ret at i in ps. After step: Finish at i.
+         Need another witness for progress in one_step_procs ps. *)
+      admit.
+    * (* Matched Send(j,v,kk) at i and Recv(i,f) at j in ps.
+         After step: process i becomes kk, process j becomes f(v).
+         By proc_wf, f(v) is not Fail.
+         Template determines kk and f(v) constructors.
+         Need to find next witness. *)
+      admit.
 Admitted.
 
 Lemma dsdp_reachable_progress ps k :
@@ -385,7 +432,9 @@ Lemma dsdp_reachable_progress ps k :
 Proof.
 elim=> {ps k} [|ps' k Hr IH Hp'].
 - by right; exact: dsdp_initial_progress.
-- exact: (@dsdp_step_progress _ _ Hr Hp').
+- have Hsp := @dsdp_step_progress _ _ Hr Hp'.
+  case: Hsp => [Ht|Hpw]; first by left.
+  right. exact: (@pw_has_progress _ Hpw).
 Qed.
 
 (* Wrapper for interp_comp_inv_progress *)
