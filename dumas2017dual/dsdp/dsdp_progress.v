@@ -413,21 +413,10 @@ elim=> {ps k} [|ps' k Hr IH Hp'].
     + (* Init → step true → contradiction *) exfalso.
       have : (smc_interpreter.step ps1 [::] i).2 = true by rewrite /smc_interpreter.step Hpi.
       by rewrite Hstep_false.
-    + (* Send → step false means unmatched. Derive False by IH. *)
-      (* ps1 = one_step ps'. ps1 reachable at k+1. By the OUTER elim's IH
-         applied recursively, every reachable state at step ≤ k has
-         terminated ∨ progress. But we need it for step k+1 = ps1.
-         This is the CURRENT step, so we can't use the IH.
-
-         However: ps1 has ~~ has_progress. If ps1 has Send at i, then
-         step ps1 nil i returned false. This means ps1[dst] is not
-         Recv(i, ...). The question: why is this impossible for DSDP?
-
-         TEMPLATE ARGUMENT: at the quiescent state, if Send exists,
-         its target must have a matching Recv (by relay chain structure).
-         But matching Recv would give has_progress → contradiction. *)
+    + (* Send at quiescence → False. Uses Hn_relay + template structure. *)
       admit.
-    + (* Recv → same argument as Send *) admit.
+    + (* Recv at quiescence → False. Uses Hn_relay + template structure. *)
+      admit.
     + (* Ret → step true → contradiction *) exfalso.
       have : (smc_interpreter.step ps1 [::] i).2 = true by rewrite /smc_interpreter.step Hpi.
       by rewrite Hstep_false.
