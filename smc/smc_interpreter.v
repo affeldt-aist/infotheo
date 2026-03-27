@@ -126,12 +126,23 @@ Inductive rsteps {n} :
     tr3 = [tuple tr2 !_ i ++ tr1 !_ i | i < n] ->
     rsteps ps1 ps3 tr3.
 
+Definition res_procs n (res : n.-tuple (proc * seq data * bool)) :=
+  map_tuple (fun r : proc * seq data * bool => r.1.1) res.
+Definition res_traces n (res : n.-tuple (proc * seq data * bool)) :=
+  map_tuple (fun r : proc * seq data * bool => r.1.2) res.
+
+(* All communication steps within S are closed: both endpoints in S or both out *)
+Definition comm_closed n (ps : n.-tuple proc) (S : {fset 'I_n}) : Prop :=
+  forall (i j : 'I_n) (ps' : 2.-tuple proc) (traces : 2.-tuple (seq data)),
+    rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
+    (i \in S) = (j \in S).
+
 (* The step function does all possible reductions at once *)
 Lemma step_complete n m (l : lens n m) ps ps' traces' :
   rstep l (extract l ps) ps' traces' ->
   let res := extract l [tuple step ps nil i | i < n] in
-  map_tuple (fun r => r.1.1) res = ps' /\
-  map_tuple (fun r => r.1.2) res = traces'.
+  res_procs res = ps' /\
+  res_traces res = traces'.
 Proof.
 move Hps: (extract l ps) => psl H.
 case: H Hps => /=.
@@ -142,7 +153,7 @@ case: H Hps => /=.
   split; apply /val_inj;
     by rewrite /= tnth_mktuple /= /step -tnth_nth Hps.
 - move=> i j x pi pj [] Hi Hj.
-  rewrite !map_extract.
+  rewrite /res_procs /res_traces !map_extract.
   split; apply /val_inj; congr ([:: _; _]);
     rewrite /= tnth_map tnth_mktuple /= /step;
     by rewrite -tnth_nth (Hi,Hj) -tnth_nth (Hi,Hj) eqxx.
@@ -176,14 +187,10 @@ exact/eqP/val_inj.
 Qed.
 
 Lemma rstep_pss_remove n (ps : n.-tuple proc) (i : 'I_n) (pss : {fset 'I_n})
-    (Hpss : forall a b ps' traces,
-      rstep [tuple a; b] (extract [tuple a; b] ps) ps' traces ->
-      (a \in pss) = (b \in pss)) :
+    (Hpss : comm_closed ps pss) :
   (forall j x pi, ps !_ i <> Send j x pi) ->
   (forall j pj, ps !_ i <> Recv j pj) ->
-  forall a b ps' traces,
-    rstep [tuple a; b] (extract [tuple a; b] ps) ps' traces ->
-    (a \in pss `\ i) = (b \in pss `\ i).
+  comm_closed ps (pss `\ i).
 Proof.
 move=> Hsend Hrecv a b ps0 traces /[dup] Hr Hrstep.
 case/rstep2P: Hrstep => x pi pj Ha Hb.
@@ -198,14 +205,10 @@ Qed.
    Recv-Send communication subcases. *)
 Lemma rstep_pss_remove2 n (ps : n.-tuple proc) (sender recver : 'I_n)
     (pss : {fset 'I_n}) ps1 tr1
-    (Hpss : forall a b ps' traces,
-      rstep [tuple a; b] (extract [tuple a; b] ps) ps' traces ->
-      (a \in pss) = (b \in pss))
+    (Hpss : comm_closed ps pss)
     (Hr : rstep [tuple sender; recver] (extract [tuple sender; recver] ps)
                 ps1 tr1) :
-  forall a b ps' traces,
-    rstep [tuple a; b] (extract [tuple a; b] ps) ps' traces ->
-    (a \in pss `\ sender `\ recver) = (b \in pss `\ sender `\ recver).
+  comm_closed ps (pss `\ sender `\ recver).
 Proof.
 move=> a b ps' traces /[dup] H /rstep2P [x pi pj Ha Hb].
 rewrite !inE.
@@ -226,6 +229,10 @@ Qed.
    by inductively removing parties from s. *)
 Definition step_res n (s : {fset 'I_n}) (ps : n.-tuple proc) :=
   [tuple if i \in s then step ps [::] i else (ps !_ i, nil, false) | i < n].
+
+(* The interpreter result for party set S is a valid rsteps reduction *)
+Definition step_res_sound n (ps : n.-tuple proc) (S : {fset 'I_n}) : Prop :=
+  rsteps ps (res_procs (step_res S ps)) (res_traces (step_res S ps)).
 
 (* When step leaves party i unchanged (Finish, Fail, or no matching partner),
    removing i from the active set doesn't change the overall result.
@@ -249,9 +256,8 @@ Lemma step_res_inject1 n (ps : n.-tuple proc) (i : 'I_n) (pss : {fset 'I_n})
     (q : proc) (tr : seq data) :
   i \in pss ->
   step ps [::] i = (q, tr, true) ->
-  inject [tuple i]
-    (map_tuple (fun r => r.1.1) (step_res (pss `\ i) ps)) [tuple q] =
-  map_tuple (fun r : proc * seq data * bool => r.1.1) (step_res pss ps).
+  inject [tuple i] (res_procs (step_res (pss `\ i) ps)) [tuple q] =
+  res_procs (step_res pss ps).
 Proof.
 move=> Hi Hstep.
 apply: eq_from_tnth => j; rewrite !(tnth_mktuple, tnth_map) /=.
@@ -266,10 +272,9 @@ Lemma step_res_trace1 n (ps : n.-tuple proc) (i : 'I_n) (pss : {fset 'I_n})
     (q : proc) (tr : seq data) :
   i \in pss ->
   step ps [::] i = (q, tr, true) ->
-  map_tuple (fun r : proc * seq data * bool => r.1.2) (step_res pss ps) =
+  res_traces (step_res pss ps) =
   [tuple (inject [tuple i] [tuple [::] | _ < n] [tuple tr]) !_ k ++
-         (map_tuple (fun r : proc * seq data * bool => r.1.2)
-            (step_res (pss `\ i) ps)) !_ k | k < n].
+         (res_traces (step_res (pss `\ i) ps)) !_ k | k < n].
 Proof.
 move=> Hi Hstep.
 apply: eq_from_tnth => k; rewrite !(tnth_mktuple, tnth_map) /=.
@@ -286,10 +291,9 @@ Lemma step_res_inject2 n (ps : n.-tuple proc) (a b : 'I_n) (pss : {fset 'I_n})
   a \in pss -> b \in pss -> a != b ->
   step ps [::] a = (qa, tra, true) ->
   step ps [::] b = (qb, trb, true) ->
-  inject [tuple a; b]
-    (map_tuple (fun r => r.1.1) (step_res (pss `\ a `\ b) ps))
+  inject [tuple a; b] (res_procs (step_res (pss `\ a `\ b) ps))
     [tuple qa; qb] =
-  map_tuple (fun r : proc * seq data * bool => r.1.1) (step_res pss ps).
+  res_procs (step_res pss ps).
 Proof.
 move=> Ha Hb ab Hstepa Hstepb.
 apply: eq_from_tnth => k; rewrite !(tnth_mktuple, tnth_map) /=.
@@ -307,10 +311,9 @@ Lemma step_res_trace2 n (ps : n.-tuple proc) (a b : 'I_n) (pss : {fset 'I_n})
   a \in pss -> b \in pss -> a != b ->
   step ps [::] a = (qa, tra, true) ->
   step ps [::] b = (qb, trb, true) ->
-  map_tuple (fun r : proc * seq data * bool => r.1.2) (step_res pss ps) =
+  res_traces (step_res pss ps) =
   [tuple (inject [tuple a; b] [tuple [::] | _ < n] [tuple tra; trb]) !_ k ++
-         (map_tuple (fun r : proc * seq data * bool => r.1.2)
-            (step_res (pss `\ a `\ b) ps)) !_ k | k < n].
+         (res_traces (step_res (pss `\ a `\ b) ps)) !_ k | k < n].
 Proof.
 move=> Ha Hb ab Hstepa Hstepb.
 apply: eq_from_tnth => k; rewrite !(tnth_mktuple, tnth_map) /=.
@@ -326,23 +329,13 @@ Qed.
    Send/Recv pair, construct the rcomm rstep and apply the inductive hypothesis
    on the smaller set pss \ sender \ recver. *)
 Lemma step_sound_comm n (ps : n.-tuple proc) (pss : {fset 'I_n})
-    (IH : forall Y : {fset 'I_n}, Y `<` pss ->
-      (forall (i j : 'I_n) (ps' : 2.-tuple proc) (traces : 2.-tuple (seq data)),
-        rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
-        (i \in Y) = (j \in Y)) ->
-      rsteps ps
-        (map_tuple (fun r : proc * seq data * bool => r.1.1) (step_res Y ps))
-        (map_tuple (fun r : proc * seq data * bool => r.1.2) (step_res Y ps)))
-    (Hpss : forall (i j : 'I_n) (ps' : 2.-tuple proc)
-        (traces : 2.-tuple (seq data)),
-      rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
-      (i \in pss) = (j \in pss))
+    (IH : forall Y, Y `<` pss -> comm_closed ps Y -> step_res_sound ps Y)
+    (Hpss : comm_closed ps pss)
     (sender recver : 'I_n) (x0 : data) (pi0 : proc) (pj0 : data -> proc) :
   sender \in pss -> recver \in pss -> sender != recver ->
   ps !_ sender = Send recver x0 pi0 ->
   ps !_ recver = Recv sender pj0 ->
-  rsteps ps (map_tuple (fun r => r.1.1) (step_res pss ps))
-            (map_tuple (fun r => r.1.2) (step_res pss ps)).
+  step_res_sound ps pss.
 Proof.
 move=> Hsnd_in Hrcv_in sr_neq Hsnd Hrcv.
 have Hstep_snd: step ps [::] sender = (pi0, [::], true).
@@ -362,6 +355,7 @@ have H': pss' `<` pss.
 apply: (rtrans (IH _ H' _)); last 3 first.
 + exact: rstep_pss_remove2 Hpss Hr.
 + move: (rcomm sender recver x0 pi0 pj0).
+  rewrite /res_procs /res_traces.
   set ps'' := map_tuple _ _.
   rewrite (_ : [tuple Send _ _ _; _] = extract [tuple sender; recver] ps'');
     last first.
@@ -375,26 +369,16 @@ Qed.
 (* The inert case of step_sound: when step leaves party i unchanged
    (Finish, Fail, or no matching partner), remove i from the active set. *)
 Lemma step_sound_inert n (ps : n.-tuple proc) (pss : {fset 'I_n}) (i : 'I_n)
-    (IH : forall Y : {fset 'I_n}, Y `<` pss ->
-      (forall (i j : 'I_n) (ps' : 2.-tuple proc) (traces : 2.-tuple (seq data)),
-        rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
-        (i \in Y) = (j \in Y)) ->
-      rsteps ps
-        (map_tuple (fun r : proc * seq data * bool => r.1.1) (step_res Y ps))
-        (map_tuple (fun r : proc * seq data * bool => r.1.2) (step_res Y ps)))
-    (Hpss : forall (i j : 'I_n) (ps' : 2.-tuple proc)
-        (traces : 2.-tuple (seq data)),
-      rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
-      (i \in pss) = (j \in pss))
+    (IH : forall Y, Y `<` pss -> comm_closed ps Y -> step_res_sound ps Y)
+    (Hpss : comm_closed ps pss)
     (Hi : i \in pss) :
   step ps [::] i = (ps !_ i, [::], false) ->
   (forall j x pi, ps !_ i <> Send j x pi) ->
   (forall j pj, ps !_ i <> Recv j pj) ->
-  rsteps ps (map_tuple (fun r => r.1.1) (step_res pss ps))
-            (map_tuple (fun r => r.1.2) (step_res pss ps)).
+  step_res_sound ps pss.
 Proof.
 move=> Hstep Hns Hnr.
-rewrite (step_res_inert Hi Hstep).
+rewrite /step_res_sound (step_res_inert Hi Hstep).
 apply: IH; first exact: fproperD1.
 exact: rstep_pss_remove Hpss Hns Hnr.
 Qed.
@@ -402,24 +386,21 @@ Qed.
 (* Soundness: mapping step over all processes can be simulated by rsteps *)
 Lemma step_sound n (ps : n.-tuple proc) :
   let res := [tuple step ps nil i | i < n] in
-  let ps' := map_tuple (fun r => r.1.1) res in
-  let tr := map_tuple (fun r => r.1.2) res in
+  let ps' := res_procs res in
+  let tr := res_traces res in
   rsteps ps ps' tr.
 Proof.
 pose pss := [fset x : 'I_n | true].
 move=> res.
 have -> : res = step_res pss ps.
   by apply: eq_from_tnth => i; rewrite !tnth_mktuple ifT // !inE.
-have : forall i j ps' traces,
-    rstep [tuple i; j] (extract [tuple i; j] ps) ps' traces ->
-    (i \in pss) = (j \in pss)
-    by move=> *; rewrite !inE.
+have : comm_closed ps pss by move=> *; rewrite !inE.
 elim/finSet_rect: pss {res} => /= pss IH Hpss.
 case: (fset_0Vmem pss) => [-> | [i Hi]].
   (* Base case: empty set *)
-  rewrite (_ : map_tuple _ _ = ps); last first.
+  rewrite (_ : res_procs _ = ps); last first.
     by apply: eq_from_tnth => i; rewrite tnth_map !tnth_mktuple inE.
-  rewrite (_ : map_tuple _ _ = [tuple nil | _ < n]); last first.
+  rewrite (_ : res_traces _ = [tuple nil | _ < n]); last first.
     by apply: eq_from_tnth => i; rewrite tnth_map !tnth_mktuple inE.
   by constructor.
 (* Inductive case: i in pss *)
@@ -432,6 +413,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
   apply: (rtrans (IH _ H' _)); last 3 first.
   + apply: rstep_pss_remove Hpss _ _ => [j' x' pi'|j' pj']; by rewrite Hpi.
   + move: (rinit i x p).
+    rewrite /res_procs /res_traces.
     set ps'' := map_tuple _ _.
     have -> : [tuple Init x p] = extract [tuple i] ps''.
       by apply/val_inj; rewrite /= /ps'' tnth_map tnth_mktuple !inE eqxx /= Hpi.
@@ -517,6 +499,7 @@ case Hpi: (ps !_ i) => [x p | j x p | j f | x ||].
   apply: (rtrans (IH _ H' _)); last 3 first.
   + apply: rstep_pss_remove Hpss _ _ => [j' x' pi'|j' pj']; by rewrite Hpi.
   + move: (rret i x).
+    rewrite /res_procs /res_traces.
     set ps'' := map_tuple _ _.
     have -> : [tuple Ret x] = extract [tuple i] ps''.
       by apply/val_inj; rewrite /= /ps'' tnth_map tnth_mktuple !inE eqxx /= Hpi.
