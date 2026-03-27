@@ -374,36 +374,43 @@ rewrite /smc_interpreter.step /procs /dsdp_n_procs /erase_aprocs
 done.
 Qed.
 
-(* Core DSDP progress lemma: every reachable state is terminated or has progress.
-   Proved via interp_comp_inv_progress with the invariant P(ps) :=
-   all_proc_wf ps ∧ (all_terminated ps ∨ has_progress ps).
+(* DSDP step preservation: stepping a state with progress and all_proc_wf
+   gives a state that is terminated or has progress.
 
-   P is preserved by stepping:
-   - all_proc_wf preserved by one_step_preserves_proc_wf
-   - all_terminated preserved by stepping (Finish→Finish, Ret→Finish, Fail→Fail)
-   - has_progress case: if progress, step occurs. New state either:
-     (a) has Init/Ret from template continuation → has_progress
-     (b) has matched Send/Recv from template structure → has_progress
-     (c) all Finish → all_terminated
-     Cases (a)-(c) follow from the DSDP template structure:
-     each template continuation after stepping is determined by
-     dec_total + proc_wf (no Fail branches). *)
+   This is the DSDP-specific deadlock-freedom lemma. It requires the
+   relay chain template structure + Hn_relay to show that at every
+   non-terminal state, either Init/Ret exists or a matched Send/Recv pair
+   exists.
+
+   Proof by the invariant: all_proc_wf is preserved by stepping, and
+   DSDP templates with Hn_relay ensure no deadlock. *)
+Lemma dsdp_step_terminated_or_progress ps :
+  @all_proc_wf AHE ps ->
+  has_progress data ps ->
+  all_terminated (one_step_procs data ps) \/
+  has_progress data (one_step_procs data ps).
+Proof.
+(* This requires showing: after stepping ps, the result either
+   has all processes at Finish/Ret/Fail (terminated) or some
+   process steps (has_progress).
+
+   The key DSDP argument: templates ensure continuations
+   always provide Init/Ret or a matched pair. With Hn_relay >= 1,
+   Alice's 2 sends to relay 0 match DParty_first's 2 receives. *)
+admit.
+Admitted.
+
+(* Core DSDP progress lemma *)
 Lemma dsdp_reachable_progress ps k :
   dsdp_reachable ps k ->
   all_terminated ps \/ has_progress data ps.
 Proof.
-(* Use interp_comp_inv_progress indirectly:
-   interp_comp procs h = ps for some h corresponding to k steps.
-   By interp_comp_inv_progress with trivial invariant:
-   all_terminated (interp_comp procs h) ∨ has_progress (interp_comp procs h). *)
-(* Actually, the simplest correct proof: *)
-move=> Hr.
-(* ps is dsdp_reachable at k. interp_comp procs k = ps
-   (when has_progress at every step up to k-1). *)
-(* Approach: show has_progress ps by finding Init/matched pair, OR all_terminated *)
-(* For now: use the invariant-based proof via interp_comp *)
-admit.
-Admitted.
+elim=> {ps k} [|ps' k Hr IH Hp'].
+- by right; exact: dsdp_initial_progress.
+- (* ps = one_step ps'. IH: terminated ps' ∨ progress ps'. Hp': progress ps'. *)
+  have Hwf := @dsdp_reachable_proc_wf _ _ Hr.
+  exact: (@dsdp_step_terminated_or_progress _ Hwf Hp').
+Qed.
 
 (* Wrapper for interp_comp_inv_progress *)
 Lemma dsdp_step_inv qs :
