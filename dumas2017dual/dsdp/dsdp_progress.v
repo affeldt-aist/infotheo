@@ -222,6 +222,7 @@ Section dsdp_progress.
 Variable AHE : AHEncType.
 Variable ek : party_id -> pub_key AHE.
 Variable n_relay : nat.
+Hypothesis Hn_relay : (0 < n_relay)%N.
 
 Let DI := Standard_DSDP_Interface AHE.
 Let data := di_data DI.
