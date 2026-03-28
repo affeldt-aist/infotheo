@@ -1024,7 +1024,20 @@ Qed.
 Lemma dsdp_reachable_inv ps k :
   dsdp_reachable ps k -> (2 <= k)%N ->
   all_terminated ps \/ dsdp_inv ps.
-Proof. Admitted.
+Proof.
+elim=> {ps k} [|ps' k Hr IH Hp'] Hk.
+- by [].
+- case: k Hr IH Hk => [|k] Hr IH Hk.
+  + by rewrite ltnS leqn0 in Hk.
+  + case: k Hr IH Hk => [|k] Hr IH Hk.
+    * inversion Hr as [|ps'' k'' Hr'' Hp'' Heq Hk''].
+      inversion Hr'' as [Hps''|]; subst.
+      right; exact dsdp_inv_init.
+    * have Hk' : (2 <= k.+2)%N by [].
+      case: (IH Hk') => [Ht | Hinv].
+      -- left; exact (@step_all_terminated data ps' Ht).
+      -- exact (dsdp_inv_step ps' Hinv).
+Qed.
 
 (* DSDP step preservation: stepping a state with progress and all_proc_wf
    gives a state that is terminated or has progress.
