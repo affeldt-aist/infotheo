@@ -827,7 +827,20 @@ Lemma alice_recv_to_send (j : nat) (Hj : (j < n_relay.+1)%N) (f : data -> proc d
         (drop j (zip relays (iota 0 (size relays)))) =
   Recv (Ordinal Hj).+1 f ->
   exists sv rest, f v = Send (alice_send_dest (Ordinal Hj)) sv rest.
-Proof. Admitted.
+Proof.
+move=> Henc Hfoldr.
+have Hsz : (j < size relays)%N by rewrite Hrelays.
+have Hdrop : drop j (zip relays (iota 0 (size relays))) =
+  (nth ord0 relays j, j) :: drop j.+1 (zip relays (iota 0 (size relays))).
+  rewrite (drop_nth (ord0, 0)); last by rewrite size_zip size_iota minnn.
+  congr cons; rewrite nth_zip //; last by rewrite size_iota.
+  by rewrite nth_iota.
+rewrite Hdrop /= /alice_erase_body (Hrelays_id (Ordinal Hj)) /= in Hfoldr.
+rewrite /pRecvEnc_local /std_Recv_enc /Recv_param in Hfoldr.
+case: Hfoldr => Hf; subst f; rewrite /comp.
+case Hsfe: (@std_from_enc AHE v) => [c|]; last by rewrite Hsfe in Henc.
+by do 2 eexists.
+Qed.
 
 (* D3: Protocol invariant *)
 Inductive dsdp_inv : seq (proc data) -> Prop :=
