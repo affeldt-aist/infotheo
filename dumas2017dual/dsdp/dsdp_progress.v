@@ -480,6 +480,150 @@ rewrite /smc_interpreter.step /procs /dsdp_n_procs /erase_aprocs
 done.
 Qed.
 
+(*******************************************************************************)
+(** ** DSDP structural lemmas for deadlock-freedom                            *)
+(*******************************************************************************)
+
+(* All relay templates erase to Init(dk, Init(v, body)) with body = Send(0,...) *)
+Local Lemma relay_aproc_double_init (j : 'I_n_relay.+1) dk' v' r1' r2' :
+  exists d1 d2 sv sk,
+    erase_aproc (relay_aproc AHE ek n_relay j dk' v' r1' r2') =
+    Init d1 (Init d2 (Send alice_idx sv sk)).
+Proof.
+rewrite /relay_aproc /erase_aproc /aproc_proc /=.
+case: ifP => ? /=; [|case: ifP => ? /=]; by do 4 eexists.
+Qed.
+
+(* All initial processes are double Init *)
+Lemma procs_all_double_init : forall i, (i < size procs)%N ->
+  exists d d' k0, nth (default_proc data) procs i = Init d (Init d' k0).
+Proof.
+move=> i Hi; rewrite size_procs in Hi.
+case: i Hi => [|i] Hi.
+- do 3 eexists.
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= /erase_aproc /=.
+  exact: (@palice_n_erase AHE ek n_relay relays dk v0 u r rand_a).
+- have Hi' : (i < n_relay.+1)%N by [].
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /=.
+  rewrite -map_comp (nth_map ord0); last by rewrite Hrelays.
+  rewrite /comp /=.
+  have -> : nth ord0 relays i = Ordinal Hi'
+    by apply: val_inj; rewrite /= (Hrelays_id (Ordinal Hi')).
+  have [d1 [d2 [sv [sk Heq]]]] := relay_aproc_double_init
+    (Ordinal Hi') (dk_relay (Ordinal Hi')) (v_relay (Ordinal Hi'))
+    (r1_relay (Ordinal Hi')) (r2_relay (Ordinal Hi')).
+  rewrite Heq; by do 3 eexists.
+Qed.
+
+(* After two one_step rounds, position 1 (relay 0) is Send(0,...) *)
+Lemma oops_pos1_send0 :
+  exists sv sk,
+    nth (default_proc data) (one_step_procs data (one_step_procs data procs)) 1 =
+    Send 0 sv sk.
+Proof.
+have Hsz : (1 < size procs)%N by rewrite size_procs.
+have [rd1 [rd2 [sv [sk Hrel]]]] := relay_aproc_double_init ord0
+  (dk_relay ord0) (v_relay ord0) (r1_relay ord0) (r2_relay ord0).
+have Hp1 : nth (default_proc data) procs 1 = Init rd1 (Init rd2 (Send alice_idx sv sk)).
+  have Hi' : (0 < n_relay.+1)%N by [].
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /=.
+  rewrite -map_comp (nth_map ord0); last by rewrite Hrelays.
+  rewrite /comp /=.
+  have -> : nth ord0 relays (Ordinal Hi') = Ordinal Hi'
+    by apply val_inj; rewrite /= (Hrelays_id (Ordinal Hi')).
+  have -> : Ordinal Hi' = ord0 :> 'I_n_relay.+1 by apply val_inj.
+  exact Hrel.
+have Hops1 : nth (default_proc data) (one_step_procs data procs) 1 =
+  Init rd2 (Send alice_idx sv sk).
+  by rewrite (@nth_one_step data procs 1 Hsz) /smc_interpreter.step Hp1.
+have Hsz2 : (1 < size (one_step_procs data procs))%N by rewrite size_one_step.
+have Hoops1 : nth (default_proc data) (one_step_procs data (one_step_procs data procs)) 1 =
+  Send alice_idx sv sk.
+  by rewrite (@nth_one_step data _ 1 Hsz2) /smc_interpreter.step Hops1.
+rewrite /alice_idx in Hoops1.
+by exists sv, sk.
+Qed.
+
+(* After two one_step rounds, position 0 (Alice) is Recv(1,...) *)
+Lemma oops_pos0_recv1 :
+  exists f,
+    nth (default_proc data) (one_step_procs data (one_step_procs data procs)) 0 =
+    Recv 1 f.
+Proof.
+have Hsz : (0 < size procs)%N by rewrite size_procs.
+have Halice := @palice_n_erase AHE ek n_relay relays dk v0 u r rand_a.
+(* Get Alice's erased form and step through 2 Init layers *)
+have [d [d' [k0 Hp0]]] := @procs_all_double_init 0 Hsz.
+have Hops0 : nth (default_proc data) (one_step_procs data procs) 0 = Init d' k0.
+  by rewrite (@nth_one_step data procs 0 Hsz) /smc_interpreter.step Hp0.
+have Hsz2 : (0 < size (one_step_procs data procs))%N by rewrite size_one_step.
+have Hoops0 : nth (default_proc data) (one_step_procs data (one_step_procs data procs)) 0 = k0.
+  by rewrite (@nth_one_step data _ 0 Hsz2) /smc_interpreter.step Hops0.
+(* k0 is Alice's body after 2 Init layers = foldr alice_erase_body alice_erase_tail ... *)
+(* From palice_n_erase, procs[0] = Init(dk_val, Init(v0_val, foldr...)) *)
+(* So k0 = foldr alice_erase_body alice_erase_tail (zip relays iota) *)
+(* The foldr starts with alice_erase_body for the first element, which is Recv(1,...) *)
+(* We need to show k0 starts with Recv 1 *)
+(* Connect procs[0] to Alice template via palice_n_erase *)
+have Halice2 := @palice_n_erase AHE ek n_relay relays dk v0 u r rand_a.
+have Hp0' : nth (default_proc data) procs 0 =
+  erase (@palice_n AHE ek n_relay relays dk v0 u r rand_a).
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= /erase_aproc /=.
+  reflexivity.
+rewrite Hp0' Halice2 in Hp0.
+case: Hp0 => _ [_ Hk0].
+rewrite -Hk0 in Hoops0.
+rewrite Hoops0.
+have -> : zip relays (iota 0 (size relays)) =
+  (nth ord0 relays 0, nth 0 (iota 0 (size relays)) 0) ::
+  zip (behead relays) (behead (iota 0 (size relays))).
+  by case: relays Hrelays Hrelays_id => //= a l Hs Hid;
+     case: (iota 0 (size (a :: l))) => //=.
+rewrite /= (Hrelays_id ord0) /= /alice_erase_body /std_Recv_enc /Recv_param /=.
+by eexists.
+Qed.
+
+(* All relays are Send(0,...) after 2 steps *)
+Lemma oops_allrelays_send0 (j : 'I_n_relay.+1) :
+  exists sv sk,
+    nth (default_proc data) (one_step_procs data (one_step_procs data procs)) j.+1 =
+    Send 0 sv sk.
+Proof.
+have Hsz : (j.+1 < size procs)%N.
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= size_map size_map Hrelays.
+  exact (ltn_ord j).
+have [rd1 [rd2 [sv [sk Hrel]]]] := relay_aproc_double_init j
+  (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j).
+have Hp : nth (default_proc data) procs j.+1 = Init rd1 (Init rd2 (Send alice_idx sv sk)).
+  have Hi' := ltn_ord j.
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /=.
+  rewrite -map_comp (nth_map ord0); last by rewrite Hrelays.
+  rewrite /comp /=.
+  have -> : nth ord0 relays j = j
+    by apply val_inj; rewrite /= (Hrelays_id j).
+  exact Hrel.
+have Hops : nth (default_proc data) (one_step_procs data procs) j.+1 =
+  Init rd2 (Send alice_idx sv sk).
+  by rewrite (@nth_one_step data procs j.+1 Hsz) /smc_interpreter.step Hp.
+have Hsz2 : (j.+1 < size (one_step_procs data procs))%N by rewrite size_one_step.
+have Hoops : nth (default_proc data) (one_step_procs data (one_step_procs data procs)) j.+1 =
+  Send alice_idx sv sk.
+  by rewrite (@nth_one_step data _ j.+1 Hsz2) /smc_interpreter.step Hops.
+rewrite /alice_idx in Hoops.
+by exists sv, sk.
+Qed.
+
+(* At step 2, Alice Recv(1,...) matches relay 0 Send(0,...) → has_progress *)
+Lemma has_progress_at_step_2 :
+  has_progress data (one_step_procs data (one_step_procs data procs)).
+Proof.
+have [sv [sk Hsend]] := oops_pos1_send0.
+have [f Hrecv] := oops_pos0_recv1.
+have Hsz : (1 < size (one_step_procs data (one_step_procs data procs)))%N.
+  by rewrite size_one_step size_one_step size_procs.
+exact: (@has_comm_progress data _ 1 0 sv sk f Hsz Hsend Hrecv).
+Qed.
+
 (* DSDP step preservation: stepping a state with progress and all_proc_wf
    gives a state that is terminated or has progress.
 
