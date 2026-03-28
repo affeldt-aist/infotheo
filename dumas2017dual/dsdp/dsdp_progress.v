@@ -995,7 +995,30 @@ Proof. Admitted.
 (* C3: Step 2 satisfies invariant *)
 Lemma dsdp_inv_init :
   dsdp_inv (one_step_procs data (one_step_procs data procs)).
-Proof. Admitted.
+Proof.
+set ps2 := one_step_procs data (one_step_procs data procs).
+have Hwf : @all_proc_wf AHE procs :=
+  @dsdp_initial_proc_wf AHE ek n_relay dk dk_relay dec_total relays v0 u r
+    rand_a v_relay r1_relay r2_relay.
+have Hwf1 := @one_step_preserves_proc_wf _ Hwf.
+have Hwf2 := @one_step_preserves_proc_wf _ Hwf1.
+have Hbody : forall j : 'I_n_relay.+1, relay_at_body j ps2.
+  move=> j; rewrite /relay_at_body /ps2.
+  have [d1 [d2 Hb]] := relay_body_eq j.
+  have Hsz : (j.+1 < size procs)%N by rewrite size_procs; exact (ltn_ord j).
+  have Hstep1 : nth (default_proc data) (one_step_procs data procs) j.+1 =
+    Init d2 (relay_body j).
+    by rewrite (@nth_one_step data procs j.+1 Hsz) /smc_interpreter.step Hb.
+  have Hsz2 : (j.+1 < size (one_step_procs data procs))%N
+    by rewrite size_one_step.
+  by rewrite (@nth_one_step data _ j.+1 Hsz2) /smc_interpreter.step Hstep1.
+apply (Inv_AR ord0 ps2).
+- by rewrite /ps2 size_one_step size_one_step size_procs.
+- exact Hwf2.
+- exact oops_pos0_recv1.
+- exact (Hbody ord0).
+- move=> i Hi; exact (Hbody i).
+Qed.
 
 (* C4: Connect dsdp_reachable to dsdp_inv *)
 Lemma dsdp_reachable_inv ps k :
