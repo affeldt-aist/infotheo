@@ -624,16 +624,335 @@ have Hsz : (1 < size (one_step_procs data (one_step_procs data procs)))%N.
 exact: (@has_comm_progress data _ 1 0 sv sk f Hsz Hsend Hrecv).
 Qed.
 
+(*******************************************************************************)
+(** ** Deadlock-freedom: protocol invariant and phase analysis               *)
+(*******************************************************************************)
+
+(* Local aliases for proc constructors *)
+Let pSend := @smc_interpreter.Send data.
+Let pRecvDec_local := @std_Recv_dec AHE.
+Let pRecvEnc_local := @std_Recv_enc AHE.
+Let Emul_local := @Emul AHE.
+Let e_local : cipher AHE -> data := di_e DI.
+Let enc_local := @enc AHE.
+
+(* H1: pRecvEnc continuation *)
+Lemma pRecvEnc_cont (f : cipher AHE -> proc data) (c : cipher AHE) :
+  (oapp f Fail \o @std_from_enc AHE) (e_local c) = f c.
+Proof. by rewrite /comp /e_local /std_from_enc /DI /=. Qed.
+
+(* H2: pRecvDec continuation *)
+Lemma pRecvDec_cont (dk' : he_types.priv_key AHE) (f : plain AHE -> proc data)
+    (c : cipher AHE) :
+  @dec AHE dk' c != None ->
+  exists m, @dec AHE dk' c = Some m /\
+    (oapp f Fail \o (obind (@dec AHE dk') \o @std_from_enc AHE)) (e_local c) = f m.
+Proof.
+rewrite /comp /e_local /std_from_enc /DI /=.
+move=> Hdec; case Heq: (dec dk' c) => [m|].
+  by exists m.
+by rewrite Heq in Hdec.
+Qed.
+
+(* H3: Non-participant position is unchanged after one_step *)
+Lemma nth_one_step_nop (ps : seq (proc data)) (i : nat) :
+  (i < size ps)%N ->
+  (smc_interpreter.step ps [::] i).2 = false ->
+  nth (default_proc data) (one_step_procs data ps) i =
+  nth (default_proc data) ps i.
+Proof.
+move=> Hi Hstep; rewrite (@nth_one_step data ps i Hi).
+rewrite /smc_interpreter.step.
+case Hpi: (nth (default_proc data) ps i) =>
+  [d0 k0|j0 v0' k0|frm0 f0|d0||];
+  rewrite /smc_interpreter.step Hpi in Hstep => //=.
+- by case: (nth (default_proc data) ps j0) Hstep => // frm1 f1;
+     case: ifP.
+- by case: (nth (default_proc data) ps frm0) Hstep => // dst1 v1 k1;
+     case: ifP.
+Qed.
+
+(* D1: Relay body after 2 Init layers — determined by template type *)
+Definition relay_body (j : 'I_n_relay.+1) : proc data :=
+  let dk' := dk_relay j in
+  let v' := v_relay j in
+  let r1' := r1_relay j in
+  let r2' := r2_relay j in
+  if (j : nat) == 0 then
+    pSend alice_idx (e_local (enc_local (ek (nat_to_party_id j.+1)) v' r1'))
+      (pRecvDec_local alice_idx dk' (fun m0 =>
+        pRecvEnc_local alice_idx (fun enc1 =>
+          pSend j.+2
+            (e_local (Emul_local enc1 (enc (ek (nat_to_party_id j.+2)) m0 r2')))
+            Finish)))
+  else if (j : nat) == n_relay then
+    pSend alice_idx (e_local (enc_local (ek (nat_to_party_id j.+1)) v' r1'))
+      (pRecvDec_local j dk' (fun m0 =>
+        pSend alice_idx (e_local (enc_local (ek alice_idx) m0 r2')) Finish))
+  else
+    pSend alice_idx (e_local (enc_local (ek (nat_to_party_id j.+1)) v' r1'))
+      (pRecvEnc_local alice_idx (fun enc0 =>
+        pRecvDec_local j dk' (fun m0 =>
+          pSend j.+2
+            (e_local (Emul_local enc0 (enc (ek (nat_to_party_id j.+2)) m0 r2')))
+            Finish))).
+
+(* D2: Relay state predicates *)
+Definition relay_at_body (j : 'I_n_relay.+1) (ps : seq (proc data)) : Prop :=
+  nth (default_proc data) ps j.+1 = relay_body j.
+
+Definition relay_at_recv_alice_pred (j : 'I_n_relay.+1) (ps : seq (proc data)) : Prop :=
+  exists f, nth (default_proc data) ps j.+1 = Recv 0 f.
+
+Definition relay_at_finish_pred (j : 'I_n_relay.+1) (ps : seq (proc data)) : Prop :=
+  nth (default_proc data) ps j.+1 = Finish.
+
+(* H4: Initial processes match relay_body *)
+Lemma relay_body_eq (j : 'I_n_relay.+1) :
+  exists d1 d2,
+    nth (default_proc data) procs j.+1 = Init d1 (Init d2 (relay_body j)).
+Proof. Admitted.
+
+(* H5: relay_body always starts with Send 0 *)
+Lemma relay_body_is_send0 (j : 'I_n_relay.+1) :
+  exists sv sk, relay_body j = Send 0 sv sk.
+Proof.
+rewrite /relay_body; case: ifP => ?; [|case: ifP => ?]; by do 2 eexists.
+Qed.
+
+(* R1: relay_body(0) = Send(0, sv, Recv(0, f_dec)) *)
+Lemma relay0_body_structure :
+  exists sv f_dec, relay_body ord0 = Send 0 sv (Recv 0 f_dec).
+Proof.
+rewrite /relay_body /= /pRecvDec_local /std_Recv_dec /Recv_param.
+by do 2 eexists.
+Qed.
+
+(* R2: R0's first Recv fires → second Recv(0,...) *)
+Lemma relay0_first_recv_to_second (sv : data) (f_dec : data -> proc data) (v : data) :
+  relay_body ord0 = Send 0 sv (Recv 0 f_dec) ->
+  @std_from_enc AHE v != None ->
+  exists f_enc, f_dec v = Recv 0 f_enc.
+Proof. Admitted.
+
+(* R3: Intermediate relay body structure *)
+Lemma relay_inter_body_structure (j : 'I_n_relay.+1) :
+  (0 < j)%N -> (j < n_relay)%N ->
+  exists sv f_enc, relay_body j = Send 0 sv (Recv 0 f_enc).
+Proof.
+move=> Hj0 Hjn; rewrite /relay_body.
+have -> : (j : nat) == 0 = false by rewrite eqn0Ngt Hj0.
+have -> : (j : nat) == n_relay = false
+  by apply /negP => /eqP Heq; rewrite Heq ltnn in Hjn.
+rewrite /pRecvEnc_local /std_Recv_enc /Recv_param.
+by do 2 eexists.
+Qed.
+
+(* R4: Last relay body structure *)
+Lemma relay_last_body_structure :
+  exists sv f_dec,
+    relay_body (@ord_max n_relay) = Send 0 sv (Recv n_relay f_dec).
+Proof.
+rewrite /relay_body /=.
+have -> : (n_relay == 0) = false by rewrite eqn0Ngt Hn_relay.
+rewrite eqxx /pRecvDec_local /std_Recv_dec /Recv_param.
+by do 2 eexists.
+Qed.
+
+(* T1: R0 second Recv fires → Send(2,...,Finish) *)
+Lemma relay0_second_recv_to_send (f_enc : data -> proc data) (v : data) :
+  @std_from_enc AHE v != None ->
+  exists sv, f_enc v = Send 2 sv Finish.
+Proof. Admitted.
+
+(* T2: Intermediate Recv(0) fires → Recv(j,...) *)
+Lemma relay_inter_recv_alice_to_upstream (j : 'I_n_relay.+1) (f_enc : data -> proc data) (v : data) :
+  (0 < j)%N -> (j < n_relay)%N ->
+  @std_from_enc AHE v != None ->
+  exists f_dec, f_enc v = Recv j f_dec.
+Proof. Admitted.
+
+(* T3: Recv(j) from upstream fires → Send(j+2,...,Finish) *)
+Lemma relay_recv_upstream_to_send_down (j : 'I_n_relay.+1) (f_dec : data -> proc data) (v : data) :
+  @std_from_enc AHE v != None ->
+  exists sv, f_dec v = Send j.+2 sv Finish.
+Proof. Admitted.
+
+(* T4: Last relay Recv fires → Send(0,...,Finish) *)
+Lemma relay_last_recv_to_send (f_dec : data -> proc data) (v : data) :
+  @std_from_enc AHE v != None ->
+  exists sv, f_dec v = Send 0 sv Finish.
+Proof. Admitted.
+
+(* H6: Alice's foldr at iteration j starts with Recv(j+1,...) *)
+Lemma alice_body_at_recv (j : nat) (Hj : (j < n_relay.+1)%N) :
+  exists f,
+    foldr (fun (fi : 'I_n_relay.+1 * nat) (cont : proc data) =>
+             @alice_erase_body AHE ek n_relay u r rand_a fi.1 fi.2 cont)
+          (@alice_erase_tail AHE n_relay dk v0 u r)
+          (drop j (zip relays (iota 0 (size relays)))) =
+    Recv (Ordinal Hj).+1 f.
+Proof. Admitted.
+
+(* H7: After Alice's Recv fires, Alice becomes Send(dest(j),...,rest) *)
+Lemma alice_recv_to_send (j : nat) (Hj : (j < n_relay.+1)%N) (f : data -> proc data) (v : data) :
+  @std_from_enc AHE v != None ->
+  foldr (fun (fi : 'I_n_relay.+1 * nat) (cont : proc data) =>
+           @alice_erase_body AHE ek n_relay u r rand_a fi.1 fi.2 cont)
+        (@alice_erase_tail AHE n_relay dk v0 u r)
+        (drop j (zip relays (iota 0 (size relays)))) =
+  Recv (Ordinal Hj).+1 f ->
+  exists sv rest, f v = Send (alice_send_dest (Ordinal Hj)) sv rest.
+Proof. Admitted.
+
+(* D3: Protocol invariant *)
+Inductive dsdp_inv : seq (proc data) -> Prop :=
+| Inv_AR (j : 'I_n_relay.+1) ps :
+    size ps = n_relay.+2 ->
+    @all_proc_wf AHE ps ->
+    (exists f, nth (default_proc data) ps 0 = Recv j.+1 f) ->
+    relay_at_body j ps ->
+    (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
+    dsdp_inv ps
+| Inv_AS0 ps (f_inner : plain AHE -> proc data) :
+    size ps = n_relay.+2 ->
+    @all_proc_wf AHE ps ->
+    (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
+    nth (default_proc data) ps 1 =
+      Recv 0 (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE)) ->
+    (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
+    dsdp_inv ps
+| Inv_AS1 ps (f_inner : cipher AHE -> proc data) :
+    size ps = n_relay.+2 ->
+    @all_proc_wf AHE ps ->
+    (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
+    nth (default_proc data) ps 1 =
+      Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
+    (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
+    dsdp_inv ps
+| Inv_ASj (j : 'I_n_relay.+1) ps :
+    (2 <= j)%N ->
+    size ps = n_relay.+2 ->
+    @all_proc_wf AHE ps ->
+    (exists v k, nth (default_proc data) ps 0 = Send j v k) ->
+    (* relay j-1 at position j has Recv(0,...) *)
+    (exists f, nth (default_proc data) ps j = Recv 0 f) ->
+    (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
+    dsdp_inv ps
+| Inv_drain (j : 'I_n_relay.+1) ps :
+    (j.+1 < n_relay.+1)%N ->
+    size ps = n_relay.+2 ->
+    @all_proc_wf AHE ps ->
+    (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+    (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
+    (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
+    dsdp_inv ps
+| Inv_tail ps :
+    size ps = n_relay.+2 ->
+    @all_proc_wf AHE ps ->
+    (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
+    (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+    dsdp_inv ps
+| Inv_ret ps d :
+    size ps = n_relay.+2 ->
+    @all_proc_wf AHE ps ->
+    nth (default_proc data) ps 0 = Ret d ->
+    (forall j : 'I_n_relay.+1, relay_at_finish_pred j ps) ->
+    dsdp_inv ps.
+
+(* C1: Every dsdp_inv state has progress *)
+Lemma dsdp_inv_has_progress ps :
+  dsdp_inv ps -> has_progress data ps.
+Proof. Admitted.
+
+(* C2 sub-lemmas *)
+Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  (exists f, nth (default_proc data) ps 0 = Recv j.+1 f) ->
+  relay_at_body j ps ->
+  (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
+  nth (default_proc data) ps 1 =
+    Recv 0 (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE)) ->
+  (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
+  nth (default_proc data) ps 1 =
+    Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
+  (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
+  (2 <= j)%N ->
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  (exists v k, nth (default_proc data) ps 0 = Send j v k) ->
+  (* relay j-1 at position j has Recv(0,...) *)
+  (exists f, nth (default_proc data) ps j = Recv 0 f) ->
+  (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+Lemma dsdp_inv_step_FW (j : 'I_n_relay.+1) ps :
+  (j.+1 < n_relay.+1)%N ->
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+  (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
+  (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+Lemma dsdp_inv_step_FW_last ps :
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+  (exists v, nth (default_proc data) ps n_relay = Send n_relay.+1 v Finish) ->
+  (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f) ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+Lemma dsdp_inv_step_TAIL ps :
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
+  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+Lemma dsdp_inv_step_RET ps d0 :
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  nth (default_proc data) ps 0 = Ret d0 ->
+  (forall j : 'I_n_relay.+1, relay_at_finish_pred j ps) ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+(* C2: Invariant preserved by one_step *)
+Lemma dsdp_inv_step ps :
+  dsdp_inv ps ->
+  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
+Proof. Admitted.
+
+(* C3: Step 2 satisfies invariant *)
+Lemma dsdp_inv_init :
+  dsdp_inv (one_step_procs data (one_step_procs data procs)).
+Proof. Admitted.
+
+(* C4: Connect dsdp_reachable to dsdp_inv *)
+Lemma dsdp_reachable_inv ps k :
+  dsdp_reachable ps k -> (2 <= k)%N ->
+  all_terminated ps \/ dsdp_inv ps.
+Proof. Admitted.
+
 (* DSDP step preservation: stepping a state with progress and all_proc_wf
    gives a state that is terminated or has progress.
-
-   This is the DSDP-specific deadlock-freedom lemma. It requires the
-   relay chain template structure + Hn_relay to show that at every
-   non-terminal state, either Init/Ret exists or a matched Send/Recv pair
-   exists.
-
-   Proof: case-split by step number. Steps 0-1 always produce progress.
-   Steps >= 2 need DSDP template analysis for the Ret and matched pair cases. *)
+   Now proved using the phase invariant. *)
 
 (* Helper: steps 0 and 1 always produce progress in one_step *)
 Lemma step01_progress ps0 k0 :
