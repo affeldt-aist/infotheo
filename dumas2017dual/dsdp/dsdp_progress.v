@@ -752,7 +752,22 @@ Lemma relay0_first_recv_to_second (sv : data) (f_dec : data -> proc data) (v : d
   relay_body ord0 = Send 0 sv (Recv 0 f_dec) ->
   @std_from_enc AHE v != None ->
   exists f_enc, f_dec v = Recv 0 f_enc.
-Proof. Admitted.
+Proof.
+move=> Hbody Henc.
+rewrite /relay_body /= /pRecvDec_local /std_Recv_dec /Recv_param in Hbody.
+have Hfd : f_dec = (oapp (fun m0 =>
+  pRecvEnc_local alice_idx (fun enc1 =>
+    pSend 2 (e_local (Emul_local enc1
+      (enc (ek (nat_to_party_id 2)) m0 (r2_relay ord0)))) Finish))
+  Fail \o (obind (dec (dk_relay ord0)) \o @std_from_enc AHE))
+  by case: Hbody.
+subst f_dec; rewrite /comp.
+case Hsfe: (@std_from_enc AHE v) => [c|]; last by rewrite Hsfe in Henc.
+case Hdec: (dec (dk_relay ord0) c) => [m|]; last first.
+  by have := dec_total (dk_relay ord0) c; rewrite Hdec.
+rewrite /= Hdec /= /pRecvEnc_local /std_Recv_enc /Recv_param.
+by eexists.
+Qed.
 
 (* R3: Intermediate relay body structure *)
 Lemma relay_inter_body_structure (j : 'I_n_relay.+1) :
