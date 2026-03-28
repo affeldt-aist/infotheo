@@ -847,9 +847,19 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AR (j : 'I_n_relay.+1) ps :
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
-    (exists f, nth (default_proc data) ps 0 = Recv j.+1 f) ->
+    (* Alice at Recv(j+1,...) with known continuation behavior *)
+    (exists f, nth (default_proc data) ps 0 = Recv j.+1 f /\
+       forall v, @std_from_enc AHE v != None ->
+         exists sv rest, f v = Send (alice_send_dest j) sv rest) ->
     relay_at_body j ps ->
     (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
+    (* For j=1: R0 at second Recv (pRecvEnc form) *)
+    ((j == 1%N :> nat) ->
+       exists f_enc : cipher AHE -> proc data,
+         nth (default_proc data) ps 1 =
+           Recv 0 (oapp f_enc Fail \o @std_from_enc AHE)) ->
+    (* For j>=2: relay j-1 at Recv(0,...) *)
+    ((2 <= j)%N -> exists f, nth (default_proc data) ps j = Recv 0 f) ->
     dsdp_inv ps
 | Inv_AS0 ps (f_inner : plain AHE -> proc data) :
     size ps = n_relay.+2 ->
@@ -880,9 +890,14 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     (j.+1 < n_relay.+1)%N ->
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
+    (* Alice at tail *)
     (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+    (* Relay j at Send(j+2,...,Finish) *)
     (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
+    (* Relay j+1 at Recv(j+1,...) *)
     (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
+    (* Relays 0..j-1 are Finish *)
+    (forall i : nat, (i < j)%N -> nth (default_proc data) ps i.+1 = Finish) ->
     dsdp_inv ps
 | Inv_tail ps :
     size ps = n_relay.+2 ->
@@ -904,7 +919,7 @@ Lemma dsdp_inv_has_progress ps :
   dsdp_inv ps -> has_progress data ps.
 Proof.
 case.
-- (* Inv_AR *) move=> j ps0 Hsz Hwf [f Halice] Hbody Hpending.
+- (* Inv_AR *) move=> j ps0 Hsz Hwf [f [Halice _]] Hbody Hpending _ _.
   have [sv [sk Hrel]] := relay_body_is_send0 j.
   rewrite /relay_at_body Hrel in Hbody.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_ord j).
@@ -922,7 +937,7 @@ case.
 - (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf [v [k Halice]] [fj Hrj] Hpending.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 0 j v k fj Hsz0 Halice Hrj).
-- (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa Halice] [v Hsend] [f Hrecv].
+- (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa Halice] [v Hsend] [f Hrecv] _.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
   exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
 - (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] [f Hrecv] Hrels_fin.
@@ -1038,13 +1053,7 @@ have Hbody : forall j : 'I_n_relay.+1, relay_at_body j ps2.
   have Hsz2 : (j.+1 < size (one_step_procs data procs))%N
     by rewrite size_one_step.
   by rewrite (@nth_one_step data _ j.+1 Hsz2) /smc_interpreter.step Hstep1.
-apply (Inv_AR ord0 ps2).
-- by rewrite /ps2 size_one_step size_one_step size_procs.
-- exact Hwf2.
-- exact oops_pos0_recv1.
-- exact (Hbody ord0).
-- move=> i Hi; exact (Hbody i).
-Qed.
+Admitted. (* TODO: fix after invariant enrichment — need to establish Alice continuation behavior *)
 
 (* C4: Connect dsdp_reachable to dsdp_inv *)
 Lemma dsdp_reachable_inv ps k :
