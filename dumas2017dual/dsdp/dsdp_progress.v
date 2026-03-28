@@ -806,7 +806,17 @@ Lemma alice_body_at_recv (j : nat) (Hj : (j < n_relay.+1)%N) :
           (@alice_erase_tail AHE n_relay dk v0 u r)
           (drop j (zip relays (iota 0 (size relays)))) =
     Recv (Ordinal Hj).+1 f.
-Proof. Admitted.
+Proof.
+have Hsz : (j < size relays)%N by rewrite Hrelays.
+have Hdrop : drop j (zip relays (iota 0 (size relays))) =
+  (nth ord0 relays j, j) :: drop j.+1 (zip relays (iota 0 (size relays))).
+  rewrite (drop_nth (ord0, 0)); last by rewrite size_zip size_iota minnn.
+  congr cons; rewrite nth_zip //; last by rewrite size_iota.
+  by rewrite nth_iota.
+rewrite Hdrop /= /alice_erase_body (Hrelays_id (Ordinal Hj)) /=.
+rewrite /pRecvEnc_local /std_Recv_enc /Recv_param.
+by eexists.
+Qed.
 
 (* H7: After Alice's Recv fires, Alice becomes Send(dest(j),...,rest) *)
 Lemma alice_recv_to_send (j : nat) (Hj : (j < n_relay.+1)%N) (f : data -> proc data) (v : data) :
