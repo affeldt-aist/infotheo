@@ -889,6 +889,8 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     @all_proc_wf AHE ps ->
     (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
     (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+    (* All relays except the last are Finish *)
+    (forall j : 'I_n_relay.+1, (j < n_relay)%N -> relay_at_finish_pred j ps) ->
     dsdp_inv ps
 | Inv_ret ps d :
     size ps = n_relay.+2 ->
@@ -923,7 +925,7 @@ case.
 - (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa Halice] [v Hsend] [f Hrecv].
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
   exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
-- (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] [f Hrecv].
+- (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] [f Hrecv] Hrels_fin.
   have Hn : (n_relay.+1 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 n_relay.+1 0 v Finish f Hn Hsend Hrecv).
 - (* Inv_ret *) move=> ps0 d0 Hsz Hwf Hret Hrels.
@@ -989,6 +991,7 @@ Lemma dsdp_inv_step_TAIL ps :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
   (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+  (forall j : 'I_n_relay.+1, (j < n_relay)%N -> relay_at_finish_pred j ps) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof. Admitted.
 
