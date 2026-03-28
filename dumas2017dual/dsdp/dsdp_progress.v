@@ -793,30 +793,10 @@ rewrite eqxx /pRecvDec_local /std_Recv_dec /Recv_param.
 by do 2 eexists.
 Qed.
 
-(* T1: R0 second Recv fires → Send(2,...,Finish) *)
-Lemma relay0_second_recv_to_send (f_enc : data -> proc data) (v : data) :
-  @std_from_enc AHE v != None ->
-  exists sv, f_enc v = Send 2 sv Finish.
-Proof. Admitted.
-
-(* T2: Intermediate Recv(0) fires → Recv(j,...) *)
-Lemma relay_inter_recv_alice_to_upstream (j : 'I_n_relay.+1) (f_enc : data -> proc data) (v : data) :
-  (0 < j)%N -> (j < n_relay)%N ->
-  @std_from_enc AHE v != None ->
-  exists f_dec, f_enc v = Recv j f_dec.
-Proof. Admitted.
-
-(* T3: Recv(j) from upstream fires → Send(j+2,...,Finish) *)
-Lemma relay_recv_upstream_to_send_down (j : 'I_n_relay.+1) (f_dec : data -> proc data) (v : data) :
-  @std_from_enc AHE v != None ->
-  exists sv, f_dec v = Send j.+2 sv Finish.
-Proof. Admitted.
-
-(* T4: Last relay Recv fires → Send(0,...,Finish) *)
-Lemma relay_last_recv_to_send (f_dec : data -> proc data) (v : data) :
-  @std_from_enc AHE v != None ->
-  exists sv, f_dec v = Send 0 sv Finish.
-Proof. Admitted.
+(* Note: Template continuation lemmas (T1-T4 in the plan) are not standalone *)
+(* because the continuation functions are abstract at the lemma level. *)
+(* They will be proved inline within the C2 transition sub-lemmas, *)
+(* where the specific template continuation is known from relay_body. *)
 
 (* H6: Alice's foldr at iteration j starts with Recv(j+1,...) *)
 Lemma alice_body_at_recv (j : nat) (Hj : (j < n_relay.+1)%N) :
