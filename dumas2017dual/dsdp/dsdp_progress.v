@@ -211,6 +211,112 @@ elim: h ps => [|h IH] ps Hinv Hprog Hstep.
     exfalso; move/negP: Hhas; exact.
 Qed.
 
+(* Extract a concrete witness from has_progress:
+   if some process can step, it's Init, Ret, or has a matched Send/Recv partner. *)
+Lemma has_progress_has_witness (ps : seq (proc data)) :
+  has_progress data ps ->
+  (exists i d k', (i < size ps)%N /\
+     nth (default_proc data) ps i = Init d k') \/
+  (exists i d, (i < size ps)%N /\
+     nth (default_proc data) ps i = Ret d) \/
+  (exists i j v k' f, (i < size ps)%N /\ (j < size ps)%N /\
+     nth (default_proc data) ps i = Send j v k' /\
+     nth (default_proc data) ps j = Recv i f).
+Proof.
+rewrite /has_progress has_map => /hasP [i].
+rewrite mem_iota /= add0n => Hi.
+rewrite /= /smc_interpreter.step.
+case Hpi: (nth (default_proc data) ps i) => [d0 k0|dst v0 k0|frm f0|d0| | ] //= Hstep.
+- (* Init *) left; exists i, d0, k0; split => //.
+- (* Send: step checks ps[dst] for matching Recv *)
+  case Hdst: (nth (default_proc data) ps dst) Hstep =>
+    [|? ? ?|frm f0|? | | ] //=.
+  case Heq: (frm == i) => //= _.
+  move/eqP: Heq => Heq; subst frm.
+  have Hdst_bound : (dst < size ps)%N.
+    case: (ltnP dst (size ps)) => // Hge.
+    by rewrite nth_default in Hdst.
+  right; right; exists i, dst, v0, k0, f0.
+  by rewrite Hpi Hdst.
+- (* Recv: step checks ps[frm] for matching Send *)
+  case Hfrm: (nth (default_proc data) ps frm) Hstep =>
+    [|dst v0 k0|? ?|? | | ] //=.
+  case Heq: (dst == i) => //= _.
+  move/eqP: Heq => Heq; subst dst.
+  have Hfrm_bound : (frm < size ps)%N.
+    case: (ltnP frm (size ps)) => // Hge.
+    by rewrite nth_default in Hfrm.
+  right; right; exists frm, i, v0, k0, f0.
+  by rewrite Hfrm Hpi.
+- (* Ret *) right; left; exists i, d0; split => //.
+Qed.
+
+(* L4: Finish stays *)
+Lemma step_finish_nop (ps : seq (proc data)) (i : nat) :
+  nth (default_proc data) ps i = Finish ->
+  (smc_interpreter.step ps [::] i).1.1 = Finish.
+Proof.
+by move=> Hpi; rewrite /smc_interpreter.step Hpi.
+Qed.
+
+(* L3: Matched Send/Recv both advance *)
+Lemma step_send_recv_match (ps : seq (proc data)) (i j : nat) v k f :
+  nth (default_proc data) ps i = Send j v k ->
+  nth (default_proc data) ps j = Recv i f ->
+  (smc_interpreter.step ps [::] i).1.1 = k /\
+  (smc_interpreter.step ps [::] j).1.1 = f v.
+Proof.
+move=> Hpi Hpj; split.
+- by rewrite /smc_interpreter.step Hpi Hpj eqxx.
+- by rewrite /smc_interpreter.step Hpj Hpi eqxx.
+Qed.
+
+(* L1: Unmatched Send stays *)
+Lemma step_send_nop (ps : seq (proc data)) (i : nat) j v k :
+  nth (default_proc data) ps i = Send j v k ->
+  (forall f, nth (default_proc data) ps j <> Recv i f) ->
+  (smc_interpreter.step ps [::] i).1.1 = Send j v k /\
+  (smc_interpreter.step ps [::] i).2 = false.
+Proof.
+move=> Hpi Hnotrecv.
+rewrite /smc_interpreter.step Hpi.
+case Hpj: (nth (default_proc data) ps j) => [|? ? ?|frm f|? | |] //=;
+  try by split.
+case Heq: (frm == i) => /=; last by split.
+move/eqP: Heq => Heq; subst frm.
+exfalso; exact: (Hnotrecv f Hpj).
+Qed.
+
+(* L2: Unmatched Recv stays *)
+Lemma step_recv_nop (ps : seq (proc data)) (i : nat) frm f :
+  nth (default_proc data) ps i = Recv frm f ->
+  (forall v k, nth (default_proc data) ps frm <> Send i v k) ->
+  (smc_interpreter.step ps [::] i).1.1 = Recv frm f /\
+  (smc_interpreter.step ps [::] i).2 = false.
+Proof.
+move=> Hpi Hnotsend.
+rewrite /smc_interpreter.step Hpi.
+case Hpf: (nth (default_proc data) ps frm) => [|dst v k|? ?|? | |] //=;
+  try by split.
+case Heq: (dst == i) => /=; last by split.
+move/eqP: Heq => Heq; subst dst.
+exfalso; exact: (Hnotsend v k Hpf).
+Qed.
+
+(* Helper: stepping preserves all_terminated *)
+Lemma step_all_terminated (ps : seq (proc data)) :
+  all_terminated ps -> all_terminated (one_step_procs ps).
+Proof.
+rewrite /all_terminated => Ht.
+apply/(@all_nthP _ _ _ (default_proc data)).
+rewrite size_one_step => i Hi.
+rewrite nth_one_step //.
+have Hpi : is_terminal (nth (default_proc data) ps i).
+  by move/(@all_nthP _ _ _ (default_proc data)): Ht => /(_ i Hi).
+rewrite /smc_interpreter.step.
+by case: (nth (default_proc data) ps i) Hpi.
+Qed.
+
 End general_progress.
 
 (*******************************************************************************)
