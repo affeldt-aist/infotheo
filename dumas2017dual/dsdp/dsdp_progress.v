@@ -711,7 +711,26 @@ Definition relay_at_finish_pred (j : 'I_n_relay.+1) (ps : seq (proc data)) : Pro
 Lemma relay_body_eq (j : 'I_n_relay.+1) :
   exists d1 d2,
     nth (default_proc data) procs j.+1 = Init d1 (Init d2 (relay_body j)).
-Proof. Admitted.
+Proof.
+rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /=.
+rewrite -map_comp (nth_map ord0); last by rewrite Hrelays.
+rewrite /comp /=.
+have -> : nth ord0 relays j = j by apply val_inj; rewrite /= (Hrelays_id j).
+rewrite /erase_aproc /aproc_proc /relay_aproc.
+case: ifP => Hj0; [|case: ifP => Hjn].
+- do 2 eexists.
+  rewrite (@DParty_first_erase AHE ek j.+1 j.+2 (dk_relay j) (v_relay j)
+           (r1_relay j) (r2_relay j)).
+  by rewrite /relay_body Hj0.
+- do 2 eexists.
+  rewrite (@DParty_last_erase AHE ek j.+1 j (dk_relay j) (v_relay j)
+           (r1_relay j) (r2_relay j)).
+  by rewrite /relay_body Hj0 Hjn.
+- do 2 eexists.
+  rewrite (@DParty_intermediate_erase AHE ek j.+1 alice_idx j j.+2 (dk_relay j)
+           (v_relay j) (r1_relay j) (r2_relay j)).
+  by rewrite /relay_body Hj0 Hjn.
+Qed.
 
 (* H5: relay_body always starts with Send 0 *)
 Lemma relay_body_is_send0 (j : 'I_n_relay.+1) :
