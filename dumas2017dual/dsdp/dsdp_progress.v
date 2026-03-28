@@ -632,8 +632,23 @@ Qed.
    non-terminal state, either Init/Ret exists or a matched Send/Recv pair
    exists.
 
-   Proof by the invariant: all_proc_wf is preserved by stepping, and
-   DSDP templates with Hn_relay ensure no deadlock. *)
+   Proof: case-split by step number. Steps 0-1 always produce progress.
+   Steps >= 2 need DSDP template analysis for the Ret and matched pair cases. *)
+
+(* Helper: steps 0 and 1 always produce progress in one_step *)
+Lemma step01_progress ps0 k0 :
+  dsdp_reachable ps0 k0 -> (k0 <= 1)%N -> has_progress data ps0 ->
+  has_progress data (one_step_procs data ps0).
+Proof.
+move=> Hr Hk Hp.
+case: k0 Hr Hk => [|[|k']] Hr Hk //.
+- inversion Hr as [Hps|]; subst.
+  exact: step_procs_has_progress.
+- inversion Hr as [|ps' k' Hr' Hprog' Heqps Hk'].
+  inversion Hr' as [Hps'|]; subst.
+  exact: has_progress_at_step_2.
+Qed.
+
 Lemma dsdp_step_terminated_or_progress ps k :
   dsdp_reachable ps k ->
   @all_proc_wf AHE ps ->
@@ -641,9 +656,27 @@ Lemma dsdp_step_terminated_or_progress ps k :
   all_terminated (one_step_procs data ps) \/
   has_progress data (one_step_procs data ps).
 Proof.
-(* TODO: prove by phase invariant tracking frontier relay index.
-   Uses Hn_relay + template erasure lemmas + proc_wf + dec_total. *)
-admit.
+move=> Hr Hwf Hp.
+(* Case on has_progress(one_step ps) *)
+case Hp1: (has_progress data (one_step_procs data ps)).
+- by right.
+- left.
+  (* ~has_progress(one_step ps). Need all_terminated. *)
+  (* For steps 0-1: step01_progress gives has_progress → contradiction *)
+  have Hk : (2 <= k)%N.
+    case: k Hr Hp1 {Hwf Hp} => [|[|k']] Hr Hp1 //.
+    + exfalso; move/negP: Hp1; apply. inversion Hr; subst.
+      exact: step_procs_has_progress.
+    + exfalso; move/negP: Hp1; apply.
+      inversion Hr as [|ps' k' Hr' Hprog' Heqps Hk'].
+      inversion Hr' as [Hps'|]; subst.
+      exact: has_progress_at_step_2.
+  (* Step >= 2: DSDP deadlock-freedom for body phase *)
+  (* All processes in one_step are Send/Recv/Finish (no Init, no Ret, no Fail). *)
+  (* No matched Send/Recv (from ~has_progress). *)
+  (* Need: no Send/Recv exists → all Finish. *)
+  (* This is the core deadlock-freedom argument. *)
+  admit.
 Admitted.
 
 (* Core DSDP progress lemma *)
