@@ -863,7 +863,36 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
 (* C1: Every dsdp_inv state has progress *)
 Lemma dsdp_inv_has_progress ps :
   dsdp_inv ps -> has_progress data ps.
-Proof. Admitted.
+Proof.
+case.
+- (* Inv_AR *) move=> j ps0 Hsz Hwf [f Halice] Hbody Hpending.
+  have [sv [sk Hrel]] := relay_body_is_send0 j.
+  rewrite /relay_at_body Hrel in Hbody.
+  have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_ord j).
+  exact (@has_comm_progress data ps0 j.+1 0 sv sk f Hj Hbody Halice).
+- (* Inv_AS0 *) move=> ps0 f_inner Hsz Hwf [v [k Halice]] Hr0 Hpending.
+  have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
+  exact (@has_comm_progress data ps0 0 1 v k
+    (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE))
+    Hsz0 Halice Hr0).
+- (* Inv_AS1 *) move=> ps0 f_inner Hsz Hwf [v [k Halice]] Hr0 Hpending.
+  have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
+  exact (@has_comm_progress data ps0 0 1 v k
+    (oapp f_inner Fail \o @std_from_enc AHE)
+    Hsz0 Halice Hr0).
+- (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf [v [k Halice]] [fj Hrj] Hpending.
+  have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
+  exact (@has_comm_progress data ps0 0 j v k fj Hsz0 Halice Hrj).
+- (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa Halice] [v Hsend] [f Hrecv].
+  have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
+  exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
+- (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] [f Hrecv].
+  have Hn : (n_relay.+1 < size ps0)%N by rewrite Hsz.
+  exact (@has_comm_progress data ps0 n_relay.+1 0 v Finish f Hn Hsend Hrecv).
+- (* Inv_ret *) move=> ps0 d0 Hsz Hwf Hret Hrels.
+  have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
+  exact (@has_ret_progress data ps0 0 d0 Hsz0 Hret).
+Qed.
 
 (* C2 sub-lemmas *)
 Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
