@@ -974,7 +974,17 @@ Lemma dsdp_inv_step_RET ps d0 :
   nth (default_proc data) ps 0 = Ret d0 ->
   (forall j : 'I_n_relay.+1, relay_at_finish_pred j ps) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
+Proof.
+move=> Hsz Hwf Hret Hrels; left.
+apply /(@all_nthP _ _ _ (default_proc data)).
+rewrite (@size_one_step data) => i Hi.
+rewrite (@nth_one_step data ps i Hi).
+case: i Hi => [|i] Hi.
+- by rewrite /smc_interpreter.step Hret.
+- have Him : (i < n_relay.+1)%N by rewrite -ltnS Hsz in Hi.
+  have Hfin := Hrels (Ordinal Him); rewrite /relay_at_finish_pred /= in Hfin.
+  by rewrite /smc_interpreter.step Hfin.
+Qed.
 
 (* C2: Invariant preserved by one_step *)
 Lemma dsdp_inv_step ps :
