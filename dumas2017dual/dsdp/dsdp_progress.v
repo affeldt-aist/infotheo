@@ -671,12 +671,45 @@ case Hp1: (has_progress data (one_step_procs data ps)).
       inversion Hr as [|ps' k' Hr' Hprog' Heqps Hk'].
       inversion Hr' as [Hps'|]; subst.
       exact: has_progress_at_step_2.
-  (* Step >= 2: DSDP deadlock-freedom for body phase *)
-  (* All processes in one_step are Send/Recv/Finish (no Init, no Ret, no Fail). *)
-  (* No matched Send/Recv (from ~has_progress). *)
-  (* Need: no Send/Recv exists → all Finish. *)
-  (* This is the core deadlock-freedom argument. *)
-  admit.
+  (* Step >= 2: show each process in one_step is terminal *)
+  (* From ~has_progress(one_step): no Init, no Ret in one_step. *)
+  (* From proc_wf preservation: no Fail in one_step. *)
+  have noprogress_no_init : forall p, (p < size (one_step_procs data ps))%N ->
+    forall d0 k0, nth (default_proc data) (one_step_procs data ps) p <> Init d0 k0.
+    move=> p Hsz d0 k0 Hinit. move/negP: Hp1; apply.
+    apply (@step_i_has_progress data (one_step_procs data ps) p Hsz).
+    by rewrite /smc_interpreter.step Hinit.
+  have noprogress_no_ret : forall p, (p < size (one_step_procs data ps))%N ->
+    forall d0, nth (default_proc data) (one_step_procs data ps) p <> Ret d0.
+    move=> p Hsz d0 Hret. move/negP: Hp1; apply.
+    apply (@step_i_has_progress data (one_step_procs data ps) p Hsz).
+    by rewrite /smc_interpreter.step Hret.
+  have noprogress_no_fail : forall p, (p < size ps)%N ->
+    nth (default_proc data) (one_step_procs data ps) p <> Fail.
+    move=> p Hsz Hfail.
+    have Hsz' : (p < size (one_step_procs data ps))%N by rewrite (@size_one_step data).
+    have Hwf1 := @one_step_preserves_proc_wf ps Hwf p Hsz'.
+    by rewrite Hfail in Hwf1.
+  (* Case-split each position: Init/Ret/Fail are ruled out, Finish is terminal,
+     Send/Recv need the DSDP deadlock-freedom argument. *)
+  apply/(@all_nthP _ _ _ (default_proc data)).
+  rewrite (@size_one_step data) => p Hsz.
+  have Hsz' : (p < size (one_step_procs data ps))%N by rewrite (@size_one_step data).
+  case Hosp: (nth (default_proc data) (one_step_procs data ps) p)
+    => [d0 k0|j0 v0' k0|frm0 f0|d0||].
+  - by exfalso; exact: (noprogress_no_init p Hsz' d0 k0 Hosp).
+  - (* Send j0 v0' k0 at position p in one_step: unmatched.
+       Need: this is impossible in DSDP body phase.
+       DSDP deadlock-freedom: every Send has a matching Recv. *)
+    exfalso.
+    admit.
+  - (* Recv frm0 f0 at position p in one_step: unmatched.
+       Same DSDP deadlock-freedom argument. *)
+    exfalso.
+    admit.
+  - by exfalso; exact: (noprogress_no_ret p Hsz' d0 Hosp).
+  - by []. (* Finish: is_terminal = true *)
+  - by exfalso; exact: (noprogress_no_fail p Hsz Hosp).
 Admitted.
 
 (* Core DSDP progress lemma *)
