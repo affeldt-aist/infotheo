@@ -1073,7 +1073,10 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
     (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
-    (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+    (* Alice at tail Recv with continuation producing Ret *)
+    (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f /\
+       forall v, @std_from_enc AHE v != None ->
+         exists d, f v = Ret d) ->
     (forall j : 'I_n_relay.+1, (j < n_relay)%N -> relay_at_finish_pred j ps) ->
     dsdp_inv ps
 | Inv_ret ps d :
@@ -1117,7 +1120,7 @@ case.
 - (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa Halice] [v Hsend] [f Hrecv] _ _ _.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
   exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
-- (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] [f Hrecv] Hrels_fin.
+- (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] [f [Hrecv _]] Hrels_fin.
   have Hn : (n_relay.+1 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 n_relay.+1 0 v Finish f Hn Hsend Hrecv).
 - (* Inv_ret *) move=> ps0 d0 Hsz Hwf Hret Hrels.
@@ -1204,10 +1207,35 @@ Proof. Admitted.
 Lemma dsdp_inv_step_TAIL ps :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
-  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f /\
+     forall v, @std_from_enc AHE v != None -> exists d, f v = Ret d) ->
   (forall j : 'I_n_relay.+1, (j < n_relay)%N -> relay_at_finish_pred j ps) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
+Proof.
+move=> Hsz Hwf [v Hsend] [f [Hrecv Hfcont]] Hrels; right.
+have [Hstep_send Hstep_recv] :=
+  @step_send_recv_match data ps n_relay.+1 0 v Finish f Hsend Hrecv.
+have Hwf_last : proc_wf AHE (nth (default_proc data) ps n_relay.+1)
+  by apply Hwf; rewrite Hsz; exact (ltnSn _).
+rewrite Hsend /= in Hwf_last.
+have [Henc _] := Hwf_last.
+have [d Hfv] := Hfcont v Henc.
+apply (Inv_ret (one_step_procs data ps) d).
+- by rewrite (@size_one_step data).
+- exact (@one_step_preserves_proc_wf ps Hwf).
+- have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+  by rewrite (@nth_one_step data ps 0 Hsz0) Hstep_recv Hfv.
+- move=> j.
+  have Hjsz : (j.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord j).
+  rewrite /relay_at_finish_pred (@nth_one_step data ps j.+1 Hjsz).
+  case: (ltnP j n_relay) => Hjn.
+  + have Hfin := Hrels j Hjn; rewrite /relay_at_finish_pred in Hfin.
+    by rewrite /smc_interpreter.step Hfin.
+  + have Hjmax : (j : nat) = n_relay.
+      have := ltn_ord j; rewrite ltnS => Hj_le.
+      by apply /eqP; rewrite eqn_leq Hj_le Hjn.
+    by rewrite Hjmax /smc_interpreter.step Hsend Hrecv eqxx.
+Qed.
 
 Lemma dsdp_inv_step_RET ps d0 :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
