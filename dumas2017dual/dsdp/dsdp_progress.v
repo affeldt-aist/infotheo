@@ -1197,7 +1197,36 @@ Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
      exists f, nth (default_proc data) ps j.-1 = Recv j.-2 f /\
        (forall v, @std_from_enc AHE v != None -> exists sv, f v = Send j sv Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
+Proof.
+move=> Hsz Hwf Halice Hbody Hpending H6 H7 H9; right.
+(* Alice = Recv j.+1 f, relay j = Send 0 sv sk *)
+have [f Hrecv_f] := @alice_body_at_recv j (ltn_ord j).
+have [sv [sk Hbs]] := relay_body_is_send0 j.
+have Halice_recv : nth (default_proc data) ps 0 = Recv j.+1 f
+  by rewrite Halice /alice_foldr_at Hrecv_f.
+have Hrelay_send : nth (default_proc data) ps j.+1 = Send 0 sv sk
+  by rewrite /relay_at_body in Hbody; rewrite Hbody Hbs.
+(* Fire Alice ↔ relay j *)
+have [Hstep_j1 Hstep_0] :=
+  @step_send_recv_match data ps j.+1 0 sv sk f Hrelay_send Halice_recv.
+(* std_from_enc sv != None *)
+have Hwf_j1 : proc_wf AHE (nth (default_proc data) ps j.+1)
+  by apply Hwf; rewrite Hsz; exact (ltn_ord j).
+rewrite Hrelay_send /= in Hwf_j1; have [Henc_sv _] := Hwf_j1.
+(* f sv = Send(dest(j), sv', alice_foldr_at j.+1) from H7' *)
+have [sv' Hfsv] := @alice_recv_to_send_foldr j (ltn_ord j) f sv Henc_sv Hrecv_f.
+(* Case split on j *)
+case: (posnP (j : nat)) => Hj0.
+- (* j = 0 → Inv_AS0 *)
+  admit.
+- case: (ltngtP (j : nat) 1) => Hj1.
+  + (* j < 1, impossible since j > 0 *)
+    by move: Hj0; rewrite ltnS leqn0 in Hj1; rewrite (eqP Hj1).
+  + (* j >= 2 → Inv_ASj *)
+    admit.
+  + (* j = 1 → Inv_AS1 *)
+    admit.
+Admitted.
 
 (* C2b: AS0 → AR(1) *)
 Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
