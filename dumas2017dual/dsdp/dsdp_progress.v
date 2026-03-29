@@ -861,6 +861,105 @@ case Hsfe: (@std_from_enc AHE v) => [c|]; last by rewrite Hsfe in Henc.
 by do 2 eexists.
 Qed.
 
+(* H7': Strengthened H7 — rest IS the next foldr iteration *)
+Lemma alice_recv_to_send_foldr (j : nat) (Hj : (j < n_relay.+1)%N)
+    (f : data -> proc data) (v : data) :
+  @std_from_enc AHE v != None ->
+  foldr (fun (fi : 'I_n_relay.+1 * nat) (cont : proc data) =>
+           @alice_erase_body AHE ek n_relay u r rand_a fi.1 fi.2 cont)
+        (@alice_erase_tail AHE n_relay dk v0 u r)
+        (drop j (zip relays (iota 0 (size relays)))) =
+  Recv (Ordinal Hj).+1 f ->
+  exists sv,
+    f v = Send (alice_send_dest (Ordinal Hj)) sv
+      (foldr (fun (fi : 'I_n_relay.+1 * nat) (cont : proc data) =>
+                @alice_erase_body AHE ek n_relay u r rand_a fi.1 fi.2 cont)
+             (@alice_erase_tail AHE n_relay dk v0 u r)
+             (drop j.+1 (zip relays (iota 0 (size relays))))).
+Proof. Admitted.
+
+(* H8: Construct enriched Alice hypothesis from foldr *)
+Lemma alice_foldr_recv_with_cont (j : nat) (Hj : (j < n_relay.+1)%N)
+    (ps : seq (proc data)) :
+  nth (default_proc data) ps 0 =
+    foldr (fun (fi : 'I_n_relay.+1 * nat) (cont : proc data) =>
+             @alice_erase_body AHE ek n_relay u r rand_a fi.1 fi.2 cont)
+          (@alice_erase_tail AHE n_relay dk v0 u r)
+          (drop j (zip relays (iota 0 (size relays)))) ->
+  exists f, nth (default_proc data) ps 0 = Recv (Ordinal Hj).+1 f /\
+    forall v, @std_from_enc AHE v != None ->
+      exists sv rest, f v = Send (alice_send_dest (Ordinal Hj)) sv rest.
+Proof. Admitted.
+
+(* T1: R0 second Recv (pRecvEnc) fires → Send(2, v, Finish) *)
+Lemma relay0_recv_enc_fires (f_inner : cipher AHE -> proc data) (v : data) :
+  @std_from_enc AHE v != None ->
+  exists sv, (oapp f_inner Fail \o @std_from_enc AHE) v = Send 2 sv Finish.
+Proof. Admitted.
+
+(* T2: Intermediate relay recv_from_body fires → RecvUpstream linked *)
+Lemma relay_inter_recv_from_body_fires (j : 'I_n_relay.+1) (v : data)
+    (sv0 : data) (f0 : data -> proc data) :
+  (0 < j)%N -> (j < n_relay)%N ->
+  relay_body j = Send 0 sv0 (Recv 0 f0) ->
+  @std_from_enc AHE v != None ->
+  exists f_dec, f0 v = Recv j f_dec /\
+    (forall w, @std_from_enc AHE w != None ->
+       exists sw, f_dec w = Send j.+2 sw Finish).
+Proof. Admitted.
+
+(* T3: recv_upstream_linked fires → forwarding *)
+(* This is trivial from the linked continuation behavior *)
+Lemma relay_recv_upstream_linked_fires (f : data -> proc data) (j : nat) (v : data) :
+  (forall w, @std_from_enc AHE w != None -> exists sw, f w = Send j.+2 sw Finish) ->
+  @std_from_enc AHE v != None ->
+  exists sv, f v = Send j.+2 sv Finish.
+Proof. Admitted.
+
+(* T4: Last relay recv fires → Send(0, v, Finish) *)
+Lemma relay_last_recv_fires (f : data -> proc data) (v : data) :
+  (forall w, @std_from_enc AHE w != None -> exists sw, f w = Send 0 sw Finish) ->
+  @std_from_enc AHE v != None ->
+  exists sv, f v = Send 0 sv Finish.
+Proof. Admitted.
+
+(* NP1-NP6: Non-participant step lemmas *)
+
+Lemma relay_body_step_nop ps (j : 'I_n_relay.+1) :
+  relay_at_body j ps ->
+  (forall f, nth (default_proc data) ps 0 <> Recv j.+1 f) ->
+  (smc_interpreter.step ps [::] j.+1).2 = false.
+Proof. Admitted.
+
+Lemma recv0_step_nop ps (m : nat) (f : data -> proc data) :
+  nth (default_proc data) ps m = Recv 0 f ->
+  (forall v k, nth (default_proc data) ps 0 <> Send m v k) ->
+  (smc_interpreter.step ps [::] m).2 = false.
+Proof. Admitted.
+
+Lemma finish_step_nop ps (m : nat) :
+  nth (default_proc data) ps m = Finish ->
+  (smc_interpreter.step ps [::] m).2 = false.
+Proof. Admitted.
+
+Lemma recv_upstream_step_nop ps (i : nat) (f : data -> proc data) :
+  nth (default_proc data) ps i.+1 = Recv i f ->
+  (forall v k, nth (default_proc data) ps i <> Send i.+1 v k) ->
+  (smc_interpreter.step ps [::] i.+1).2 = false.
+Proof. Admitted.
+
+Lemma forwarding_step_nop ps (i : nat) (v : data) :
+  nth (default_proc data) ps i.+1 = Send i.+2 v Finish ->
+  (forall f, nth (default_proc data) ps i.+2 <> Recv i.+1 f) ->
+  (smc_interpreter.step ps [::] i.+1).2 = false.
+Proof. Admitted.
+
+Lemma alice_recv_step_nop ps (j : nat) (f : data -> proc data) :
+  nth (default_proc data) ps 0 = Recv j.+1 f ->
+  (forall v k, nth (default_proc data) ps j.+1 <> Send 0 v k) ->
+  (smc_interpreter.step ps [::] 0).2 = false.
+Proof. Admitted.
+
 (* D3: Protocol invariant — enriched with full relay state tracking *)
 Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AR (j : 'I_n_relay.+1) ps :
@@ -944,6 +1043,14 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     (forall j : 'I_n_relay.+1, relay_at_finish_pred j ps) ->
     dsdp_inv ps.
 
+(* DE: drain_entry — after ASj(n_relay), establish Inv_drain *)
+Lemma drain_entry ps k :
+  dsdp_reachable ps k ->
+  @all_proc_wf AHE ps ->
+  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+  all_terminated ps \/ dsdp_inv ps.
+Proof. Admitted.
+
 (* C1: Every dsdp_inv state has progress *)
 Lemma dsdp_inv_has_progress ps :
   dsdp_inv ps -> has_progress data ps.
@@ -978,15 +1085,27 @@ case.
   exact (@has_ret_progress data ps0 0 d0 Hsz0 Hret).
 Qed.
 
-(* C2 sub-lemmas *)
+(* C2 sub-lemmas — signatures match enriched dsdp_inv constructors *)
+
+(* C2a: AR(j) → AS variant *)
 Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists f, nth (default_proc data) ps 0 = Recv j.+1 f) ->
+  (exists f, nth (default_proc data) ps 0 = Recv j.+1 f /\
+     forall v, @std_from_enc AHE v != None ->
+       exists sv rest, f v = Send (alice_send_dest j) sv rest) ->
   relay_at_body j ps ->
   (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
+  ((j == 1%N :> nat) ->
+     exists f_enc : cipher AHE -> proc data,
+       nth (default_proc data) ps 1 = Recv 0 (oapp f_enc Fail \o @std_from_enc AHE)) ->
+  ((2 <= j)%N -> exists f, nth (default_proc data) ps j = Recv 0 f) ->
+  ((3 <= j)%N ->
+     exists f, nth (default_proc data) ps j.-1 = Recv j.-2 f /\
+       (forall v, @std_from_enc AHE v != None -> exists sv, f v = Send j sv Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof. Admitted.
 
+(* C2b: AS0 → AR(1) *)
 Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
@@ -996,39 +1115,49 @@ Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof. Admitted.
 
+(* C2c: AS1 → AR(2) or drain *)
 Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
   nth (default_proc data) ps 1 =
     Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
   (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
+  ((1 < n_relay)%N ->
+     exists sv f, relay_body (Ordinal (n:=n_relay.+1) (m:=1) Hn_relay) =
+       Send 0 sv (Recv 0 f) /\
+       nth (default_proc data) ps 2 = Recv 0 f) ->
+  (n_relay = 1%N -> exists f, nth (default_proc data) ps 2 = Recv 1 f) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof. Admitted.
 
+(* C2d: ASj → AR(j+1) or drain *)
 Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
   (2 <= j)%N ->
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   (exists v k, nth (default_proc data) ps 0 = Send j v k) ->
-  (* relay j-1 at position j has Recv(0,...) *)
   (exists f, nth (default_proc data) ps j = Recv 0 f) ->
   (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
+  (exists sv f, relay_body j = Send 0 sv (Recv 0 f) /\
+     nth (default_proc data) ps j.+1 = Recv 0 f) ->
+  ((3 <= j)%N ->
+     exists f, nth (default_proc data) ps j.-1 = Recv j.-2 f /\
+       (forall v, @std_from_enc AHE v != None -> exists sv, f v = Send j sv Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof. Admitted.
 
-Lemma dsdp_inv_step_FW (j : 'I_n_relay.+1) ps :
+(* C2e: drain(d) → drain(d+1) or tail *)
+Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
   (j.+1 < n_relay.+1)%N ->
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
   (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
   (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
-  all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
-
-Lemma dsdp_inv_step_FW_last ps :
-  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
-  (exists v, nth (default_proc data) ps n_relay = Send n_relay.+1 v Finish) ->
+  (forall i : nat, (i < j)%N -> nth (default_proc data) ps i.+1 = Finish) ->
   (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f) ->
+  (forall i : nat, (j < i)%N -> (i < n_relay)%N ->
+     exists f, nth (default_proc data) ps i.+1 = Recv i f /\
+       (forall v, @std_from_enc AHE v != None ->
+          exists sv, f v = Send i.+2 sv Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof. Admitted.
 
