@@ -1097,11 +1097,12 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
     (exists vd, nth (default_proc data) ps 0 = Send j vd (alice_foldr_at j.+1)) ->
-    (exists f, nth (default_proc data) ps j = Recv 0 f) ->
+    (exists sv0 f0, relay_body (@inord n_relay j.-1) = Send 0 sv0 (Recv 0 f0) /\
+       nth (default_proc data) ps j = Recv 0 f0) ->
     (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
-    (exists sv f, relay_body j = Send 0 sv (Recv 0 f) /\           (* H7a: NEW *)
+    (exists sv f, relay_body j = Send 0 sv (Recv 0 f) /\           (* H7a *)
        nth (default_proc data) ps j.+1 = Recv 0 f) ->
-    ((3 <= j)%N ->                                                 (* H7b: NEW *)
+    ((3 <= j)%N ->                                                 (* H7b *)
        exists f, nth (default_proc data) ps j.-1 = Recv j.-2 f /\
          (forall v, @std_from_enc AHE v != None ->
             exists sv, f v = Send j sv Finish)) ->
@@ -1159,9 +1160,9 @@ case.
   exact (@has_comm_progress data ps0 0 1 vd (alice_foldr_at 2)
     (oapp f_inner Fail \o @std_from_enc AHE)
     Hsz0 Halice Hr0).
-- (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf [vd Halice] [fj Hrj] Hpending _ _.
+- (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf [vd Halice] [sv0 [f0 [Hbody0 Hrj]]] Hpending _ _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
-  exact (@has_comm_progress data ps0 0 j vd (alice_foldr_at j.+1) fj Hsz0 Halice Hrj).
+  exact (@has_comm_progress data ps0 0 j vd (alice_foldr_at j.+1) f0 Hsz0 Halice Hrj).
 - (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf Halice [v Hsend] [f Hrecv] _ [_ _] _.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
   exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
@@ -1332,7 +1333,8 @@ Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
   (2 <= j)%N ->
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   (exists vd, nth (default_proc data) ps 0 = Send j vd (alice_foldr_at j.+1)) ->
-  (exists f, nth (default_proc data) ps j = Recv 0 f) ->
+  (exists sv0 f0, relay_body (@inord n_relay j.-1) = Send 0 sv0 (Recv 0 f0) /\
+     nth (default_proc data) ps j = Recv 0 f0) ->
   (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
   (exists sv f, relay_body j = Send 0 sv (Recv 0 f) /\
      nth (default_proc data) ps j.+1 = Recv 0 f) ->
