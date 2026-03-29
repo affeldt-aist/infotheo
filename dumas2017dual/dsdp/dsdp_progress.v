@@ -914,14 +914,14 @@ Lemma relay_recv_upstream_linked_fires (f : data -> proc data) (j : nat) (v : da
   (forall w, @std_from_enc AHE w != None -> exists sw, f w = Send j.+2 sw Finish) ->
   @std_from_enc AHE v != None ->
   exists sv, f v = Send j.+2 sv Finish.
-Proof. Admitted.
+Proof. move=> Hcont Henc; exact (Hcont v Henc). Qed.
 
 (* T4: Last relay recv fires → Send(0, v, Finish) *)
 Lemma relay_last_recv_fires (f : data -> proc data) (v : data) :
   (forall w, @std_from_enc AHE w != None -> exists sw, f w = Send 0 sw Finish) ->
   @std_from_enc AHE v != None ->
   exists sv, f v = Send 0 sv Finish.
-Proof. Admitted.
+Proof. move=> Hcont Henc; exact (Hcont v Henc). Qed.
 
 (* NP1-NP6: Non-participant step lemmas *)
 
