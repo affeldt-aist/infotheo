@@ -1389,7 +1389,6 @@ Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
         nth (default_proc data) ps i.+1 = Finish) /\
      (exists sv_fw, nth (default_proc data) ps j.-1 = Send j sv_fw Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof.
 Proof. Admitted.
 
 (* C2e: drain(d) → drain(d+1) or tail *)
