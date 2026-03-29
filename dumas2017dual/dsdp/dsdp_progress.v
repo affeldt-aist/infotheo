@@ -1059,7 +1059,9 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     (j.+1 < n_relay.+1)%N ->
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
-    (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+    (* Alice at tail with continuation to Ret *)
+    (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f /\
+       forall v, @std_from_enc AHE v != None -> exists d, f v = Ret d) ->
     (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
     (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
     (forall i : nat, (i < j)%N -> nth (default_proc data) ps i.+1 = Finish) ->
@@ -1119,7 +1121,7 @@ case.
 - (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf [v [k Halice]] [fj Hrj] Hpending _ _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 0 j v k fj Hsz0 Halice Hrj).
-- (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa Halice] [v Hsend] [f Hrecv] _ [_ _] _.
+- (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa [Halice _]] [v Hsend] [f Hrecv] _ [_ _] _.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
   exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
 - (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] [f [Hrecv _]] Hrels_fin.
@@ -1194,7 +1196,8 @@ Proof. Admitted.
 Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
   (j.+1 < n_relay.+1)%N ->
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
+  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f /\
+     forall v, @std_from_enc AHE v != None -> exists d, f v = Ret d) ->
   (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
   (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
   (forall i : nat, (i < j)%N -> nth (default_proc data) ps i.+1 = Finish) ->
@@ -1207,7 +1210,7 @@ Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
           exists sv, f v = Send i.+2 sv Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
-move=> Hjb Hsz Hwf [fa Halice] [vd Hsend] [f Hrecv] Hfin
+move=> Hjb Hsz Hwf [fa [Halice Halice_cont]] [vd Hsend] [f Hrecv] Hfin
   [fl [Hlast Hlast_cont]] Hbetween.
 have [Hstep_j Hstep_j1] :=
   @step_send_recv_match data ps j.+1 j.+2 vd Finish f Hsend Hrecv.
@@ -1289,6 +1292,7 @@ case: (ltnP j.+1 n_relay) => Hjn.
 - (* j+1 >= n_relay: last relay reached → Inv_tail *)
   have Hjn_eq : j.+1 = n_relay by apply /eqP; rewrite eqn_leq Hjn -ltnS Hjb.
   have Heq_pos : j.+2 = n_relay.+1 by rewrite Hjn_eq.
+  have Halice_saved := Halice.
   have Hfl_eq : fl = f.
     have : nth (default_proc data) ps n_relay.+1 = nth (default_proc data) ps j.+2
       by rewrite Heq_pos.
@@ -1303,11 +1307,12 @@ case: (ltnP j.+1 n_relay) => Hjn.
     exists sv.
     have Hszj2 : (j.+2 < size ps)%N by rewrite Hsz Heq_pos.
     by rewrite -Heq_pos (@nth_one_step data ps j.+2 Hszj2) Hstep_j1 Hfv.
-  + (* Alice at tail Recv: nop, with continuation info *)
-    (* Need: Alice's Recv continuation produces Ret. *)
-    (* This info is NOT in Inv_drain — it would need to come from the protocol template. *)
-    (* For now, we need Inv_drain to carry Alice's tail continuation behavior. *)
-    admit.
+  + (* Alice at tail Recv: nop, with Ret continuation *)
+    exists fa; split.
+    * have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+      rewrite (@nth_one_step data ps 0 Hsz0) /smc_interpreter.step.
+      by rewrite Halice_saved Hlast.
+    * exact Halice_cont.
   + (* All relays < n_relay at Finish *)
     move=> i Hi_lt.
     rewrite /relay_at_finish_pred.
@@ -1323,7 +1328,7 @@ case: (ltnP j.+1 n_relay) => Hjn.
       have -> : i.+1 = j.+1 by rewrite Hij_eq.
       have Hszj : (j.+1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
       by rewrite (@nth_one_step data ps j.+1 Hszj) Hstep_j.
-Admitted.
+Qed.
 
 Lemma dsdp_inv_step_TAIL ps :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
