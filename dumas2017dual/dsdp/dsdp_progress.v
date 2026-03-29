@@ -906,7 +906,23 @@ Lemma relay_inter_recv_from_body_fires (j : 'I_n_relay.+1) (v : data)
   exists f_dec, f0 v = Recv j f_dec /\
     (forall w, @std_from_enc AHE w != None ->
        exists sw, f_dec w = Send j.+2 sw Finish).
-Proof. Admitted.
+Proof.
+move=> Hj0 Hjn Hbody Henc.
+rewrite /relay_body (negbTE (lt0n_neq0 Hj0)) in Hbody.
+have Hjn' : (j : nat) == n_relay = false
+  by apply /negP => /eqP Heq; rewrite Heq ltnn in Hjn.
+rewrite Hjn' /pRecvEnc_local /std_Recv_enc /Recv_param in Hbody.
+case: Hbody => _ Hf0; subst f0; rewrite /comp.
+case Hsfe: (@std_from_enc AHE v) => [c|]; last by rewrite Hsfe in Henc.
+rewrite /= /pRecvDec_local /std_Recv_dec /Recv_param.
+eexists; split; first by [].
+move=> w Hencw; rewrite /comp.
+case Hsfw: (@std_from_enc AHE w) => [c'|]; last by rewrite Hsfw in Hencw.
+rewrite /=.
+case Hdec: (dec (dk_relay j) c') => [m|];
+  last by have := dec_total (dk_relay j) c'; rewrite Hdec.
+by eexists.
+Qed.
 
 (* T3: recv_upstream_linked fires → forwarding *)
 (* This is trivial from the linked continuation behavior *)
