@@ -1167,7 +1167,47 @@ Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
   (forall m, exists g : cipher AHE -> proc data,
      f_inner m = Recv 0 (oapp g Fail \o @std_from_enc AHE)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
+Proof.
+move=> Hsz Hwf [vd [k Halice]] Hr0 Hpending Hfinner_cont; right.
+have [Hstep0 Hstep1] :=
+  @step_send_recv_match data ps 0 1 vd k
+    (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE))
+    Halice Hr0.
+have Hwf0 : proc_wf AHE (nth (default_proc data) ps 0)
+  by apply Hwf; rewrite Hsz.
+rewrite Halice /= in Hwf0; have [Henc_vd _] := Hwf0.
+case Hsfe: (@std_from_enc AHE vd) => [c|]; last by rewrite Hsfe in Henc_vd.
+case Hdec: (@dec AHE (dk_relay ord0) c) => [m|];
+  last by have := dec_total (dk_relay ord0) c; rewrite Hdec.
+have Hr0_result : (step ps [::] 1).1.1 = f_inner m
+  by rewrite Hstep1 /comp Hsfe /= Hdec.
+have [g Hfm] := Hfinner_cont m.
+have Hord1 : (1 < n_relay.+1)%N := Hn_relay.
+apply (Inv_AR (Ordinal Hord1)).
+- by rewrite (@size_one_step data).
+- exact (@one_step_preserves_proc_wf ps Hwf).
+- (* Alice: k = Recv(2,...) with continuation — needs foldr connection *)
+  admit.
+- rewrite /relay_at_body.
+  have Hsz2 : ((Ordinal Hord1).+1 < size ps)%N by rewrite Hsz /=.
+  rewrite (@nth_one_step data ps (Ordinal Hord1).+1 Hsz2) /smc_interpreter.step.
+  have Hb1 := Hpending (Ordinal Hord1) (isT : (0 < (Ordinal Hord1 : nat))%N).
+  rewrite /relay_at_body /= in Hb1.
+  have [sv1 [sk1 Hbs1]] := relay_body_is_send0 (Ordinal Hord1).
+  by rewrite Hb1 Hbs1 Halice.
+- move=> i Hi; rewrite /relay_at_body.
+  have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
+  rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
+  have Hi0 : (0 < i)%N := ltn_trans (isT : (0 < 1)%N) Hi.
+  have Hbi := Hpending i Hi0; rewrite /relay_at_body in Hbi.
+  have [svi [ski Hbsi]] := relay_body_is_send0 i.
+  by rewrite Hbi Hbsi Halice.
+- move=> _; exists g.
+  have Hsz1 : (1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
+  by rewrite (@nth_one_step data ps 1 Hsz1) Hr0_result Hfm.
+- by move=> /=.
+- by [].
+Admitted.
 
 (* C2c: AS1 → AR(2) or drain *)
 Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
