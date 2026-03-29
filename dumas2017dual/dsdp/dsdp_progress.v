@@ -1337,9 +1337,10 @@ case: (posnP (j : nat)) => Hj0.
          rewrite Hn1_eq in H_nth.
          by rewrite H_nth Hstep_j1 Hsk_form Hn1_eq.
       -- move=> w Hencw.
-         rewrite /relay_body /= eqn0Ngt Hn_relay Hn1_eq eqxx
+         rewrite /relay_body /= eqn0Ngt Hn_relay eqxx
                  /pRecvDec_local /std_Recv_dec /Recv_param in Hblast.
-         case: Hblast => _ Hf_eq; rewrite -Hf_eq /comp.
+         case: Hblast => _ Hfl_eq.
+         rewrite -Hfl_eq /comp.
          case Hsfe: (@std_from_enc AHE w) => [c|];
            last by rewrite Hsfe in Hencw.
          case Hdec: (dec (dk_relay ord_max) c) => [m|]; last first.
@@ -1450,8 +1451,11 @@ case: (posnP (j : nat)) => Hj0.
       -- (* Finish zone: positions 1 through j.-2 *)
          move=> i Hi.
          have Hszi : (i.+1 < size ps)%N.
-           rewrite Hsz; apply (ltn_trans _ (ltnSn _)).
-           exact (leq_ltn_trans Hi (ltn_ord j)).
+           rewrite Hsz.
+           have Hij : (i.+1 < j)%N.
+             move: Hi; case: (j : nat) Hj2 => [|[|j']] //= _.
+             by move=> Hi; exact (ltn_trans Hi (ltnSn _)).
+           exact (ltn_trans Hij (ltn_trans (ltn_ord j) (ltnSn _))).
          case: (ltnP i.+1 j.-2) => Hlt.
          ** (* i+1 < j-2: was Finish, NOP *)
             have Hfin := Hfinzone i Hlt.
