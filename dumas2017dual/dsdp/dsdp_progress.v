@@ -1388,9 +1388,10 @@ case: (ltnP j.+1 n_relay) => Hjn.
     have H_sz_0 : (0 < size ps)%N by rewrite Hsz.
     rewrite (@nth_one_step data ps 0 H_sz_0) /smc_interpreter.step H_a_et //.
   + (* Relay j+1 forwarding *)
-    have Hszj2 : (j.+2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn (ltnSn _)).
-    have H := @nth_one_step data ps j.+2 Hszj2.
-    by rewrite /= in H; rewrite H Hstep_j1 Hfv.
+    have Hj2sz : (j.+2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn (ltnSn _)).
+    have : nth (default_proc data) (one_step_procs data ps) j.+2 =
+           (step ps [::] j.+2).1.1 by exact (@nth_one_step data ps j.+2 Hj2sz).
+    by move=> ->; rewrite Hstep_j1 Hfv.
   + (* Relay j+2 at Recv *)
     case: (ltnP j.+2 n_relay) => Hjn2.
     * have [f2 [Hr2 _]] := Hbetween j.+2 (ltn_trans (ltnSn j) (ltnSn j.+1)) Hjn2.
