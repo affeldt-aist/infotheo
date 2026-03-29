@@ -1366,6 +1366,7 @@ Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
 Proof.
 move=> Hjb Hsz Hwf Halice_foldr [vd Hsend] [f Hrecv] Hfin
   [fl [Hlast Hlast_cont]] Hbetween.
+have Halice_save := Halice_foldr.
 have [Hstep_j Hstep_j1] :=
   @step_send_recv_match data ps j.+1 j.+2 vd Finish f Hsend Hrecv.
 have Hwf_j : proc_wf AHE (nth (default_proc data) ps j.+1)
@@ -1385,8 +1386,8 @@ case: (ltnP j.+1 n_relay) => Hjn.
   + (* Alice nop: stays at alice_foldr_at n_relay.+1 *)
     have Hsz0 : (0 < size ps)%N by rewrite Hsz.
     have [ftail Htail_recv] := alice_tail_is_recv.
-    rewrite alice_foldr_at_tail in Halice_foldr.
-    by rewrite (@nth_one_step data ps 0 Hsz0) /smc_interpreter.step Halice_foldr Htail_recv Hlast.
+    have Halice_tail := Halice_foldr; rewrite alice_foldr_at_tail in Halice_tail.
+    by rewrite (@nth_one_step data ps 0 Hsz0) /smc_interpreter.step Halice_tail Htail_recv Hlast.
   + (* Relay j+1 forwarding *) exists sv.
     have Hszj2 : (j.+2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn (ltnSn _)).
     by rewrite (@nth_one_step data ps j.+2 Hszj2) Hstep_j1 Hfv.
