@@ -1350,7 +1350,83 @@ Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
      exists f, nth (default_proc data) ps j.-1 = Recv j.-2 f /\
        (forall v, @std_from_enc AHE v != None -> exists sv, f v = Send j sv Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
+Proof.
+move=> Hj2 Hsz Hwf [vd Halice] [sv0 [f0 [Hbody0 Hrecvj]]] Hpending
+  [sv_body [f_body [Hbody_eq Hr_next]]] Hprev.
+right.
+(* Alice sends to j, position j receives from 0 — they fire *)
+have [Hstep0 Hstepj] :=
+  @step_send_recv_match data ps 0 j vd (alice_foldr_at j.+1) f0 Halice Hrecvj.
+(* std_from_enc vd != None for T2 *)
+have Hwf0 : proc_wf AHE (nth (default_proc data) ps 0) by apply Hwf; rewrite Hsz.
+rewrite Halice /= in Hwf0; have [Henc_vd _] := Hwf0.
+(* Apply T2: f0 vd = Recv (inord j.-1) f_dec *)
+have Hj1_lt_n1 : (j.-1 < n_relay.+1)%N
+  := leq_ltn_trans (leq_pred j) (ltn_ord j).
+have Hj1_pos : (0 < @inord n_relay j.-1)%N.
+  rewrite (inordK Hj1_lt_n1).
+  by rewrite -subn1 subn_gt0.
+have Hj1_lt : (@inord n_relay j.-1 < n_relay)%N.
+  by rewrite inordK // -ltnS (ltn_predK Hj2).
+have [f_dec [Hf0vd Hfdec_cont]] :=
+  @relay_inter_recv_from_body_fires (@inord n_relay j.-1) vd sv0 f0
+    Hj1_pos Hj1_lt Hbody0 Henc_vd.
+(* case split: j < n_relay → Inv_AR(j+1), j = n_relay → Inv_drain *)
+case: (ltnP j n_relay) => Hjn.
+- (* j < n_relay: target Inv_AR(j+1) *)
+  have Hord_j1 : (j.+1 < n_relay.+1)%N := Hjn.
+  apply (Inv_AR (Ordinal Hord_j1)).
+  + by rewrite (@size_one_step data).
+  + exact (@one_step_preserves_proc_wf ps Hwf).
+  + have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+    by rewrite (@nth_one_step data ps 0 Hsz0) Hstep0.
+  + (* relay_at_body j+1: relay j at body → nop since Alice sent to j not j+1 *)
+    rewrite /relay_at_body.
+    have Hsz_j1 : ((Ordinal Hord_j1).+1 < size ps)%N by rewrite Hsz /=.
+    rewrite (@nth_one_step data ps (Ordinal Hord_j1).+1 Hsz_j1) /smc_interpreter.step.
+    have Hbj1 := Hpending (Ordinal Hord_j1) (ltnSn j); rewrite /relay_at_body /= in Hbj1.
+    have [sv_j1 [sk_j1 Hbs_j1]] := relay_body_is_send0 (Ordinal Hord_j1).
+    by rewrite Hbj1 Hbs_j1 Halice.
+  + (* pending relays after j+1 → nop *)
+    move=> i Hi; rewrite /relay_at_body.
+    have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
+    rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
+    have Hi_j : (j < i)%N := ltn_trans (ltnSn j) Hi.
+    have Hbi := Hpending i Hi_j; rewrite /relay_at_body in Hbi.
+    have [svi [ski Hbsi]] := relay_body_is_send0 i.
+    by rewrite Hbi Hbsi Halice.
+  + (* H6: j+1 == 1 → false since j >= 2 *)
+    move=> Heq.
+    have Hval : j.+1 = 1%N by move: Heq; rewrite /= => /eqP.
+    by move: Hj2; rewrite -ltnS Hval.
+  + (* H7: 2 <= j+1 — relay j at body, nop since Alice sends to j not j.+1 *)
+    move=> _.
+    have Hinord_j : @inord n_relay (Ordinal (n:=n_relay.+1) (m:=j.+1) Hord_j1).-1 = j :> 'I_n_relay.+1.
+      by apply /val_inj; rewrite /= inordK.
+    exists sv_body, f_body; split.
+    * by rewrite Hinord_j.
+    * have Hszj1 : (j.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord j).
+      rewrite (@nth_one_step data ps j.+1 Hszj1) /smc_interpreter.step Hr_next Halice.
+      rewrite ifN_eq; first by [].
+      by rewrite neq_ltn ltnSn.
+  + (* H9: 3 <= j+1 — relay j-1 after firing = Recv (inord j.-1) f_dec *)
+    move=> Hj3.
+    exists f_dec; split.
+    * have Hszj : (j < size ps)%N by rewrite Hsz; exact (ltn_trans (ltn_ord j) (ltnSn _)).
+      have -> : (Ordinal (n:=n_relay.+1) (m:=j.+1) Hord_j1).-1 = j :> nat by [].
+      rewrite (@nth_one_step data ps j Hszj) Hstepj Hf0vd.
+      congr (Recv _ _).
+      by rewrite (inordK Hj1_lt_n1).
+    * move=> w Hencw.
+      have [sw Hsw] := Hfdec_cont w Hencw.
+      exists sw; rewrite Hsw.
+      congr (Send _ _ _).
+      by rewrite (inordK Hj1_lt_n1) (ltn_predK Hj2).
+- (* j >= n_relay: target Inv_drain *)
+  have Hjn_eq : (j : nat) = n_relay.
+    by apply /eqP; rewrite eqn_leq Hjn -ltnS (ltn_ord j).
+  admit.
+Admitted.
 
 (* C2e: drain(d) → drain(d+1) or tail *)
 Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
