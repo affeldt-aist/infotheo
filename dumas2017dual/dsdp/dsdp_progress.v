@@ -1309,15 +1309,15 @@ case: (ltnP 1 n_relay) => Hn1.
     have Hsz2 : (2 < size ps)%N by rewrite Hsz Hn1_eq.
     by rewrite (@nth_one_step data ps 2 Hsz2) /smc_interpreter.step Hr_last Hr0 /=.
   + by [].
-  + (* BROKEN: needs Hn1_eq rewrite + last relay Recv nop verification *)
-    rewrite Hn1_eq; exists f_last; split.
-    * admit. (* one_step[2] = Recv 1 f_last: nop since ps[1]=Recv not Send *)
+  + rewrite Hn1_eq; exists f_last; split.
+    * have Hsz2 : (2 < size ps)%N by rewrite Hsz Hn1_eq.
+      by rewrite (@nth_one_step data ps 2 Hsz2) /smc_interpreter.step Hr_last Hr0 /=.
     * exact Hlast_cont.
   + move=> i Hi1 Hi2.
     have : (i < 1)%N by rewrite -Hn1_eq.
     rewrite ltnS leqn0 => /eqP Hi0; subst i.
     by rewrite ltnn in Hi1.
-Admitted.
+Qed.
 
 (* C2d: ASj → AR(j+1) or drain *)
 Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
