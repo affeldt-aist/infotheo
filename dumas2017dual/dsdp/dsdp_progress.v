@@ -1056,7 +1056,8 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
        exists sv f, relay_body (Ordinal (n:=n_relay.+1) (m:=1) Hn_relay) =
          Send 0 sv (Recv 0 f) /\
          nth (default_proc data) ps 2 = Recv 0 f) ->
-    (n_relay = 1%N -> exists f, nth (default_proc data) ps 2 = Recv 1 f) -> (* H6b: NEW *)
+    (n_relay = 1%N -> exists f, nth (default_proc data) ps 2 = Recv 1 f /\ (* H6b *)
+       forall v, @std_from_enc AHE v != None -> exists sv, f v = Send 0 sv Finish) ->
     dsdp_inv ps
 | Inv_ASj (j : 'I_n_relay.+1) ps :
     (2 <= j)%N ->
@@ -1244,9 +1245,79 @@ Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
      exists sv f, relay_body (Ordinal (n:=n_relay.+1) (m:=1) Hn_relay) =
        Send 0 sv (Recv 0 f) /\
        nth (default_proc data) ps 2 = Recv 0 f) ->
-  (n_relay = 1%N -> exists f, nth (default_proc data) ps 2 = Recv 1 f) ->
+  (n_relay = 1%N -> exists f, nth (default_proc data) ps 2 = Recv 1 f /\
+     forall v, @std_from_enc AHE v != None -> exists sv, f v = Send 0 sv Finish) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
+Proof.
+move=> Hsz Hwf [vd [k [Halice [Hk_ar2 Hk_drain]]]] Hr0 Hpending Hfinner_cont
+  Hrelay1_inter Hrelay1_last; right.
+have [Hstep0 Hstep1] := @step_send_recv_match data ps 0 1 vd k
+  (oapp f_inner Fail \o @std_from_enc AHE) Halice Hr0.
+have Hwf0 : proc_wf AHE (nth (default_proc data) ps 0) by apply Hwf; rewrite Hsz.
+rewrite Halice /= in Hwf0; have [Henc_vd _] := Hwf0.
+case Hsfe: (@std_from_enc AHE vd) => [c|]; last by rewrite Hsfe in Henc_vd.
+have Hr0_result : (step ps [::] 1).1.1 = f_inner c by rewrite Hstep1 /comp Hsfe.
+have [sv_r0 Hfic] := Hfinner_cont c.
+case: (ltnP 1 n_relay) => Hn1.
+- (* n_relay >= 2 → Inv_AR(2) *)
+  have [fk [Hk Hk_cont]] := Hk_ar2 Hn1.
+  have Hord2 : (2 < n_relay.+1)%N := Hn1.
+  apply (Inv_AR (Ordinal Hord2)).
+  + by rewrite (@size_one_step data).
+  + exact (@one_step_preserves_proc_wf ps Hwf).
+  + exists fk; split.
+    * have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+      by rewrite (@nth_one_step data ps 0 Hsz0) Hstep0 Hk.
+    * exact Hk_cont.
+  + rewrite /relay_at_body.
+    have Hsz3 : ((Ordinal Hord2).+1 < size ps)%N by rewrite Hsz /=.
+    rewrite (@nth_one_step data ps (Ordinal Hord2).+1 Hsz3) /smc_interpreter.step.
+    have Hb2 := Hpending (Ordinal Hord2) (isT : (1 < 2)%N); rewrite /relay_at_body /= in Hb2.
+    have [sv2 [sk2 Hbs2]] := relay_body_is_send0 (Ordinal Hord2).
+    by rewrite Hb2 Hbs2 Halice.
+  + move=> i Hi; rewrite /relay_at_body.
+    have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
+    rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
+    have Hi1 : (1 < i)%N := ltn_trans (isT : (1 < 2)%N) Hi.
+    have Hbi := Hpending i Hi1; rewrite /relay_at_body in Hbi.
+    have [svi [ski Hbsi]] := relay_body_is_send0 i.
+    by rewrite Hbi Hbsi Halice.
+  + by move=> /eqP.
+  + move=> _.
+    have [sv1 [f1 [Hbody1 Hr1]]] := Hrelay1_inter Hn1.
+    exists f1.
+    have Hsz2 : (2 < size ps)%N by rewrite Hsz.
+    by rewrite (@nth_one_step data ps 2 Hsz2) /smc_interpreter.step Hr1 Halice.
+  + by [].
+- (* n_relay = 1 → Inv_drain(0) *)
+  have Hn1_eq : n_relay = 1%N by apply /eqP; rewrite eqn_leq Hn1 Hn_relay.
+  have [fk [Hk Hk_cont]] := Hk_drain Hn1_eq.
+  have Halice_saved := Halice.
+  have [f_last [Hr_last Hlast_cont]] := Hrelay1_last Hn1_eq.
+  apply (Inv_drain ord0).
+  + by rewrite /= Hn1_eq.
+  + by rewrite (@size_one_step data).
+  + exact (@one_step_preserves_proc_wf ps Hwf).
+  + exists fk; split.
+    * have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+      by rewrite Hn1_eq (@nth_one_step data ps 0 Hsz0) Hstep0 Hk.
+    * exact Hk_cont.
+  + exists sv_r0.
+    have Hsz1 : (1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
+    by rewrite (@nth_one_step data ps 1 Hsz1) Hr0_result Hfic.
+  + exists f_last.
+    have Hsz2 : (2 < size ps)%N by rewrite Hsz Hn1_eq.
+    by rewrite (@nth_one_step data ps 2 Hsz2) /smc_interpreter.step Hr_last Hr0 /=.
+  + by [].
+  + (* BROKEN: needs Hn1_eq rewrite + last relay Recv nop verification *)
+    rewrite Hn1_eq; exists f_last; split.
+    * admit. (* one_step[2] = Recv 1 f_last: nop since ps[1]=Recv not Send *)
+    * exact Hlast_cont.
+  + move=> i Hi1 Hi2.
+    have : (i < 1)%N by rewrite -Hn1_eq.
+    rewrite ltnS leqn0 => /eqP Hi0; subst i.
+    by rewrite ltnn in Hi1.
+Admitted.
 
 (* C2d: ASj → AR(j+1) or drain *)
 Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
