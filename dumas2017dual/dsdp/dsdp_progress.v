@@ -1459,19 +1459,18 @@ case: (posnP (j : nat)) => Hj0.
          case: (ltnP i.+1 j.-2) => Hlt.
          ** (* i+1 < j-2: was Finish, NOP *)
             have Hfin := Hfinzone i Hlt.
-            by rewrite (@nth_one_step_nop ps i.+1 Hszi
-                         (finish_step_nop Hfin)) Hfin.
+            by rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step Hfin.
          ** (* i+1 = j-2: frontier sender fired → Finish *)
             have Heq : i.+1 = j.-2
               by apply /eqP; rewrite eqn_leq Hlt Hi.
-            rewrite Heq.
+            rewrite Heq in Hszi |- *.
             by rewrite (@nth_one_step data ps j.-2 Hszi)
                        Hstep_front_send.
       -- (* Frontier receiver fires → Send j sv_new Finish *)
          exists sv_new.
          have Hszjm1 : (j.-1 < size ps)%N.
-           rewrite Hsz; apply (ltn_trans _ (ltnSn _));
-           exact (ltn_ord j).
+           rewrite Hsz.
+           exact (ltn_trans (leq_ltn_trans (leq_pred j) (ltn_ord j)) (ltnSn n_relay.+1)).
          by rewrite (@nth_one_step data ps j.-1 Hszjm1)
                     Hstep_front_recv Hfrecv_sv.
 Qed.
