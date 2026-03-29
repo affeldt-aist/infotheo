@@ -1063,7 +1063,9 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
     (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
     (forall i : nat, (i < j)%N -> nth (default_proc data) ps i.+1 = Finish) ->
-    (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f) -> (* H8a: NEW *)
+    (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f /\  (* H8a: NEW *)
+       forall v, @std_from_enc AHE v != None ->
+         exists sv, f v = Send 0 sv Finish) ->
     (forall i : nat, (j < i)%N -> (i < n_relay)%N ->                     (* H8b: NEW *)
        exists f, nth (default_proc data) ps i.+1 = Recv i f /\
          (forall v, @std_from_enc AHE v != None ->
@@ -1117,7 +1119,7 @@ case.
 - (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf [v [k Halice]] [fj Hrj] Hpending _ _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 0 j v k fj Hsz0 Halice Hrj).
-- (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa Halice] [v Hsend] [f Hrecv] _ _ _.
+- (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf [fa Halice] [v Hsend] [f Hrecv] _ [_ _] _.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
   exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
 - (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] [f [Hrecv _]] Hrels_fin.
@@ -1196,7 +1198,9 @@ Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
   (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
   (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
   (forall i : nat, (i < j)%N -> nth (default_proc data) ps i.+1 = Finish) ->
-  (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f) ->
+  (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f /\
+     forall v, @std_from_enc AHE v != None ->
+       exists sv, f v = Send 0 sv Finish) ->
   (forall i : nat, (j < i)%N -> (i < n_relay)%N ->
      exists f, nth (default_proc data) ps i.+1 = Recv i f /\
        (forall v, @std_from_enc AHE v != None ->
