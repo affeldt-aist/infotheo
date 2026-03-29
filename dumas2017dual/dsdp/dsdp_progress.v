@@ -1027,6 +1027,9 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     nth (default_proc data) ps 1 =
       Recv 0 (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE)) ->
     (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
+    (* f_inner produces pRecvEnc form *)
+    (forall m, exists g : cipher AHE -> proc data,
+       f_inner m = Recv 0 (oapp g Fail \o @std_from_enc AHE)) ->
     dsdp_inv ps
 | Inv_AS1 ps (f_inner : cipher AHE -> proc data) :
     size ps = n_relay.+2 ->
@@ -1035,6 +1038,8 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     nth (default_proc data) ps 1 =
       Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
     (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
+    (* f_inner produces Send(2,...,Finish) *)
+    (forall c, exists sv, f_inner c = Send 2 sv Finish) ->
     ((1 < n_relay)%N ->                                         (* H6a: NEW *)
        exists sv f, relay_body (Ordinal (n:=n_relay.+1) (m:=1) Hn_relay) =
          Send 0 sv (Recv 0 f) /\
@@ -1108,12 +1113,12 @@ case.
   rewrite /relay_at_body Hrel in Hbody.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_ord j).
   exact (@has_comm_progress data ps0 j.+1 0 sv sk f Hj Hbody Halice).
-- (* Inv_AS0 *) move=> ps0 f_inner Hsz Hwf [v [k Halice]] Hr0 Hpending.
+- (* Inv_AS0 *) move=> ps0 f_inner Hsz Hwf [v [k Halice]] Hr0 Hpending _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 0 1 v k
     (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE))
     Hsz0 Halice Hr0).
-- (* Inv_AS1 *) move=> ps0 f_inner Hsz Hwf [v [k Halice]] Hr0 Hpending _ _.
+- (* Inv_AS1 *) move=> ps0 f_inner Hsz Hwf [v [k Halice]] Hr0 Hpending _ _ _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 0 1 v k
     (oapp f_inner Fail \o @std_from_enc AHE)
@@ -1159,6 +1164,8 @@ Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
   nth (default_proc data) ps 1 =
     Recv 0 (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE)) ->
   (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
+  (forall m, exists g : cipher AHE -> proc data,
+     f_inner m = Recv 0 (oapp g Fail \o @std_from_enc AHE)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof. Admitted.
 
@@ -1169,6 +1176,8 @@ Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
   nth (default_proc data) ps 1 =
     Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
   (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
+  (* f_inner produces Send(2,...,Finish) *)
+  (forall c, exists sv, f_inner c = Send 2 sv Finish) ->
   ((1 < n_relay)%N ->
      exists sv f, relay_body (Ordinal (n:=n_relay.+1) (m:=1) Hn_relay) =
        Send 0 sv (Recv 0 f) /\
