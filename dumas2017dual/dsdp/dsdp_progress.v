@@ -1176,17 +1176,7 @@ Qed.
 (* C2a: AR(j) → AS variant *)
 Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists f, nth (default_proc data) ps 0 = Recv j.+1 f /\
-     forall v, @std_from_enc AHE v != None ->
-       exists sv rest, f v = Send (alice_send_dest j) sv rest /\
-         ((j < n_relay)%N ->
-            exists f', rest = Recv j.+2 f' /\
-              forall v', @std_from_enc AHE v' != None ->
-                exists sv' rest', f' v' = Send (alice_send_dest (@inord n_relay j.+1)) sv' rest') /\
-         ((j : nat) = n_relay ->
-            exists f', rest = Recv n_relay.+1 f' /\
-              forall v', @std_from_enc AHE v' != None ->
-                exists d, f' v' = Ret d)) ->
+  nth (default_proc data) ps 0 = alice_foldr_at j ->
   relay_at_body j ps ->
   (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
   ((j == 1%N :> nat) ->
@@ -1336,7 +1326,7 @@ Qed.
 Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
   (2 <= j)%N ->
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists v k, nth (default_proc data) ps 0 = Send j v k) ->
+  (exists vd, nth (default_proc data) ps 0 = Send j vd (alice_foldr_at j.+1)) ->
   (exists f, nth (default_proc data) ps j = Recv 0 f) ->
   (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
   (exists sv f, relay_body j = Send 0 sv (Recv 0 f) /\
@@ -1553,7 +1543,30 @@ Qed.
 Lemma dsdp_inv_step ps :
   dsdp_inv ps ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
+Proof.
+case.
+- (* Inv_AR *)
+  move=> j ps0 Hsz Hwf Halice Hbody Hpending H6 H7 H9.
+  exact: (dsdp_inv_step_AR j ps0 Hsz Hwf Halice Hbody Hpending H6 H7 H9).
+- (* Inv_AS0 *)
+  move=> ps0 f_inner Hsz Hwf Halice Hr0 Hpending Hcont.
+  exact: (dsdp_inv_step_AS0 ps0 f_inner Hsz Hwf Halice Hr0 Hpending Hcont).
+- (* Inv_AS1 *)
+  move=> ps0 f_inner Hsz Hwf Halice Hr0 Hpending Hcont H6a H6b.
+  exact: (dsdp_inv_step_AS1 ps0 f_inner Hsz Hwf Halice Hr0 Hpending Hcont H6a H6b).
+- (* Inv_ASj *)
+  move=> j ps0 Hj Hsz Hwf Halice Hrecv Hpending H7a H7b.
+  exact: (dsdp_inv_step_ASj j ps0 Hj Hsz Hwf Halice Hrecv Hpending H7a H7b).
+- (* Inv_drain *)
+  move=> j ps0 Hjb Hsz Hwf Halice Hsend Hrecv Hfin Hlast Hbetween.
+  exact: (dsdp_inv_step_drain j ps0 Hjb Hsz Hwf Halice Hsend Hrecv Hfin Hlast Hbetween).
+- (* Inv_tail *)
+  move=> ps0 Hsz Hwf Hsend Halice Hrels.
+  exact: (dsdp_inv_step_TAIL ps0 Hsz Hwf Hsend Halice Hrels).
+- (* Inv_ret *)
+  move=> ps0 d Hsz Hwf Hret Hrels.
+  exact: (dsdp_inv_step_RET ps0 d Hsz Hwf Hret Hrels).
+Qed.
 
 (* C3: Step 2 satisfies invariant *)
 Lemma dsdp_inv_init :
