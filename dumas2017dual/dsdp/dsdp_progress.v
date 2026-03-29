@@ -1206,7 +1206,119 @@ Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
        (forall v, @std_from_enc AHE v != None ->
           exists sv, f v = Send i.+2 sv Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
-Proof. Admitted.
+Proof.
+move=> Hjb Hsz Hwf [fa Halice] [vd Hsend] [f Hrecv] Hfin
+  [fl [Hlast Hlast_cont]] Hbetween.
+have [Hstep_j Hstep_j1] :=
+  @step_send_recv_match data ps j.+1 j.+2 vd Finish f Hsend Hrecv.
+have Hwf_j : proc_wf AHE (nth (default_proc data) ps j.+1)
+  by apply Hwf; rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
+rewrite Hsend /= in Hwf_j; have [Henc _] := Hwf_j.
+right.
+case: (ltnP j.+1 n_relay) => Hjn.
+- (* j+1 < n_relay: intermediate → Inv_drain(j+1) *)
+  have [f1 [Hrecv1 Hcont1]] := Hbetween j.+1 (ltnSn j) Hjn.
+  rewrite Hrecv in Hrecv1; case: Hrecv1 => ?; subst f1.
+  have [sv Hfv] := Hcont1 vd Henc.
+  have Hj1b : (j.+1 < n_relay.+1)%N := ltn_trans Hjn (ltnSn _).
+  apply (Inv_drain (Ordinal Hj1b)).
+  + by rewrite /= ltnS.
+  + by rewrite (@size_one_step data).
+  + exact (@one_step_preserves_proc_wf ps Hwf).
+  + (* Alice nop *) exists fa.
+    have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+    by rewrite (@nth_one_step data ps 0 Hsz0) /smc_interpreter.step Halice Hlast.
+  + (* Relay j+1 forwarding *) exists sv.
+    have Hszj2 : (j.+2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn (ltnSn _)).
+    by rewrite (@nth_one_step data ps j.+2 Hszj2) Hstep_j1 Hfv.
+  + (* Relay j+2 at Recv *)
+    case: (ltnP j.+2 n_relay) => Hjn2.
+    * have [f2 [Hr2 _]] := Hbetween j.+2 (ltn_trans (ltnSn j) (ltnSn j.+1)) Hjn2.
+      exists f2.
+      have Hszj3 : (j.+3 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn2 (ltnSn _)).
+      by rewrite (@nth_one_step data ps j.+3 Hszj3) /smc_interpreter.step Hr2 Hrecv.
+    * have Hjn2_eq : j.+2 = n_relay by apply /eqP; rewrite eqn_leq Hjn2 Hjn.
+      exists fl.
+      have Hszl : (n_relay.+1 < size ps)%N by rewrite Hsz.
+      rewrite -(Hjn2_eq) in Hlast.
+      by rewrite Hjn2_eq (@nth_one_step data ps n_relay.+1 Hszl)
+         /smc_interpreter.step Hlast Hrecv.
+  + (* Finish zone extends by 1 *)
+    move=> /= i; rewrite ltnS leq_eqVlt => /orP [/eqP -> | Hi].
+    * have Hszj : (j.+1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
+      by rewrite (@nth_one_step data ps j.+1 Hszj) Hstep_j.
+    * have Hszii : (i.+1 < size ps)%N
+        by rewrite Hsz; exact (ltn_trans (ltn_trans Hi Hjb) (ltnSn _)).
+      by rewrite (@nth_one_step data ps i.+1 Hszii) /smc_interpreter.step (Hfin i Hi).
+  + (* Last relay nop *) exists fl; split; last exact Hlast_cont.
+    have Hszl : (n_relay.+1 < size ps)%N by rewrite Hsz.
+    rewrite (@nth_one_step data ps n_relay.+1 Hszl) /smc_interpreter.step Hlast.
+    case Hpn: (nth (default_proc data) ps n_relay) => [|dstn vn kn|frmn fn|dn||] //.
+    case: ifP => // /eqP ?; exfalso.
+    case: (n_relay =P j.+2) => [Heq | Hneq].
+      by rewrite Heq Hrecv in Hpn.
+    have Hnm1_gt : (j < n_relay.-1)%N.
+      rewrite -ltnS (prednK Hn_relay) ltnS; exact (ltnW (ltnW Hjn)).
+    have Hnm1_lt : (n_relay.-1 < n_relay)%N.
+      by rewrite -{2}(prednK Hn_relay) ltnS.
+    have [fnm1 [Hrnm1 _]] := Hbetween n_relay.-1 Hnm1_gt Hnm1_lt.
+    by rewrite (prednK Hn_relay) Hrnm1 in Hpn.
+  + (* Between zone *)
+    move=> /= i Hi1 Hi2.
+    have [fi [Hrecvi Hconti]] := Hbetween i (ltn_trans (ltnSn j) Hi1) Hi2.
+    exists fi; split; last exact Hconti.
+    have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hi2 (ltnSn _)).
+    rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step Hrecvi.
+    case Hpi: (nth (default_proc data) ps i) => [|dsti vi ki|frmi fi'|di||] //.
+    case: ifP => // /eqP ?; exfalso.
+    case: (i =P j.+2) => [Heq | Hneq].
+      by subst i; rewrite Hrecv in Hpi.
+    have Hi_gt : (j.+2 < i)%N.
+      rewrite ltnNge; apply /negP => Hle.
+      by apply Hneq; apply /eqP; rewrite eqn_leq Hle Hi1.
+    have Hi_pos : (0 < i)%N := ltn_trans (ltn0Sn _) (ltn_trans (ltnSn _) Hi_gt).
+    have Hi1_gt : (j < i.-1)%N.
+      by apply (@ltn_trans j.+1); [exact (ltnSn j) | rewrite -ltnS (prednK Hi_pos)].
+    have Hi1_lt : (i.-1 < n_relay)%N := ltn_trans (leq_pred i) Hi2.
+    have [fi1 [Hri1 _]] := Hbetween i.-1 Hi1_gt Hi1_lt.
+    by rewrite (prednK Hi_pos) Hri1 in Hpi.
+- (* j+1 >= n_relay: last relay reached → Inv_tail *)
+  have Hjn_eq : j.+1 = n_relay by apply /eqP; rewrite eqn_leq Hjn -ltnS Hjb.
+  have Heq_pos : j.+2 = n_relay.+1 by rewrite Hjn_eq.
+  rewrite -Heq_pos in Hlast Hlast_cont.
+  rewrite Hrecv in Hlast; case: Hlast => ?; subst fl.
+  rewrite -Hjn_eq in Hlast_cont.
+  (* After firing: relay j → Finish, last relay → f vd = Send 0 sv Finish *)
+  have [sv Hfv] := Hlast_cont vd Henc.
+  apply Inv_tail.
+  + by rewrite (@size_one_step data).
+  + exact (@one_step_preserves_proc_wf ps Hwf).
+  + (* Last relay becomes Send 0 sv Finish *)
+    exists sv.
+    have Hszj2 : (j.+2 < size ps)%N by rewrite Hsz Heq_pos.
+    by rewrite (@nth_one_step data ps j.+2 Hszj2) Hstep_j1 Hfv.
+  + (* Alice at tail Recv: nop, with continuation info *)
+    (* Need: Alice's Recv continuation produces Ret. *)
+    (* This info is NOT in Inv_drain — it would need to come from the protocol template. *)
+    (* For now, we need Inv_drain to carry Alice's tail continuation behavior. *)
+    admit.
+  + (* All relays < n_relay at Finish *)
+    move=> i Hi_lt.
+    rewrite /relay_at_finish_pred.
+    have Hszi : (i.+1 < size ps)%N
+      by rewrite Hsz; exact (ltn_trans (ltn_trans Hi_lt (leqnn _)) (ltnSn _)).
+    case: (ltnP i j) => Hij.
+    * (* i < j: was Finish *)
+      by rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step (Hfin i Hij).
+    * (* i = j: relay j fires → Finish *)
+      have Hij_eq : (i : nat) = j.
+        apply /eqP; rewrite eqn_leq Hij /=.
+        have := ltn_ord i; rewrite ltnS => Hi_le.
+        by rewrite -Hjn_eq (leq_trans Hi_le) // -ltnS Hi_lt Hjn_eq.
+      rewrite (val_inj _ _ Hij_eq).
+      have Hszj : (j.+1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
+      by rewrite (@nth_one_step data ps j.+1 Hszj) Hstep_j.
+Admitted.
 
 Lemma dsdp_inv_step_TAIL ps :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
