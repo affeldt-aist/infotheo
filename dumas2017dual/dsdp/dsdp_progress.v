@@ -1059,7 +1059,9 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
        exists f_enc : cipher AHE -> proc data,
          nth (default_proc data) ps 1 =
            Recv 0 (oapp f_enc Fail \o @std_from_enc AHE)) ->
-    ((2 <= j)%N -> exists f, nth (default_proc data) ps j = Recv 0 f) -> (* H7 *)
+    ((2 <= j)%N -> exists sv0 f0,                                      (* H7 *)
+       relay_body (@inord n_relay j.-1) = Send 0 sv0 (Recv 0 f0) /\
+       nth (default_proc data) ps j = Recv 0 f0) ->
     ((3 <= j)%N ->                                             (* H9: NEW *)
        exists f, nth (default_proc data) ps j.-1 = Recv j.-2 f /\
          (forall v, @std_from_enc AHE v != None ->
@@ -1188,7 +1190,9 @@ Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
   ((j == 1%N :> nat) ->
      exists f_enc : cipher AHE -> proc data,
        nth (default_proc data) ps 1 = Recv 0 (oapp f_enc Fail \o @std_from_enc AHE)) ->
-  ((2 <= j)%N -> exists f, nth (default_proc data) ps j = Recv 0 f) ->
+  ((2 <= j)%N -> exists sv0 f0,
+     relay_body (@inord n_relay j.-1) = Send 0 sv0 (Recv 0 f0) /\
+     nth (default_proc data) ps j = Recv 0 f0) ->
   ((3 <= j)%N ->
      exists f, nth (default_proc data) ps j.-1 = Recv j.-2 f /\
        (forall v, @std_from_enc AHE v != None -> exists sv, f v = Send j sv Finish)) ->
@@ -1297,9 +1301,13 @@ case: (ltnP 1 n_relay) => Hn1.
   + by move=> /eqP.
   + move=> _.
     have [sv1 [f1 [Hbody1 Hr1]]] := Hrelay1_inter Hn1.
-    exists f1.
-    have Hsz2 : (2 < size ps)%N by rewrite Hsz.
-    by rewrite (@nth_one_step data ps 2 Hsz2) /smc_interpreter.step Hr1 Halice.
+    exists sv1, f1; split.
+    * have -> : @inord n_relay (Ordinal (n:=n_relay.+1) (m:=2) Hord2).-1 =
+                Ordinal (n:=n_relay.+1) (m:=1) Hn_relay.
+        by apply /val_inj; rewrite /= inordK.
+      exact Hbody1.
+    * have Hsz2 : (2 < size ps)%N by rewrite Hsz.
+      by rewrite (@nth_one_step data ps 2 Hsz2) /smc_interpreter.step Hr1 Halice.
   + by [].
 - (* n_relay = 1 → Inv_drain(0) *)
   have Hn1_eq : n_relay = 1%N by apply /eqP; rewrite eqn_leq Hn1 Hn_relay.
