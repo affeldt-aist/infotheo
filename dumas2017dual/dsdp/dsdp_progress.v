@@ -942,30 +942,50 @@ Lemma recv0_step_nop ps (m : nat) (f : data -> proc data) :
   nth (default_proc data) ps m = Recv 0 f ->
   (forall v k, nth (default_proc data) ps 0 <> Send m v k) ->
   (smc_interpreter.step ps [::] m).2 = false.
-Proof. Admitted.
+Proof.
+move=> Hpm Hnotsend; rewrite /smc_interpreter.step Hpm.
+case Hp0: (nth (default_proc data) ps 0) => [|dst0 v0' k0|frm0 f0|d0||] //.
+case: ifP => [/eqP Heq|] //; subst dst0.
+by exfalso; exact (Hnotsend v0' k0 Hp0).
+Qed.
 
 Lemma finish_step_nop ps (m : nat) :
   nth (default_proc data) ps m = Finish ->
   (smc_interpreter.step ps [::] m).2 = false.
-Proof. Admitted.
+Proof. by move=> Hpm; rewrite /smc_interpreter.step Hpm. Qed.
 
 Lemma recv_upstream_step_nop ps (i : nat) (f : data -> proc data) :
   nth (default_proc data) ps i.+1 = Recv i f ->
   (forall v k, nth (default_proc data) ps i <> Send i.+1 v k) ->
   (smc_interpreter.step ps [::] i.+1).2 = false.
-Proof. Admitted.
+Proof.
+move=> Hpi Hnotsend; rewrite /smc_interpreter.step Hpi.
+case Hpu: (nth (default_proc data) ps i) => [|dst0 v0' k0|frm0 f0|d0||] //.
+case: ifP => [/eqP Heq|] //; subst dst0.
+by exfalso; exact (Hnotsend v0' k0 Hpu).
+Qed.
 
 Lemma forwarding_step_nop ps (i : nat) (v : data) :
   nth (default_proc data) ps i.+1 = Send i.+2 v Finish ->
   (forall f, nth (default_proc data) ps i.+2 <> Recv i.+1 f) ->
   (smc_interpreter.step ps [::] i.+1).2 = false.
-Proof. Admitted.
+Proof.
+move=> Hpi Hnotrecv; rewrite /smc_interpreter.step Hpi.
+case Hpd: (nth (default_proc data) ps i.+2) => [|dst0 v0' k0|frm0 f0|d0||] //.
+case: ifP => [/eqP Heq|] //; subst frm0.
+by exfalso; exact (Hnotrecv f0 Hpd).
+Qed.
 
 Lemma alice_recv_step_nop ps (j : nat) (f : data -> proc data) :
   nth (default_proc data) ps 0 = Recv j.+1 f ->
   (forall v k, nth (default_proc data) ps j.+1 <> Send 0 v k) ->
   (smc_interpreter.step ps [::] 0).2 = false.
-Proof. Admitted.
+Proof.
+move=> Hpa Hnotsend; rewrite /smc_interpreter.step Hpa.
+case Hpj: (nth (default_proc data) ps j.+1) => [|dst0 v0' k0|frm0 f0|d0||] //.
+case: ifP => [/eqP Heq|] //; subst dst0.
+by exfalso; exact (Hnotsend v0' k0 Hpj).
+Qed.
 
 (* D3: Protocol invariant — enriched with full relay state tracking *)
 Inductive dsdp_inv : seq (proc data) -> Prop :=
