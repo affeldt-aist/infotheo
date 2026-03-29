@@ -1240,9 +1240,13 @@ case: (ltnP j.+1 n_relay) => Hjn.
     * have Hjn2_eq : j.+2 = n_relay by apply /eqP; rewrite eqn_leq Hjn2 Hjn.
       exists fl.
       have Hszl : (n_relay.+1 < size ps)%N by rewrite Hsz.
-      rewrite -(Hjn2_eq) in Hlast.
-      by rewrite Hjn2_eq (@nth_one_step data ps n_relay.+1 Hszl)
-         /smc_interpreter.step Hlast Hrecv.
+      (* one_step[n+1] = ps[n+1] = Recv n fl (nop: upstream ps[n]=Recv not Send) *)
+      rewrite /= Hjn2_eq.
+      rewrite (@nth_one_step data ps n_relay.+1 Hszl) /smc_interpreter.step.
+      rewrite Hlast.
+      have Hup : nth (default_proc data) ps n_relay = Recv j.+1 f.
+        by move: Hrecv; rewrite Hjn2_eq.
+      by rewrite Hup.
   + (* Finish zone extends by 1 *)
     move=> /= i; rewrite ltnS leq_eqVlt => /orP [/eqP -> | Hi].
     * have Hszj : (j.+1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
