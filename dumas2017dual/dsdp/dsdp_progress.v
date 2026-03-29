@@ -1327,15 +1327,18 @@ case: (posnP (j : nat)) => Hj0.
       move=> Hjn_eq.
       have Hj_max : j = @ord_max n_relay
         by apply /val_inj; rewrite /= Hjn_eq.
-      rewrite Hj_max in Hbs Hrelay_send Hstep_j1.
+      rewrite Hj_max in Hbs Hrelay_send.
       have [sv_last [f_last Hbs_last]] := relay_last_body_structure.
       have Hsk_last : sk = Recv n_relay f_last
         by rewrite Hbs_last in Hbs; case: Hbs => _ <-.
       exists f_last; have Hszj1 : (j.+1 < size ps)%N
         by rewrite Hsz; exact (ltn_ord j).
       split.
-      -- by rewrite -Hjn_eq (@nth_one_step data ps j.+1 Hszj1)
-                    Hstep_j1 Hsk_last.
+      -- transitivity (step ps [::] j.+1).1.1.
+         { have Heqj1 : j.+1 = n_relay.+1 by rewrite Hjn_eq.
+           rewrite Heqj1; have Hszn1 : (n_relay.+1 < size ps)%N by rewrite Hsz.
+           exact (@nth_one_step data ps n_relay.+1 Hszn1). }
+         by rewrite Hstep_j1 Hsk_last.
       -- move=> w Hencw.
          rewrite /relay_body /= eqn0Ngt Hn_relay eqxx
                  /pRecvDec_local /std_Recv_dec /Recv_param in Hbs_last.
@@ -1344,7 +1347,7 @@ case: (posnP (j : nat)) => Hj0.
            last by rewrite Hsfe in Hencw.
          case Hdec: (dec (dk_relay ord_max) c) => [m|]; last first.
            by have := dec_total (dk_relay ord_max) c; rewrite Hdec.
-         by eexists.
+         rewrite /= Hdec /=; by eexists.
     * (* B8: j == 2 → frontier sender at pos 1 — NOP *)
       move=> Hj_eq2.
       have [sv_fw Hfw] := H8 Hj_eq2.
