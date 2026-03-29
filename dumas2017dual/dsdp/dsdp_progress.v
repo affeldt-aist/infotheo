@@ -1383,29 +1383,33 @@ case: (ltnP j.+1 n_relay) => Hjn.
   + by rewrite /= ltnS.
   + by rewrite (@size_one_step data).
   + exact (@one_step_preserves_proc_wf ps Hwf).
-  + (* Alice: nop *)
-    have H_a_et := Halice_save; rewrite alice_foldr_at_tail in H_a_et.
+  + (* Alice: nop — alice_erase_tail is a Recv, last relay is also Recv → nop *)
     have H_sz_0 : (0 < size ps)%N by rewrite Hsz.
-    rewrite (@nth_one_step data ps 0 H_sz_0) /smc_interpreter.step H_a_et //.
-  + (* Relay j+1 forwarding *)
+    have [ftail Htail_recv] := alice_tail_is_recv.
+    have H_a_et := Halice_save; rewrite alice_foldr_at_tail in H_a_et.
+    rewrite (@nth_one_step data ps 0 H_sz_0) /smc_interpreter.step H_a_et Htail_recv.
+    by rewrite Hlast -Htail_recv alice_foldr_at_tail.
+  + (* Relay j+1 forwarding: one_step[j+2] = f vd = Send j+3 sv Finish *)
+    exists sv.
     have Hj2sz : (j.+2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn (ltnSn _)).
-    have : nth (default_proc data) (one_step_procs data ps) j.+2 =
-           (step ps [::] j.+2).1.1 by exact (@nth_one_step data ps j.+2 Hj2sz).
-    by move=> ->; rewrite Hstep_j1 Hfv.
+    transitivity (step ps [::] j.+2).1.1.
+    - exact (@nth_one_step data ps j.+2 Hj2sz).
+    - by rewrite Hstep_j1 Hfv.
   + (* Relay j+2 at Recv *)
     case: (ltnP j.+2 n_relay) => Hjn2.
     * have [f2 [Hr2 _]] := Hbetween j.+2 (ltn_trans (ltnSn j) (ltnSn j.+1)) Hjn2.
       exists f2.
       have Hszj3 : (j.+3 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn2 (ltnSn _)).
-      by rewrite (@nth_one_step data ps j.+3 Hszj3) /smc_interpreter.step Hr2 Hrecv.
+      transitivity (step ps [::] j.+3).1.1.
+      { exact (@nth_one_step data ps j.+3 Hszj3). }
+      by rewrite /smc_interpreter.step Hr2 Hrecv.
     * have Hjn2_eq : j.+2 = n_relay by apply /eqP; rewrite eqn_leq Hjn2 Hjn.
       exists fl.
-      have Hszl : (n_relay.+1 < size ps)%N by rewrite Hsz.
-      (* one_step[n+1] = ps[n+1] = Recv n fl (nop: upstream ps[n]=Recv not Send) *)
-      rewrite /= Hjn2_eq.
-      rewrite (@nth_one_step data ps n_relay.+1 Hszl) /smc_interpreter.step.
-      rewrite Hlast.
-      have Hup : nth (default_proc data) ps n_relay = Recv j.+1 f.
+      have Hszj3 : (j.+3 < size ps)%N by rewrite Hsz Hjn2_eq.
+      transitivity (step ps [::] j.+3).1.1.
+      { exact (@nth_one_step data ps j.+3 Hszj3). }
+      rewrite Hjn2_eq /smc_interpreter.step Hlast.
+      have Hup : nth (default_proc data) ps n_relay = Recv j.+1 f
         by move: Hrecv; rewrite Hjn2_eq.
       by rewrite Hup.
   + (* Finish zone extends by 1 *)
@@ -1472,7 +1476,7 @@ case: (ltnP j.+1 n_relay) => Hjn.
     have [ftail Htail_recv] := alice_tail_is_recv.
     rewrite alice_foldr_at_tail in Halice_saved.
     by rewrite (@nth_one_step data ps 0 Hsz0) /smc_interpreter.step
-       Halice_saved Htail_recv Hlast.
+       Halice_saved Htail_recv Hlast -Htail_recv alice_foldr_at_tail.
   + (* All relays < n_relay at Finish *)
     move=> i Hi_lt.
     rewrite /relay_at_finish_pred.
