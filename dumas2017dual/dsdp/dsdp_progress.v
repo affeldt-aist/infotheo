@@ -1038,7 +1038,15 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AS1 ps (f_inner : cipher AHE -> proc data) :
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
-    (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
+    (* Alice Send(1,v,k) with k's continuation info *)
+    (exists v k, nth (default_proc data) ps 0 = Send 1 v k /\
+       (* n_relay >= 2: k = Recv(3,...) with Send behavior *)
+       ((1 < n_relay)%N -> exists f, k = Recv 3 f /\
+          forall v', @std_from_enc AHE v' != None ->
+            exists sv rest, f v' = Send 2 sv rest) /\
+       (* n_relay = 1: k = Recv(2,...) tail with Ret behavior *)
+       (n_relay = 1%N -> exists f, k = Recv 2 f /\
+          forall v', @std_from_enc AHE v' != None -> exists d, f v' = Ret d)) ->
     nth (default_proc data) ps 1 =
       Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
     (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
@@ -1122,7 +1130,7 @@ case.
   exact (@has_comm_progress data ps0 0 1 v k
     (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE))
     Hsz0 Halice Hr0).
-- (* Inv_AS1 *) move=> ps0 f_inner Hsz Hwf [v [k Halice]] Hr0 Hpending _ _ _.
+- (* Inv_AS1 *) move=> ps0 f_inner Hsz Hwf [v [k [Halice _]]] Hr0 Hpending _ _ _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 0 1 v k
     (oapp f_inner Fail \o @std_from_enc AHE)
@@ -1222,11 +1230,15 @@ Qed.
 (* C2c: AS1 → AR(2) or drain *)
 Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
+  (exists v k, nth (default_proc data) ps 0 = Send 1 v k /\
+     ((1 < n_relay)%N -> exists f, k = Recv 3 f /\
+        forall v', @std_from_enc AHE v' != None ->
+          exists sv rest, f v' = Send 2 sv rest) /\
+     (n_relay = 1%N -> exists f, k = Recv 2 f /\
+        forall v', @std_from_enc AHE v' != None -> exists d, f v' = Ret d)) ->
   nth (default_proc data) ps 1 =
     Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
   (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
-  (* f_inner produces Send(2,...,Finish) *)
   (forall c, exists sv, f_inner c = Send 2 sv Finish) ->
   ((1 < n_relay)%N ->
      exists sv f, relay_body (Ordinal (n:=n_relay.+1) (m:=1) Hn_relay) =
