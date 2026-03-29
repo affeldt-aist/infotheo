@@ -1123,14 +1123,6 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     (forall j : 'I_n_relay.+1, relay_at_finish_pred j ps) ->
     dsdp_inv ps.
 
-(* DE: drain_entry — after ASj(n_relay), establish Inv_drain *)
-Lemma drain_entry ps k :
-  dsdp_reachable ps k ->
-  @all_proc_wf AHE ps ->
-  (exists f, nth (default_proc data) ps 0 = Recv n_relay.+1 f) ->
-  all_terminated ps \/ dsdp_inv ps.
-Proof. Admitted.
-
 (* C1: Every dsdp_inv state has progress *)
 Lemma dsdp_inv_has_progress ps :
   dsdp_inv ps -> has_progress data ps.
