@@ -1404,7 +1404,7 @@ case: (posnP (j : nat)) => Hj0.
            exact (ltn_ord j).
          by rewrite (@nth_one_step data ps j.-1 Hszjm1)
                     Hstep_front_recv Hfrecv_sv.
-Admitted.
+Qed.
 
 (* C2b: AS0 → AR(1) *)
 Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
