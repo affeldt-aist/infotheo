@@ -929,7 +929,14 @@ Lemma relay_body_step_nop ps (j : 'I_n_relay.+1) :
   relay_at_body j ps ->
   (forall f, nth (default_proc data) ps 0 <> Recv j.+1 f) ->
   (smc_interpreter.step ps [::] j.+1).2 = false.
-Proof. Admitted.
+Proof.
+move=> Hbody Hnrecv; rewrite /relay_at_body in Hbody.
+have [sv [sk Hsend]] := relay_body_is_send0 j.
+rewrite /smc_interpreter.step Hbody Hsend.
+case Hp0: (nth (default_proc data) ps 0) => [|dst0 v0' k0|frm0 f0|d0||] //.
+case: ifP => [/eqP Heq|] //; subst frm0.
+by exfalso; exact (Hnrecv f0 Hp0).
+Qed.
 
 Lemma recv0_step_nop ps (m : nat) (f : data -> proc data) :
   nth (default_proc data) ps m = Recv 0 f ->
