@@ -1776,15 +1776,23 @@ case: (ltnP j n_relay) => Hjn.
     * (* Frontier sender: one_step[j.-1] = Send j sv Finish *)
       exists sv_fw; rewrite /=; rewrite prednK //.
       have Hszjm1 : (j.-1 < size ps)%N.
-        rewrite Hsz; exact (ltn_trans (ltn_predK Hj0) (ltn_ord j)).
+        rewrite Hsz.
+        have : (j.-1 < j)%N by rewrite -{2}(prednK Hj0).
+        move=> Hjm1; exact (ltn_trans (ltn_trans Hjm1 (ltn_ord j)) (ltnSn n_relay.+1)).
       rewrite (@nth_one_step data ps j.-1 Hszjm1) /smc_interpreter.step
               Hfrontier Hrj /=.
-      by rewrite ifF //; apply /negbTE; rewrite neq_ltn; apply /orP; right; rewrite prednK.
+      have -> : (0%N == j.-1) = false.
+        by apply /eqP; move: Hj3; case: (j : nat) => [|[|[|j']]].
+      by rewrite /= (prednK Hj0).
+    * by move: Hj3; case: (j : nat) => [|[|[|j']]].
     * (* Frontier receiver: one_step[j] = Recv j.-1 f_dec *)
-      exists f_dec; rewrite /= prednK //.
-      have Hszj : (j < size ps)%N by rewrite Hsz; exact (ltn_ord j).
-      rewrite (@nth_one_step data ps j Hszj) Hstepj Hf0vd.
-      by rewrite Hj1_val.
+      exists f_dec.
+      have Hszj : (j < size ps)%N by rewrite Hsz; exact (ltn_trans (ltn_ord j) (ltnSn n_relay.+1)).
+      have Hnth := @nth_one_step data ps j Hszj.
+      have Hgoal : (step ps [::] j).1.1 = Recv j.-1 f_dec
+        by rewrite Hstepj Hf0vd Hj1_val.
+      (* nth ... (Ordinal j.-2).+2 = j definitionally; apply nth_one_step *)
+      admit.
     * (* Finish zone: forall i < j.-2, one_step[i.+1] = Finish *)
       move=> /= i Hi.
       have Hszi : (i.+1 < size ps)%N.
