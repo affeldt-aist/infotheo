@@ -891,11 +891,8 @@ Lemma alice_foldr_recv_with_cont (j : nat) (Hj : (j < n_relay.+1)%N)
       exists sv rest, f v = Send (alice_send_dest (Ordinal Hj)) sv rest.
 Proof. Admitted.
 
-(* T1: R0 second Recv (pRecvEnc) fires → Send(2, v, Finish) *)
-Lemma relay0_recv_enc_fires (f_inner : cipher AHE -> proc data) (v : data) :
-  @std_from_enc AHE v != None ->
-  exists sv, (oapp f_inner Fail \o @std_from_enc AHE) v = Send 2 sv Finish.
-Proof. Admitted.
+(* T1: REMOVED — unprovable with abstract f_inner. *)
+(* The logic is inlined in C2c where the specific f_inner from Inv_AS1 is known. *)
 
 (* T2: Intermediate relay recv_from_body fires → RecvUpstream linked *)
 Lemma relay_inter_recv_from_body_fires (j : 'I_n_relay.+1) (v : data)
