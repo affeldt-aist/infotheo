@@ -1278,7 +1278,73 @@ case: (posnP (j : nat)) => Hj0.
     by move=> c; eexists.
 - case: (posnP j.-1) => Hj1.
   + (* j = 1 → Inv_AS1 *)
-    admit.
+    have Hj_eq1 : j.-1 = 0%N := Hj1.
+    have Hj_val : (j : nat) = 1%N by move: Hj0 Hj1; case: (j : nat) => [|[|n]].
+    have Hj_eq : (j == 1%N :> nat) by rewrite Hj_val.
+    have [f_enc [Hr0 Hfenc_cont]] := H6 Hj_eq.
+    have Hdest1 : alice_send_dest (Ordinal (ltn_ord j)) = 1%N
+      by rewrite /alice_send_dest /= Hj_val.
+    rewrite Hdest1 in Hfsv.
+    (* Substitute j=1 everywhere as ordinal *)
+    set jord := Ordinal (n:=n_relay.+1) (m:=1) Hn_relay.
+    have Hj_ord1 : j = jord by apply /val_inj; rewrite /= Hj_val.
+    subst j; rewrite /= in Hfsv Hdest1 Hpending Halice_recv Hrelay_send Hstep_j1 Hstep_0 Hbs Hbody Hrecv_f.
+    apply (Inv_AS1 (one_step_procs data ps) f_enc).
+    * by rewrite (@size_one_step data).
+    * exact (@one_step_preserves_proc_wf ps Hwf).
+    * have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+      exists sv'.
+      by rewrite (@nth_one_step data ps 0 Hsz0) Hstep_0 Hfsv.
+    * (* relay 0: one_step[1] = ps[1] (nop: Alice is Recv, not Send) *)
+      have Hsz1 : (1 < size ps)%N
+        by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
+      rewrite (@nth_one_step data ps 1 Hsz1) /smc_interpreter.step Hr0 Halice_recv.
+      by [].
+    * (* pending relays i > 1 *)
+      move=> i Hi; rewrite /relay_at_body.
+      have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
+      rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
+      have Hbi := Hpending i Hi; rewrite /relay_at_body in Hbi.
+      have [svi [ski Hbsi]] := relay_body_is_send0 i.
+      rewrite Hbi Hbsi Halice_recv.
+      have -> : (2%N == i.+1) = false.
+        by apply /eqP => Heq; have := Hi; rewrite -ltnS -Heq.
+      by [].
+    * exact Hfenc_cont.
+    * (* H6a: 1 < n_relay → relay 1 body link *)
+      move=> Hn1.
+      have Hord1 : (1 < n_relay.+1)%N := Hn_relay.
+      have [sv1 [f1 Hb1]] := relay_inter_body_structure (Ordinal Hord1) (isT : (0 < 1)%N) Hn1.
+      have Hord_eq : Ordinal Hord1 = Ordinal (n:=n_relay.+1) (m:=1) Hn_relay
+        by apply /val_inj.
+      exists sv1, f1; split; first by rewrite -Hord_eq.
+      have Hsz2 : (2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hn1 (ltnSn _)).
+      have Hsk_eq : sk = Recv 0 f1.
+        have : relay_body (Ordinal Hord1) = Send 0 sv sk by rewrite Hord_eq.
+        rewrite Hb1; by case.
+      by rewrite (@nth_one_step data ps 2 Hsz2) Hstep_j1 Hsk_eq.
+    * (* H6b: n_relay = 1 → last relay *)
+      move=> Hn1_eq.
+      have [sv_last [f_last Hblast]] := relay_last_body_structure.
+      have Hord_max_eq : jord = @ord_max n_relay
+        by apply /val_inj; rewrite /= Hn1_eq.
+      rewrite Hord_max_eq in Hblast Hbs Hbody Hrelay_send Hstep_j1.
+      have Hsk_form : sk = Recv n_relay f_last.
+        rewrite Hblast in Hbs; by case: Hbs => _ <-.
+      exists f_last; split.
+      -- have Hszn1 : (n_relay.+1 < size ps)%N by rewrite Hsz.
+         have H_nth := @nth_one_step data ps n_relay.+1 Hszn1.
+         rewrite Hn1_eq in H_nth.
+         by rewrite H_nth Hstep_j1 Hsk_form Hn1_eq.
+      -- move=> w Hencw.
+         rewrite /relay_body /= eqn0Ngt Hn_relay Hn1_eq eqxx
+                 /pRecvDec_local /std_Recv_dec /Recv_param in Hblast.
+         case: Hblast => _ Hf_eq; rewrite -Hf_eq /comp.
+         case Hsfe: (@std_from_enc AHE w) => [c|];
+           last by rewrite Hsfe in Hencw.
+         case Hdec: (dec (dk_relay ord_max) c) => [m|]; last first.
+           by have := dec_total (dk_relay ord_max) c; rewrite Hdec.
+         rewrite /= Hdec /=; by eexists.
   + (* j >= 2 *)
     have Hj2 : (1 < j)%N.
       have := Hj0; have := Hj1.
@@ -1375,8 +1441,8 @@ case: (posnP (j : nat)) => Hj0.
         @step_send_recv_match data ps j.-2 j.-1 sv_fw_old Finish f_recv
           Hfrontier_sender Hfrontier_recv.
       have Hwf_front : proc_wf AHE (nth (default_proc data) ps j.-2).
-        apply Hwf; rewrite Hsz; apply (ltn_trans _ (ltnSn _)).
-        exact (leq_ltn_trans (leq_pred _) (ltn_ord j)).
+        apply Hwf; rewrite Hsz.
+        exact (ltn_trans (leq_ltn_trans (leq_pred _) (leq_ltn_trans (leq_pred _) (ltn_ord j))) (ltnSn _)).
       rewrite Hfrontier_sender /= in Hwf_front.
       have [Henc_fw _] := Hwf_front.
       have [sv_new Hfrecv_sv] := Hfrecv_cont sv_fw_old Henc_fw.
