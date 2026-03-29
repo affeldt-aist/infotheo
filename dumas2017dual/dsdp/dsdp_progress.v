@@ -1808,6 +1808,7 @@ case: (ltnP j n_relay) => Hjn.
           rewrite ltnS; exact (leq_trans Hi' (leqnSn j'.+1)).
         exact (ltn_trans Hij (ltn_trans (ltn_ord j) (ltnSn n_relay.+1))).
       rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
+      rewrite Hjn_eq in Hfin_zone.
       by rewrite (Hfin_zone i Hi).
     * (* Last relay: one_step[n_relay.+1] = Recv n_relay f_last *)
       exists f_last; split; last exact Hlast_cont.
@@ -1818,9 +1819,10 @@ case: (ltnP j n_relay) => Hjn.
     * (* Between zone: n_relay.-2 < i < n_relay, so i = n_relay.-1 *)
       move=> /= i Hi1 Hi2.
       have Hi_eq : i = n_relay.-1.
-        have : (i < n_relay)%N := Hi2.
-        rewrite -Heq_s2 in Hi2.
-        by apply /eqP; rewrite eqn_leq Hi1 -ltnS Hi2.
+        apply /eqP; rewrite eqn_leq.
+        rewrite Heq_s1 in Hi1.
+        have Hi2' : (i <= n_relay.-1)%N by move: Hi2; rewrite -subn1 leq_subRL // addn1.
+        by rewrite (ltnW Hi1) Hi2'.
       subst i.
       exists f_dec; split.
       -- have Hszn : (n_relay < size ps)%N
