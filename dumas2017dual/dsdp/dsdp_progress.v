@@ -1023,7 +1023,11 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AS0 ps (f_inner : plain AHE -> proc data) :
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
-    (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
+    (* Alice Send(1,v,k) where k = Recv(2,...) with continuation *)
+    (exists v k, nth (default_proc data) ps 0 = Send 1 v k /\
+       exists f, k = Recv 2 f /\
+         forall v', @std_from_enc AHE v' != None ->
+           exists sv rest, f v' = Send 1 sv rest) ->
     nth (default_proc data) ps 1 =
       Recv 0 (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE)) ->
     (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
@@ -1113,7 +1117,7 @@ case.
   rewrite /relay_at_body Hrel in Hbody.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_ord j).
   exact (@has_comm_progress data ps0 j.+1 0 sv sk f Hj Hbody Halice).
-- (* Inv_AS0 *) move=> ps0 f_inner Hsz Hwf [v [k Halice]] Hr0 Hpending _.
+- (* Inv_AS0 *) move=> ps0 f_inner Hsz Hwf [v [k [Halice _]]] Hr0 Hpending _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 0 1 v k
     (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE))
@@ -1160,7 +1164,10 @@ Proof. Admitted.
 (* C2b: AS0 → AR(1) *)
 Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists v k, nth (default_proc data) ps 0 = Send 1 v k) ->
+  (exists v k, nth (default_proc data) ps 0 = Send 1 v k /\
+     exists f, k = Recv 2 f /\
+       forall v', @std_from_enc AHE v' != None ->
+         exists sv rest, f v' = Send 1 sv rest) ->
   nth (default_proc data) ps 1 =
     Recv 0 (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE)) ->
   (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
@@ -1168,7 +1175,7 @@ Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
      f_inner m = Recv 0 (oapp g Fail \o @std_from_enc AHE)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
-move=> Hsz Hwf [vd [k Halice]] Hr0 Hpending Hfinner_cont; right.
+move=> Hsz Hwf [vd [k [Halice [fk [Hk Hk_cont]]]]] Hr0 Hpending Hfinner_cont; right.
 have [Hstep0 Hstep1] :=
   @step_send_recv_match data ps 0 1 vd k
     (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE))
@@ -1186,8 +1193,11 @@ have Hord1 : (1 < n_relay.+1)%N := Hn_relay.
 apply (Inv_AR (Ordinal Hord1)).
 - by rewrite (@size_one_step data).
 - exact (@one_step_preserves_proc_wf ps Hwf).
-- (* Alice: k = Recv(2,...) with continuation — needs foldr connection *)
-  admit.
+- (* Alice: k = Recv(2,...) with continuation *)
+  exists fk; split.
+  + have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+    by rewrite (@nth_one_step data ps 0 Hsz0) Hstep0 Hk.
+  + exact Hk_cont.
 - rewrite /relay_at_body.
   have Hsz2 : ((Ordinal Hord1).+1 < size ps)%N by rewrite Hsz /=.
   rewrite (@nth_one_step data ps (Ordinal Hord1).+1 Hsz2) /smc_interpreter.step.
@@ -1207,7 +1217,7 @@ apply (Inv_AR (Ordinal Hord1)).
   by rewrite (@nth_one_step data ps 1 Hsz1) Hr0_result Hfm.
 - by move=> /=.
 - by [].
-Admitted.
+Qed.
 
 (* C2c: AS1 → AR(2) or drain *)
 Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
