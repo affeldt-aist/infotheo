@@ -1005,9 +1005,19 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AR (j : 'I_n_relay.+1) ps :
     size ps = n_relay.+2 ->                                       (* H1 *)
     @all_proc_wf AHE ps ->                                        (* H2 *)
+    (* Alice at Recv(j+1) with Send continuation AND rest behavior *)
     (exists f, nth (default_proc data) ps 0 = Recv j.+1 f /\     (* H3 *)
        forall v, @std_from_enc AHE v != None ->
-         exists sv rest, f v = Send (alice_send_dest j) sv rest) ->
+         exists sv rest, f v = Send (alice_send_dest j) sv rest /\
+           (* rest's continuation for the target AS constructor *)
+           ((j < n_relay)%N ->
+              exists f', rest = Recv j.+2 f' /\
+                forall v', @std_from_enc AHE v' != None ->
+                  exists sv' rest', f' v' = Send (alice_send_dest (@inord n_relay j.+1)) sv' rest') /\
+           ((j : nat) = n_relay ->
+              exists f', rest = Recv n_relay.+1 f' /\
+                forall v', @std_from_enc AHE v' != None ->
+                  exists d, f' v' = Ret d)) ->
     relay_at_body j ps ->                                          (* H4 *)
     (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) -> (* H5 *)
     ((j == 1%N :> nat) ->                                          (* H6 *)
@@ -1157,7 +1167,15 @@ Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   (exists f, nth (default_proc data) ps 0 = Recv j.+1 f /\
      forall v, @std_from_enc AHE v != None ->
-       exists sv rest, f v = Send (alice_send_dest j) sv rest) ->
+       exists sv rest, f v = Send (alice_send_dest j) sv rest /\
+         ((j < n_relay)%N ->
+            exists f', rest = Recv j.+2 f' /\
+              forall v', @std_from_enc AHE v' != None ->
+                exists sv' rest', f' v' = Send (alice_send_dest (@inord n_relay j.+1)) sv' rest') /\
+         ((j : nat) = n_relay ->
+            exists f', rest = Recv n_relay.+1 f' /\
+              forall v', @std_from_enc AHE v' != None ->
+                exists d, f' v' = Ret d)) ->
   relay_at_body j ps ->
   (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
   ((j == 1%N :> nat) ->
