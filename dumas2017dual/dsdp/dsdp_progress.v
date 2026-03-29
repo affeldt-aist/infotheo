@@ -1580,7 +1580,36 @@ have Hbody : forall j : 'I_n_relay.+1, relay_at_body j ps2.
   have Hsz2 : (j.+1 < size (one_step_procs data procs))%N
     by rewrite size_one_step.
   by rewrite (@nth_one_step data _ j.+1 Hsz2) /smc_interpreter.step Hstep1.
-Admitted. (* TODO: fix after invariant enrichment — need to establish Alice continuation behavior *)
+(* Alice at step 2 = alice_foldr_at 0 *)
+have Halice : nth (default_proc data) ps2 0 = alice_foldr_at 0.
+  rewrite /ps2.
+  have Hsz : (0 < size procs)%N by rewrite size_procs.
+  have [d [d' [k0 Hp0]]] := @procs_all_double_init 0 Hsz.
+  have Hops0 : nth (default_proc data) (one_step_procs data procs) 0 = Init d' k0.
+    by rewrite (@nth_one_step data procs 0 Hsz) /smc_interpreter.step Hp0.
+  have Hsz2 : (0 < size (one_step_procs data procs))%N by rewrite size_one_step.
+  have Hoops0 : nth (default_proc data) (one_step_procs data (one_step_procs data procs)) 0 = k0.
+    by rewrite (@nth_one_step data _ 0 Hsz2) /smc_interpreter.step Hops0.
+  (* k0 = foldr ... = alice_foldr_at 0 from palice_n_erase *)
+  have Halice_erase := @palice_n_erase AHE ek n_relay relays dk v0 u r rand_a.
+  have Hp0' : nth (default_proc data) procs 0 =
+    erase (@palice_n AHE ek n_relay relays dk v0 u r rand_a).
+    by rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= /erase_aproc /=.
+  rewrite Hp0' Halice_erase in Hp0.
+  case: Hp0 => _ [_ Hk0].
+  rewrite Hoops0 -Hk0 /alice_foldr_at drop0.
+  reflexivity.
+have Hord0 : (0 < n_relay.+1)%N by [].
+apply (Inv_AR (Ordinal Hord0)).
+- by rewrite (@size_one_step data) (@size_one_step data) size_procs.
+- exact Hwf2.
+- exact Halice.
+- exact (Hbody (Ordinal Hord0)).
+- move=> i Hi; exact (Hbody i).
+- by move=> /=.  (* j == 1 → false since j = 0 *)
+- by [].         (* 2 <= j → false *)
+- by [].         (* 3 <= j → false *)
+Qed.
 
 (* C4: Connect dsdp_reachable to dsdp_inv *)
 Lemma dsdp_reachable_inv ps k :
