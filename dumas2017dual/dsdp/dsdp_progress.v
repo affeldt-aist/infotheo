@@ -1383,14 +1383,14 @@ case: (ltnP j.+1 n_relay) => Hjn.
   + by rewrite /= ltnS.
   + by rewrite (@size_one_step data).
   + exact (@one_step_preserves_proc_wf ps Hwf).
-  + (* Alice nop: stays at alice_foldr_at n_relay.+1 *)
-    have Hsz0 : (0 < size ps)%N by rewrite Hsz.
-    have [ftail Htail_recv] := alice_tail_is_recv.
-    have Halice_tail := Halice_foldr; rewrite alice_foldr_at_tail in Halice_tail.
-    by rewrite (@nth_one_step data ps 0 Hsz0) /smc_interpreter.step Halice_tail Htail_recv Hlast.
-  + (* Relay j+1 forwarding *) exists sv.
+  + (* Alice: nop *)
+    have H_a_et := Halice_save; rewrite alice_foldr_at_tail in H_a_et.
+    have H_sz_0 : (0 < size ps)%N by rewrite Hsz.
+    rewrite (@nth_one_step data ps 0 H_sz_0) /smc_interpreter.step H_a_et //.
+  + (* Relay j+1 forwarding *)
     have Hszj2 : (j.+2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn (ltnSn _)).
-    by rewrite (@nth_one_step data ps j.+2 Hszj2) Hstep_j1 Hfv.
+    have H := @nth_one_step data ps j.+2 Hszj2.
+    by rewrite /= in H; rewrite H Hstep_j1 Hfv.
   + (* Relay j+2 at Recv *)
     case: (ltnP j.+2 n_relay) => Hjn2.
     * have [f2 [Hr2 _]] := Hbetween j.+2 (ltn_trans (ltnSn j) (ltnSn j.+1)) Hjn2.
