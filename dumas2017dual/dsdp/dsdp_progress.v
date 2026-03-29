@@ -1502,9 +1502,12 @@ Lemma dsdp_inv_step_TAIL ps :
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
 move=> Hsz Hwf [v Hsend] Halice Hrels; right.
-have [f Hrecv] := alice_tail_is_recv.
-rewrite alice_foldr_at_tail in Halice; rewrite Halice in Hrecv.
-have Hfcont := @alice_tail_recv_ret f.
+have [f Hrecv_tail] := alice_tail_is_recv.
+rewrite alice_foldr_at_tail in Halice.
+have Hrecv : nth (default_proc data) ps 0 = Recv n_relay.+1 f
+  by rewrite Halice Hrecv_tail.
+have Hfcont : forall v0', @std_from_enc AHE v0' != None -> exists d, f v0' = Ret d
+  := fun v0' => @alice_tail_recv_ret f v0' Hrecv_tail.
 have [Hstep_send Hstep_recv] :=
   @step_send_recv_match data ps n_relay.+1 0 v Finish f Hsend Hrecv.
 have Hwf_last : proc_wf AHE (nth (default_proc data) ps n_relay.+1)
@@ -1619,60 +1622,18 @@ Lemma dsdp_step_terminated_or_progress ps k :
   has_progress data (one_step_procs data ps).
 Proof.
 move=> Hr Hwf Hp.
-(* Case on has_progress(one_step ps) *)
-case Hp1: (has_progress data (one_step_procs data ps)).
-- by right.
-- left.
-  (* ~has_progress(one_step ps). Need all_terminated. *)
-  (* For steps 0-1: step01_progress gives has_progress → contradiction *)
-  have Hk : (2 <= k)%N.
-    case: k Hr Hp1 {Hwf Hp} => [|[|k']] Hr Hp1 //.
-    + exfalso; move/negP: Hp1; apply. inversion Hr; subst.
-      exact: step_procs_has_progress.
-    + exfalso; move/negP: Hp1; apply.
-      inversion Hr as [|ps' k' Hr' Hprog' Heqps Hk'].
-      inversion Hr' as [Hps'|]; subst.
-      exact: has_progress_at_step_2.
-  (* Step >= 2: show each process in one_step is terminal *)
-  (* From ~has_progress(one_step): no Init, no Ret in one_step. *)
-  (* From proc_wf preservation: no Fail in one_step. *)
-  have noprogress_no_init : forall p, (p < size (one_step_procs data ps))%N ->
-    forall d0 k0, nth (default_proc data) (one_step_procs data ps) p <> Init d0 k0.
-    move=> p Hsz d0 k0 Hinit. move/negP: Hp1; apply.
-    apply (@step_i_has_progress data (one_step_procs data ps) p Hsz).
-    by rewrite /smc_interpreter.step Hinit.
-  have noprogress_no_ret : forall p, (p < size (one_step_procs data ps))%N ->
-    forall d0, nth (default_proc data) (one_step_procs data ps) p <> Ret d0.
-    move=> p Hsz d0 Hret. move/negP: Hp1; apply.
-    apply (@step_i_has_progress data (one_step_procs data ps) p Hsz).
-    by rewrite /smc_interpreter.step Hret.
-  have noprogress_no_fail : forall p, (p < size ps)%N ->
-    nth (default_proc data) (one_step_procs data ps) p <> Fail.
-    move=> p Hsz Hfail.
-    have Hsz' : (p < size (one_step_procs data ps))%N by rewrite (@size_one_step data).
-    have Hwf1 := @one_step_preserves_proc_wf ps Hwf p Hsz'.
-    by rewrite Hfail in Hwf1.
-  (* Case-split each position: Init/Ret/Fail are ruled out, Finish is terminal,
-     Send/Recv need the DSDP deadlock-freedom argument. *)
-  apply/(@all_nthP _ _ _ (default_proc data)).
-  rewrite (@size_one_step data) => p Hsz.
-  have Hsz' : (p < size (one_step_procs data ps))%N by rewrite (@size_one_step data).
-  case Hosp: (nth (default_proc data) (one_step_procs data ps) p)
-    => [d0 k0|j0 v0' k0|frm0 f0|d0||].
-  - by exfalso; exact: (noprogress_no_init p Hsz' d0 k0 Hosp).
-  - (* Send j0 v0' k0 at position p in one_step: unmatched.
-       Need: this is impossible in DSDP body phase.
-       DSDP deadlock-freedom: every Send has a matching Recv. *)
-    exfalso.
-    admit.
-  - (* Recv frm0 f0 at position p in one_step: unmatched.
-       Same DSDP deadlock-freedom argument. *)
-    exfalso.
-    admit.
-  - by exfalso; exact: (noprogress_no_ret p Hsz' d0 Hosp).
-  - by []. (* Finish: is_terminal = true *)
-  - by exfalso; exact: (noprogress_no_fail p Hsz Hosp).
-Admitted.
+case: (ltnP k 2) => Hk.
+- (* k < 2: use step01_progress *)
+  right.
+  have Hk1 : (k <= 1)%N by rewrite -ltnS.
+  exact: (step01_progress ps k Hr Hk1 Hp).
+- (* k >= 2: use invariant *)
+  case: (dsdp_reachable_inv ps k Hr Hk) => [Ht | Hinv].
+  + left; exact: (@step_all_terminated data ps Ht).
+  + case: (dsdp_inv_step ps Hinv) => [Ht | Hinv'].
+    * by left.
+    * right; exact: (dsdp_inv_has_progress _ Hinv').
+Qed.
 
 (* Core DSDP progress lemma *)
 Lemma dsdp_reachable_progress ps k :
