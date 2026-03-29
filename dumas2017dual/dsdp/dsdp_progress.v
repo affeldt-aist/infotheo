@@ -1820,20 +1820,26 @@ case: (ltnP j n_relay) => Hjn.
       move=> /= i Hi1 Hi2.
       have Hi_eq : i = n_relay.-1.
         apply /eqP; rewrite eqn_leq.
-        rewrite Heq_s1 in Hi1.
-        have Hi2' : (i <= n_relay.-1)%N by move: Hi2; rewrite -subn1 leq_subRL // addn1.
-        by rewrite (ltnW Hi1) Hi2'.
+        (* Hi1 : n_relay.-2 < i, Hi2 : i < n_relay *)
+        (* Need: (n_relay.-1 <= i) && (i <= n_relay.-1) *)
+        (* n_relay.-2 < i iff n_relay.-2.+1 <= i iff n_relay.-1 <= i (by Heq_s1) *)
+        rewrite -Heq_s1 Hi1 /= andbT Heq_s1.
+        by rewrite -ltnS (prednK Hn_relay).
       subst i.
       exists f_dec; split.
       -- have Hszn : (n_relay < size ps)%N
            by rewrite Hsz; exact (ltn_trans (ltnSn n_relay) (ltnSn n_relay.+1)).
          rewrite Hjn_eq in Hf0vd.
          have Hstepn : (step ps [::] n_relay).1.1 = f0 vd by rewrite -Hjn_eq.
+         rewrite (prednK Hn_relay).
+         rewrite Hjn_eq in Hj1_val.
          by rewrite (@nth_one_step data ps n_relay Hszn) Hstepn Hf0vd Hj1_val.
       -- move=> v Henc_v.
          have [sw Hsw] := Hf_dec_cont v Henc_v.
          exists sw; rewrite Hsw.
-         congr (Send _ _ _); exact Hj1S2.
+         congr (Send _ _ _).
+         rewrite Hjn_eq in Hj1_val |- *.
+         by rewrite Hj1_val.
   + (* j = 2: B8 gives pos 1 = Send 2 sv Finish *)
     have Hj_eq : (j : nat) = 2%N.
       apply /eqP; rewrite eqn_leq Hj2 andbT.
@@ -1859,14 +1865,14 @@ case: (ltnP j n_relay) => Hjn.
         rewrite (@nth_one_step data ps 1 Hsz1) /smc_interpreter.step
                 Hfrontier; rewrite Hj_eq in Hrj; rewrite Hrj /=.
         by [].
-      vm_cast_no_check Hgoal.
+      exact Hgoal.
     * (* Frontier receiver: one_step[2] = Recv 1 f_dec *)
       exists f_dec.
       have Hszj : (j < size ps)%N
         by rewrite Hsz Hj_eq Hn_eq2.
-      have Hgoal : (step ps [::] j).1.1 = Recv j.-1 f_dec
-        by rewrite Hstepj Hf0vd Hj1_val.
-      vm_cast_no_check (eq_trans (@nth_one_step data ps j Hszj) Hgoal).
+      have Hgoal2 : nth (default_proc data) (one_step_procs data ps) j = Recv j.-1 f_dec
+        by rewrite (@nth_one_step data ps j Hszj) Hstepj Hf0vd Hj1_val.
+      rewrite Hj_eq in Hgoal2; exact Hgoal2.
     * by move=> /= i.
     * exists f_last; split; last exact Hlast_cont.
       have Hszl : (n_relay.+1 < size ps)%N by rewrite Hsz.
@@ -1884,14 +1890,14 @@ case: (ltnP j n_relay) => Hjn.
       subst i.
       exists f_dec; split.
       -- have Hszj : (j < size ps)%N by rewrite Hsz Hj_eq Hn_eq2.
-         have Hgoal : (step ps [::] j).1.1 = Recv j.-1 f_dec
-           by rewrite Hstepj Hf0vd Hj1_val.
-         vm_cast_no_check (eq_trans (@nth_one_step data ps j Hszj) Hgoal).
+         have Hgoal3 : nth (default_proc data) (one_step_procs data ps) j = Recv j.-1 f_dec
+           by rewrite (@nth_one_step data ps j Hszj) Hstepj Hf0vd Hj1_val.
+         rewrite Hj_eq in Hgoal3; exact Hgoal3.
       -- move=> v Henc_v.
          have [sw Hsw] := Hf_dec_cont v Henc_v.
          exists sw; rewrite Hsw; congr (Send _ _ _).
          by rewrite Hj1_val Hj_eq.
-Admitted. (* vm_cast_no_check prevents Qed — need native ordinal fix *)
+Qed.
 
 (* C2e: drain(d) → drain(d+1) or tail *)
 Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
