@@ -2,7 +2,7 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matrix.
 From mathcomp Require Import ring boolp finmap.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
-Require Import smc_interpreter pismc.
+Require Import smc_interpreter smc_interpreter_sound pismc.
 Require Import smc_session_types homomorphic_encryption.
 Require Import dsdp_interface dsdp_session_types dsdp_program.
 Require Import idealized_ahe.  (* For computational termination proofs *)
@@ -790,40 +790,50 @@ Let pInit := @smc_interpreter.Init data.
 Let pSend := @smc_interpreter.Send data.
 Let pRecv := @smc_interpreter.Recv data.
 Let pRet  := @smc_interpreter.Ret data.
+Let pRecvDec := @std_Recv_dec AHE.
+Let pRecvEnc := @std_Recv_enc AHE.
 
 (** ** Size of dsdp_n_procs *)
+
+(* Needed to cast dsdp_n_procs (a seq) into an n-tuple for interp_sound,
+   which requires n.-tuple (proc data). *)
 Lemma size_dsdp_n_procs relays dk0 v0 u0 r0 rand_a dk_relay v_relay r1_relay r2_relay :
   size (@dsdp_n_procs AHE ek n_relay relays dk0 v0 u0 r0 rand_a dk_relay v_relay r1_relay r2_relay) =
   (size relays).+1.
 Proof. by rewrite /dsdp_n_procs /dsdp_n_saprocs /erase_aprocs /= !size_map. Qed.
 
-(** ** Alice erasure body and tail *)
+(** ** Alice erasure lemmas *)
+
+(* Why erasure lemmas?
+   The protocol is written in session-typed sproc (with fuel indices and
+   session environments), but the interpreter operates on plain proc (no
+   types, no fuel). The erase function bridges the two, but its output is
+   opaque — nested match/option/obind terms that Coq cannot simplify
+   automatically. These erasure lemmas give explicit, readable forms of
+   the erased processes, which are needed to:
+   1. Reason about what step does on each party (for progress/termination),
+   2. Characterize mid-execution states in inductive arguments,
+   3. Verify communication patterns (who sends/receives what, when). *)
 
 (* The erased body of Alice's ForList loop: Recv cipher, compute, Send result *)
 Definition alice_erase_body
   (u' : 'I_n_relay.+2 -> msgT) (r' : 'I_n_relay.+1 -> msgT) (rand_a' : 'I_n_relay.+1 -> randT)
   (j : 'I_n_relay.+1) (idx : nat) (k : proc data) : proc data :=
-  pRecv j.+1 (fun d0 : data =>
-    match std_from_enc (AHE:=AHE) d0 with
-    | Some enc0 => pSend (alice_send_dest j)
-        (e (Epow enc0 (u' (lift ord0 j)) *h enc_pub_key j.+1 (r' j) (rand_a' j)))
-        k
-    | None => Fail
-    end).
+  pRecvEnc j.+1 (fun enc0 =>
+    pSend (alice_send_dest j)
+      (e (Epow enc0 (u' (lift ord0 j)) *h enc_pub_key j.+1 (r' j) (rand_a' j)))
+      k).
 
 (* The erased tail of Alice's program: final Recv + decrypt + Ret *)
 Definition alice_erase_tail (dk' : priv_keyT) (v0' : msgT)
   (u' : 'I_n_relay.+2 -> msgT) (r' : 'I_n_relay.+1 -> msgT) : proc data :=
-  pRecv n_relay.+1 (fun g : data =>
-    match std_from_enc (AHE:=AHE) g with
-    | Some enc0 => match dec dk' enc0 with
-                   | Some m0 => pRet (d (m0 - \sum_(j < n_relay.+1) r' j + u' ord0 * v0'))
-                   | None => Fail
-                   end
-    | None => Fail
-    end).
+  pRecvDec n_relay.+1 dk' (fun m0 =>
+    pRet (d (m0 - \sum_(j < n_relay.+1) r' j + u' ord0 * v0'))).
 
-(* Alice's erased program decomposes via erase_sproc_iter *)
+(* Alice's erased program decomposes into a foldr of alice_erase_body
+   followed by alice_erase_tail. This is the key structural lemma: it
+   shows that after erasure, Alice's n-relay ForList loop becomes a
+   concrete chain of Recv/Send pairs, one per relay. *)
 Lemma palice_n_erase relays dk' v0' u' r' rand_a' :
   erase (@palice_n AHE ek n_relay relays dk' v0' u' r' rand_a') =
   pInit (priv_key dk') (pInit (d v0')
@@ -836,112 +846,91 @@ rewrite /palice_n /= /pInit /priv_key /d; f_equal; f_equal.
 rewrite (@erase_sproc_iter _ _ _ alice_idx _ alice_env_step _
   (fun j idx k => alice_erase_body u' r' rand_a' j idx k)).
 - f_equal.
-  rewrite /alice_erase_tail /DRecv_dec.
-  cbn [erase]; rewrite /pRecv /pRet /d.
-  f_equal; apply: funext => g.
-  case: (std_from_enc (AHE:=AHE) g) => [enc0|] //.
+  rewrite /alice_erase_tail /pRecvDec /std_Recv_dec /Recv_param /DRecv_dec.
+  cbn [erase]; rewrite /pRet /d.
+  f_equal; apply: funext => g. rewrite /comp.
+  case: (std_from_enc (AHE:=AHE) g) => [enc0|] //=.
   by case: (dec dk' enc0).
 - move=> j idx n0 env0 p.
-  rewrite /alice_erase_body /DRecv_enc /DSend.
-  cbn [erase]; rewrite /pRecv /pSend /e.
+  rewrite /alice_erase_body /pRecvEnc /std_Recv_enc /Recv_param /DRecv_enc /DSend.
+  cbn [erase]; rewrite /pSend /e /comp.
   f_equal; apply: funext => d0.
   by case: (std_from_enc (AHE:=AHE) d0).
 Qed.
 
 (** ** Relay erasure lemmas *)
 
-(* First relay: Init dk; Init v; Send E(v) to Alice; Recv dec from Alice;
-   Recv enc from Alice; Send product to downstream *)
+(* Each relay type (first/intermediate/last) has a different communication
+   pattern after erasure. These lemmas make the erased structure explicit
+   so that step-level reasoning can determine which Send/Recv pairs match
+   at each round of interpretation. *)
+
+(* First relay receives TWO messages from Alice (decrypt + encrypt),
+   because alice_send_dest maps both j=0 and j=1 to party 1. *)
 Lemma DParty_first_erase self downstream dk' v' r1' r2' :
   erase (@DParty_first AHE ek self downstream dk' v' r1' r2') =
   pInit (priv_key dk')
     (pInit (d v')
       (pSend alice_idx (e (enc (ek self) v' r1'))
-        (pRecv alice_idx (fun d0 : data =>
-          match std_from_enc (AHE:=AHE) d0 with
-          | Some enc0 =>
-              match dec dk' enc0 with
-              | Some m0 =>
-                  pRecv alice_idx (fun d1 : data =>
-                    match std_from_enc (AHE:=AHE) d1 with
-                    | Some enc1 =>
-                        pSend downstream
-                          (e (Emul enc1 (enc (ek downstream) m0 r2')))
-                          Finish
-                    | None => Fail
-                    end)
-              | None => Fail
-              end
-          | None => Fail
-          end)))).
+        (pRecvDec alice_idx dk' (fun m0 =>
+          pRecvEnc alice_idx (fun enc1 =>
+            pSend downstream
+              (e (Emul enc1 (enc (ek downstream) m0 r2')))
+              Finish))))).
 Proof.
 rewrite /DParty_first /DRecv_dec /DRecv_enc /DSend.
-cbn [erase]; rewrite /pInit /pSend /pRecv /priv_key /d /e /Emul.
+rewrite /pRecvDec /std_Recv_dec /pRecvEnc /std_Recv_enc /Recv_param.
+cbn [erase]; rewrite /pInit /pSend /priv_key /d /e /Emul.
 f_equal; f_equal; f_equal; f_equal.
-apply: funext => d0; case: (std_from_enc (AHE:=AHE) d0) => [enc0|] //.
-case: (dec dk' enc0) => [m0|] //.
-cbn [erase]; rewrite /pSend /e /Emul.
+apply: funext => d0; rewrite /comp.
+case: (std_from_enc (AHE:=AHE) d0) => [enc0|] //=.
+case: (dec dk' enc0) => [m0|] //=.
+cbn [erase]; rewrite /pSend /e /Emul /comp.
 f_equal; apply: funext => d1.
 by case: (std_from_enc (AHE:=AHE) d1) => [enc1|].
 Qed.
 
-(* Last relay: Init dk; Init v; Send E(v) to Alice;
-   Recv dec from upstream; Send re-encrypted to Alice *)
+(* Last relay sends its result back to Alice (not downstream),
+   closing the relay chain. *)
 Lemma DParty_last_erase self upstream dk' v' r1' r2' :
   erase (@DParty_last AHE ek self upstream dk' v' r1' r2') =
   pInit (priv_key dk')
     (pInit (d v')
       (pSend alice_idx (e (enc (ek self) v' r1'))
-        (pRecv upstream (fun d0 : data =>
-          match std_from_enc (AHE:=AHE) d0 with
-          | Some enc0 =>
-              match dec dk' enc0 with
-              | Some m0 =>
-                  pSend alice_idx (e (enc (ek alice_idx) m0 r2')) Finish
-              | None => Fail
-              end
-          | None => Fail
-          end)))).
+        (pRecvDec upstream dk' (fun m0 =>
+          pSend alice_idx (e (enc (ek alice_idx) m0 r2')) Finish)))).
 Proof.
 rewrite /DParty_last /DRecv_dec /DSend.
-cbn [erase]; rewrite /pInit /pSend /pRecv /priv_key /d /e.
+rewrite /pRecvDec /std_Recv_dec /Recv_param.
+cbn [erase]; rewrite /pInit /pSend /priv_key /d /e.
 f_equal; f_equal; f_equal; f_equal.
-apply: funext => d0; case: (std_from_enc (AHE:=AHE) d0) => [enc0|] //.
+apply: funext => d0; rewrite /comp.
+case: (std_from_enc (AHE:=AHE) d0) => [enc0|] //=.
 by case: (dec dk' enc0).
 Qed.
 
-(* Intermediate relay: Init dk; Init v; Send E(v) to Alice;
-   Recv enc from Alice; Recv dec from upstream; Send product to downstream *)
+(* Intermediate relays receive from both Alice (ciphertext) and
+   upstream relay (decrypted value), then forward downstream. *)
 Lemma DParty_intermediate_erase self alice_src upstream downstream dk' v' r1' r2' :
   erase (@DParty_intermediate AHE ek self alice_src upstream downstream dk' v' r1' r2') =
   pInit (priv_key dk')
     (pInit (d v')
       (pSend alice_src (e (enc (ek self) v' r1'))
-        (pRecv alice_src (fun d0 : data =>
-          match std_from_enc (AHE:=AHE) d0 with
-          | Some enc0 =>
-              pRecv upstream (fun d1 : data =>
-                match std_from_enc (AHE:=AHE) d1 with
-                | Some enc1 =>
-                    match dec dk' enc1 with
-                    | Some m0 =>
-                        pSend downstream
-                          (e (Emul enc0 (enc (ek downstream) m0 r2')))
-                          Finish
-                    | None => Fail
-                    end
-                | None => Fail
-                end)
-          | None => Fail
-          end)))).
+        (pRecvEnc alice_src (fun enc0 =>
+          pRecvDec upstream dk' (fun m0 =>
+            pSend downstream
+              (e (Emul enc0 (enc (ek downstream) m0 r2')))
+              Finish))))).
 Proof.
 rewrite /DParty_intermediate /DRecv_enc /DRecv_dec /DSend.
-cbn [erase]; rewrite /pInit /pSend /pRecv /priv_key /d /e /Emul.
+rewrite /pRecvEnc /std_Recv_enc /pRecvDec /std_Recv_dec /Recv_param.
+cbn [erase]; rewrite /pInit /pSend /priv_key /d /e /Emul.
 f_equal; f_equal; f_equal; f_equal.
-apply: funext => d0; case: (std_from_enc (AHE:=AHE) d0) => [enc0|] //.
-cbn [erase]; rewrite /pRecv.
+apply: funext => d0; rewrite /comp.
+case: (std_from_enc (AHE:=AHE) d0) => [enc0|] //=.
+cbn [erase]; rewrite /comp.
 f_equal; apply: funext => d1.
-case: (std_from_enc (AHE:=AHE) d1) => [enc1|] //.
+case: (std_from_enc (AHE:=AHE) d1) => [enc1|] //=.
 by case: (dec dk' enc1).
 Qed.
 
@@ -951,30 +940,53 @@ End dsdp_n_rsteps.
 (** * Interpreter soundness w.r.t. rsteps                                      *)
 (*******************************************************************************)
 
-Section interp_sound_section.
-Variable data : eqType.
+(* This section establishes the connection between the functional interpreter
+   (interp/interp_comp) and the relational semantics (rsteps).
 
-(* Trace-free interpreter iteration: mirrors interp but always passes nil
-   as trace. Used as a computational bridge between interp and rsteps. *)
-Fixpoint interp1 (ps : seq (proc data)) (h : nat)
+   The key result is interp_sound: for any fuel h and process tuple ps,
+   there exist final states and REAL traces such that rsteps ps final tr
+   holds, with the final process states matching interp_comp.
+
+   Architecture:
+   - interp_comp: trace-free interpreter for computational verification
+     (e.g., native_compute can evaluate it for concrete protocols)
+   - interp_compE: proves interp_comp agrees with the trace-aware interp
+     on process states (traces don't affect process transitions)
+   - interp_sound: chains step_sound (from smc_interpreter.v) across h
+     rounds to produce an rsteps proof with real communication traces *)
+
+Section interp_sound_section.
+Variable data : Type.
+
+(* Trace-free variant of interp: always passes nil as the trace accumulator.
+   Why: interp accumulates traces, which prevents native_compute from
+   reducing (traces grow with each step, causing term explosion). By
+   discarding traces, interp_comp stays small enough for computation.
+   The trace-independence lemmas below prove this doesn't affect
+   process transitions or progress detection. *)
+Fixpoint interp_comp (ps : seq (proc data)) (h : nat)
   : seq (proc data) :=
   if h is h.+1 then
     let ps_trs := [seq smc_interpreter.step ps nil i
                   | i <- iota 0 (size ps)] in
     if has snd ps_trs then
-      interp1 (unzip1 (unzip1 ps_trs)) h
+      interp_comp (unzip1 (unzip1 ps_trs)) h
     else ps
   else ps.
 
-Lemma size_interp1 ps h :
-  size (interp1 ps h) = size ps.
+Lemma size_interp_comp ps h :
+  size (interp_comp ps h) = size ps.
 Proof.
 elim: h ps => [|h IH] ps //=.
 case: ifP => _ //.
 by rewrite IH /unzip1 -map_comp !size_map size_iota.
 Qed.
 
-(* The process component of step is independent of the trace argument. *)
+(* Why trace-independence: step returns (new_proc, trace_data, progress).
+   The trace argument is an accumulator that step appends to, but it does
+   not influence which process transition is taken or whether progress
+   is made. These two lemmas justify using interp_comp (which passes nil)
+   as a faithful proxy for interp (which threads real traces). *)
 Lemma step_proc_trace_indep (ps : seq (proc data)) tr1 tr2 i :
   (smc_interpreter.step ps tr1 i).1.1 =
   (smc_interpreter.step ps tr2 i).1.1.
@@ -984,7 +996,6 @@ case: (nth _ ps i) => [d0 p|dst d0 p|frm f|d0||] //=;
   by case: (nth _ ps _) => [? ?|? ? ?|? ?|?||] //=; case: ifP.
 Qed.
 
-(* The progress flag of step is independent of the trace argument. *)
 Lemma step_progress_trace_indep (ps : seq (proc data)) tr1 tr2 i :
   (smc_interpreter.step ps tr1 i).2 =
   (smc_interpreter.step ps tr2 i).2.
@@ -994,10 +1005,13 @@ case: (nth _ ps i) => [d0 p|dst d0 p|frm f|d0||] //=;
   by case: (nth _ ps _) => [? ?|? ? ?|? ?|?||] //=; case: ifP.
 Qed.
 
-(* interp1 computes the same processes as interp *)
-Lemma interp1E h ps traces :
+(* Bridge: interp_comp produces the same process states as the
+   trace-aware interp. This lets us use interp_comp for computational
+   verification (native_compute) while interp_sound provides the
+   trace-attached rsteps proof via the full interp. *)
+Lemma interp_compE h ps traces :
   size traces = size ps ->
-  interp1 ps h = (interp h ps traces).1.
+  interp_comp ps h = (interp h ps traces).1.
 Proof.
 elim: h ps traces => [|h IH] ps traces Hsz //=.
 set res_nil := map _ _; set res_tr := map _ _.
@@ -1014,24 +1028,29 @@ by rewrite /res_tr /unzip1 /unzip2 !size_map.
 Qed.
 
 (* step_sound gives rsteps using tuples; we need to connect that to
-   the seq-level interp1 which uses iota. These two lemmas bridge
+   the seq-level interp_comp which uses iota. These two lemmas bridge
    the iota/enum gap. *)
 Lemma step_iota_enum n (ps : seq (proc data)) :
   [seq smc_interpreter.step ps nil i | i <- iota 0 n] =
   [seq smc_interpreter.step ps nil (val i) | i <- enum 'I_n].
 Proof. by rewrite -(val_enum_ord n) -map_comp. Qed.
 
-(* Interpreter soundness: h rounds of interp produce an rsteps proof *)
+(* Main soundness theorem: h rounds of interpretation produce an rsteps
+   proof with REAL traces. The traces are constructed from step_sound
+   (which embeds actual Init values, communicated data, and Ret values
+   into the rsteps constructors), chained via rtrans across rounds.
+   The process states match interp_comp, enabling computational
+   verification of termination/no-fail via native_compute. *)
 Lemma interp_sound n h (ps : n.-tuple (proc data)) :
   exists (final : n.-tuple (proc data)) tr,
     rsteps ps final tr /\
-    tval final = interp1 (tval ps) h.
+    tval final = interp_comp (tval ps) h.
 Proof.
 elim: h ps => [|h IH] ps.
   exists ps, [tuple nil | _ < n]; split; first exact: rrefl.
   by [].
 (* h.+1 case *)
-simpl interp1; rewrite size_tuple (step_iota_enum n).
+simpl interp_comp; rewrite size_tuple (step_iota_enum n).
 set ps' := map_tuple (fun r => r.1.1)
              [tuple smc_interpreter.step ps nil i | i < n].
 have Hss := step_sound ps.
@@ -1039,12 +1058,37 @@ case Hprog: (has snd _).
   have [final [tr2 [Htr2 Hfinal]]] := IH ps'.
   exists final; eexists; split; last first.
     rewrite Hfinal /ps' /=.
-    by congr (interp1 _ h); rewrite /unzip1 -!map_comp.
+    by congr (interp_comp _ h); rewrite /unzip1 -!map_comp.
   exact: (rtrans Hss Htr2 erefl).
 by exists ps, [tuple nil | _ < n]; split; [exact: rrefl|].
 Qed.
 
 End interp_sound_section.
+
+(*******************************************************************************)
+(** * Progress-based termination                                               *)
+(*******************************************************************************)
+
+(* General infrastructure for proving termination from a deadlock-freedom
+   (progress) hypothesis. This separates protocol-independent termination
+   logic from protocol-specific progress arguments. *)
+
+Section progress_termination.
+Variable data : Type.
+
+(* Whether at least one process advances in a round of step.
+   Used to state deadlock-freedom: a protocol is deadlock-free if
+   has_progress holds for every non-terminal reachable state. *)
+Definition has_progress (ps : seq (proc data)) : bool :=
+  has snd [seq smc_interpreter.step ps nil i | i <- iota 0 (size ps)].
+
+(* ps' is reachable from ps by running interp_comp for some number of
+   rounds. Used to restrict deadlock-freedom hypotheses to states that
+   actually arise during protocol execution. *)
+Definition reachable (ps ps' : seq (proc data)) : Prop :=
+  exists h, interp_comp data ps h = ps'.
+
+End progress_termination.
 
 (*******************************************************************************)
 (** * Idealized 3-Party DSDP rsteps Proof                                      *)
@@ -1157,7 +1201,15 @@ Proof.
 have [final [tr [Hrsteps Hfinal]]] :=
   @interp_sound data 3 27 procs3.
 exists final, tr; split; first exact: Hrsteps.
-by rewrite Hfinal (@interp1E data 27 _ (nseq 3 [::])) ?size_nseq.
+by rewrite Hfinal (@interp_compE data 27 _ (nseq 3 [::])) ?size_nseq.
 Qed.
 
 End dsdp_3party_rsteps.
+
+(*******************************************************************************)
+(** * N-Party DSDP rsteps                                                     *)
+(*******************************************************************************)
+
+(* The general n-party rsteps theorem, using proved no-fail and termination
+   from dsdp_nofail.v and dsdp_progress.v, is in dsdp_rsteps.v.
+   This avoids a circular import: dsdp_nofail/dsdp_progress import dsdp_pismc. *)
