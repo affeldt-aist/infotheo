@@ -92,6 +92,7 @@ toy_examples/expected_value_variance_ordn.v
 toy_examples/expected_value_variance_tuple.v
 toy_examples/conditional_entropy.v
 smc/smc_interpreter.v
+smc/smc_interpreter_sound.v
 smc/graded_resource.v
 smc/smc_session_types.v
 smc/pismc.v
@@ -130,5 +131,8 @@ dumas2017dual/dsdp/dsdp_syntax_demo.v
 dumas2017dual/dsdp/dsdp_correctness.v
 dumas2017dual/dsdp/dsdp_session_types.v
 dumas2017dual/dsdp/dsdp_pismc.v
+dumas2017dual/dsdp/dsdp_nofail.v
+dumas2017dual/dsdp/dsdp_progress.v
+dumas2017dual/dsdp/dsdp_rsteps.v
 
 -R . infotheo
