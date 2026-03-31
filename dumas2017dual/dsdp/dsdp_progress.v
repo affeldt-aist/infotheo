@@ -1986,7 +1986,71 @@ move: Htgt Hsz Hi; case: Hinv.
          by rewrite Halice.
 (* Inv_ASj *)
 - move=> j0 ps0 Hj2 Hsz0 Hwf [vd Halice] [sv0 [f0 [_ Hrj]]] Hpending H7a H7b H8 H9 Htgt Hsz Hi.
-  admit.
+  case Hi0 : (nat_of_ord i) => [|i'].
+  + (* i=0: Alice = Send(j0,...). Ready → exfalso *)
+    exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
+    by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Halice Hrj eqxx.
+  + have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
+    (* Determine ps[i'+1] *)
+    have [Hle | Hlt] := leqP (j0 : nat) i'.
+    * (* i' >= j0 *)
+      have [Heq_j0 | Hne_j0] := eqVneq i' (j0 : nat).
+      -- (* pos j0+1: B7a/B7b. Targets 0 or n_relay. *)
+         subst i'. case: (ltnP (j0 : nat) n_relay) => Hjn.
+         ++ have [sv' [f' [_ Hp]]] := H7a Hjn.
+            rewrite Hi0 Hp /= in Htgt. case: Htgt => <-. by rewrite Halice.
+         ++ have Hjn' : (j0 : nat) = n_relay by apply/eqP; rewrite eqn_leq Hjn andbT -ltnS; exact (ltn_ord j0).
+            have [f_dec [Hp _]] := H7b Hjn'.
+            rewrite Hi0 Hjn' Hp /= in Htgt. case: Htgt => <-.
+            (* target n_relay. ps[n_relay] = ps[j0] = Recv 0 f0 → non-final *)
+            by rewrite -Hjn' Hrj.
+      -- (* i' > j0: pending relay. Send 0 → target 0. ps[0] = Alice = Send → non-final *)
+         have Hgt : (j0 < Ordinal Hi')%N by rewrite /= ltn_neqAle eq_sym Hne_j0 Hle.
+         have Hpk := Hpending _ Hgt.
+         rewrite /relay_at_body /= in Hpk.
+         have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+         rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-. by rewrite Halice.
+    * (* i' < j0: frontier zone. Same structure as Inv_AR *)
+      have [Hj_eq2 | Hj_ne2] := eqVneq (j0 : nat) 2.
+      -- (* j0=2 *)
+         have Hj2b : j0 == 2%N :> nat by exact/eqP.
+         have [sv_fw Hp1] := H8 Hj2b.
+         (* i' < 2 *)
+         have [Hi'0 | Hi'ne0] := eqVneq i' 0.
+         ++ (* pos 1 = Send 2. Target 2 = j0. ps[j0] = Recv 0 → non-final *)
+            rewrite Hi0 Hi'0 Hp1 /= in Htgt. case: Htgt => <-.
+            by rewrite Hj_eq2 in Hrj; rewrite Hrj.
+         ++ (* pos 2 = j0. Recv 0 f0. But i' < j0=2 and i' != 0 → i'=1 *)
+            have Hi'1 : i' = 1%N by move: Hlt Hi'ne0; rewrite Hj_eq2; case: (i') => [//|[//|]].
+            rewrite Hi0 Hi'1 in Htgt. rewrite Hj_eq2 in Hrj. rewrite Hrj /= in Htgt.
+            case: Htgt => <-. by rewrite Halice.
+      -- (* j0 >= 3 *)
+         have Hj3 : (3 <= j0)%N by case: (j0 : nat) Hj2 Hj_ne2 => [//|[//|[//|]]].
+         have [Hfin_zone [sv_fw Hsend_fw]] := H9 Hj3.
+         have [Hi_fin | Hi_nofin] := ltnP i'.+1 (j0 : nat).-2.
+         ++ exfalso; move/andP: Hi => [Hnf _]; apply (negP Hnf).
+            have := Hfin_zone i' (ltnW Hi_fin).
+            by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 => ->.
+         ++ have [Hi_send | Hi_nosend] := eqVneq i'.+1 (j0 : nat).-1.
+            ** (* pos j0-1 = Send j0. Target j0. ps[j0] = Recv 0 → non-final *)
+               rewrite Hi0 Hi_send Hsend_fw /= in Htgt. case: Htgt => <-. by rewrite Hrj.
+            ** (* i'.+1 in {j0-2, j0} after excluding j0-1 *)
+               have [Hi_jm2 | Hi_njm2] := eqVneq i'.+1 (j0 : nat).-2.
+               --- (* i'.+1 = j0-2: Finish → final → exfalso *)
+                   exfalso; move/andP: Hi => [Hnf _]; apply (negP Hnf).
+                   have Hi_le : (i'.+1 <= (j0 : nat).-2)%N by rewrite Hi_jm2.
+                   have := Hfin_zone i' Hi_le.
+                   by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 => ->.
+               --- (* i'.+1 = j0: ps[j0] = Recv 0. Target 0. ps[0] = Alice → non-final *)
+                   have Hi_j0 : i'.+1 = (j0 : nat).
+                     have Hj0pos : (0 < (j0 : nat))%N by move: Hj3; case: {+}(j0 : nat) => [//|[//|[//|n]]].
+                     have Hj1pos : (0 < (j0 : nat).-1)%N by move: Hj3; case: {+}(j0 : nat) => [//|[//|[//|n]]].
+                     have Hi_ge_jm2 : ((j0 : nat).-2 < i'.+1)%N by rewrite ltn_neqAle eq_sym Hi_njm2 Hi_nofin.
+                     have Hi_ge_jm1 : ((j0 : nat).-1 <= i'.+1)%N by rewrite -(prednK Hj1pos).
+                     have Hi_ge_j : ((j0 : nat) <= i'.+1)%N.
+                       rewrite -(prednK Hj0pos) ltn_neqAle eq_sym Hi_nosend Hi_ge_jm1 //.
+                     by apply/eqP; rewrite eqn_leq Hi_ge_j Hlt.
+                   rewrite Hi0 Hi_j0 Hrj /= in Htgt. case: Htgt => <-. by rewrite Halice.
 (* Inv_drain *)
 - move=> j0 ps0 Hjb Hsz0 Hwf Halice [v Hsend] [f Hrecv] Hfinish [flast [Hlast _]] H8b Htgt Hsz Hi.
   case Hi0 : (nat_of_ord i) => [|i'].
