@@ -264,4 +264,70 @@ Proof.
 cbv zeta; rewrite (palice_n_erase AHE ek); by simpl.
 Qed.
 
+(* Generic step lemmas for Recv/Send pairs *)
+
+(* When ps[i] = Recv frm f and ps[frm] = Send dst v k with dst = i,
+   step returns (f v, v :: tr, true) *)
+Lemma step_Recv_Send (ps : seq (proc data)) (tr : seq data) (i frm : nat)
+    (f : data -> proc data) (dst : nat) (v : data) (k : proc data) :
+  nth (default_proc data) ps i = Recv frm f ->
+  nth (default_proc data) ps frm = Send dst v k ->
+  dst == i ->
+  @step data ps tr i = (f v, v :: tr, true).
+Proof.
+move=> Hi Hfrm Hdst.
+by rewrite /step /= Hi Hfrm Hdst.
+Qed.
+
+(* When ps[i] = Send dst v k and ps[dst] = Recv frm f with frm = i,
+   step returns (k, tr, true) — trace unchanged *)
+Lemma step_Send_Recv (ps : seq (proc data)) (tr : seq data) (i dst : nat)
+    (v : data) (k : proc data) (frm : nat) (f : data -> proc data) :
+  nth (default_proc data) ps i = Send dst v k ->
+  nth (default_proc data) ps dst = Recv frm f ->
+  frm == i ->
+  @step data ps tr i = (k, tr, true).
+Proof.
+move=> Hi Hdst Hfrm.
+by rewrite /step /= Hi Hdst Hfrm.
+Qed.
+
+(* L5b: One relay iteration of palice_n adds exactly one received value
+   to Alice's trace.
+
+   Alice's process for relay j is:
+     Recv j.+1 (oapp f Fail \o std_from_enc)
+   which, after the Recv fires with value v from relay j+1 (who has Send 0 v ...),
+   prepends v to the trace.
+
+   The subsequent Send by Alice does NOT modify Alice's trace.
+
+   This lemma captures the Recv half: if Alice = Recv j.+1 f and
+   relay j+1 = Send 0 v k, then step prepends v to Alice's trace. *)
+Lemma alice_trace_relay_recv
+    (ps : seq (proc data)) (tr : seq data)
+    (j : nat) (f : data -> proc data) (v : data) (relay_next : proc data) :
+  nth (default_proc data) ps 0 = Recv j.+1 f ->
+  nth (default_proc data) ps j.+1 = Send 0 v relay_next ->
+  @step data ps tr 0 = (f v, v :: tr, true).
+Proof.
+move=> H0 Hj.
+by rewrite /step /= H0 Hj.
+Qed.
+
+(* L5b': After Alice's Recv fires and Alice becomes Send dst w body_rest,
+   stepping Alice again does not change her trace (sender trace is inert). *)
+Lemma alice_trace_relay_send
+    (ps : seq (proc data)) (tr : seq data)
+    (dst : nat) (w : data) (body_rest : proc data)
+    (frm : nat) (g : data -> proc data) :
+  nth (default_proc data) ps 0 = Send dst w body_rest ->
+  nth (default_proc data) ps dst = Recv frm g ->
+  frm == 0 ->
+  @step data ps tr 0 = (body_rest, tr, true).
+Proof.
+move=> H0 Hdst Hfrm.
+by rewrite /step /= H0 Hdst Hfrm.
+Qed.
+
 End alice_trace_init.
