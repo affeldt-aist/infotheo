@@ -547,3 +547,66 @@ split.
 Qed.
 
 End alice_trace_init.
+
+(******************************************************************************)
+(* L6: View Faithfulness                                                      *)
+(*                                                                            *)
+(* AliceView_n (algebraic RV from dsdp_security.v) faithfully models what     *)
+(* Alice actually learns during protocol execution. Every component of        *)
+(* AliceView_n comes from either:                                             *)
+(*   (a) Alice's trace (Init'd, Recv'd, Ret'd values):                       *)
+(*       - Dk_a: from Init (#dk) — in trace (L5a)                            *)
+(*       - V0: from Init (&v0) — in trace (L5a)                              *)
+(*       - E_relay_RV (ciphertexts {c_j}): from Recv — in trace (L5b)        *)
+(*       - S (result): from Ret — in trace (L5d)                             *)
+(*   (b) Alice's private inputs (function arguments to palice_n):             *)
+(*       - U0: Alice's coefficient — NOT communicated, NOT in trace           *)
+(*       - U_relay_RV: relay coefficients — NOT communicated, NOT in trace    *)
+(*       - R_relay_RV: random masks — NOT communicated, NOT in trace          *)
+(*                                                                            *)
+(* The trace is a LOSSY projection of AliceView_n: it contains (a) but       *)
+(* not (b). Alice knows both (a) and (b), so her full knowledge equals       *)
+(* AliceView_n. An eavesdropper on Alice's channel sees only (a).            *)
+(*                                                                            *)
+(* This correspondence is verified by the per-step trace lemmas (L5a-L5e)    *)
+(* which characterize exactly what enters Alice's trace at each step.        *)
+(******************************************************************************)
+
+(* L6 is a conceptual correspondence, not a Coq theorem. The per-step
+   trace lemmas (L5a, L5b, L5d, L5e) formally verify each component:
+   - L5a: Dk_a and V0 enter trace via Init
+   - L5b: c_j enters trace via Recv from relay j+1
+   - L5d: g and S enter trace via final Recv and Ret
+   - Private inputs (U0, U_relay, R_relay) are arguments to palice_n,
+     never Init'd/Recv'd/Ret'd, hence absent from the trace. *)
+
+(******************************************************************************)
+(* L8: Eavesdropper Security                                                  *)
+(*                                                                            *)
+(* An eavesdropper who observes Alice's communication trace learns no more   *)
+(* about the relay secrets VarRV than Alice herself does.                     *)
+(*                                                                            *)
+(* Formally: H(VarRV | trace) >= H(VarRV | AliceView_n) = log(m^n_relay)    *)
+(*                                                                            *)
+(* The first inequality is the data processing inequality: the trace is      *)
+(* a deterministic function of AliceView_n (projection onto communicated     *)
+(* components), so conditioning on less information cannot decrease entropy.  *)
+(*                                                                            *)
+(* The equality is dsdp_entropic_security_n_concrete (from dsdp_security.v). *)
+(*                                                                            *)
+(* Note: the data processing inequality H(X|f(Y)) >= H(X|Y) is a standard  *)
+(* result (Cover & Thomas, Thm 2.8.1) formalized as                         *)
+(* data_processing_inequality in information_theory/entropy.v for mutual     *)
+(* information. The conditional entropy version follows from the chain rule. *)
+(******************************************************************************)
+
+(* L8 as a hypothesis, pending formalization of the conditional entropy
+   version of the data processing inequality. The bound follows from:
+   1. trace = f(AliceView_n) for some deterministic f (projection)
+   2. H(X | f(Y)) >= H(X | Y) (DPI for conditional entropy)
+   3. H(VarRV | AliceView_n) = log(m^n_relay) (from dsdp_security.v)
+
+   When the DPI for conditional entropy is formalized, this becomes a
+   one-line application. For now, the per-step trace lemmas (L5a-L5e)
+   provide the semantic justification: the trace is strictly contained
+   in the view, so the eavesdropper has less information than Alice. *)
