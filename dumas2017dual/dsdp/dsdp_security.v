@@ -1975,10 +1975,17 @@ Hypothesis VarRV_indep_inputs :
 
 (* Each R_i is uniform and independent of everything else *)
 Hypothesis R_relay_unif : forall i, `p_ (R_relay i) = fdist_uniform card_msg.
+(* AUDIT: R_relay_indep includes S which is redundant (S is a function of
+   inputs). Could simplify to P |= R_relay i _|_ [%VarRV, V0, U0].
+   Kept as-is for compatibility with cinde_V_relay derivation. *)
 Hypothesis R_relay_indep : forall i,
   P |= R_relay i _|_ [%VarRV, V0, U0, S].
 
-(* The entropy bound from fiber counting (dsdp_entropy.v) *)
+(* AUDIT: dsdp_centropy_n is a THEOREM (proved as dsdp_centropy_uniform_n
+   in dsdp_entropy.v), not a fundamental assumption. Kept as hypothesis to
+   avoid plumbing the connection between this section's VarRV/CondRV and
+   dsdp_entropy's version. Should be instantiated when connecting to concrete
+   protocol. *)
 Hypothesis dsdp_centropy_n :
   `H(VarRV | CondRV) = log ((m ^ n_relay)%:R : R).
 
@@ -2039,7 +2046,10 @@ Let AliceView_n : {RV P -> _} := [% E_relay_RV, DecView_n].
 (* ========================================================================== *)
 
 (* N5: Conditional independence of (Dk_a, R_relay) from VarRV given CondRV.
-   This is the n-party analogue of cinde_V2V3 from the 3-party proof. *)
+   This is the n-party analogue of cinde_V2V3 from the 3-party proof.
+   AUDIT: DERIVABLE from Dk_a _|_ VarRV, R_relay _|_ VarRV (unconditional),
+   plus graphoid weak union. Kept as hypothesis — derivation is mechanical
+   but requires graphoid infrastructure. *)
 Hypothesis cinde_V_relay :
   P |= [% Dk_a, R_relay_RV] _|_ VarRV | CondRV.
 
@@ -2051,7 +2061,9 @@ Hypothesis cinde_V_relay :
 (* Encryption independence: the bundled encryption RV is independent of
    VarRV given DecView. This follows from E_enc_inde when enc_msg is
    actually pty.-enc msg. For the abstract enc_msg, we take it as hypothesis.
-   Semantic content: encryptions leak no information about relay secrets. *)
+   AUDIT: DERIVABLE when enc_msg = pty.-enc msg, from E_enc_inde
+   (unconditional independence) + graphoid weak union. Blocked by abstract
+   enc_msg type. *)
 Hypothesis E_relay_cinde_VarRV :
   P |= E_relay_RV _|_ VarRV | DecView_n.
 
@@ -2163,15 +2175,21 @@ Hypothesis V_relay_unif : forall i, `p_ (V_relay i) = fdist_uniform card_msg.
 Hypothesis R_relay_unif : forall i, `p_ (R_relay i) = fdist_uniform card_msg.
 
 (* Independence: R_i is independent of the OTP payload V_i*U_i paired with
-   any target V_j. This is the form needed for relay_otp_indep. *)
+   any target V_j. This is the form needed for relay_otp_indep.
+   AUDIT: DERIVABLE from a simpler R_i _|_ [%V_relay, U_relay] (R_i
+   independent of all inputs) via composition with multiplication.
+   Kept in this specific form for direct use in relay_otp_indep. *)
 Hypothesis R_relay_indep_VUV : forall i j,
   P |= R_relay i _|_ [%V_relay i \* U_relay i, V_relay j].
 
 (* Independence: relay i's full view (V_i, U_i, R_i) is independent of
-   relay j's private value V_j when i != j. This is the fundamental
-   protocol assumption that different relays' inputs are independent.
-   In the DSDP protocol, each relay generates its own random values
-   independently of other relays. *)
+   relay j's private value V_j when i != j.
+   AUDIT: COMPOSITE — could be decomposed into 3 simpler hypotheses:
+     (a) V_relay i _|_ V_relay j   (different relays' secrets independent)
+     (b) U_relay i _|_ V_relay j   (coefficients independent of other secrets)
+     (c) R_relay i _|_ V_relay j   (random masks independent of secrets)
+   The joint [%V_i, U_i, R_i] _|_ V_j then follows from graphoid contraction.
+   Kept as composite for simplicity — decomposition is future work. *)
 Hypothesis relay_view_indep_V : forall i j,
   i != j -> P |= [%V_relay i, U_relay i, R_relay i] _|_ V_relay j.
 
