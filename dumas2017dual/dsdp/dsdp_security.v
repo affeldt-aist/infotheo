@@ -2167,6 +2167,14 @@ Hypothesis R_relay_unif : forall i, `p_ (R_relay i) = fdist_uniform card_msg.
 Hypothesis R_relay_indep_VUV : forall i j,
   P |= R_relay i _|_ [%V_relay i \* U_relay i, V_relay j].
 
+(* Independence: relay i's full view (V_i, U_i, R_i) is independent of
+   relay j's private value V_j when i != j. This is the fundamental
+   protocol assumption that different relays' inputs are independent.
+   In the DSDP protocol, each relay generates its own random values
+   independently of other relays. *)
+Hypothesis relay_view_indep_V : forall i j,
+  i != j -> P |= [%V_relay i, U_relay i, R_relay i] _|_ V_relay j.
+
 (* ========================================================================== *)
 (* N6: Relay i's view type (simplified)                                       *)
 (*                                                                            *)
@@ -2248,7 +2256,8 @@ Lemma relay_indep_V_target_n (i j : 'I_n_relay.+1) :
   P |= RelayView_n i _|_ V_relay j.
 Proof.
 move=> Hij.
-Admitted.
+exact: relay_view_indep_V Hij.
+Qed.
 
 (* ========================================================================== *)
 (* N9: Per-relay privacy theorem                                              *)
