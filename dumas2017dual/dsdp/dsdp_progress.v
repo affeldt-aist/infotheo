@@ -2082,12 +2082,40 @@ move: Htgt Hsz Hi; case: Hinv.
                rewrite Hi0 Heq_nr Hlast /= in Htgt. case: Htgt => <-.
                (* ps[n_relay] = some process. Need to show non-final. *)
                (* n_relay > j0+1 ≥ 2. ps[n_relay] = Recv from H8b or Recv from last relay. *)
-               admit. (* ps[n_relay] non-final: Send or Recv from protocol *)
+               (* ps[n_relay] non-final: determine via H8b or Hsend/Hrecv *)
+               have [Heqnr_j1 | Hnenr_j1] := eqVneq n_relay j0.+1.
+               --- by rewrite Heqnr_j1 Hsend.
+               --- have [Heqnr_j2 | Hnenr_j2] := eqVneq n_relay j0.+2.
+                   +++ by rewrite Heqnr_j2 Hrecv.
+                   +++ (* n_relay > j0+2: H8b gives Recv at n_relay *)
+                       have Hnr_gt : (j0 < n_relay.-1)%N.
+                         have Hj1_lt : (j0.+1 < n_relay)%N by rewrite ltn_neqAle eq_sym Hnenr_j1 -ltnS.
+                         have Hj2_lt : (j0.+2 < n_relay)%N by rewrite ltn_neqAle eq_sym Hnenr_j2 Hj1_lt.
+                         suff : (j0.+1 <= n_relay.-1)%N by [].
+                         rewrite -ltnS (prednK Hn_relay). exact: Hj1_lt.
+                       have Hnr_lt : (n_relay.-1 < n_relay)%N by rewrite prednK // Hn_relay.
+                       have [fnr [Hpnr _]] := H8b n_relay.-1 Hnr_gt Hnr_lt.
+                       by rewrite (prednK Hn_relay) in Hpnr; rewrite Hpnr.
             ** (* j0+1 < i' < n_relay: target i'. ps[i'] non-final *)
                have Hlt_nr : (i' < n_relay)%N by rewrite ltn_neqAle Hne_nr -ltnS.
                have [fi [Hpi _]] := H8b i' (ltnW Hgt_j0p1) Hlt_nr.
                rewrite Hi0 Hpi /= in Htgt. case: Htgt => <-.
-               admit. (* ps[i'] non-final: Send or Recv from protocol *)
+               (* ps[i'] where j0+1 < i' *)
+               have [Heq_j1 | Hne_j1] := eqVneq i' j0.+1.
+               --- by rewrite Heq_j1 Hsend.
+               --- have [Heq_j2 | Hne_j2] := eqVneq i' j0.+2.
+                   +++ by rewrite Heq_j2 Hrecv.
+                   +++ (* i' > j0+2: H8b gives Recv at i' *)
+                       have Hi_gt : (j0 < i'.-1)%N.
+                         have Hj2lt : (j0.+2 < i')%N by rewrite ltn_neqAle eq_sym Hne_j2 ltn_neqAle eq_sym Hne_j1 ltnW.
+                         (* j0.+2 < i' → j0 < i'.-1: use leq_ltn_trans *)
+                         have Hi'pos : (0 < i')%N by exact: ltn_trans (ltn0Sn _) Hgt_j0p1.
+                         move: Hj2lt; rewrite -(prednK Hi'pos) ltnS => Hj2le.
+                         exact: leq_trans (leqnSn _) Hj2le.
+                       have Hi_lt : (i'.-1 < n_relay)%N by exact: leq_ltn_trans (leq_pred _) Hlt_nr.
+                       have [fi' [Hpi' _]] := H8b i'.-1 Hi_gt Hi_lt.
+                       have Hi'pos : (0 < i')%N by exact: ltn_trans (ltn0Sn _) Hgt_j0p1.
+                       by rewrite (prednK Hi'pos) in Hpi'; rewrite Hpi'.
 (* Inv_tail *)
 - move=> ps0 Hsz0 Hwf [v Hsend] Halice Hfin Htgt Hsz Hi.
   exfalso. move/andP: Hi => [Hnf Hns].
@@ -2118,7 +2146,7 @@ move: Htgt Hsz Hi; case: Hinv.
     have Hfin' := Hfin (Ordinal Hi').
     rewrite /relay_at_finish_pred /= in Hfin'.
     by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 Hfin'.
-Admitted.
+Qed.
 
 Lemma has_progress_tuple_to_seq ps (Hsz : size ps = n_relay.+2) :
   smc_deadlock.has_progress (@mk_tup ps Hsz) -> has_progress data ps.
