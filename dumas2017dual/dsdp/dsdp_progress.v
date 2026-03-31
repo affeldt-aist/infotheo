@@ -1919,7 +1919,20 @@ move: Htgt Hsz Hi; case: Hinv.
                --- have [Hi_recv | Hi_norecv] := eqVneq i'.+1 (j0 : nat).-1.
                    +++ rewrite Hi0 Hi_recv Hrecv_fw /= in Htgt. case: Htgt => <-.
                        by rewrite Hsend_fw.
-                   +++ (* impossible *) admit.
+                   +++ (* remaining: j0.-2 <= i'.+1, i'.+1 != j0.-2, i'.+1 != j0.-1 *)
+                       (* Must be i'.+1 = j0. ps[j0] = Recv 0 f0. Target 0. ps[0] = Alice → non-final *)
+                       have [sv0 [f0' [_ Hpj0]]] := H7 Hj_ge2.
+                       (* Prove i'.+1 = j0 *)
+                       have Hi_j0 : i'.+1 = (j0 : nat).
+                         have Hj0pos : (0 < (j0 : nat))%N by move: Hj3; case: {+}(j0 : nat) => [//|[//|[//|n]]].
+                         have Hj1pos : (0 < (j0 : nat).-1)%N by move: Hj3; case: {+}(j0 : nat) => [//|[//|[//|n]]].
+                         have Hi_ge_jm1 : ((j0 : nat).-1 <= i'.+1)%N.
+                           rewrite -(prednK Hj1pos) ltn_neqAle eq_sym Hi_nosend Hi_nofin //.
+                         have Hi_ge_j : ((j0 : nat) <= i'.+1)%N.
+                           rewrite -(prednK Hj0pos) ltn_neqAle eq_sym Hi_norecv Hi_ge_jm1 //.
+                         by apply/eqP; rewrite eqn_leq Hi_ge_j Hlt.
+                       rewrite Hi0 Hi_j0 Hpj0 /= in Htgt. case: Htgt => <-.
+                       by rewrite Halice /alice_foldr_at; have [f ->] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
       -- (* j0 = 1 *)
          have Hj1 : j0 == 1%N :> nat.
            apply/eqP. apply/eqP. rewrite eqn_leq. apply/andP; split.
