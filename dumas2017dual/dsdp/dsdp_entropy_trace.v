@@ -165,3 +165,48 @@ ring.
 Qed.
 
 End trace_entropy_analysis.
+
+(******************************************************************************)
+(* N-Party Trace→Security Bridge                                              *)
+(*                                                                            *)
+(* Connects the protocol execution (rsteps/interp_sound) to the algebraic    *)
+(* security proofs (dsdp_entropic_security_n_concrete).                       *)
+(*                                                                            *)
+(* Key insight: Alice's trace from rsteps is a LOSSY projection of her view. *)
+(* The trace contains communicated values (Init'd, Recv'd, Ret'd), but NOT  *)
+(* Alice's private computation inputs (U0, U_relay, R_relay, rand_a).        *)
+(*                                                                            *)
+(* Therefore:                                                                 *)
+(* - AliceView_n = trace + private inputs (functional equivalence)           *)
+(* - H(VarRV | trace) ≥ H(VarRV | AliceView_n) (data processing)           *)
+(*                                                                            *)
+(* The bridge has three parts:                                                *)
+(*                                                                            *)
+(* Phase 1 (L5a-L5e): Trace content characterization                        *)
+(*   What is in tr !_ 0? Split by palice_n's protocol phases:               *)
+(*     Phase A: Init (#dk, &v0) → [dk; v0]                                  *)
+(*     Phase B: ForList relays (Recv c_j; Send ...) → [c_n; ...; c_1]       *)
+(*     Phase C: Recv g; Ret S → [g; S]                                      *)
+(*                                                                            *)
+(* Phase 2 (L6): View faithfulness                                           *)
+(*   Every component of AliceView_n comes from either the trace or           *)
+(*   Alice's private inputs (function arguments to palice_n).                *)
+(*                                                                            *)
+(* Phase 3 (L8): Eavesdropper security                                       *)
+(*   H(VarRV | trace) ≥ log(m^n_relay) by data processing inequality.       *)
+(*                                                                            *)
+(* Dependency graph:                                                          *)
+(*   L5a (init) ──────────┐                                                  *)
+(*   L5b (relay step) → L5c (all relays) → L5e (full trace)                 *)
+(*   L5d (final) ─────────┘                    ↓                             *)
+(*                                        L6 (view faithfulness)             *)
+(*                                             ↓                             *)
+(*                               D3 (AliceTraces_n) → L8 (eavesdropper)     *)
+(******************************************************************************)
+
+(* TODO: Implement L5a-L5e, L6, D3, L8 per the plan.
+   These require:
+   - step_res_trace_inert / step_res_trace_disjoint from smc_interpreter_sound.v
+   - palice_n structure from dsdp_pismc.v
+   - dsdp_entropic_security_n_concrete from dsdp_security.v
+   - data processing inequality for entropy *)
