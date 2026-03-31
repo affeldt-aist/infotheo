@@ -1889,8 +1889,46 @@ move: Htgt Hsz Hi; case: Hinv.
       rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-.
       (* j = 0. ps[0] = Alice = Recv → non-final *)
       by rewrite Halice /alice_foldr_at; have [f ->] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
-    * (* frontier zone *)
-      admit.
+    * (* frontier: i' < j0. Determine ps[i'+1], extract target, show ps[target] non-final *)
+      have Hj0_pos : (0 < (j0 : nat))%N by exact: leq_ltn_trans (leq0n i') Hlt.
+      have [Hj_ge2 | Hj_lt2] := leqP 2 (j0 : nat).
+      -- (* j0 >= 2 *)
+         have [Hj2 | Hj_ne2] := eqVneq (j0 : nat) 2.
+         ++ (* j0=2: frontier has pos 1 (Send 2, H8) and pos 2 (Recv 0, H7) *)
+            (* Both target positions with Recv or Send → non-final *)
+            have Hj2b : j0 == 2%N :> nat by exact/eqP.
+            have [sv_fw Hp1] := H8 Hj2b.
+            have [sv0 [f0' [_ Hpj0]]] := H7 Hj_ge2.
+            have [Hi'0 | Hi'1] := eqVneq i' 0.
+            ** (* pos 1 = Send 2. Target 2 = j0. ps[j0] = Recv 0 → non-final *)
+               rewrite Hi0 Hi'0 Hp1 /= in Htgt. case: Htgt => <-. by rewrite Hj2 in Hpj0; rewrite Hpj0.
+            ** (* pos 2 = Recv 0 f0 (= pos j0). Target 0. ps[0] = Alice = Recv → non-final *)
+               have Hi'1v : i' = 1%N by move: Hlt Hi'1; rewrite Hj2; case: (i') => [//|[//|]].
+               rewrite Hi0 Hi'1v in Htgt. rewrite Hj2 in Hpj0. rewrite Hpj0 /= in Htgt. case: Htgt => <-.
+               by rewrite Halice /alice_foldr_at; have [f ->] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
+         ++ (* j0 >= 3 *)
+            have Hj3 : (3 <= j0)%N by case: (j0 : nat) Hj_ge2 Hj_ne2 => [//|[//|[//|]]].
+            have [Hfin_zone [[sv_fw Hsend_fw] [f_recv [Hrecv_fw _]]]] := H9 Hj3.
+            have [Hi_fin | Hi_nofin] := ltnP i'.+1 (j0 : nat).-2.
+            ** exfalso; move/andP: Hi => [Hnf _]; apply (negP Hnf).
+               have := Hfin_zone i' Hi_fin.
+               by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 => ->.
+            ** have [Hi_send | Hi_nosend] := eqVneq i'.+1 (j0 : nat).-2.
+               --- rewrite Hi0 Hi_send Hsend_fw /= in Htgt. case: Htgt => <-.
+                   by rewrite Hrecv_fw.
+               --- have [Hi_recv | Hi_norecv] := eqVneq i'.+1 (j0 : nat).-1.
+                   +++ rewrite Hi0 Hi_recv Hrecv_fw /= in Htgt. case: Htgt => <-.
+                       by rewrite Hsend_fw.
+                   +++ (* impossible *) admit.
+      -- (* j0 = 1 *)
+         have Hj1 : j0 == 1%N :> nat.
+           apply/eqP. apply/eqP. rewrite eqn_leq. apply/andP; split.
+             by rewrite -ltnS.
+           exact: Hj0_pos.
+         have [f_enc [Hp1 _]] := H6 Hj1.
+         have Hi'0 : i' = 0%N by move: Hlt; rewrite (eqP Hj1); case: (i').
+         rewrite Hi0 Hi'0 Hp1 /= in Htgt. case: Htgt => <-.
+         by rewrite Halice /alice_foldr_at; have [f ->] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
 (* Inv_AS0 *)
 - move=> ps0 f_inner Hsz0 Hwf [vd Halice] Hr0 Hpending _ Htgt Hsz Hi.
   case Hi0 : (nat_of_ord i) => [|i'].
