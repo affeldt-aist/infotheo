@@ -1916,8 +1916,17 @@ move: Htgt Hsz Hi; case: Hinv.
     * exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
       by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Heq0 Hr0 Halice eqxx.
     * have [Heq1 | Hne1] := eqVneq i' 1.
-      -- (* pos 2: depends on n_relay *)
-         admit.
+      -- (* pos 2: Recv 0 f (H6a) or Recv 1 f (H6b). Target 0 or 1. *)
+         case: (ltnP 1 n_relay) => Hnr1.
+         ++ (* n_relay > 1: H6a gives Recv 0 f at pos 2. Target 0. *)
+            have [sv' [f' [_ Hp2]]] := H6a Hnr1.
+            rewrite Hi0 Heq1 Hp2 /= in Htgt. case: Htgt => <-.
+            by rewrite Halice.
+         ++ (* n_relay = 1: H6b gives Recv 1 f at pos 2. Target 1. *)
+            have Hnr : n_relay = 1%N by apply/eqP; rewrite eqn_leq Hn_relay Hnr1.
+            have [f' [Hp2 _]] := H6b Hnr.
+            rewrite Hi0 Heq1 Hp2 /= in Htgt. case: Htgt => <-.
+            by rewrite Hr0.
       -- have Hi'pos : (1 < i')%N by case: (i') Hne0 Hne1 => [//|[//|]].
          have Hpk := Hpending (Ordinal Hi') Hi'pos.
          rewrite /relay_at_body /= in Hpk.
@@ -1929,7 +1938,41 @@ move: Htgt Hsz Hi; case: Hinv.
   admit.
 (* Inv_drain *)
 - move=> j0 ps0 Hjb Hsz0 Hwf Halice [v Hsend] [f Hrecv] Hfinish [flast [Hlast _]] H8b Htgt Hsz Hi.
-  admit.
+  case Hi0 : (nat_of_ord i) => [|i'].
+  + (* i=0: Alice = Recv(n_relay+1,...). Target n_relay+1. *)
+    have [ft Htail] := alice_tail_is_recv.
+    rewrite Hi0 Halice alice_foldr_at_tail Htail /= in Htgt. case: Htgt => <-.
+    (* ps[n_relay+1] = Recv n_relay flast → non-final *)
+    by rewrite Hlast.
+  + have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
+    have [Heq_j0 | Hne_j0] := eqVneq i' (j0 : nat).
+    * (* pos j0+1 = Send(j0+2,...). Ready → exfalso *)
+      exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
+      by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Heq_j0 Hsend Hrecv eqxx.
+    * have [Heq_j0p1 | Hne_j0p1] := eqVneq i' j0.+1.
+      -- (* pos j0+2 = Recv(j0+1,...). Ready → exfalso *)
+         exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
+         by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Heq_j0p1 Hrecv Hsend eqxx.
+      -- have [Hlt_j0 | Hge_j0] := ltnP i' (j0 : nat).
+         ++ (* i' < j0: Finish → final → exfalso *)
+            exfalso; move/andP: Hi => [Hnf _]; apply (negP Hnf).
+            have := Hfinish i' Hlt_j0.
+            by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 => ->.
+         ++ (* i' > j0+1: Recv chain. Target is i' or n_relay. *)
+            have Hgt_j0p1 : (j0.+1 < i')%N.
+              rewrite ltn_neqAle eq_sym Hne_j0p1 /=.
+              by rewrite ltn_neqAle eq_sym Hne_j0 Hge_j0.
+            have [Heq_nr | Hne_nr] := eqVneq i' n_relay.
+            ** (* i' = n_relay: ps[n+1] = Recv n_relay flast. Target n_relay. *)
+               rewrite Hi0 Heq_nr Hlast /= in Htgt. case: Htgt => <-.
+               (* ps[n_relay] = some process. Need to show non-final. *)
+               (* n_relay > j0+1 ≥ 2. ps[n_relay] = Recv from H8b or Recv from last relay. *)
+               admit. (* ps[n_relay] non-final: Send or Recv from protocol *)
+            ** (* j0+1 < i' < n_relay: target i'. ps[i'] non-final *)
+               have Hlt_nr : (i' < n_relay)%N by rewrite ltn_neqAle Hne_nr -ltnS.
+               have [fi [Hpi _]] := H8b i' (ltnW Hgt_j0p1) Hlt_nr.
+               rewrite Hi0 Hpi /= in Htgt. case: Htgt => <-.
+               admit. (* ps[i'] non-final: Send or Recv from protocol *)
 (* Inv_tail *)
 - move=> ps0 Hsz0 Hwf [v Hsend] Halice Hfin Htgt Hsz Hi.
   exfalso. move/andP: Hi => [Hnf Hns].
