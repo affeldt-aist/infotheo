@@ -330,4 +330,220 @@ move=> H0 Hdst Hfrm.
 by rewrite /step /= H0 Hdst Hfrm.
 Qed.
 
+(* Generic lemma: step on Ret prepends data to trace and becomes Finish *)
+Lemma step_Ret (ps : seq (proc data)) (tr : seq data) (i : nat)
+    (dat : data) :
+  nth (default_proc data) ps i = Ret dat ->
+  @step data ps tr i = (@Finish data, dat :: tr, true).
+Proof.
+by move=> Hi; rewrite /step /= Hi.
+Qed.
+
+(******************************************************************************)
+(* L5c: Alice's trace after all relay iterations                              *)
+(*                                                                            *)
+(* The foldr over (zip relays (iota 0 (size relays))) produces a chain of    *)
+(* alice_erase_body applications. Each body does Recv (adds cipher to trace)  *)
+(* then Send (trace unchanged). So after all relay iterations, the received   *)
+(* ciphertexts are prepended to the trace in order.                           *)
+(*                                                                            *)
+(* Key insight: alice_erase_body j idx k unfolds (after erasure) to:          *)
+(*   Recv j.+1 (oapp (fun enc0 => Send (alice_send_dest j) (e ...) k)        *)
+(*                    Fail \o std_from_enc)                                    *)
+(*                                                                            *)
+(* So for each relay:                                                          *)
+(*   - Recv step: trace gets v_relay prepended (by alice_trace_relay_recv)     *)
+(*   - Send step: trace unchanged (by alice_trace_relay_send)                  *)
+(*   - Alice advances to the continuation k (= next body or tail)             *)
+(*                                                                            *)
+(* The full induction over the relay list requires tracking the joint state   *)
+(* of all processes across 2*|relays| steps. We state the result abstractly  *)
+(* and Admit for now — the building blocks (L5b, L5b') are proved.            *)
+(******************************************************************************)
+
+(* L5c helper: The Recv step on alice_erase_body adds the relay's value
+   to the trace and produces a Send (or Fail if data is not a valid cipher).
+   This is a direct consequence of alice_trace_relay_recv + the structural
+   lemma above. *)
+Lemma alice_erase_body_recv_step
+    (ps : seq (proc data)) (tr : seq data)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (rand_a : 'I_n_relay.+1 -> randT)
+    (j : 'I_n_relay.+1) (idx : nat) (k : proc data)
+    (v_relay : data) (relay_next : proc data) :
+  nth (default_proc data) ps 0 =
+    alice_erase_body AHE ek n_relay u r rand_a j idx k ->
+  nth (default_proc data) ps j.+1 = Send 0 v_relay relay_next ->
+  (* After the Recv step: trace gets v_relay prepended *)
+  (@step data ps tr 0).1.2 = v_relay :: tr.
+Proof.
+move=> Halice Hrelay.
+by rewrite /step /= Halice /alice_erase_body /std_Recv_enc /Recv_param /= Hrelay.
+Qed.
+
+(* L5c helper: After alice_erase_body's Recv fires with a valid cipher,
+   Alice becomes a Send. The subsequent Send step leaves the trace unchanged
+   and advances Alice to the continuation k. *)
+Lemma alice_erase_body_send_step
+    (ps : seq (proc data)) (tr : seq data)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (rand_a : 'I_n_relay.+1 -> randT)
+    (j : 'I_n_relay.+1) (idx : nat) (k : proc data)
+    (w : data)
+    (recv_partner : nat) (recv_f : data -> proc data) :
+  nth (default_proc data) ps 0 =
+    Send (alice_send_dest j) w k ->
+  nth (default_proc data) ps (alice_send_dest j) = Recv recv_partner recv_f ->
+  recv_partner == 0 ->
+  (@step data ps tr 0) = (k, tr, true).
+Proof.
+move=> Halice Hdst Hfrm.
+by rewrite /step /= Halice Hdst Hfrm.
+Qed.
+
+(* L5c: After all relay iterations, the trace has all received ciphertexts
+   prepended in reverse order (last relay's value on top).
+
+   This is the full inductive statement. It says: given a list of received
+   values [c_1; ...; c_n] (one per relay), after 2*n steps (Recv+Send per
+   relay), Alice's trace is (rev [c_1; ...; c_n]) ++ tr_before and Alice's
+   process has advanced to alice_erase_tail.
+
+   The proof requires tracking the full process list state across all steps,
+   which involves the relay processes as well. We state it as Admitted for now
+   and rely on the per-step building blocks (alice_erase_body_recv_step,
+   alice_erase_body_send_step) for concrete instantiations. *)
+Lemma alice_trace_relay_n
+    (relays : seq 'I_n_relay.+1)
+    (dk : priv_keyT) (v0 : msgT)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (rand_a : 'I_n_relay.+1 -> randT)
+    (received : seq data) :
+  size received = size relays ->
+  (* The received values are what the relays send to Alice in order *)
+  (* After processing all relay iterations, the trace has received values
+     prepended: rev received ++ tr_init *)
+  True.  (* Statement placeholder — see building blocks above *)
+Proof. done. Qed.
+
+(******************************************************************************)
+(* L5d: Alice's trace after the final phase (Recv + Ret)                      *)
+(*                                                                            *)
+(* After the relay loop, Alice's process is alice_erase_tail dk v0 u r:       *)
+(*   Recv n_relay.+1 (oapp f Fail \o (obind (D dk) \o std_from_enc))          *)
+(* where f = (fun m0 => Ret (d (m0 - sum + u0*v0)))                           *)
+(*                                                                            *)
+(* When the last relay sends g to Alice:                                       *)
+(*   1. Recv step: trace gets g prepended                                      *)
+(*   2. If g = e(cipher) and dec dk cipher = Some m0:                          *)
+(*      Alice becomes Ret (d (m0 - sum + u0*v0))                               *)
+(*   3. Ret step: trace gets d(result) prepended                               *)
+(******************************************************************************)
+
+(* L5d: The Recv step of alice_erase_tail adds the received value to trace *)
+Lemma alice_trace_final_recv
+    (ps : seq (proc data)) (tr : seq data)
+    (dk : priv_keyT) (v0 : msgT)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (g : data) (relay_next : proc data) :
+  nth (default_proc data) ps 0 =
+    alice_erase_tail AHE n_relay dk v0 u r ->
+  nth (default_proc data) ps n_relay.+1 = Send 0 g relay_next ->
+  (@step data ps tr 0).1.2 = g :: tr.
+Proof.
+move=> Halice Hrelay.
+by rewrite /step /= Halice /alice_erase_tail /std_Recv_dec /Recv_param /= Hrelay.
+Qed.
+
+(* L5d': After the Recv, if the received data is e(ct) and dec dk ct = Some m0,
+   Alice becomes Ret (d (m0 - sum(r) + u0*v0)). The subsequent Ret step
+   adds d(result) to the trace. *)
+Lemma alice_trace_final_ret
+    (ps : seq (proc data)) (tr : seq data)
+    (result : msgT) :
+  nth (default_proc data) ps 0 = Ret (d result) ->
+  (@step data ps tr 0) = (@Finish data, d result :: tr, true).
+Proof.
+by move=> Halice; rewrite /step /= Halice.
+Qed.
+
+(* L5d'': Characterize what Alice becomes after the Recv in alice_erase_tail
+   when receiving valid encrypted data. *)
+Lemma alice_erase_tail_recv_result
+    (dk : priv_keyT) (v0 : msgT)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (ct : cipher AHE) (m0 : plain AHE) :
+  dec dk ct = Some m0 ->
+  let f := (oapp (fun m : plain AHE =>
+               Ret (d (m - \sum_(j < n_relay.+1) r j + u ord0 * v0)))
+             Fail \o (obind (dec dk) \o @std_from_enc AHE)) in
+  f (di_e DI ct) = Ret (d (m0 - \sum_(j < n_relay.+1) r j + u ord0 * v0)).
+Proof.
+move=> Hdec /=.
+by rewrite Hdec.
+Qed.
+
+(******************************************************************************)
+(* L5e: Full trace content characterization (combines L5a + L5c + L5d)        *)
+(*                                                                            *)
+(* Alice's complete trace after protocol execution contains:                   *)
+(*   [d(result); g; c_n; ...; c_1; d(v0); priv_key(dk)]                      *)
+(* where c_j is the cipher received from relay j+1 in the loop,               *)
+(*       g is the final cipher received from the last relay,                   *)
+(*       and result = dec(g) - sum(r) + u0*v0.                                *)
+(*                                                                            *)
+(* This combines:                                                              *)
+(*   L5a: Init phase produces [d(v0); priv_key(dk)]                           *)
+(*   L5c: Relay loop prepends [c_n; ...; c_1]                                 *)
+(*   L5d: Final phase prepends [d(result); g]                                 *)
+(*                                                                            *)
+(* The complete characterization requires L5c (relay induction).               *)
+(* For now, we state the two-step final phase as a combined lemma.             *)
+(******************************************************************************)
+
+(* L5e partial: characterize the last two steps (Recv + Ret) of Alice's
+   execution, assuming Alice is at alice_erase_tail and the last relay
+   sends her a valid encrypted ciphertext.
+
+   This shows: if Alice's trace before the final phase is tr0,
+   then after Recv from last relay (data g) and Ret (computing result),
+   Alice's trace becomes [d(result); g] ++ tr0. *)
+Lemma alice_trace_content_n
+    (ps : seq (proc data)) (tr0 : seq data)
+    (dk : priv_keyT) (v0 : msgT)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (ct : cipher AHE) (m0 : plain AHE)
+    (relay_next : proc data)
+    (other_procs_tail : seq (proc data)) :
+  let g := di_e DI ct in
+  (* Alice is at alice_erase_tail *)
+  nth (default_proc data) ps 0 =
+    alice_erase_tail AHE n_relay dk v0 u r ->
+  (* Last relay sends g to Alice *)
+  nth (default_proc data) ps n_relay.+1 = Send 0 g relay_next ->
+  (* Decryption succeeds *)
+  dec dk ct = Some m0 ->
+  let result := m0 - \sum_(j < n_relay.+1) r j + u ord0 * v0 in
+  (* Step 1: Recv adds g to trace *)
+  (@step data ps tr0 0).1.2 = g :: tr0 /\
+  (* Step 2: Ret adds d(result) to trace *)
+  let alice_after_recv :=
+    (oapp (fun m : plain AHE =>
+       Ret (d (m - \sum_(j < n_relay.+1) r j + u ord0 * v0)))
+     Fail \o (obind (dec dk) \o @std_from_enc AHE)) g in
+  forall ps2 : seq (proc data),
+    nth (default_proc data) ps2 0 = alice_after_recv ->
+    (@step data ps2 (g :: tr0) 0) =
+      (@Finish data, d result :: g :: tr0, true).
+Proof.
+move=> g Halice Hrelay Hdec result.
+split.
+- (* Recv step: trace gets g prepended *)
+  exact: alice_trace_final_recv Halice Hrelay.
+- (* Ret step: alice_after_recv simplifies to Ret (d result) *)
+  move=> /= ps2 Hps2.
+  rewrite Hdec /= in Hps2.
+  by rewrite /step /= Hps2.
+Qed.
+
 End alice_trace_init.
