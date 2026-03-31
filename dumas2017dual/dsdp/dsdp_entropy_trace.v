@@ -3,7 +3,7 @@ From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matr
 From mathcomp Require Import ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter.
-Require Import homomorphic_encryption dsdp_interface.
+Require Import smc_session_types homomorphic_encryption dsdp_interface dsdp_pismc.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -204,9 +204,64 @@ End trace_entropy_analysis.
 (*                               D3 (AliceTraces_n) → L8 (eavesdropper)     *)
 (******************************************************************************)
 
-(* TODO: Implement L5a-L5e, L6, D3, L8 per the plan.
+(* TODO: Implement L5b-L5e, L6, D3, L8 per the plan.
    These require:
    - step_res_trace_inert / step_res_trace_disjoint from smc_interpreter_sound.v
    - palice_n structure from dsdp_pismc.v
    - dsdp_entropic_security_n_concrete from dsdp_security.v
    - data processing inequality for entropy *)
+
+(******************************************************************************)
+(* L5a: Alice's trace after the Init phase                                    *)
+(*                                                                            *)
+(* After erasure, palice_n starts with two Init constructors:                 *)
+(*   Init (priv_key dk) (Init (d v0) body)                                    *)
+(*                                                                            *)
+(* Each Init step prepends its data to the trace, so after 2 rounds:          *)
+(*   trace_alice = [d v0; priv_key dk]                                        *)
+(******************************************************************************)
+
+Section alice_trace_init.
+
+Variable AHE : AHEncType.
+Variable ek : party_id -> pub_key AHE.
+Variable n_relay : nat.
+
+Let DI := Standard_DSDP_Interface AHE.
+Let data := di_data DI.
+Let msgT := plain AHE.
+Let randT := rand AHE.
+Let priv_keyT := priv_key AHE.
+Let d := di_d DI.
+Let priv_key := di_priv_key DI.
+
+(* Generic lemma: step on Init prepends data to trace *)
+Lemma step_Init (ps : seq (proc data)) (tr : seq data) (i : nat)
+    (dat : data) (next : proc data) :
+  nth (default_proc data) ps i = Init dat next ->
+  @step data ps tr i = (next, dat :: tr, true).
+Proof.
+by move=> Hi; rewrite /step /= Hi.
+Qed.
+
+(* Alice's erased process after palice_n starts with two Inits.
+   We characterize the trace after these two Init steps:
+   - Round 1: Init (priv_key dk) body --> trace gets [priv_key dk]
+   - Round 2: Init (d v0) body'       --> trace gets [d v0; priv_key dk]  *)
+Lemma alice_trace_init
+    (relays : seq 'I_n_relay.+1)
+    (dk : priv_keyT) (v0 : msgT)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (rand_a : 'I_n_relay.+1 -> randT)
+    (other_procs : seq (proc data))
+    (tr0 : seq data) :
+  let alice_proc := erase (@palice_n AHE ek n_relay relays dk v0 u r rand_a) in
+  let ps := alice_proc :: other_procs in
+  let '(p1, tr1, _) := @step data ps tr0 0 in
+  let '(p2, tr2, _) := @step data (p1 :: other_procs) tr1 0 in
+  tr2 = d v0 :: priv_key dk :: tr0.
+Proof.
+cbv zeta; rewrite (palice_n_erase AHE ek); by simpl.
+Qed.
+
+End alice_trace_init.
