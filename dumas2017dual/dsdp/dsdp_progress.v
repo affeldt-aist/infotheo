@@ -1848,14 +1848,119 @@ move=> Hinv; move: Hsz; case: Hinv.
     have Hfin' := Hfin (Ordinal Hi').
     rewrite /relay_at_finish_pred /= in Hfin'.
     by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 Hfin'.
-Admitted. (* 1 admit: arithmetic 1 < j0.+1 - j0.-2 in Inv_ASj acyclic *)
+Qed.
 
 Lemma dsdp_inv_no_orphan ps (Hsz : size ps = n_relay.+2) :
   dsdp_inv ps ->
   forall i : 'I_n_relay.+2, is_stuck (@mk_tup ps Hsz) i ->
     forall j : 'I_n_relay.+2, wait_for (@mk_tup ps Hsz) i j ->
       ~~ is_final (tnth (@mk_tup ps Hsz) j).
-Proof. Admitted.
+Proof.
+move=> Hinv i Hi j.
+rewrite /wait_for /= Hi /= => /eqP Htgt.
+rewrite (tnth_nth (default_proc data)) /mk_tup /=.
+rewrite (tnth_nth (default_proc data)) /mk_tup /= in Htgt.
+(* Now: goal is ~~ is_final (nth ... ps (nat_of_ord j))
+   Htgt : wait_target (nth ... ps (nat_of_ord i)) = Some (nat_of_ord j)
+   Hi : is_stuck (mk_tup ps Hsz) i *)
+move: Htgt Hsz Hi; case: Hinv.
+(* Inv_AR *)
+- move=> j0 ps0 Hsz0 Hwf Halice Hbody Hpending H6 H7 H8 H9 Htgt Hsz Hi.
+  (* All stuck processes target positions with Send or Recv *)
+  case Hi0 : (nat_of_ord i) => [|i'].
+  + (* i=0: Alice = Recv(j0+1,...). Ready → not stuck → exfalso *)
+    exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
+    have [f Hrecv] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
+    rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Halice /alice_foldr_at Hrecv.
+    rewrite /relay_at_body in Hbody. rewrite Hbody.
+    have [sv [sk ->]] := relay_body_is_send0 j0. by rewrite eqxx.
+  + have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
+    (* All relay positions target 0. ps[0] = Alice = Recv → non-final *)
+    (* Extract target from Htgt *)
+    have [Hle | Hlt] := leqP (j0 : nat) i'.
+    * (* relay body zone: Send 0 sv sk *)
+      have Hpk : relay_at_body (Ordinal Hi') ps0.
+        have [Heq|Hneq] := eqVneq i' (j0 : nat).
+          subst i'. have -> : Ordinal Hi' = j0 by exact: val_inj. exact: Hbody.
+        have : (j0 < Ordinal Hi')%N by rewrite /= ltn_neqAle eq_sym Hneq Hle.
+        exact: Hpending _.
+      rewrite /relay_at_body /= in Hpk.
+      have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+      rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-.
+      (* j = 0. ps[0] = Alice = Recv → non-final *)
+      by rewrite Halice /alice_foldr_at; have [f ->] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
+    * (* frontier zone *)
+      admit.
+(* Inv_AS0 *)
+- move=> ps0 f_inner Hsz0 Hwf [vd Halice] Hr0 Hpending _ Htgt Hsz Hi.
+  case Hi0 : (nat_of_ord i) => [|i'].
+  + exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
+    by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Halice Hr0 eqxx.
+  + have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
+    have [Heq0 | Hne0] := eqVneq i' 0.
+    * exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
+      by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Heq0 Hr0 Halice eqxx.
+    * have Hi'pos : (0 < i')%N by case: (i') Hne0.
+      have Hpk := Hpending (Ordinal Hi') Hi'pos.
+      rewrite /relay_at_body /= in Hpk.
+      have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+      rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-.
+      by rewrite Halice.
+(* Inv_AS1 *)
+- move=> ps0 f_inner Hsz0 Hwf [vd Halice] Hr0 Hpending _ H6a H6b Htgt Hsz Hi.
+  case Hi0 : (nat_of_ord i) => [|i'].
+  + exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
+    by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Halice Hr0 eqxx.
+  + have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
+    have [Heq0 | Hne0] := eqVneq i' 0.
+    * exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
+      by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Heq0 Hr0 Halice eqxx.
+    * have [Heq1 | Hne1] := eqVneq i' 1.
+      -- (* pos 2: depends on n_relay *)
+         admit.
+      -- have Hi'pos : (1 < i')%N by case: (i') Hne0 Hne1 => [//|[//|]].
+         have Hpk := Hpending (Ordinal Hi') Hi'pos.
+         rewrite /relay_at_body /= in Hpk.
+         have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+         rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-.
+         by rewrite Halice.
+(* Inv_ASj *)
+- move=> j0 ps0 Hj2 Hsz0 Hwf [vd Halice] [sv0 [f0 [_ Hrj]]] Hpending H7a H7b H8 H9 Htgt Hsz Hi.
+  admit.
+(* Inv_drain *)
+- move=> j0 ps0 Hjb Hsz0 Hwf Halice [v Hsend] [f Hrecv] Hfinish [flast [Hlast _]] H8b Htgt Hsz Hi.
+  admit.
+(* Inv_tail *)
+- move=> ps0 Hsz0 Hwf [v Hsend] Halice Hfin Htgt Hsz Hi.
+  exfalso. move/andP: Hi => [Hnf Hns].
+  case Hi0 : (nat_of_ord i) => [|i'].
+  + apply (negP Hns).
+    by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0
+       Halice alice_foldr_at_tail; have [f' ->] := alice_tail_is_recv;
+       rewrite Hsend eqxx.
+  + have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
+    have [Heq | Hne] := eqVneq i' n_relay.
+    * apply (negP Hns). subst i'.
+      by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0
+         Hsend Halice alice_foldr_at_tail; have [f' ->] := alice_tail_is_recv;
+         rewrite eqxx.
+    * apply (negP Hnf).
+      have Hlt : (i' < n_relay)%N by rewrite ltn_neqAle Hne -ltnS.
+      have Hfin' := Hfin (Ordinal Hi') Hlt.
+      rewrite /relay_at_finish_pred /= in Hfin'.
+      by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 Hfin'.
+(* Inv_ret *)
+- move=> ps0 d0 Hsz0 Hwf Hret Hfin Htgt Hsz Hi.
+  exfalso. move/andP: Hi => [Hnf Hns].
+  case Hi0 : (nat_of_ord i) => [|i'].
+  + apply (negP Hns).
+    by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Hret.
+  + apply (negP Hnf).
+    have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
+    have Hfin' := Hfin (Ordinal Hi').
+    rewrite /relay_at_finish_pred /= in Hfin'.
+    by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 Hfin'.
+Admitted.
 
 Lemma has_progress_tuple_to_seq ps (Hsz : size ps = n_relay.+2) :
   smc_deadlock.has_progress (@mk_tup ps Hsz) -> has_progress data ps.
