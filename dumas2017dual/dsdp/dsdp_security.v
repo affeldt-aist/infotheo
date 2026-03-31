@@ -1860,3 +1860,353 @@ Qed.
 
 End malicious_n.
 
+(******************************************************************************)
+(*                                                                            *)
+(* N-Party DSDP: Concrete AliceView + Per-Relay Privacy                       *)
+(*                                                                            *)
+(* Fills the gaps between 3-party and n-party security proofs:                *)
+(*                                                                            *)
+(* 1. Concrete AliceView (N2-N4): replaces the abstract AliceViewT/           *)
+(*    alice_view_contract hypothesis in dsdp_security_n with a concrete       *)
+(*    construction using enc_contractible.                                    *)
+(*                                                                            *)
+(* 2. Per-relay privacy (N6-N9): generalizes bob_privacy_V1/V3 and           *)
+(*    charlie_privacy_V1/V2 from 3-party to n-party.                         *)
+(*                                                                            *)
+(* Dependency graph:                                                          *)
+(*                                                                            *)
+(*   N1 (dsdp_random_inputs_n)                                                *)
+(*    ├── N2 (alice_view_n_T) → N3 (AliceView_n)                             *)
+(*    │         → N4 (alice_view_contract_n) → N10 (concrete security)        *)
+(*    ├── N5 (cinde_V_relay) ──────────────────────────────────↗              *)
+(*    └── N6 (relay_view_n) → N7 (RelayView_n)                               *)
+(*          ├── N8a (otp_mask_indep) → N8b (enc_indep)                        *)
+(*          │        → N8c (nonadj_indep) ──┐                                 *)
+(*          └── N8a → N8b → N8d (adj_indep)─┤                                *)
+(*                                          ↓                                 *)
+(*                               N8e (relay_indep) → N9 (relay_privacy_n)    *)
+(*                                                                            *)
+(******************************************************************************)
+
+(* ========================================================================== *)
+(* N1: N-party random inputs record                                           *)
+(*                                                                            *)
+(* Bundles all random variables and independence/uniformity hypotheses         *)
+(* for an n-party DSDP instance. Generalizes the 3-party Section variables    *)
+(* into a reusable record.                                                    *)
+(* ========================================================================== *)
+
+Section dsdp_concrete_n.
+
+Context {R : realType}.
+Variable T : finType.
+Variable P : R.-fdist T.
+
+(* Z/pqZ parameters *)
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+Variable n_relay : nat.
+Hypothesis Hn_relay : (0 < n_relay)%N.
+
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
+
+Let card_msg : #|msg| = m.
+Proof. by rewrite card_ord Zp_cast. Qed.
+
+(* Encryption hypotheses — same as in enc_contraction_n *)
+Hypothesis E_enc_unif : forall (T0 : finType) (P0 : R.-fdist T0)
+  (A : finType) (pty : party_id) (X : {RV P0 -> pty.-enc A}) (n : nat)
+  (card_A : #|A| = n.+1),
+  `p_X = fdist_uniform (card_enc_for' pty card_A).
+
+Hypothesis E_enc_inde : forall (A B : finType) (pty : party_id)
+  (X : {RV P -> pty.-enc A}) (Y : {RV P -> B}),
+  P |= X _|_ Y.
+
+(* --- N-party random variables --- *)
+
+(* Alice's private inputs *)
+Variable V0 : {RV P -> msg}.        (* Alice's private value *)
+Variable U0 : {RV P -> msg}.        (* Alice's private coefficient *)
+Variable Dk_a : {RV P -> msg}.      (* Alice's decryption key *)
+
+(* Result *)
+Variable S : {RV P -> msg}.         (* protocol output s = sum u_i * v_i *)
+
+(* Relay variables: indexed by relay index 'I_n_relay.+1 *)
+(* Each relay i has: V_i (private value), U_i (coefficient), R_i (random mask) *)
+Variable VarRV : {RV P -> {ffun 'I_n_relay.+1 -> msg}}.  (* joint (V_1,...,V_{n+1}) *)
+Variable U_relay : 'I_n_relay.+1 -> {RV P -> msg}.        (* U_i per relay *)
+Variable R_relay : 'I_n_relay.+1 -> {RV P -> msg}.        (* R_i per relay *)
+
+(* Encryptions Alice sees: one per relay party.
+   The encryption type depends on the relay's party_id. For simplicity,
+   we abstract over a single encryption type. *)
+Variable enc_msg : finType.  (* type of encrypted messages Alice sees *)
+Variable E_relay : 'I_n_relay.+1 -> {RV P -> enc_msg}.
+
+(* Condition RV: (V0, U0, u_relay_vector, S) *)
+Let CondT_n := (msg * msg * {ffun 'I_n_relay.+1 -> msg} * msg)%type.
+Variable CondRV : {RV P -> CondT_n}.
+
+(* --- Independence / uniformity hypotheses --- *)
+
+(* Each V_i is uniform over Z/pqZ *)
+(* TODO: VarRV uniformity hypothesis — needs cardinality lemma for {ffun} *)
+(* Hypothesis VarRV_uniform :
+  `p_ VarRV = fdist_uniform (...). *)
+
+(* VarRV is independent of (V0, U0, U_relay) — relay secrets are independent
+   of Alice's inputs and the public coefficients *)
+Hypothesis VarRV_indep_inputs :
+  P |= [%V0, U0] _|_ VarRV.
+
+(* Each R_i is uniform and independent of everything else *)
+Hypothesis R_relay_unif : forall i, `p_ (R_relay i) = fdist_uniform card_msg.
+Hypothesis R_relay_indep : forall i,
+  P |= R_relay i _|_ [%VarRV, V0, U0, S].
+
+(* The entropy bound from fiber counting (dsdp_entropy.v) *)
+Hypothesis dsdp_centropy_n :
+  `H(VarRV | CondRV) = log ((m ^ n_relay)%:R : R).
+
+(* ========================================================================== *)
+(* N2: Alice's concrete view type                                             *)
+(*                                                                            *)
+(* Alice sees: her key Dk_a, the result S, her input V0, her coefficient U0,  *)
+(* the relay coefficients (u_1,...,u_{n+1}), random masks (R_1,...,R_{n+1}),  *)
+(* and one encryption per relay party.                                        *)
+(* ========================================================================== *)
+
+(* TODO: Define concrete alice_view_n_T as a product type.
+   The type depends on the number of relay parties n_relay.
+   Key challenge: the encryption type alice_idx.-enc msg depends on
+   the HE scheme, and we need n_relay+1 such values. *)
+
+(* ========================================================================== *)
+(* N3: AliceView_n — concrete random variable for Alice's view                *)
+(* ========================================================================== *)
+
+(* TODO: Define AliceView_n : {RV P -> alice_view_n_T}
+   combining Dk_a, S, V0, U0, U_relay, R_relay, E_relay. *)
+
+(* ========================================================================== *)
+(* N4: alice_view_contract_n                                                  *)
+(*                                                                            *)
+(* Proves H(VarRV | AliceView_n) = H(VarRV | CondRV) by iterated             *)
+(* encryption contraction via enc_ce_contract_ind.                            *)
+(*                                                                            *)
+(* Proof sketch:                                                              *)
+(*   Build enc_contractible VarRV (H(VarRV|CondRV)) AliceView_n              *)
+(*   by starting with ec_base CondRV and applying ec_enc for each E_relay i.  *)
+(*   Then enc_ce_contract_ind gives H(VarRV|AliceView_n) = H(VarRV|CondRV).  *)
+(* ========================================================================== *)
+
+(* TODO: Prove alice_view_contract_n.
+   Depends on: N2, N3, enc_ce_contract_ind, E_enc_unif, E_enc_inde,
+   and Pr_neq0 hypotheses for each extended view. *)
+
+(* ========================================================================== *)
+(* N5: Conditional independence of relay secrets                              *)
+(*                                                                            *)
+(* P |= [%Dk_a, R_relay] _|_ VarRV | CondRV                                 *)
+(* This is the n-party analogue of cinde_V2V3 from the 3-party proof.        *)
+(* Needed for the graphoid-based entropy argument.                            *)
+(* ========================================================================== *)
+
+(* TODO: Prove cinde_V_relay.
+   Depends on: N1 hypotheses, graphoid properties. *)
+
+(* ========================================================================== *)
+(* N10: Concrete n-party entropic security theorem                            *)
+(*                                                                            *)
+(* Plugs N3 (concrete AliceView) and N4 (contraction) into                    *)
+(* dsdp_entropic_security_n to get a theorem with NO abstract hypotheses      *)
+(* about Alice's view.                                                        *)
+(* ========================================================================== *)
+
+(* TODO: Prove dsdp_entropic_security_n_concrete.
+   Signature:
+     H(VarRV | AliceView_n) = log(m^n_relay) /\ H(VarRV | AliceView_n) > 0
+   Depends on: N3, N4, dsdp_entropic_security_n. *)
+
+End dsdp_concrete_n.
+
+(******************************************************************************)
+(* Per-Relay Privacy: N-Party Generalization                                  *)
+(*                                                                            *)
+(* Generalizes bob_privacy_V1/V3 and charlie_privacy_V1/V2 from 3-party      *)
+(* to arbitrary n-party. Each relay party i learns nothing about relay j's    *)
+(* private value V_j (for j != i).                                            *)
+(*                                                                            *)
+(* Structure:                                                                 *)
+(*   N6:  relay_view_n — what relay i sees                                    *)
+(*   N7:  RelayView_n — random variable for relay i's view                   *)
+(*   N8a: relay_otp_mask_indep — D_k = VU_k + R_k ⊥ V_j                     *)
+(*   N8b: relay_enc_indep — E(D_k) ⊥ V_j                                    *)
+(*   N8c: relay_view_indep_nonadj — V_j not in view when |i-j| > 1          *)
+(*   N8d: relay_view_indep_adj — V_j masked by OTP when |i-j| = 1           *)
+(*   N8e: relay_indep_V_target_n — combines N8c and N8d                      *)
+(*   N9:  relay_privacy_n — H(V_j | RelayView_i) = log(m) > 0               *)
+(******************************************************************************)
+
+Section relay_privacy_concrete_n.
+
+Context {R : realType}.
+Variable T : finType.
+Variable P : R.-fdist T.
+
+Variables (p_minus_2 q_minus_2 : nat).
+Local Notation p := p_minus_2.+2.
+Local Notation q := q_minus_2.+2.
+Hypothesis prime_p : prime p.
+Hypothesis prime_q : prime q.
+Hypothesis coprime_pq : coprime p q.
+Local Notation m := (p * q).
+Local Notation msg := 'Z_m.
+
+Variable n_relay : nat.
+Hypothesis Hn_relay : (0 < n_relay)%N.
+
+Let m_gt1 : (1 < m)%N.
+Proof.
+have Hp2: (1 < p)%N by [].
+have Hq2: (1 < q)%N by [].
+by rewrite (ltn_trans Hp2) // -{1}(muln1 p) ltn_pmul2l // ltnS.
+Qed.
+
+Let card_msg : #|msg| = m.
+Proof. by rewrite card_ord Zp_cast. Qed.
+
+(* Per-relay random variables *)
+Variable V_relay : 'I_n_relay.+1 -> {RV P -> msg}.  (* V_i per relay *)
+Variable U_relay : 'I_n_relay.+1 -> {RV P -> msg}.  (* U_i per relay *)
+Variable R_relay : 'I_n_relay.+1 -> {RV P -> msg}.  (* R_i random mask *)
+
+(* Uniformity hypotheses *)
+Hypothesis V_relay_unif : forall i, `p_ (V_relay i) = fdist_uniform card_msg.
+Hypothesis R_relay_unif : forall i, `p_ (R_relay i) = fdist_uniform card_msg.
+
+(* Independence: R_i is independent of all V_j and U_j *)
+Hypothesis R_relay_indep_VU : forall i j,
+  P |= R_relay i _|_ [%V_relay j, U_relay j].
+
+(* ========================================================================== *)
+(* N6: Relay i's view type                                                    *)
+(*                                                                            *)
+(* Relay i sees:                                                              *)
+(*   - Its own decryption key Dk_i                                            *)
+(*   - Its private value V_i and coefficient U_i                              *)
+(*   - The ciphertext received from the previous relay (or Alice)             *)
+(*   - The ciphertext it computes and forwards                                *)
+(*                                                                            *)
+(* For security analysis, the key components are V_i, U_i, and the            *)
+(* OTP-masked value D_i = V_i * U_i + R_i that it computes.                  *)
+(* ========================================================================== *)
+
+(* TODO: Define relay_view_n_T for relay i.
+   Challenge: the view type varies with the relay's position in the chain. *)
+
+(* ========================================================================== *)
+(* N7: RelayView_n — random variable for relay i's view                      *)
+(* ========================================================================== *)
+
+(* TODO: Define RelayView_n (i : 'I_n_relay.+1) : {RV P -> relay_view_n_T}. *)
+
+(* ========================================================================== *)
+(* N8a: OTP mask independence                                                 *)
+(*                                                                            *)
+(* D_k = V_k * U_k + R_k is independent of V_j for k != j,                  *)
+(* given R_k is uniform and independent of [%V_k * U_k, V_j].               *)
+(* This is a direct application of relay_otp_indep.                           *)
+(* ========================================================================== *)
+
+(* TODO: Prove relay_otp_mask_indep.
+   Instantiate relay_otp_indep with VU_i := V_relay k \* U_relay k,
+   R_i := R_relay k, Y := V_relay j. *)
+
+(* ========================================================================== *)
+(* N8b: Encryption independence                                               *)
+(*                                                                            *)
+(* E(D_k) is independent of V_j, since E is independent of everything        *)
+(* (from E_enc_inde) and D_k is independent of V_j (from N8a).               *)
+(* ========================================================================== *)
+
+(* TODO: Prove relay_enc_indep.
+   Use inde_RV_comp with relay_otp_mask_indep. *)
+
+(* ========================================================================== *)
+(* N8c: Non-adjacent relay independence                                       *)
+(*                                                                            *)
+(* When |i - j| > 1, V_j never appears in relay i's view at all.            *)
+(* Relay i only sees data from relays i-1 and i+1 (its neighbors).          *)
+(* So RelayView_n(i) ⊥ V_j is immediate from the view structure.            *)
+(* ========================================================================== *)
+
+(* TODO: Prove relay_view_indep_nonadj.
+   For |i-j| > 1: V_j doesn't appear in relay_view_n_T(i).
+   Independence follows from structural independence of non-overlapping RVs. *)
+
+(* ========================================================================== *)
+(* N8d: Adjacent relay independence                                           *)
+(*                                                                            *)
+(* When |i - j| = 1, V_j appears in the ciphertext relay i receives          *)
+(* (through D_j = V_j * U_j + R_j). But OTP masking by R_j ensures          *)
+(* D_j is independent of V_j. Combined with encryption independence,          *)
+(* the ciphertext E(D_j) in relay i's view is independent of V_j.           *)
+(*                                                                            *)
+(* This is the hardest case — analogous to charlie_privacy_V2 in 3-party.   *)
+(* Uses lemma_3_5' (OTP one-time-pad lemma) via relay_otp_indep.            *)
+(* ========================================================================== *)
+
+(* TODO: Prove relay_view_indep_adj.
+   Key steps:
+   1. D_j ⊥ V_j by relay_otp_mask_indep (N8a)
+   2. E(D_j) ⊥ V_j by relay_enc_indep (N8b)
+   3. Other components of relay i's view are independent of V_j
+   4. Combine using inde_RV_pair *)
+
+(* ========================================================================== *)
+(* N8e: Combined relay independence                                           *)
+(*                                                                            *)
+(* For any relay i and target j != i:                                         *)
+(*   RelayView_n(i) ⊥ V_relay(j)                                            *)
+(*                                                                            *)
+(* Combines N8c (non-adjacent) and N8d (adjacent) cases.                     *)
+(* ========================================================================== *)
+
+(* TODO: Prove relay_indep_V_target_n.
+   Case split on |i-j|: if > 1, use N8c; if = 1, use N8d. *)
+
+(* ========================================================================== *)
+(* N9: Per-relay privacy theorem                                              *)
+(*                                                                            *)
+(* For any relay i and target j != i:                                         *)
+(*   H(V_j | RelayView_n(i)) = log(m) > 0                                   *)
+(*                                                                            *)
+(* This is the n-party generalization of bob_privacy_V1/V3 and               *)
+(* charlie_privacy_V1/V2 from the 3-party proof.                             *)
+(*                                                                            *)
+(* Proof: instantiate relay_privacy_logm with relay_indep_V_target_n (N8e).  *)
+(* ========================================================================== *)
+
+(* TODO: Prove relay_privacy_n.
+   Signature:
+     forall (i j : 'I_n_relay.+1), i != j ->
+       H(V_relay j | RelayView_n i) = log(m) /\ H(V_relay j | RelayView_n i) > 0
+   Depends on: N8e, relay_privacy_logm, V_relay_unif. *)
+
+End relay_privacy_concrete_n.
+
