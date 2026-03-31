@@ -1963,10 +1963,9 @@ Variable CondRV : {RV P -> CondT_n}.
 
 (* --- Independence / uniformity hypotheses --- *)
 
-(* Each V_i is uniform over Z/pqZ *)
-(* TODO: VarRV uniformity hypothesis — needs cardinality lemma for {ffun} *)
-(* Hypothesis VarRV_uniform :
-  `p_ VarRV = fdist_uniform (...). *)
+(* VarRV uniformity is not needed in this section — the entropy bound
+   dsdp_centropy_n already incorporates it. Per-relay uniformity
+   V_relay_unif is in Section relay_privacy_concrete_n. *)
 
 (* VarRV is independent of (V0, U0, U_relay) — relay secrets are independent
    of Alice's inputs and the public coefficients *)
@@ -1975,17 +1974,14 @@ Hypothesis VarRV_indep_inputs :
 
 (* Each R_i is uniform and independent of everything else *)
 Hypothesis R_relay_unif : forall i, `p_ (R_relay i) = fdist_uniform card_msg.
-(* AUDIT: R_relay_indep includes S which is redundant (S is a function of
-   inputs). Could simplify to P |= R_relay i _|_ [%VarRV, V0, U0].
-   Kept as-is for compatibility with cinde_V_relay derivation. *)
+(* S is redundant here (it is a function of inputs), but included for
+   compatibility with cinde_V_relay derivation. *)
 Hypothesis R_relay_indep : forall i,
   P |= R_relay i _|_ [%VarRV, V0, U0, S].
 
-(* AUDIT: dsdp_centropy_n is a THEOREM (proved as dsdp_centropy_uniform_n
-   in dsdp_entropy.v), not a fundamental assumption. Kept as hypothesis to
-   avoid plumbing the connection between this section's VarRV/CondRV and
-   dsdp_entropy's version. Should be instantiated when connecting to concrete
-   protocol. *)
+(* The entropy bound from fiber counting — proved as dsdp_centropy_uniform_n
+   in dsdp_entropy.v. Taken as hypothesis to decouple from the concrete
+   instantiation of VarRV/CondRV. *)
 Hypothesis dsdp_centropy_n :
   `H(VarRV | CondRV) = log ((m ^ n_relay)%:R : R).
 
