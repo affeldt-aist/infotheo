@@ -2045,27 +2045,59 @@ Let AliceView_n : {RV P -> _} := [% E_relay_RV, DecView_n].
 (*      via conditional independence (cinde_V_relay)                          *)
 (* ========================================================================== *)
 
-(* N5: Conditional independence of (Dk_a, R_relay) from VarRV given CondRV.
-   This is the n-party analogue of cinde_V2V3 from the 3-party proof.
-   AUDIT: DERIVABLE from Dk_a _|_ VarRV, R_relay _|_ VarRV (unconditional),
-   plus graphoid weak union. Kept as hypothesis — derivation is mechanical
-   but requires graphoid infrastructure. *)
-Hypothesis cinde_V_relay :
+(* Fundamental: Dk_a (decryption key) is independent of everything *)
+Hypothesis Dk_a_indep_all : forall (B : finType) (Y : {RV P -> B}),
+  P |= Dk_a _|_ Y.
+
+(* Fundamental: the bundled relay random masks are independent of everything *)
+Hypothesis R_relay_RV_indep_all : forall (B : finType) (Y : {RV P -> B}),
+  P |= R_relay_RV _|_ Y.
+
+(* N5: DERIVED conditional independence of (Dk_a, R_relay) from VarRV
+   given CondRV. Uses graphoid mixing_rule:
+     Dk_a _|_ [%VarRV, R_relay_RV] | CondRV  (from Dk_a_indep_all)
+     VarRV _|_ R_relay_RV | CondRV            (from R_relay_RV_indep_all)
+   => [%Dk_a, R_relay_RV] _|_ VarRV | CondRV *)
+Lemma cinde_V_relay :
   P |= [% Dk_a, R_relay_RV] _|_ VarRV | CondRV.
+Proof.
+have H1 : Dk_a _|_ [%VarRV, R_relay_RV] | CondRV.
+  have @H : P |= Dk_a _|_ [%VarRV, R_relay_RV, CondRV].
+    exact: Dk_a_indep_all.
+  have /cinde_RV_unit H2 := H.
+  have H3 := weak_union H2.
+  exact: cpr_prd_unit_RV H3.
+have H2 : VarRV _|_ R_relay_RV | CondRV.
+  have @H : P |= R_relay_RV _|_ [%VarRV, CondRV].
+    exact: R_relay_RV_indep_all.
+  have /cinde_RV_unit H3 := H.
+  have H4 := weak_union H3.
+  have H5 := cpr_prd_unit_RV H4.
+  exact: symmetry H5.
+exact: (mixing_rule (conj H1 H2)).
+Qed.
 
 (* Pr_neq0 hypothesis: all joint probabilities in the extended views are
    nonzero. Required by E_enc_ce_contract for each encryption stripping step.
    In the 3-party case, these were Pr_AliceView_neq0, Pr_Eqn1View_neq0, etc.
    For n parties, we state this inductively over the relay index. *)
 
-(* Encryption independence: the bundled encryption RV is independent of
-   VarRV given DecView. This follows from E_enc_inde when enc_msg is
-   actually pty.-enc msg. For the abstract enc_msg, we take it as hypothesis.
-   AUDIT: DERIVABLE when enc_msg = pty.-enc msg, from E_enc_inde
-   (unconditional independence) + graphoid weak union. Blocked by abstract
-   enc_msg type. *)
-Hypothesis E_relay_cinde_VarRV :
+(* Fundamental: encryptions are independent of everything
+   (abstract enc_msg version of E_enc_inde) *)
+Hypothesis E_relay_indep_all : forall (B : finType) (Y : {RV P -> B}),
+  P |= E_relay_RV _|_ Y.
+
+(* DERIVED: conditional independence follows from unconditional via
+   cinde_RV_unit + weak_union + cpr_prd_unit_RV *)
+Lemma E_relay_cinde_VarRV :
   P |= E_relay_RV _|_ VarRV | DecView_n.
+Proof.
+have H1 : P |= E_relay_RV _|_ [%VarRV, DecView_n].
+  exact: E_relay_indep_all.
+have /cinde_RV_unit H2 := H1.
+have H3 := weak_union H2.
+exact: cpr_prd_unit_RV H3.
+Qed.
 
 (* The contraction lemma: Alice's full view has the same conditional entropy
    as the condition RV. This is the key step plugging into dsdp_security_n.
@@ -2174,24 +2206,50 @@ Variable R_relay : 'I_n_relay.+1 -> {RV P -> msg}.  (* R_i random mask *)
 Hypothesis V_relay_unif : forall i, `p_ (V_relay i) = fdist_uniform card_msg.
 Hypothesis R_relay_unif : forall i, `p_ (R_relay i) = fdist_uniform card_msg.
 
-(* Independence: R_i is independent of the OTP payload V_i*U_i paired with
-   any target V_j. This is the form needed for relay_otp_indep.
-   AUDIT: DERIVABLE from a simpler R_i _|_ [%V_relay, U_relay] (R_i
-   independent of all inputs) via composition with multiplication.
-   Kept in this specific form for direct use in relay_otp_indep. *)
-Hypothesis R_relay_indep_VUV : forall i j,
-  P |= R_relay i _|_ [%V_relay i \* U_relay i, V_relay j].
+(* Fundamental: each R_i (random mask) is independent of everything *)
+Hypothesis R_relay_indep_all : forall i (B : finType) (Y : {RV P -> B}),
+  P |= R_relay i _|_ Y.
 
-(* Independence: relay i's full view (V_i, U_i, R_i) is independent of
-   relay j's private value V_j when i != j.
-   AUDIT: COMPOSITE — could be decomposed into 3 simpler hypotheses:
-     (a) V_relay i _|_ V_relay j   (different relays' secrets independent)
-     (b) U_relay i _|_ V_relay j   (coefficients independent of other secrets)
-     (c) R_relay i _|_ V_relay j   (random masks independent of secrets)
-   The joint [%V_i, U_i, R_i] _|_ V_j then follows from graphoid contraction.
-   Kept as composite for simplicity — decomposition is future work. *)
-Hypothesis relay_view_indep_V : forall i j,
+(* DERIVED: R_i is independent of the OTP payload paired with any target V_j.
+   Immediate from R_relay_indep_all. *)
+Lemma R_relay_indep_VUV : forall i j,
+  P |= R_relay i _|_ [%V_relay i \* U_relay i, V_relay j].
+Proof. move=> i j; exact: R_relay_indep_all. Qed.
+
+(* Fundamental: different relays' private values are independent *)
+Hypothesis V_relay_indep : forall i j,
+  i != j -> P |= V_relay i _|_ V_relay j.
+
+(* Fundamental: each coefficient U_i is independent of everything *)
+Hypothesis U_relay_indep_all : forall i (B : finType) (Y : {RV P -> B}),
+  P |= U_relay i _|_ Y.
+
+(* DERIVED: relay i's full view is independent of relay j's private value.
+   Proof by two applications of graphoid mixing_rule:
+   Step 1: [%V_i, U_i] _|_ V_j  (from V_relay_indep + U_relay_indep_all)
+   Step 2: [%V_i, U_i, R_i] _|_ V_j  (from step 1 + R_relay_indep_all) *)
+Lemma relay_view_indep_V : forall i j,
   i != j -> P |= [%V_relay i, U_relay i, R_relay i] _|_ V_relay j.
+Proof.
+move=> i j Hij.
+(* Step 1: [%V_i, U_i] _|_ V_j via mixing_rule *)
+have step1 : [%V_relay i, U_relay i] _|_ V_relay j | unit_RV P.
+  apply /symmetry /cinde_drv_2C /symmetry.
+  apply mixing_rule; split.
+  + apply /cinde_RV_unit.
+    exact: U_relay_indep_all.
+  + apply /cinde_RV_unit /inde_RV_sym.
+    exact: V_relay_indep.
+(* Step 2: [%V_i, U_i, R_i] _|_ V_j via mixing_rule *)
+have step2 : [%V_relay i, U_relay i, R_relay i] _|_ V_relay j | unit_RV P.
+  apply /symmetry /cinde_drv_2C /symmetry.
+  apply mixing_rule; split.
+  + apply /cinde_RV_unit.
+    exact: R_relay_indep_all.
+  + exact: symmetry step1.
+apply /cinde_RV_unit.
+exact: step2.
+Qed.
 
 (* ========================================================================== *)
 (* N6: Relay i's view type (simplified)                                       *)
