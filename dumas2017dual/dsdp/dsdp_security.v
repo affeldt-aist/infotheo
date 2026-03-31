@@ -2018,16 +2018,15 @@ Let R_relay_RV : {RV P -> {ffun 'I_n_relay.+1 -> msg}} :=
 Let E_relay_RV : {RV P -> {ffun 'I_n_relay.+1 -> enc_msg}} :=
   fun t => [ffun i => E_relay i t].
 
-(* Alice's concrete view: all quantities she observes during the protocol *)
-Let AliceView_n : {RV P -> alice_view_n_T} :=
-  [% Dk_a, S, V0, U0, U_relay_RV, R_relay_RV, E_relay_RV].
-
 (* DecView: Alice's view without encryptions — the "base" for contraction.
-   After stripping encryptions via E_enc_ce_contract, the conditional entropy
-   reduces to H(VarRV | DecView_n). *)
-Let DecView_n : {RV P -> (msg * msg * msg * msg *
-   {ffun 'I_n_relay.+1 -> msg} * {ffun 'I_n_relay.+1 -> msg})} :=
-  [% Dk_a, S, V0, U0, U_relay_RV, R_relay_RV].
+   Structured as [%[%Dk_a, R_relay_RV], CondRV] to enable cinde_centropy_eq
+   in Step 2 (stripping Dk_a and R_relay via conditional independence). *)
+Let DecView_n : {RV P -> _} := [% [%Dk_a, R_relay_RV], CondRV].
+
+(* Alice's concrete view: encryptions paired with DecView.
+   Structured as [%E_relay_RV, DecView_n] to match cinde_centropy_eq's
+   [%X, Z] pattern where X = E_relay_RV (independent), Z = DecView_n (base). *)
+Let AliceView_n : {RV P -> _} := [% E_relay_RV, DecView_n].
 
 (* ========================================================================== *)
 (* N4: alice_view_contract_n                                                  *)
@@ -2049,21 +2048,42 @@ Hypothesis cinde_V_relay :
    In the 3-party case, these were Pr_AliceView_neq0, Pr_Eqn1View_neq0, etc.
    For n parties, we state this inductively over the relay index. *)
 
-(* For the base case + encryption contraction, we need:
-   - Pr_DecView_E_neq0: Pr[(DecView_n, E_relay_RV) = (x, e)] != 0
-   This is sufficient when all encryptions are bundled as a single {ffun}. *)
-Hypothesis Pr_AliceView_n_neq0 :
-  forall (x : msg * msg * msg * msg *
-              {ffun 'I_n_relay.+1 -> msg} * {ffun 'I_n_relay.+1 -> msg})
-         (e : {ffun 'I_n_relay.+1 -> enc_msg}),
-  `Pr[ [% DecView_n, E_relay_RV] = (x, e) ] != 0.
+(* Encryption independence: the bundled encryption RV is independent of
+   VarRV given DecView. This follows from E_enc_inde when enc_msg is
+   actually pty.-enc msg. For the abstract enc_msg, we take it as hypothesis.
+   Semantic content: encryptions leak no information about relay secrets. *)
+Hypothesis E_relay_cinde_VarRV :
+  P |= E_relay_RV _|_ VarRV | DecView_n.
 
 (* The contraction lemma: Alice's full view has the same conditional entropy
-   as the condition RV. This is the key step plugging into dsdp_security_n. *)
+   as the condition RV. This is the key step plugging into dsdp_security_n.
+
+   Proof in two steps:
+   Step 1: H(VarRV | AliceView_n) = H(VarRV | DecView_n)
+           AliceView_n = [%DecView_n, E_relay_RV] and E_relay_RV is
+           conditionally independent of VarRV given DecView_n.
+   Step 2: H(VarRV | DecView_n) = H(VarRV | CondRV)
+           DecView_n = [%Dk_a, S, V0, U0, U_relay_RV, R_relay_RV] and
+           [%Dk_a, R_relay_RV] is conditionally independent of VarRV given
+           CondRV (= [%V0, U0, U_relay_RV, S]). Uses cinde_V_relay (N5). *)
 Lemma alice_view_contract_n :
   `H(VarRV | AliceView_n) = `H(VarRV | CondRV).
 Proof.
-Admitted.
+(* Step 1: strip encryptions *)
+have Hstep1 : `H(VarRV | AliceView_n) = `H(VarRV | DecView_n).
+  rewrite /AliceView_n.
+  exact: (cinde_centropy_eq E_relay_cinde_VarRV).
+(* Step 2: strip Dk_a and R_relay via conditional independence *)
+have Hstep2 : `H(VarRV | DecView_n) = `H(VarRV | CondRV).
+  rewrite /DecView_n.
+  (* DecView_n = [%[%Dk_a, R_relay_RV], [%S, V0, U0, U_relay_RV]]
+     but we need to match cinde_centropy_eq which expects [%X, Z] form.
+     cinde_V_relay : P |= [%Dk_a, R_relay_RV] _|_ VarRV | CondRV
+     cinde_centropy_eq : X _|_ Y | Z -> H(Y | [%X, Z]) = H(Y | Z) *)
+  rewrite /DecView_n.
+  exact: (cinde_centropy_eq cinde_V_relay).
+by rewrite Hstep1 Hstep2.
+Qed.
 
 (* ========================================================================== *)
 (* N10: Concrete n-party entropic security theorem                            *)
