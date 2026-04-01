@@ -730,32 +730,90 @@ exact: (@dsdp_inv_step AHE ek n_relay Hn_relay dk dk_relay dec_total
   (tval ps) Hinv).
 Qed.
 
-(* Multi-round rsteps under dsdp_inv: composes step_sound rounds via rtrans,
-   with dsdp_inv_step preserving the invariant at each round. *)
-Lemma dsdp_inv_multi_rsteps (h : nat) (ps : n_parties.-tuple (proc data)) :
+(* R1: Unified trace fragment dispatch for all dsdp_inv constructors.
+   At each round, Alice's trace fragment is either [:: v] or [::]. *)
+Lemma alice_trace_at_inv (ps : n_parties.-tuple (proc data)) :
   inv (tval ps) ->
-  exists (final : n_parties.-tuple (proc data)) (tr : n_parties.-tuple (seq data)),
+  (exists v, (smc_interpreter.step (tval ps) [::] 0).1.2 = [:: v]) \/
+  (smc_interpreter.step (tval ps) [::] 0).1.2 = [::].
+Proof.
+case.
+- move=> j ps0 Hsz Hwf Halice Hbody _ _ _ _ _; left.
+  have [f Hfr] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+    Hrelays_id v0 u r rand_a j (ltn_ord j).
+  have [sv [sk Hs]] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay
+    r1_relay r2_relay j.
+  rewrite /relay_at_body in Hbody.
+  by rewrite /smc_interpreter.step Halice /alice_foldr_at Hfr Hbody Hs eqxx;
+    eexists.
+- move=> ps0 f_inner Hsz Hwf [vd Halice] Hrecv _ _; right.
+  by rewrite /smc_interpreter.step Halice Hrecv eqxx.
+- move=> ps0 f_inner Hsz Hwf [vd Halice] Hrecv _ _ _ _; right.
+  by rewrite /smc_interpreter.step Halice Hrecv eqxx.
+- move=> j ps0 Hj2 Hsz Hwf [vd Halice] [sv0 [f0 [Hrb Hrecv]]] _ _ _ _ _;
+  right.
+  by rewrite /smc_interpreter.step Halice Hrecv eqxx.
+- move=> j ps0 Hjlt Hsz Hwf Halice _ _ _ [f_last [Hlast _]] _; right.
+  rewrite /smc_interpreter.step Halice
+    (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a).
+  by rewrite /alice_erase_tail /std_Recv_dec /Recv_param /= Hlast.
+- move=> ps0 Hsz Hwf [v Hlast] Halice _; left.
+  rewrite /smc_interpreter.step Halice
+    (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a).
+  by rewrite /alice_erase_tail /std_Recv_dec /Recv_param /= Hlast eqxx;
+    eexists.
+- move=> ps0 d Hsz Hwf Halice _; left.
+  by rewrite /smc_interpreter.step Halice; eexists.
+Qed.
+
+(* R2b: Multi-round rsteps with explicit per-round Alice trace fragments.
+   frags is in REVERSE chronological order (newest first) so that
+   rtrans concatenation (tr2 ++ tr1) matches flatten (rev frags).
+   Each fragment is either [:: v] (from Inv_AR/Inv_tail/Inv_ret)
+   or [::] (from Inv_AS*/Inv_drain). *)
+Lemma dsdp_inv_rsteps_trace_frags (h : nat) (ps : n_parties.-tuple (proc data)) :
+  inv (tval ps) ->
+  exists (final : n_parties.-tuple (proc data)) (tr : n_parties.-tuple (seq data))
+         (frags : seq (seq data)),
     rsteps ps final tr /\
-    (all_terminated (tval final) \/ inv (tval final)).
+    (all_terminated (tval final) \/ inv (tval final)) /\
+    tnth tr ord0 = flatten (rev frags) /\
+    (forall k, (k < size frags)%N ->
+       (exists v, nth [::] frags k = [:: v]) \/ nth [::] frags k = [::]).
 Proof.
 elim: h ps => [|h IH] ps Hinv.
-- exists ps, [tuple [::] | _ < n_parties].
-  split; first exact: rrefl.
-  by right.
+- exists ps, [tuple [::] | _ < n_parties], [::].
+  by do !split => //; [exact: rrefl | right | rewrite tnth_mktuple].
 - set res := [tuple smc_interpreter.step ps [::] i | i < n_parties].
   set ps' := res_procs res.
-  set tr := res_traces res.
-  have Hss : rsteps ps ps' tr := step_sound ps.
+  set tr1 := res_traces res.
+  set frag0 := (smc_interpreter.step (tval ps) [::] 0).1.2.
+  have Hss : rsteps ps ps' tr1 := step_sound ps.
   have Hinv' : all_terminated (tval ps') \/ inv (tval ps').
     rewrite -one_step_eq_res_procs.
     exact: (@dsdp_inv_step AHE ek n_relay Hn_relay dk dk_relay dec_total
       relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
       (tval ps) Hinv).
+  have Hfrag := alice_trace_at_inv Hinv.
+  have Htr1_0 : tnth tr1 ord0 = frag0.
+    by rewrite /tr1 /res_traces tnth_map tnth_mktuple.
   case: Hinv' => [Hterm | Hinv''].
-  + exists ps', tr; split => //; by left.
-  + have [final [tr2 [Hrs2 Hfinal]]] := IH ps' Hinv''.
-    exists final; eexists; split; last exact: Hfinal.
-    exact: (rtrans Hss Hrs2 erefl).
+  + exists ps', tr1, [:: frag0].
+    do !split => //.
+    * by left.
+    * by rewrite /= cats0 Htr1_0.
+    * by move=> k; rewrite /= ltnS leqn0 => /eqP ->.
+  + have [final [tr2 [frags_rest [Hrs2 [Hfinal [Htr2_eq Hfrags_prop]]]]]] :=
+      IH ps' Hinv''.
+    exists final; eexists; exists (frag0 :: frags_rest).
+    do !split.
+    * exact: (rtrans Hss Hrs2 erefl).
+    * exact: Hfinal.
+    * rewrite tnth_mktuple Htr2_eq Htr1_0 /=.
+      by rewrite rev_cons -cats1 flatten_cat /= cats0.
+    * move=> k Hk; case: k Hk => [|k] Hk /=.
+      -- exact: Hfrag.
+      -- exact: Hfrags_prop.
 Qed.
 
 End alice_trace_at_inv.
