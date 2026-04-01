@@ -84,7 +84,7 @@ Let dsdp_no_fail : all_nonfail (interp_comp data procs h) :=
 (* Derive termination from dsdp_progress.v *)
 Let dsdp_terminates : all_terminated (interp_comp data procs h) :=
   @dsdp_interp_terminates AHE ek n_relay Hn_relay dk dk_relay dec_total
-    relays Hrelays Hrelays_id v0 u r rand_a v_relay
+    key_relay relays Hrelays Hrelays_id v0 u r rand_a v_relay
     r1_relay r2_relay h Hfuel.
 
 (* N-party rsteps with real traces: the protocol admits a valid

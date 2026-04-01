@@ -692,6 +692,9 @@ Qed.
 
 (* Additional hypotheses needed for dsdp_inv_step *)
 Hypothesis dec_total : forall dk' c, @dec AHE dk' c != None.
+Hypothesis key_alice : ek alice_idx = pub_of_priv dk.
+Hypothesis key_relay : forall j : 'I_n_relay.+1,
+  ek (nat_to_party_id j.+1) = pub_of_priv (dk_relay j).
 
 Let n_parties := n_relay.+2.
 Let inv := dsdp_inv AHE ek n_relay Hn_relay dk dk_relay relays v0 u r rand_a
@@ -725,9 +728,7 @@ Proof.
 move=> Hinv ps'.
 split; first exact: step_sound.
 rewrite -one_step_eq_res_procs.
-exact: (@dsdp_inv_step AHE ek n_relay Hn_relay dk dk_relay dec_total
-  relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
-  (tval ps) Hinv).
+by apply dsdp_inv_step.
 Qed.
 
 (* R1: Unified trace fragment dispatch for all dsdp_inv constructors.
@@ -738,7 +739,7 @@ Lemma alice_trace_at_inv (ps : n_parties.-tuple (proc data)) :
   (smc_interpreter.step (tval ps) [::] 0).1.2 = [::].
 Proof.
 case.
-- move=> j ps0 Hsz Hwf Halice Hbody _ _ _ _ _; left.
+- move=> j ps0 _ Hsz Hwf Halice Hbody _ _ _ _ _; left.
   have [f Hfr] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
     Hrelays_id v0 u r rand_a j (ltn_ord j).
   have [sk Hs] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay
@@ -750,14 +751,14 @@ case.
   by rewrite /smc_interpreter.step Halice Hrecv eqxx.
 - move=> ps0 f_inner Hsz Hwf Halice Hrecv _ _ _ _; right.
   by rewrite /smc_interpreter.step Halice Hrecv eqxx.
-- move=> j ps0 Hj2 Hsz Hwf Halice [sv0 [f0 [Hrb Hrecv]]] _ _ _ _ _;
+- move=> j ps0 _ Hj2 Hsz Hwf Halice [sv0 [f0 [Hrb Hrecv]]] _ _ _ _ _;
   right.
   by rewrite /smc_interpreter.step Halice Hrecv eqxx.
-- move=> j ps0 Hjlt Hsz Hwf Halice _ _ _ [f_last [Hlast _]] _; right.
+- move=> j ps0 _ Hjlt Hsz Hwf Halice _ _ _ [f_last [Hlast _]] _; right.
   rewrite /smc_interpreter.step Halice
     (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a).
   by rewrite /alice_erase_tail /std_Recv_dec /Recv_param /= Hlast.
-- move=> ps0 Hsz Hwf [v Hlast] Halice _; left.
+- move=> ps0 rr0 Hsz Hwf Hlast Halice _; left.
   rewrite /smc_interpreter.step Halice
     (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a).
   by rewrite /alice_erase_tail /std_Recv_dec /Recv_param /= Hlast eqxx;
@@ -791,9 +792,7 @@ elim: h ps => [|h IH] ps Hinv.
   have Hss : rsteps ps ps' tr1 := step_sound ps.
   have Hinv' : all_terminated (tval ps') \/ inv (tval ps').
     rewrite -one_step_eq_res_procs.
-    exact: (@dsdp_inv_step AHE ek n_relay Hn_relay dk dk_relay dec_total
-      relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
-      (tval ps) Hinv).
+    by apply dsdp_inv_step.
   have Hfrag := alice_trace_at_inv Hinv.
   have Htr1_0 : tnth tr1 ord0 = frag0.
     by rewrite /tr1 /res_traces tnth_map tnth_mktuple.
