@@ -635,7 +635,7 @@ Proof.
 move=> Halice Hbody.
 have [f Hrecv] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id
   v0 u r rand_a j (ltn_ord j).
-have [sv [sk Hsend]] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay
+have [sk Hsend] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay
   r1_relay r2_relay j.
 rewrite /relay_at_body in Hbody.
 by rewrite /smc_interpreter.step /= Halice /alice_foldr_at Hrecv Hbody Hsend eqxx;
@@ -741,16 +741,16 @@ case.
 - move=> j ps0 Hsz Hwf Halice Hbody _ _ _ _ _; left.
   have [f Hfr] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
     Hrelays_id v0 u r rand_a j (ltn_ord j).
-  have [sv [sk Hs]] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay
+  have [sk Hs] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay
     r1_relay r2_relay j.
   rewrite /relay_at_body in Hbody.
   by rewrite /smc_interpreter.step Halice /alice_foldr_at Hfr Hbody Hs eqxx;
     eexists.
-- move=> ps0 f_inner Hsz Hwf [vd Halice] Hrecv _ _; right.
+- move=> ps0 f_inner Hsz Hwf Halice Hrecv _ _; right.
   by rewrite /smc_interpreter.step Halice Hrecv eqxx.
-- move=> ps0 f_inner Hsz Hwf [vd Halice] Hrecv _ _ _ _; right.
+- move=> ps0 f_inner Hsz Hwf Halice Hrecv _ _ _ _; right.
   by rewrite /smc_interpreter.step Halice Hrecv eqxx.
-- move=> j ps0 Hj2 Hsz Hwf [vd Halice] [sv0 [f0 [Hrb Hrecv]]] _ _ _ _ _;
+- move=> j ps0 Hj2 Hsz Hwf Halice [sv0 [f0 [Hrb Hrecv]]] _ _ _ _ _;
   right.
   by rewrite /smc_interpreter.step Halice Hrecv eqxx.
 - move=> j ps0 Hjlt Hsz Hwf Halice _ _ _ [f_last [Hlast _]] _; right.
