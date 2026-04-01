@@ -681,6 +681,10 @@ Lemma pRecvEnc_cont (f : cipher AHE -> proc data) (c : cipher AHE) :
   (oapp f Fail \o @std_from_enc AHE) (e_local c) = f c.
 Proof. by rewrite /comp /e_local /std_from_enc /DI /=. Qed.
 
+Lemma std_from_enc_e_local (c : cipher AHE) :
+  @std_from_enc AHE (e_local c) = Some c.
+Proof. by rewrite /e_local /std_from_enc /DI /=. Qed.
+
 (* H2: pRecvDec continuation *)
 Lemma pRecvDec_cont (dk' : he_types.priv_key AHE) (f : plain AHE -> proc data)
     (c : cipher AHE) :
@@ -793,9 +797,11 @@ Qed.
 
 (* H5: relay_body always starts with Send 0 *)
 Lemma relay_body_is_send0 (j : 'I_n_relay.+1) :
-  exists sv sk, relay_body j = Send 0 sv sk.
+  exists sk,
+    relay_body j = Send 0
+      (e_local (enc_local (ek (nat_to_party_id j.+1)) (v_relay j) (r1_relay j))) sk.
 Proof.
-rewrite /relay_body; case: ifP => ?; [|case: ifP => ?]; by do 2 eexists.
+rewrite /relay_body; case: ifP => ?; [|case: ifP => ?]; by eexists.
 Qed.
 
 (* R1: relay_body(0) = Send(0, sv, Recv(0, f_dec)) *)
@@ -910,15 +916,17 @@ Qed.
 
 (* H7': Strengthened H7 — rest IS the next foldr iteration *)
 Lemma alice_recv_to_send_foldr (j : nat) (Hj : (j < n_relay.+1)%N)
-    (f : data -> proc data) (v : data) :
-  @std_from_enc AHE v != None ->
+    (f : data -> proc data) (v : data) (c : cipher AHE) :
+  @std_from_enc AHE v = Some c ->
   foldr (fun (fi : 'I_n_relay.+1 * nat) (cont : proc data) =>
            @alice_erase_body AHE ek n_relay u r rand_a fi.1 fi.2 cont)
         (@alice_erase_tail AHE n_relay dk v0 u r)
         (drop j (zip relays (iota 0 (size relays)))) =
   Recv (Ordinal Hj).+1 f ->
-  exists sv,
-    f v = Send (alice_send_dest (Ordinal Hj)) sv
+  let sv := e_local (@Emul AHE (@Epow AHE c (u (lift ord0 (Ordinal Hj))))
+              (enc (ek (nat_to_party_id (Ordinal Hj).+1))
+                   (r (Ordinal Hj)) (rand_a (Ordinal Hj)))) in
+  f v = Send (alice_send_dest (Ordinal Hj)) sv
       (foldr (fun (fi : 'I_n_relay.+1 * nat) (cont : proc data) =>
                 @alice_erase_body AHE ek n_relay u r rand_a fi.1 fi.2 cont)
              (@alice_erase_tail AHE n_relay dk v0 u r)
@@ -933,9 +941,8 @@ have Hdrop : drop j (zip relays (iota 0 (size relays))) =
   by rewrite nth_iota.
 rewrite Hdrop /= /alice_erase_body (Hrelays_id (Ordinal Hj)) /= in Hfoldr.
 rewrite /pRecvEnc_local /std_Recv_enc /Recv_param in Hfoldr.
-case: Hfoldr => Hf; subst f; rewrite /comp.
-case Hsfe: (@std_from_enc AHE v) => [c|]; last by rewrite Hsfe in Henc.
-by eexists.
+case: Hfoldr => Hf; subst f; rewrite /comp Henc /=.
+by rewrite /enc_pub_key.
 Qed.
 
 (* NEW-L1: alice_foldr_at 0 = full foldr *)
@@ -1031,7 +1038,7 @@ Lemma relay_body_step_nop ps (j : 'I_n_relay.+1) :
   (smc_interpreter.step ps [::] j.+1).2 = false.
 Proof.
 move=> Hbody Hnrecv; rewrite /relay_at_body in Hbody.
-have [sv [sk Hsend]] := relay_body_is_send0 j.
+have [sk Hsend] := relay_body_is_send0 j.
 rewrite /smc_interpreter.step Hbody Hsend.
 case Hp0: (nth (default_proc data) ps 0) => [|dst0 v0' k0|frm0 f0|d0||] //.
 case: ifP => [/eqP Heq|] //; subst frm0.
@@ -1156,7 +1163,7 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AS0 ps (f_inner : plain AHE -> proc data) :
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
-    (exists vd, nth (default_proc data) ps 0 = Send 1 vd (alice_foldr_at 1)) ->
+    nth (default_proc data) ps 0 = Send 1 (e_local (alice_enc ord0)) (alice_foldr_at 1) ->
     nth (default_proc data) ps 1 =
       Recv 0 (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE)) ->
     (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
@@ -1168,7 +1175,7 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AS1 ps (f_inner : cipher AHE -> proc data) :
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
-    (exists vd, nth (default_proc data) ps 0 = Send 1 vd (alice_foldr_at 2)) ->
+    nth (default_proc data) ps 0 = Send 1 (e_local (alice_enc (inord 1))) (alice_foldr_at 2) ->
     nth (default_proc data) ps 1 =
       Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
     (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
@@ -1185,8 +1192,8 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     (2 <= j)%N ->                                                      (* B1 *)
     size ps = n_relay.+2 ->                                            (* B2 *)
     @all_proc_wf AHE ps ->                                            (* B3 *)
-    (exists vd, nth (default_proc data) ps 0 =                        (* B4 *)
-       Send j vd (alice_foldr_at j.+1)) ->
+    nth (default_proc data) ps 0 =                                    (* B4 *)
+       Send j (e_local (alice_enc j)) (alice_foldr_at j.+1) ->
     (exists sv0 f0, relay_body (@inord n_relay j.-1) =                (* B5 *)
        Send 0 sv0 (Recv 0 f0) /\
        nth (default_proc data) ps j = Recv 0 f0) ->
@@ -1244,26 +1251,26 @@ Lemma dsdp_inv_has_progress ps :
 Proof.
 case.
 - (* Inv_AR *) move=> j ps0 Hsz Hwf Halice Hbody Hpending _ _ _ _.
-  have [sv [sk Hrel]] := relay_body_is_send0 j.
+  have [sk Hrel] := relay_body_is_send0 j.
   rewrite /relay_at_body Hrel in Hbody.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_ord j).
   have [f Hrecv] := @alice_body_at_recv j (ltn_ord j).
   have Halice' : nth (default_proc data) ps0 0 = Recv (Ordinal (ltn_ord j)).+1 f
     by rewrite Halice /alice_foldr_at Hrecv.
-  exact (@has_comm_progress data ps0 j.+1 0 sv sk f Hj Hbody Halice').
-- (* Inv_AS0 *) move=> ps0 f_inner Hsz Hwf [vd Halice] Hr0 Hpending _.
+  exact (@has_comm_progress data ps0 j.+1 0 _ sk f Hj Hbody Halice').
+- (* Inv_AS0 *) move=> ps0 f_inner Hsz Hwf Halice Hr0 Hpending _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
-  exact (@has_comm_progress data ps0 0 1 vd (alice_foldr_at 1)
+  exact (@has_comm_progress data ps0 0 1 _ (alice_foldr_at 1)
     (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE))
     Hsz0 Halice Hr0).
-- (* Inv_AS1 *) move=> ps0 f_inner Hsz Hwf [vd Halice] Hr0 Hpending _ _ _.
+- (* Inv_AS1 *) move=> ps0 f_inner Hsz Hwf Halice Hr0 Hpending _ _ _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
-  exact (@has_comm_progress data ps0 0 1 vd (alice_foldr_at 2)
+  exact (@has_comm_progress data ps0 0 1 _ (alice_foldr_at 2)
     (oapp f_inner Fail \o @std_from_enc AHE)
     Hsz0 Halice Hr0).
-- (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf [vd Halice] [sv0 [f0 [Hbody0 Hrj]]] Hpending _ _ _ _.
+- (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf Halice [sv0 [f0 [Hbody0 Hrj]]] Hpending _ _ _ _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
-  exact (@has_comm_progress data ps0 0 j vd (alice_foldr_at j.+1) f0 Hsz0 Halice Hrj).
+  exact (@has_comm_progress data ps0 0 j _ (alice_foldr_at j.+1) f0 Hsz0 Halice Hrj).
 - (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf Halice [v Hsend] [f Hrecv] _ [_ _] _.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
   exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
@@ -1297,7 +1304,7 @@ Definition proc_target_valid (n : nat) (p : proc data) : Prop :=
 Lemma relay_body_target_valid (j : 'I_n_relay.+1) :
   proc_target_valid n_relay.+2 (relay_body j).
 Proof.
-have [sv [sk ->]] := relay_body_is_send0 j. exact: ltn0Sn.
+have [sk ->] := relay_body_is_send0 j. exact: ltn0Sn.
 Qed.
 
 (* L2: alice_foldr_at j targets j+1, valid when j < n_relay+1 *)
@@ -1387,7 +1394,7 @@ case.
         rewrite Hp1 /proc_target_valid Hsz.
         by rewrite !ltnS.
 (* Inv_AS0 *)
-- move=> ps0 f_inner Hsz Hwf [vd Halice] Hr0 Hpending _ k Hk.
+- move=> ps0 f_inner Hsz Hwf Halice Hr0 Hpending _ k Hk.
   case: k Hk => [|[|k'']] Hk.
   + rewrite Halice /= Hsz. exact: ltn_trans (ltnSn 0) (ltnSn _).
   + rewrite Hr0 Hsz. exact: ltn0Sn.
@@ -1395,7 +1402,7 @@ case.
     have := Hpending (Ordinal Hk''b) (erefl : (0 < k''.+1)%N).
     rewrite /relay_at_body /= => ->. rewrite Hsz. exact: relay_body_target_valid.
 (* Inv_AS1 *)
-- move=> ps0 f_inner Hsz Hwf [vd Halice] Hr0 Hpending _ H6a H6b k Hk.
+- move=> ps0 f_inner Hsz Hwf Halice Hr0 Hpending _ H6a H6b k Hk.
   case: k Hk => [|[|[|k''']]] Hk.
   + rewrite Halice /= Hsz. exact: ltn_trans (ltnSn 0) (ltnSn _).
   + rewrite Hr0 Hsz. exact: ltn0Sn.
@@ -1407,7 +1414,7 @@ case.
     have := Hpending (Ordinal Hk'''b) (erefl : (1 < k'''.+2)%N).
     rewrite /relay_at_body /= => ->. rewrite Hsz. exact: relay_body_target_valid.
 (* Inv_ASj *)
-- move=> j0 ps0 Hj2 Hsz Hwf [vd Halice] [sv0 [f0 [_ Hrj]]] Hpending H7a H7b H8 H9 k Hk.
+- move=> j0 ps0 Hj2 Hsz Hwf Halice [sv0 [f0 [_ Hrj]]] Hpending H7a H7b H8 H9 k Hk.
   case: k Hk => [|k'] Hk; first by rewrite Halice /= Hsz; exact: ltn_trans (ltn_ord j0) (ltnSn _).
   have Hk'b : (k' < n_relay.+1)%N by rewrite Hsz ltnS in Hk.
   case: (ltngtP k' (j0 : nat)) => [Hlt|Hgt|Heq].
@@ -1509,14 +1516,14 @@ move=> Hinv; move: Hsz; case: Hinv.
     rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0.
     have [f Hrecv_f] := @alice_body_at_recv j0 (ltn_ord j0).
     rewrite Halice /alice_foldr_at Hrecv_f.
-    have [sv [sk Hbs]] := relay_body_is_send0 j0.
+    have [sk Hbs] := relay_body_is_send0 j0.
     rewrite /relay_at_body in Hbody. rewrite Hbody Hbs. by rewrite eqxx.
   + have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
     have [Heqj | Hnej] := eqVneq i' j0.
     * (* i'=j0 → pos j0+1 = relay_body j0 = Send 0. Matched with Alice. Ready. *)
       exfalso; move/andP: Hstuck => [_ Hns]; apply (negP Hns).
       rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Heqj.
-      have [sv [sk Hbs]] := relay_body_is_send0 j0.
+      have [sk Hbs] := relay_body_is_send0 j0.
       rewrite /relay_at_body in Hbody. rewrite Hbody Hbs.
       have [f Hrecv_f] := @alice_body_at_recv j0 (ltn_ord j0).
       rewrite Halice /alice_foldr_at Hrecv_f. by rewrite eqxx.
@@ -1524,7 +1531,7 @@ move=> Hinv; move: Hsz; case: Hinv.
       -- (* i' > j0: relay zone. relay_body = Send 0. Target 0. *)
          have Hpk := Hpending (Ordinal Hi') Hgtj.
          rewrite /relay_at_body /= in Hpk.
-         have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+         have [sk Hbs] := relay_body_is_send0 (Ordinal Hi').
          rewrite Hi0 Hpk Hbs /= in Htgt.
          case: Htgt => Hjeq. rewrite /rank /= -Hjeq Hi0 /=.
          have -> : (i'.+1 <= j0.+1)%N = false by apply/negbTE; rewrite -ltnNge.
@@ -1605,7 +1612,7 @@ move=> Hinv; move: Hsz; case: Hinv.
                              by rewrite -(@subnSK (j0 : nat) (j0 : nat).+2 (ltn_trans (ltnSn _) (ltnSn _))) subSnn.
                            by rewrite Hsub.
 (* Inv_AS0: rank = nat_of_ord. All stuck relays target 0 < i'+1. *)
-- move=> ps0 f_inner Hsz0 Hwf [vd Halice] Hr0 Hpending _ Hsz.
+- move=> ps0 f_inner Hsz0 Hwf Halice Hr0 Hpending _ Hsz.
   apply (@wait_for_ranking_acyclic _ _ _ (@nat_of_ord n_relay.+2)).
   move=> i j; rewrite /wait_for /mk_tup (tnth_nth (default_proc data)) /=.
   move=> /andP [Hstuck /eqP Htgt].
@@ -1623,13 +1630,13 @@ move=> Hinv; move: Hsz; case: Hinv.
       have Hi'pos : (0 < i')%N by case: (i') Hne0.
       have Hpk := Hpending (Ordinal Hi') Hi'pos.
       rewrite /relay_at_body /= in Hpk.
-      have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+      have [sk Hbs] := relay_body_is_send0 (Ordinal Hi').
       rewrite Hi0 Hpk Hbs /= in Htgt.
       case: Htgt => Hjeq.
       (* j = 0, rank(0) = 0 < rank(i) = i'.+1 *)
       by rewrite /= -Hjeq.
 (* Inv_AS1: rank = nat_of_ord. *)
-- move=> ps0 f_inner Hsz0 Hwf [vd Halice] Hr0 Hpending Hfi H6a H6b Hsz.
+- move=> ps0 f_inner Hsz0 Hwf Halice Hr0 Hpending Hfi H6a H6b Hsz.
   apply (@wait_for_ranking_acyclic _ _ _ (@nat_of_ord n_relay.+2)).
   move=> i j; rewrite /wait_for /mk_tup (tnth_nth (default_proc data)) /=.
   move=> /andP [Hstuck /eqP Htgt].
@@ -1660,12 +1667,12 @@ move=> Hinv; move: Hsz; case: Hinv.
            by case: (i') Hi'pos Hne1 => [|[|i'']] //.
          have Hpk := Hpending (Ordinal Hi') Hi'gt1.
          rewrite /relay_at_body /= in Hpk.
-         have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+         have [sk Hbs] := relay_body_is_send0 (Ordinal Hi').
          rewrite Hi0 Hpk Hbs /= in Htgt.
          case: Htgt => Hjeq.
          by rewrite /= -Hjeq.
 (* Inv_ASj *)
-- move=> j0 ps0 Hj2 Hsz0 Hwf [vd Halice] [sv0 [f0 [_ Hrj]]]
+- move=> j0 ps0 Hj2 Hsz0 Hwf Halice [sv0 [f0 [_ Hrj]]]
          Hpending H7a H7b H8 H9 Hsz.
   pose rank := (fun (i : 'I_n_relay.+2) =>
     if (nat_of_ord i == 0)%N then 0%N
@@ -1711,7 +1718,7 @@ move=> Hinv; move: Hsz; case: Hinv.
          ++ (* i' > j0 and i' != j0: relay zone. *)
             have Hpk := Hpending (Ordinal Hi') Hgtj.
             rewrite /relay_at_body /= in Hpk.
-            have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+            have [sk Hbs] := relay_body_is_send0 (Ordinal Hi').
             rewrite Hi0 Hpk Hbs /= in Htgt.
             case: Htgt => Hjeq. rewrite /rank /= -Hjeq Hi0 /=.
             have -> : (i'.+1 <= j0)%N = false.
@@ -1912,7 +1919,7 @@ move: Htgt Hsz Hi; case: Hinv.
     have [f Hrecv] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
     rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Halice /alice_foldr_at Hrecv.
     rewrite /relay_at_body in Hbody. rewrite Hbody.
-    have [sv [sk ->]] := relay_body_is_send0 j0. by rewrite eqxx.
+    have [sk ->] := relay_body_is_send0 j0. by rewrite eqxx.
   + have Hi' : (i' < n_relay.+1)%N by move: (ltn_ord i); rewrite Hi0 ltnS.
     (* All relay positions target 0. ps[0] = Alice = Recv → non-final *)
     (* Extract target from Htgt *)
@@ -1924,7 +1931,7 @@ move: Htgt Hsz Hi; case: Hinv.
         have : (j0 < Ordinal Hi')%N by rewrite /= ltn_neqAle eq_sym Hneq Hle.
         exact: Hpending _.
       rewrite /relay_at_body /= in Hpk.
-      have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+      have [sk Hbs] := relay_body_is_send0 (Ordinal Hi').
       rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-.
       (* j = 0. ps[0] = Alice = Recv → non-final *)
       by rewrite Halice /alice_foldr_at; have [f ->] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
@@ -1982,7 +1989,7 @@ move: Htgt Hsz Hi; case: Hinv.
          rewrite Hi0 Hi'0 Hp1 /= in Htgt. case: Htgt => <-.
          by rewrite Halice /alice_foldr_at; have [f ->] := @alice_body_at_recv (nat_of_ord j0) (ltn_ord j0).
 (* Inv_AS0 *)
-- move=> ps0 f_inner Hsz0 Hwf [vd Halice] Hr0 Hpending _ Htgt Hsz Hi.
+- move=> ps0 f_inner Hsz0 Hwf Halice Hr0 Hpending _ Htgt Hsz Hi.
   case Hi0 : (nat_of_ord i) => [|i'].
   + exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
     by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Halice Hr0 eqxx.
@@ -1993,11 +2000,11 @@ move: Htgt Hsz Hi; case: Hinv.
     * have Hi'pos : (0 < i')%N by case: (i') Hne0.
       have Hpk := Hpending (Ordinal Hi') Hi'pos.
       rewrite /relay_at_body /= in Hpk.
-      have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+      have [sk Hbs] := relay_body_is_send0 (Ordinal Hi').
       rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-.
       by rewrite Halice.
 (* Inv_AS1 *)
-- move=> ps0 f_inner Hsz0 Hwf [vd Halice] Hr0 Hpending _ H6a H6b Htgt Hsz Hi.
+- move=> ps0 f_inner Hsz0 Hwf Halice Hr0 Hpending _ H6a H6b Htgt Hsz Hi.
   case Hi0 : (nat_of_ord i) => [|i'].
   + exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
     by rewrite /smc_deadlock.is_ready /= /smc_interpreter.step Hi0 Halice Hr0 eqxx.
@@ -2020,11 +2027,11 @@ move: Htgt Hsz Hi; case: Hinv.
       -- have Hi'pos : (1 < i')%N by case: (i') Hne0 Hne1 => [//|[//|]].
          have Hpk := Hpending (Ordinal Hi') Hi'pos.
          rewrite /relay_at_body /= in Hpk.
-         have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+         have [sk Hbs] := relay_body_is_send0 (Ordinal Hi').
          rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-.
          by rewrite Halice.
 (* Inv_ASj *)
-- move=> j0 ps0 Hj2 Hsz0 Hwf [vd Halice] [sv0 [f0 [_ Hrj]]] Hpending H7a H7b H8 H9 Htgt Hsz Hi.
+- move=> j0 ps0 Hj2 Hsz0 Hwf Halice [sv0 [f0 [_ Hrj]]] Hpending H7a H7b H8 H9 Htgt Hsz Hi.
   case Hi0 : (nat_of_ord i) => [|i'].
   + (* i=0: Alice = Send(j0,...). Ready → exfalso *)
     exfalso; move/andP: Hi => [_ Hns]; apply (negP Hns).
@@ -2047,7 +2054,7 @@ move: Htgt Hsz Hi; case: Hinv.
          have Hgt : (j0 < Ordinal Hi')%N by rewrite /= ltn_neqAle eq_sym Hne_j0 Hle.
          have Hpk := Hpending _ Hgt.
          rewrite /relay_at_body /= in Hpk.
-         have [sv [sk Hbs]] := relay_body_is_send0 (Ordinal Hi').
+         have [sk Hbs] := relay_body_is_send0 (Ordinal Hi').
          rewrite Hi0 Hpk Hbs /= in Htgt. case: Htgt => <-. by rewrite Halice.
     * (* i' < j0: frontier zone. Same structure as Inv_AR *)
       have [Hj_eq2 | Hj_ne2] := eqVneq (j0 : nat) 2.
@@ -2243,17 +2250,16 @@ Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
 Proof.
 move=> Hsz Hwf Halice Hbody Hpending H6 H7 H8 H9; right.
 have [f Hrecv_f] := @alice_body_at_recv j (ltn_ord j).
-have [sv [sk Hbs]] := relay_body_is_send0 j.
+have [sk Hbs] := relay_body_is_send0 j.
 have Halice_recv : nth (default_proc data) ps 0 = Recv (Ordinal (ltn_ord j)).+1 f
   by rewrite Halice /alice_foldr_at Hrecv_f.
-have Hrelay_send : nth (default_proc data) ps j.+1 = Send 0 sv sk.
+have Hrelay_send : nth (default_proc data) ps j.+1 =
+  Send 0 (e_local (enc_local (ek (nat_to_party_id j.+1)) (v_relay j) (r1_relay j))) sk.
   rewrite /relay_at_body in Hbody; rewrite Hbody Hbs. done.
 have [Hstep_j1 Hstep_0] :=
-  @step_send_recv_match data ps j.+1 0 sv sk f Hrelay_send Halice_recv.
-have Hwf_j1 : proc_wf AHE (nth (default_proc data) ps j.+1)
-  by apply Hwf; rewrite Hsz; exact (ltn_ord j).
-rewrite Hrelay_send /= in Hwf_j1; have [Henc_sv _] := Hwf_j1.
-have [sv' Hfsv] := @alice_recv_to_send_foldr j (ltn_ord j) f sv Henc_sv Hrecv_f.
+  @step_send_recv_match data ps j.+1 0 _ sk f Hrelay_send Halice_recv.
+have Hc_sv := std_from_enc_e_local (enc_local (ek (nat_to_party_id j.+1)) (v_relay j) (r1_relay j)).
+have Hfsv := @alice_recv_to_send_foldr j (ltn_ord j) f _ _ Hc_sv Hrecv_f.
 case: (posnP (j : nat)) => Hj0.
 - (* j = 0 → Inv_AS0 *)
   have Hj_ord0 : j = ord0 :> 'I_n_relay.+1 by apply /val_inj; rewrite /= Hj0.
@@ -2274,9 +2280,12 @@ case: (posnP (j : nat)) => Hj0.
   apply (Inv_AS0 (one_step_procs data ps) f_inner0).
   + by rewrite (@size_one_step data).
   + exact (@one_step_preserves_proc_wf ps Hwf).
-  + exists sv'; have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+  + have Hsz0 : (0 < size ps)%N by rewrite Hsz.
     rewrite (@nth_one_step data ps 0 Hsz0) Hstep_0 Hfsv.
-    by rewrite /alice_send_dest /= /alice_foldr_at.
+    rewrite /alice_send_dest /= /alice_foldr_at /alice_enc /enc_local.
+    have -> : Ordinal (n:=n_relay.+1) (m:=0) (ltn_ord ord0) = ord0 :> 'I_n_relay.+1
+      by apply /val_inj.
+    by rewrite /= maxn0.
   + have Hsz1 : (1 < size ps)%N
       by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
     by rewrite (@nth_one_step data ps 1 Hsz1) Hstep_j1 Hsk Hfdec_form.
@@ -2284,7 +2293,7 @@ case: (posnP (j : nat)) => Hj0.
     have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
     rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
     have Hbi := Hpending i Hi; rewrite /relay_at_body in Hbi.
-    have [svi [ski Hbsi]] := relay_body_is_send0 i.
+    have [ski Hbsi] := relay_body_is_send0 i.
     rewrite Hbi Hbsi Halice_recv /=.
     suff -> : (1%N == i.+1) = false by [].
     apply ltn_eqF; exact Hi.
@@ -2308,8 +2317,14 @@ case: (posnP (j : nat)) => Hj0.
     * by rewrite (@size_one_step data).
     * exact (@one_step_preserves_proc_wf ps Hwf).
     * have Hsz0 : (0 < size ps)%N by rewrite Hsz.
-      exists sv'.
-      by rewrite (@nth_one_step data ps 0 Hsz0) Hstep_0 Hfsv.
+      rewrite (@nth_one_step data ps 0 Hsz0) Hstep_0 Hfsv /alice_enc /enc_local.
+      have -> : Ordinal (n:=n_relay.+1) (m:=1) (ltn_ord jord) = inord 1 :> 'I_n_relay.+1
+        by apply /val_inj; rewrite /= inordK.
+      have -> : jord = inord 1 :> 'I_n_relay.+1
+        by apply /val_inj; rewrite /= inordK.
+      rewrite /alice_foldr_at.
+      suff -> : (inord 1 : 'I_n_relay.+1).+1 = 2 :> nat by [].
+      by rewrite inordK.
     * (* relay 0: one_step[1] = ps[1] (nop: Alice is Recv, not Send) *)
       have Hsz1 : (1 < size ps)%N
         by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
@@ -2320,7 +2335,7 @@ case: (posnP (j : nat)) => Hj0.
       have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
       rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
       have Hbi := Hpending i Hi; rewrite /relay_at_body in Hbi.
-      have [svi [ski Hbsi]] := relay_body_is_send0 i.
+      have [ski Hbsi] := relay_body_is_send0 i.
       rewrite Hbi Hbsi Halice_recv.
       have -> : (2%N == i.+1) = false.
         by apply /eqP => Heq; have := Hi; rewrite -ltnS -Heq.
@@ -2335,8 +2350,8 @@ case: (posnP (j : nat)) => Hj0.
       exists sv1, f1; split; first by rewrite -Hord_eq.
       have Hsz2 : (2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hn1 (ltnSn _)).
       have Hsk_eq : sk = Recv 0 f1.
-        have : relay_body (Ordinal Hord1) = Send 0 sv sk by rewrite Hord_eq.
-        rewrite Hb1; by case.
+        rewrite Hord_eq in Hb1.
+        by move: Hb1; rewrite Hbs => -[_ <-].
       by rewrite (@nth_one_step data ps 2 Hsz2) Hstep_j1 Hsk_eq.
     * (* H6b: n_relay = 1 → last relay *)
       move=> Hn1_eq.
@@ -2373,10 +2388,12 @@ case: (posnP (j : nat)) => Hj0.
     * (* B1: 2 <= j *) exact Hj2.
     * (* B2: size *) by rewrite (@size_one_step data).
     * (* B3: wf *) exact (@one_step_preserves_proc_wf ps Hwf).
-    * (* B4: exists vd, one_step[0] = Send j vd (alice_foldr_at j.+1) *)
-      exists sv'.
+    * (* B4: one_step[0] = Send j (e_local (alice_enc j)) (alice_foldr_at j.+1) *)
       have Hsz0 : (0 < size ps)%N by rewrite Hsz.
-      by rewrite (@nth_one_step data ps 0 Hsz0) Hstep_0 Hfsv.
+      rewrite (@nth_one_step data ps 0 Hsz0) Hstep_0 Hfsv /alice_enc /enc_local.
+      have -> : Ordinal (n:=n_relay.+1) (m:=j) (ltn_ord j) = j :> 'I_n_relay.+1
+        by apply /val_inj.
+      by [].
     * (* B5: relay body link at pos j — NOP *)
       exists sv7, f7; split; first exact Hbody7.
       have Hszj : (j < size ps)%N
@@ -2389,7 +2406,7 @@ case: (posnP (j : nat)) => Hj0.
       have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
       rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
       have Hbi := Hpending i Hi; rewrite /relay_at_body in Hbi.
-      have [svi [ski Hbsi]] := relay_body_is_send0 i.
+      have [ski Hbsi] := relay_body_is_send0 i.
       rewrite Hbi Hbsi Halice_recv.
       have Hneq : ((Ordinal (ltn_ord j)).+1 == i.+1) = false.
         apply /eqP => Heq.
@@ -2493,7 +2510,7 @@ Qed.
 (* C2b: AS0 → AR(1) *)
 Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists vd, nth (default_proc data) ps 0 = Send 1 vd (alice_foldr_at 1)) ->
+  nth (default_proc data) ps 0 = Send 1 (e_local (alice_enc ord0)) (alice_foldr_at 1) ->
   nth (default_proc data) ps 1 =
     Recv 0 (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE)) ->
   (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
@@ -2502,15 +2519,14 @@ Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
      forall c, exists sv, g c = Send 2 sv Finish) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
-move=> Hsz Hwf [vd Halice] Hr0 Hpending Hfinner_cont; right.
+move=> Hsz Hwf Halice Hr0 Hpending Hfinner_cont; right.
 have [Hstep0 Hstep1] :=
-  @step_send_recv_match data ps 0 1 vd (alice_foldr_at 1)
+  @step_send_recv_match data ps 0 1 (e_local (alice_enc ord0)) (alice_foldr_at 1)
     (oapp f_inner Fail \o (obind (@dec AHE (dk_relay ord0)) \o @std_from_enc AHE))
     Halice Hr0.
-have Hwf0 : proc_wf AHE (nth (default_proc data) ps 0)
-  by apply Hwf; rewrite Hsz.
-rewrite Halice /= in Hwf0; have [Henc_vd _] := Hwf0.
-case Hsfe: (@std_from_enc AHE vd) => [c|]; last by rewrite Hsfe in Henc_vd.
+have Hsfe : @std_from_enc AHE (e_local (alice_enc ord0)) = Some (alice_enc ord0)
+  := std_from_enc_e_local _.
+set c := alice_enc ord0.
 case Hdec: (@dec AHE (dk_relay ord0) c) => [m|];
   last by have := dec_total (dk_relay ord0) c; rewrite Hdec.
 have Hr0_result : (step ps [::] 1).1.1 = f_inner m
@@ -2528,14 +2544,14 @@ apply (Inv_AR (Ordinal Hord1)).
   rewrite (@nth_one_step data ps (Ordinal Hord1).+1 Hsz2) /smc_interpreter.step.
   have Hb1 := Hpending (Ordinal Hord1) (isT : (0 < (Ordinal Hord1 : nat))%N).
   rewrite /relay_at_body /= in Hb1.
-  have [sv1 [sk1 Hbs1]] := relay_body_is_send0 (Ordinal Hord1).
+  have [sk1 Hbs1] := relay_body_is_send0 (Ordinal Hord1).
   by rewrite Hb1 Hbs1 Halice.
 - move=> i Hi; rewrite /relay_at_body.
   have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
   rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
   have Hi0 : (0 < i)%N := ltn_trans (isT : (0 < 1)%N) Hi.
   have Hbi := Hpending i Hi0; rewrite /relay_at_body in Hbi.
-  have [svi [ski Hbsi]] := relay_body_is_send0 i.
+  have [ski Hbsi] := relay_body_is_send0 i.
   by rewrite Hbi Hbsi Halice.
 - move=> _; exists g; split.
   + have Hsz1 : (1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
@@ -2549,7 +2565,7 @@ Qed.
 (* C2c: AS1 → AR(2) or drain *)
 Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists vd, nth (default_proc data) ps 0 = Send 1 vd (alice_foldr_at 2)) ->
+  nth (default_proc data) ps 0 = Send 1 (e_local (alice_enc (inord 1))) (alice_foldr_at 2) ->
   nth (default_proc data) ps 1 =
     Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
   (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
@@ -2562,13 +2578,14 @@ Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
      forall v, @std_from_enc AHE v != None -> exists sv, f v = Send 0 sv Finish) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
-move=> Hsz Hwf [vd Halice] Hr0 Hpending Hfinner_cont
+move=> Hsz Hwf Halice Hr0 Hpending Hfinner_cont
   Hrelay1_inter Hrelay1_last; right.
-have [Hstep0 Hstep1] := @step_send_recv_match data ps 0 1 vd (alice_foldr_at 2)
+have [Hstep0 Hstep1] := @step_send_recv_match data ps 0 1
+  (e_local (alice_enc (inord 1))) (alice_foldr_at 2)
   (oapp f_inner Fail \o @std_from_enc AHE) Halice Hr0.
-have Hwf0 : proc_wf AHE (nth (default_proc data) ps 0) by apply Hwf; rewrite Hsz.
-rewrite Halice /= in Hwf0; have [Henc_vd _] := Hwf0.
-case Hsfe: (@std_from_enc AHE vd) => [c|]; last by rewrite Hsfe in Henc_vd.
+have Hsfe : @std_from_enc AHE (e_local (alice_enc (inord 1))) = Some (alice_enc (inord 1))
+  := std_from_enc_e_local _.
+set c := alice_enc (inord 1).
 have Hr0_result : (step ps [::] 1).1.1 = f_inner c by rewrite Hstep1 /comp Hsfe.
 have [sv_r0 Hfic] := Hfinner_cont c.
 case: (ltnP 1 n_relay) => Hn1.
@@ -2583,14 +2600,14 @@ case: (ltnP 1 n_relay) => Hn1.
     have Hsz3 : ((Ordinal Hord2).+1 < size ps)%N by rewrite Hsz /=.
     rewrite (@nth_one_step data ps (Ordinal Hord2).+1 Hsz3) /smc_interpreter.step.
     have Hb2 := Hpending (Ordinal Hord2) (isT : (1 < 2)%N); rewrite /relay_at_body /= in Hb2.
-    have [sv2 [sk2 Hbs2]] := relay_body_is_send0 (Ordinal Hord2).
+    have [sk2 Hbs2] := relay_body_is_send0 (Ordinal Hord2).
     by rewrite Hb2 Hbs2 Halice.
   + move=> i Hi; rewrite /relay_at_body.
     have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
     rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
     have Hi1 : (1 < i)%N := ltn_trans (isT : (1 < 2)%N) Hi.
     have Hbi := Hpending i Hi1; rewrite /relay_at_body in Hbi.
-    have [svi [ski Hbsi]] := relay_body_is_send0 i.
+    have [ski Hbsi] := relay_body_is_send0 i.
     by rewrite Hbi Hbsi Halice.
   + by move=> /eqP.
   + move=> _.
@@ -2639,7 +2656,7 @@ Qed.
 Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
   (2 <= j)%N ->
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists vd, nth (default_proc data) ps 0 = Send j vd (alice_foldr_at j.+1)) ->
+  nth (default_proc data) ps 0 = Send j (e_local (alice_enc j)) (alice_foldr_at j.+1) ->
   (exists sv0 f0, relay_body (@inord n_relay j.-1) = Send 0 sv0 (Recv 0 f0) /\
      nth (default_proc data) ps j = Recv 0 f0) ->
   (forall i : 'I_n_relay.+1, (j < i)%N -> relay_at_body i ps) ->
@@ -2658,12 +2675,12 @@ Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
      (exists sv_fw, nth (default_proc data) ps j.-1 = Send j sv_fw Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
-move=> Hj2 Hsz Hwf [vd Halice] [sv0 [f0 [Hbody0 Hrj]]] Hpending B7a B7b B8 B9;
+move=> Hj2 Hsz Hwf Halice [sv0 [f0 [Hbody0 Hrj]]] Hpending B7a B7b B8 B9;
   right.
-have [Hstep0 Hstepj] := @step_send_recv_match data ps 0 j vd
+have [Hstep0 Hstepj] := @step_send_recv_match data ps 0 j (e_local (alice_enc j))
   (alice_foldr_at j.+1) f0 Halice Hrj.
-have Hwf0 : proc_wf AHE (nth (default_proc data) ps 0) by apply Hwf; rewrite Hsz.
-rewrite Halice /= in Hwf0; have [Henc_vd _] := Hwf0.
+have Henc_vd : @std_from_enc AHE (e_local (alice_enc j)) != None
+  by rewrite std_from_enc_e_local.
 have Hj0 : (0 < j)%N := ltn_trans (ltn0Sn 0) Hj2.
 have Hj1_lt : (j.-1 < n_relay.+1)%N := leq_ltn_trans (leq_pred _) (ltn_ord j).
 have Hj1_val : (inord j.-1 : 'I_n_relay.+1) = j.-1 :> nat by rewrite inordK.
@@ -2672,7 +2689,7 @@ have Hj1_pos : (0 < (inord j.-1 : 'I_n_relay.+1))%N
 have Hj1_lt_nr : ((inord j.-1 : 'I_n_relay.+1) < n_relay)%N.
   by rewrite Hj1_val -(prednK Hj0); have := ltn_ord j; rewrite -(prednK Hj0) ltnS.
 have [f_dec [Hf0vd Hf_dec_cont]] :=
-  @relay_inter_recv_from_body_fires (inord j.-1) vd sv0 f0
+  @relay_inter_recv_from_body_fires (inord j.-1) (e_local (alice_enc j)) sv0 f0
     Hj1_pos Hj1_lt_nr Hbody0 Henc_vd.
 have Hj1S : j.-1.+1 = j :> nat by rewrite prednK.
 have Hj1S2 : (inord j.-1 : 'I_n_relay.+1).+2 = j.+1 :> nat
@@ -2691,14 +2708,14 @@ case: (ltnP j n_relay) => Hjn.
     rewrite (@nth_one_step data ps j.+2 Hszj2) /smc_interpreter.step.
     have Hbi := Hpending (Ordinal Hord_j1) (ltnSn j).
     rewrite /relay_at_body /= in Hbi.
-    have [sv_j1 [sk_j1 Hbs_j1]] := relay_body_is_send0 (Ordinal Hord_j1).
+    have [sk_j1 Hbs_j1] := relay_body_is_send0 (Ordinal Hord_j1).
     by rewrite Hbi Hbs_j1 Halice.
   + move=> i Hi; rewrite /relay_at_body.
     have Hszi : (i.+1 < size ps)%N by rewrite Hsz; exact (ltn_ord i).
     rewrite (@nth_one_step data ps i.+1 Hszi) /smc_interpreter.step.
     have Hi_j : (j < i)%N := ltn_trans (ltnSn j) Hi.
     have Hbi := Hpending i Hi_j; rewrite /relay_at_body in Hbi.
-    have [svi [ski Hbsi]] := relay_body_is_send0 i.
+    have [ski Hbsi] := relay_body_is_send0 i.
     by rewrite Hbi Hbsi Halice.
   + by rewrite /= eqSS => /eqP Habs; rewrite Habs in Hj2.
   + move=> _ /=; exists sv_j, f_j; split.
@@ -2809,7 +2826,7 @@ case: (ltnP j n_relay) => Hjn.
         by rewrite Hsz; exact (ltn_trans (ltnSn n_relay) (ltnSn n_relay.+1)).
       rewrite Heq_s1 (prednK (ltn_trans (ltn0Sn _) Hn_ge3)).
       rewrite Hjn_eq in Hf0vd.
-      have Hstepn : (step ps [::] n_relay).1.1 = f0 vd by rewrite -Hjn_eq.
+      have Hstepn : (step ps [::] n_relay).1.1 = f0 (e_local (alice_enc j)) by rewrite -Hjn_eq.
       rewrite Hjn_eq in Hj1_val.
       by rewrite (@nth_one_step data ps n_relay Hszn) Hstepn Hf0vd Hj1_val.
     * (* Finish zone: forall i < n_relay.-2, one_step[i.+1] = Finish *)
@@ -2845,7 +2862,7 @@ case: (ltnP j n_relay) => Hjn.
       -- have Hszn : (n_relay < size ps)%N
            by rewrite Hsz; exact (ltn_trans (ltnSn n_relay) (ltnSn n_relay.+1)).
          rewrite Hjn_eq in Hf0vd.
-         have Hstepn : (step ps [::] n_relay).1.1 = f0 vd by rewrite -Hjn_eq.
+         have Hstepn : (step ps [::] n_relay).1.1 = f0 (e_local (alice_enc j)) by rewrite -Hjn_eq.
          rewrite (prednK Hn_relay).
          rewrite Hjn_eq in Hj1_val.
          by rewrite (@nth_one_step data ps n_relay Hszn) Hstepn Hf0vd Hj1_val.
