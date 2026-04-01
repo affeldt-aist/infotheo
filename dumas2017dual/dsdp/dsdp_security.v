@@ -2032,6 +2032,29 @@ Let DecView_n : {RV P -> _} := [% [%Dk_a, R_relay_RV], CondRV].
 Let AliceView_n : {RV P -> _} := [% E_relay_RV, DecView_n].
 
 (* ========================================================================== *)
+(* D3: Trace projection — what an eavesdropper on Alice's channel observes.   *)
+(*                                                                            *)
+(* Drops R_relay_RV (random masks, never communicated).                       *)
+(* CondRV is kept whole (abstract Variable), so the projection retains        *)
+(* U0/U_relay (Alice's private inputs, also not in the real trace).           *)
+(* The resulting eavesdropper bound is therefore STRONGER than needed:         *)
+(* security holds even if the eavesdropper knows Alice's private coefficients.*)
+(* ========================================================================== *)
+
+Let trace_proj_n_T :=
+  ({ffun 'I_n_relay.+1 -> enc_msg} * msg * CondT_n)%type.
+
+Let trace_proj_n
+    (view : {ffun 'I_n_relay.+1 -> enc_msg} *
+            ((msg * {ffun 'I_n_relay.+1 -> msg}) * CondT_n))
+    : trace_proj_n_T :=
+  let '(e_relay, ((dk, _), cond)) := view in
+  ((e_relay, dk), cond).
+
+Let AliceTraces_n : {RV P -> trace_proj_n_T} :=
+  trace_proj_n `o AliceView_n.
+
+(* ========================================================================== *)
 (* N4: alice_view_contract_n                                                  *)
 (*                                                                            *)
 (* Proves H(VarRV | AliceView_n) = H(VarRV | CondRV) by:                     *)
@@ -2169,6 +2192,23 @@ split.
 - by rewrite -Heq.
 - exact: (Order.POrderTheory.lt_le_trans Hgt Hdpi).
 Qed.
+
+(* ========================================================================== *)
+(* L8: Eavesdropper security for protocol traces                              *)
+(*                                                                            *)
+(* An eavesdropper observing Alice's communication trace (ciphertexts,        *)
+(* key, and protocol state) learns no more about relay secrets VarRV          *)
+(* than Alice herself does.                                                   *)
+(*                                                                            *)
+(* Formally: H(VarRV | AliceTraces_n) >= log(m^n_relay) > 0                  *)
+(*                                                                            *)
+(* Proved by instantiating eavesdropper_security_n with f := trace_proj_n.    *)
+(* ========================================================================== *)
+
+Corollary trace_eavesdropper_security_n :
+  `H(VarRV | AliceTraces_n) >= log ((m ^ n_relay)%:R : R) /\
+  `H(VarRV | AliceTraces_n) > 0.
+Proof. exact: (eavesdropper_security_n trace_proj_n). Qed.
 
 End dsdp_concrete_n.
 

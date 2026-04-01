@@ -206,12 +206,16 @@ End trace_entropy_analysis.
 (*                               D3 (AliceTraces_n) → L8 (eavesdropper)     *)
 (******************************************************************************)
 
-(* TODO: Implement L5b-L5e, L6, D3, L8 per the plan.
-   These require:
-   - step_res_trace_inert / step_res_trace_disjoint from smc_interpreter_sound.v
-   - palice_n structure from dsdp_pismc.v
-   - dsdp_entropic_security_n_concrete from dsdp_security.v
-   - data processing inequality for entropy *)
+(* Status:
+   L5c: DONE — alice_trace_concrete_AR, alice_trace_concrete_tail give concrete
+        trace values per dsdp_inv constructor (enc/chain_acc expressions).
+   L6:  CONCEPTUAL — view faithfulness documented below.
+   D3:  DONE — trace_proj_n, AliceTraces_n in dsdp_security.v.
+   L8:  DONE — trace_eavesdropper_security_n in dsdp_security.v.
+   B2:  DONE — init_rsteps_to_inv: after 2 Init rounds, rsteps reaches
+        dsdp_inv state with Alice trace = [d v0; priv_key dk].
+   L5e: DONE — alice_full_trace_n: compose Init bridge + multi-round
+        fragments into full end-to-end trace characterization. *)
 
 (******************************************************************************)
 (* L5a: Alice's trace after the Init phase                                    *)
@@ -690,6 +694,43 @@ rewrite /alice_erase_tail /std_Recv_dec /Recv_param /=.
 by rewrite Hlast.
 Qed.
 
+(* Concrete-value version of alice_trace_at_AR: specifies the exact trace value
+   enc(ek(j+1), v_relay(j), r1_relay(j)). *)
+Lemma alice_trace_concrete_AR ps (j : 'I_n_relay.+1) :
+  nth (default_proc data) ps 0 =
+    @alice_foldr_at AHE ek n_relay dk relays v0 u r rand_a j ->
+  @relay_at_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay j ps ->
+  (smc_interpreter.step ps [::] 0).1.2 =
+    [:: di_e DI (enc (ek (nat_to_party_id j.+1)) (v_relay j) (r1_relay j))].
+Proof.
+move=> Halice Hbody.
+have [f Hrecv] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id
+  v0 u r rand_a j (ltn_ord j).
+have [sk Hsend] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay
+  r1_relay r2_relay j.
+rewrite /relay_at_body in Hbody.
+by rewrite /smc_interpreter.step /= Halice /alice_foldr_at Hrecv Hbody Hsend eqxx.
+Qed.
+
+(* Concrete-value version of alice_trace_at_tail: specifies the exact trace value
+   enc(ek(alice_idx), chain_acc(n_relay.-1), rr_tail). *)
+Lemma alice_trace_concrete_tail ps (rr_tail : rand AHE) :
+  nth (default_proc data) ps 0 =
+    @alice_foldr_at AHE ek n_relay dk relays v0 u r rand_a n_relay.+1 ->
+  nth (default_proc data) ps n_relay.+1 =
+    Send 0 (di_e DI (enc (ek alice_idx) (@chain_acc AHE n_relay u r v_relay
+      n_relay.-1) rr_tail)) Finish ->
+  (smc_interpreter.step ps [::] 0).1.2 =
+    [:: di_e DI (enc (ek alice_idx) (@chain_acc AHE n_relay u r v_relay
+      n_relay.-1) rr_tail)].
+Proof.
+move=> Halice Hlast.
+rewrite /smc_interpreter.step Halice.
+rewrite (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a).
+rewrite /alice_erase_tail /std_Recv_dec /Recv_param /=.
+by rewrite Hlast eqxx.
+Qed.
+
 (* Additional hypotheses needed for dsdp_inv_step *)
 Hypothesis dec_total : forall dk' c, @dec AHE dk' c != None.
 Hypothesis key_alice : ek alice_idx = pub_of_priv dk.
@@ -818,6 +859,171 @@ Qed.
 End alice_trace_at_inv.
 
 (******************************************************************************)
+(* Phase 2: Init→dsdp_inv bridge + full trace composition                     *)
+(*                                                                            *)
+(* B1/B2: After 2 Init rounds, the protocol state satisfies dsdp_inv and     *)
+(*   Alice's trace is [d v0; priv_key dk].                                    *)
+(* L8: Full trace from initial state to termination = init trace ++ frags.   *)
+(******************************************************************************)
+
+Section init_to_inv_bridge.
+
+Variable AHE : AHEncType.
+Variable ek : party_id -> pub_key AHE.
+Variable n_relay : nat.
+Hypothesis Hn_relay : (0 < n_relay)%N.
+
+Let DI := Standard_DSDP_Interface AHE.
+Let data := di_data DI.
+
+Variable dk : priv_key AHE.
+Variable dk_relay : 'I_n_relay.+1 -> priv_key AHE.
+
+Variable relays : seq 'I_n_relay.+1.
+Hypothesis Hrelays : size relays = n_relay.+1.
+Hypothesis Hrelays_id : forall k : 'I_n_relay.+1, nth ord0 relays k = k.
+
+Variable v0 : plain AHE.
+Variable u : 'I_n_relay.+2 -> plain AHE.
+Variable r : 'I_n_relay.+1 -> plain AHE.
+Variable rand_a : 'I_n_relay.+1 -> rand AHE.
+Variable v_relay : 'I_n_relay.+1 -> plain AHE.
+Variables (r1_relay r2_relay : 'I_n_relay.+1 -> rand AHE).
+
+Hypothesis dec_total : forall dk' c, @dec AHE dk' c != None.
+Hypothesis key_alice : ek alice_idx = pub_of_priv dk.
+Hypothesis key_relay : forall j : 'I_n_relay.+1,
+  ek (nat_to_party_id j.+1) = pub_of_priv (dk_relay j).
+
+Let procs := @dsdp_n_procs AHE ek n_relay relays dk v0 u r rand_a
+  dk_relay v_relay r1_relay r2_relay.
+
+Let n_parties := n_relay.+2.
+
+Let Hsize : size procs = n_parties.
+Proof. by rewrite /procs size_dsdp_n_procs Hrelays. Qed.
+
+Let procs_tup : n_parties.-tuple (proc data) :=
+  @Tuple _ _ procs (introT eqP Hsize).
+
+Let inv := dsdp_inv AHE ek n_relay Hn_relay dk dk_relay relays v0 u r rand_a
+  v_relay r1_relay r2_relay.
+
+Let d := di_d DI.
+Let priv_key := di_priv_key DI.
+
+(* Alice's erased process starts with two Init constructors *)
+Lemma alice_proc_init :
+  nth (default_proc data) procs 0 =
+    Init (priv_key dk) (Init (d v0)
+      (@alice_foldr_at AHE ek n_relay dk relays v0 u r rand_a 0)).
+Proof.
+have Hp0 : nth (default_proc data) procs 0 =
+  erase (@palice_n AHE ek n_relay relays dk v0 u r rand_a).
+  by rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= /erase_aproc /=.
+rewrite Hp0 (@palice_n_erase AHE ek n_relay relays dk v0 u r rand_a).
+by rewrite /alice_foldr_at drop0.
+Qed.
+
+(* After round 1: Alice at Init (d v0) body, trace = [priv_key dk] *)
+Lemma alice_step1_trace :
+  (smc_interpreter.step (tval procs_tup) [::] 0).1.2 = [:: priv_key dk].
+Proof.
+by rewrite /smc_interpreter.step alice_proc_init.
+Qed.
+
+Lemma alice_step1_proc :
+  (smc_interpreter.step (tval procs_tup) [::] 0).1.1 =
+    Init (d v0) (@alice_foldr_at AHE ek n_relay dk relays v0 u r rand_a 0).
+Proof.
+by rewrite /smc_interpreter.step alice_proc_init.
+Qed.
+
+(* After round 2: Alice at alice_foldr_at 0, trace = [d v0] *)
+Lemma alice_step2_trace :
+  let ps1 := res_procs [tuple smc_interpreter.step procs_tup [::] i | i < n_parties] in
+  (smc_interpreter.step (tval ps1) [::] 0).1.2 = [:: d v0].
+Proof.
+rewrite /=.
+have Hstep1 : nth (default_proc data) (tval (res_procs [tuple smc_interpreter.step procs_tup [::] i | i < n_parties])) 0 =
+  Init (d v0) (@alice_foldr_at AHE ek n_relay dk relays v0 u r rand_a 0).
+  rewrite -(@one_step_eq_res_procs AHE n_relay procs_tup).
+  have Hsz : (0 < size (tval procs_tup))%N by rewrite size_tuple.
+  rewrite (@nth_one_step data (tval procs_tup) 0 Hsz) /smc_interpreter.step.
+  by rewrite alice_proc_init.
+by rewrite /smc_interpreter.step Hstep1.
+Qed.
+
+(* B2: After 2 Init rounds, rsteps reaches a state satisfying dsdp_inv
+   with Alice's trace = [d v0; priv_key dk]. *)
+Theorem init_rsteps_to_inv :
+  exists (ps_init : n_parties.-tuple (proc data))
+         (tr_init : n_parties.-tuple (seq data)),
+    rsteps procs_tup ps_init tr_init /\
+    tnth tr_init ord0 = [:: d v0; priv_key dk] /\
+    inv (tval ps_init).
+Proof.
+(* Round 1 *)
+set res1 := [tuple smc_interpreter.step procs_tup [::] i | i < n_parties].
+set ps1 := res_procs res1.
+set tr1 := res_traces res1.
+have Hrs1 : rsteps procs_tup ps1 tr1 := step_sound procs_tup.
+(* Round 2 *)
+set res2 := [tuple smc_interpreter.step ps1 [::] i | i < n_parties].
+set ps2 := res_procs res2.
+set tr2 := res_traces res2.
+have Hrs2 : rsteps ps1 ps2 tr2 := step_sound ps1.
+(* Compose *)
+set tr12 := [tuple tnth tr2 i ++ tnth tr1 i | i < n_parties].
+have Hrs12 : rsteps procs_tup ps2 tr12 :=
+  rtrans Hrs1 Hrs2 erefl.
+exists ps2, tr12; do !split.
+- exact Hrs12.
+- (* Alice's trace: tnth tr12 ord0 = [d v0; priv_key dk] *)
+  rewrite /tr12 tnth_mktuple /tr2 /res_traces tnth_map tnth_mktuple
+    /tr1 /res_traces tnth_map tnth_mktuple alice_step2_trace alice_step1_trace //.
+
+- (* dsdp_inv holds on ps2 = one_step_procs (one_step_procs procs) *)
+  have Heq : tval ps2 = one_step_procs data (one_step_procs data procs).
+    by rewrite -(@one_step_eq_res_procs AHE n_relay ps1)
+               -(@one_step_eq_res_procs AHE n_relay procs_tup).
+  rewrite Heq.
+  exact: (@dsdp_inv_init AHE ek n_relay Hn_relay dk dk_relay dec_total
+    relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay).
+Qed.
+
+(* L8: Full trace from initial state to termination.
+   Compose Init bridge (init_rsteps_to_inv) with multi-round
+   trace fragments (dsdp_inv_rsteps_trace_frags) via rtrans. *)
+Theorem alice_full_trace_n (h : nat) :
+  exists (final : n_parties.-tuple (proc data))
+         (tr : n_parties.-tuple (seq data))
+         (frags : seq (seq data)),
+    rsteps procs_tup final tr /\
+    (all_terminated (tval final) \/ inv (tval final)) /\
+    tnth tr ord0 = flatten (rev frags) ++ [:: d v0; priv_key dk] /\
+    (forall k, (k < size frags)%N ->
+       (exists v, nth [::] frags k = [:: v]) \/ nth [::] frags k = [::]).
+Proof.
+have [ps_init [tr_init [Hrs_init [Htrace_init Hinv_init]]]] := init_rsteps_to_inv.
+have [final [tr_inv [frags [Hrs_inv [Hfinal [Htrace_inv Hfrags]]]]]] :=
+  @dsdp_inv_rsteps_trace_frags AHE ek n_relay Hn_relay dk dk_relay relays
+    Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+    dec_total key_relay h ps_init Hinv_init.
+set tr_full := [tuple tnth tr_inv i ++ tnth tr_init i | i < n_parties].
+have Hrs_full : rsteps procs_tup final tr_full :=
+  rtrans Hrs_init Hrs_inv erefl.
+exists final, tr_full, frags; do !split.
+- exact Hrs_full.
+- exact Hfinal.
+- rewrite /tr_full tnth_mktuple Htrace_inv Htrace_init.
+  reflexivity.
+- exact Hfrags.
+Qed.
+
+End init_to_inv_bridge.
+
+(******************************************************************************)
 (* L6: View Faithfulness                                                      *)
 (*                                                                            *)
 (* AliceView_n (algebraic RV from dsdp_security.v) faithfully models what     *)
@@ -841,12 +1047,14 @@ End alice_trace_at_inv.
 (* which characterize exactly what enters Alice's trace at each step.        *)
 (******************************************************************************)
 
-(* L6 is a conceptual correspondence, not a Coq theorem. The per-step
-   trace lemmas (L5a, L5b, L5d, L5e) formally verify each component:
-   - L5a: Dk_a and V0 enter trace via Init
-   - L5b: c_j enters trace via Recv from relay j+1
-   - L5d: g and S enter trace via final Recv and Ret
-   - Private inputs (U0, U_relay, R_relay) are arguments to palice_n,
+(* L6 is a conceptual correspondence verified by concrete trace lemmas:
+   - L5a (alice_trace_init): Dk_a and V0 enter trace via Init
+   - L5c (alice_trace_concrete_AR): c_j = enc(ek(j+1), v_relay(j), r1_relay(j))
+     enters trace via Recv from relay j+1
+   - L5c (alice_trace_concrete_tail): g = enc(ek(alice), chain_acc(n-1), rr_tail)
+     enters trace via Recv from last relay
+   - L5d (alice_trace_at_ret): d_result enters trace via Ret
+   - Private inputs (U0, U_relay, R_relay, rand_a) are arguments to palice_n,
      never Init'd/Recv'd/Ret'd, hence absent from the trace. *)
 
 (******************************************************************************)
@@ -863,13 +1071,7 @@ End alice_trace_at_inv.
 (*                                                                            *)
 (* The equality is dsdp_entropic_security_n_concrete (from dsdp_security.v). *)
 (*                                                                            *)
-(* Note: the data processing inequality H(X|f(Y)) >= H(X|Y) is a standard  *)
-(* result (Cover & Thomas, Thm 2.8.1) formalized as                         *)
-(* data_processing_inequality in information_theory/entropy.v for mutual     *)
-(* information. The conditional entropy version follows from the chain rule. *)
-(******************************************************************************)
-
-(* L8 is proved as eavesdropper_security_n in dsdp_security.v using:
-   1. trace_proj_n: projection from AliceView_n to communicated components
-   2. centropy_RV_dpi (entropy.v): H(X|Y) <= H(X|f(Y)) for deterministic f
-   3. dsdp_entropic_security_n_concrete: H(VarRV|AliceView_n) = log(m^n_relay) *)
+(* Proved as trace_eavesdropper_security_n in dsdp_security.v:               *)
+(*   H(VarRV | AliceTraces_n) >= log(m^n_relay) > 0                         *)
+(* where AliceTraces_n = trace_proj_n ∘ AliceView_n drops R_relay_RV.        *)
+(*****************************************************************************)
