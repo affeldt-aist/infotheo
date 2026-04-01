@@ -730,6 +730,34 @@ exact: (@dsdp_inv_step AHE ek n_relay Hn_relay dk dk_relay dec_total
   (tval ps) Hinv).
 Qed.
 
+(* Multi-round rsteps under dsdp_inv: composes step_sound rounds via rtrans,
+   with dsdp_inv_step preserving the invariant at each round. *)
+Lemma dsdp_inv_multi_rsteps (h : nat) (ps : n_parties.-tuple (proc data)) :
+  inv (tval ps) ->
+  exists (final : n_parties.-tuple (proc data)) (tr : n_parties.-tuple (seq data)),
+    rsteps ps final tr /\
+    (all_terminated (tval final) \/ inv (tval final)).
+Proof.
+elim: h ps => [|h IH] ps Hinv.
+- exists ps, [tuple [::] | _ < n_parties].
+  split; first exact: rrefl.
+  by right.
+- set res := [tuple smc_interpreter.step ps [::] i | i < n_parties].
+  set ps' := res_procs res.
+  set tr := res_traces res.
+  have Hss : rsteps ps ps' tr := step_sound ps.
+  have Hinv' : all_terminated (tval ps') \/ inv (tval ps').
+    rewrite -one_step_eq_res_procs.
+    exact: (@dsdp_inv_step AHE ek n_relay Hn_relay dk dk_relay dec_total
+      relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+      (tval ps) Hinv).
+  case: Hinv' => [Hterm | Hinv''].
+  + exists ps', tr; split => //; by left.
+  + have [final [tr2 [Hrs2 Hfinal]]] := IH ps' Hinv''.
+    exists final; eexists; split; last exact: Hfinal.
+    exact: (rtrans Hss Hrs2 erefl).
+Qed.
+
 End alice_trace_at_inv.
 
 (******************************************************************************)
