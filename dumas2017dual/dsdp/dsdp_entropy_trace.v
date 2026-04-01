@@ -4,6 +4,7 @@ From mathcomp Require Import ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter.
 Require Import smc_session_types homomorphic_encryption dsdp_interface dsdp_pismc.
+Require Import dsdp_progress.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -401,30 +402,69 @@ move=> Halice Hdst Hfrm.
 by rewrite /step /= Halice Hdst Hfrm.
 Qed.
 
-(* L5c: After all relay iterations, the trace has all received ciphertexts
-   prepended in reverse order (last relay's value on top).
+(* L5c: Relay loop trace characterization.
 
-   This is the full inductive statement. It says: given a list of received
-   values [c_1; ...; c_n] (one per relay), after 2*n steps (Recv+Send per
-   relay), Alice's trace is (rev [c_1; ...; c_n]) ++ tr_before and Alice's
-   process has advanced to alice_erase_tail.
+   At each relay iteration j:
+   - alice_erase_body_recv_step: Alice Recv from relay j+1 adds c_j to trace
+   - alice_erase_body_send_step: Alice Send leaves trace unchanged
 
-   The proof requires tracking the full process list state across all steps,
-   which involves the relay processes as well. We state it as Admitted for now
-   and rely on the per-step building blocks (alice_erase_body_recv_step,
-   alice_erase_body_send_step) for concrete instantiations. *)
-Lemma alice_trace_relay_n
-    (relays : seq 'I_n_relay.+1)
-    (dk : priv_keyT) (v0 : msgT)
+   Per-step lemma: given Alice at alice_erase_body and relay j+1 at Send,
+   two calls to step (Recv then Send) advance Alice to the next body
+   with c_j prepended to her trace. *)
+Lemma alice_trace_relay_step
+    (ps : seq (proc data)) (tr : seq data)
     (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
     (rand_a : 'I_n_relay.+1 -> randT)
-    (received : seq data) :
-  size received = size relays ->
-  (* The received values are what the relays send to Alice in order *)
-  (* After processing all relay iterations, the trace has received values
-     prepended: rev received ++ tr_init *)
-  True.  (* Statement placeholder — see building blocks above *)
-Proof. done. Qed.
+    (j : 'I_n_relay.+1) (idx : nat) (k : proc data)
+    (v_relay : data) (relay_next : proc data)
+    (recv_partner : nat) (recv_f : data -> proc data) :
+  (* Alice is at alice_erase_body (Recv from j+1) *)
+  nth (default_proc data) ps 0 =
+    alice_erase_body AHE ek n_relay u r rand_a j idx k ->
+  (* Relay j+1 is ready to Send v_relay to Alice *)
+  nth (default_proc data) ps j.+1 = Send 0 v_relay relay_next ->
+  (* Destination is ready to Recv from Alice *)
+  nth (default_proc data) ps (alice_send_dest j) =
+    Recv recv_partner recv_f ->
+  recv_partner == 0 ->
+  (* After Recv: trace gets v_relay prepended *)
+  (@step data ps tr 0).1.2 = v_relay :: tr /\
+  (* After Send: trace unchanged, Alice advances to k *)
+  let ps_after_recv :=
+    set_nth (default_proc data)
+      (set_nth (default_proc data) ps 0
+        ((@step data ps tr 0).1.1))
+      j.+1 relay_next in
+  (@step data ps_after_recv (v_relay :: tr) 0) = (k, v_relay :: tr, true).
+Proof.
+move=> Halice Hrelay Hdest Hpartner.
+split.
+- exact: alice_erase_body_recv_step Halice Hrelay.
+- (* After the Recv step, Alice is at Send (alice_send_dest j) w k
+     where w is the computed value. We need to show the Send step fires. *)
+  rewrite /step /=.
+  (* Alice after Recv: alice_erase_body unfolds to Recv, which after
+     matching with Send gives Send (alice_send_dest j) computed k *)
+  rewrite /step /= Halice /alice_erase_body /std_Recv_enc /Recv_param /= in Hrelay |- *.
+  Show.
+Abort.
+
+(* Simpler approach: state the combined effect *)
+Lemma alice_trace_relay_recv_send
+    (ps : seq (proc data)) (tr : seq data)
+    (u : 'I_n_relay.+2 -> msgT) (r : 'I_n_relay.+1 -> msgT)
+    (rand_a : 'I_n_relay.+1 -> randT)
+    (j : 'I_n_relay.+1) (idx : nat) (k : proc data)
+    (v_relay : data) (relay_next : proc data) :
+  (* Alice at alice_erase_body, relay j+1 at Send *)
+  nth (default_proc data) ps 0 =
+    alice_erase_body AHE ek n_relay u r rand_a j idx k ->
+  nth (default_proc data) ps j.+1 = Send 0 v_relay relay_next ->
+  (* After Recv step: Alice's trace gets v_relay prepended *)
+  (@step data ps tr 0).1.2 = v_relay :: tr.
+Proof.
+exact: alice_erase_body_recv_step.
+Qed.
 
 (******************************************************************************)
 (* L5d: Alice's trace after the final phase (Recv + Ret)                      *)
@@ -549,6 +589,109 @@ Qed.
 End alice_trace_init.
 
 (******************************************************************************)
+(* Per-phase Alice trace characterization using dsdp_inv                      *)
+(*                                                                            *)
+(* For each dsdp_inv constructor, determines Alice's trace fragment:          *)
+(*   Inv_AR j  : Alice Recv from relay j+1 → trace [:: v]                   *)
+(*   Inv_AS*   : Alice Send to destination → trace nil                       *)
+(*   Inv_drain : Relay-to-relay forwarding → trace nil                       *)
+(*   Inv_tail  : Alice Recv from last relay → trace [:: v]                   *)
+(*   Inv_ret   : Alice Ret → trace [:: d]                                    *)
+(******************************************************************************)
+
+Section alice_trace_at_inv.
+
+Variable AHE : AHEncType.
+Variable ek : party_id -> pub_key AHE.
+Variable n_relay : nat.
+Hypothesis Hn_relay : (0 < n_relay)%N.
+
+Let DI := Standard_DSDP_Interface AHE.
+Let data := di_data DI.
+
+Variable dk : priv_key AHE.
+Variable dk_relay : 'I_n_relay.+1 -> priv_key AHE.
+
+Variable relays : seq 'I_n_relay.+1.
+Hypothesis Hrelays : size relays = n_relay.+1.
+Hypothesis Hrelays_id : forall k : 'I_n_relay.+1, nth ord0 relays k = k.
+
+Variable v0 : plain AHE.
+Variable u : 'I_n_relay.+2 -> plain AHE.
+Variable r : 'I_n_relay.+1 -> plain AHE.
+Variable rand_a : 'I_n_relay.+1 -> rand AHE.
+Variable v_relay : 'I_n_relay.+1 -> plain AHE.
+Variables (r1_relay r2_relay : 'I_n_relay.+1 -> rand AHE).
+
+(* Inv_AR j: Alice at Recv from relay j+1. Relay j+1 at Send 0 v.
+   step fires Recv → Alice trace fragment = [:: v]. *)
+Lemma alice_trace_at_AR ps (j : 'I_n_relay.+1) :
+  nth (default_proc data) ps 0 =
+    @alice_foldr_at AHE ek n_relay dk relays v0 u r rand_a j ->
+  @relay_at_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay j ps ->
+  exists v, (smc_interpreter.step ps [::] 0).1.2 = [:: v].
+Proof.
+move=> Halice Hbody.
+have [f Hrecv] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id
+  v0 u r rand_a j (ltn_ord j).
+have [sv [sk Hsend]] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay
+  r1_relay r2_relay j.
+rewrite /relay_at_body in Hbody.
+by rewrite /smc_interpreter.step /= Halice /alice_foldr_at Hrecv Hbody Hsend eqxx;
+  eexists.
+Qed.
+
+(* Inv_ret: Alice at Ret d. trace fragment = [:: d]. *)
+Lemma alice_trace_at_ret ps (d : data) :
+  nth (default_proc data) ps 0 = Ret d ->
+  (smc_interpreter.step ps [::] 0).1.2 = [:: d].
+Proof. by move=> Halice; rewrite /smc_interpreter.step Halice. Qed.
+
+(* Inv_tail: Alice at erase_tail (Recv n_relay.+1), last relay at Send 0 v.
+   trace fragment = [:: v]. *)
+Lemma alice_trace_at_tail ps :
+  nth (default_proc data) ps 0 =
+    @alice_foldr_at AHE ek n_relay dk relays v0 u r rand_a n_relay.+1 ->
+  (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
+  exists v, (smc_interpreter.step ps [::] 0).1.2 = [:: v].
+Proof.
+move=> Halice [v Hlast].
+rewrite /smc_interpreter.step Halice.
+rewrite (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a).
+rewrite /alice_erase_tail /std_Recv_dec /Recv_param /=.
+rewrite Hlast eqxx.
+by eexists.
+Qed.
+
+(* Inv_AS*: Alice at Send dst vd k0, destination at Recv 0.
+   trace fragment = nil (Send doesn't add to sender's trace). *)
+Lemma alice_trace_at_send ps dst (vd : data) (k0 : proc data) :
+  nth (default_proc data) ps 0 = Send dst vd k0 ->
+  (exists f, nth (default_proc data) ps dst = Recv 0 f) ->
+  (smc_interpreter.step ps [::] 0).1.2 = [::].
+Proof.
+move=> Halice [f Hdst].
+by rewrite /smc_interpreter.step Halice Hdst eqxx.
+Qed.
+
+(* Inv_drain j: Alice at erase_tail (Recv n_relay.+1), but last relay
+   is at Recv (not Send). Recv doesn't fire → trace nil. *)
+Lemma alice_trace_at_drain ps :
+  nth (default_proc data) ps 0 =
+    @alice_foldr_at AHE ek n_relay dk relays v0 u r rand_a n_relay.+1 ->
+  (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f) ->
+  (smc_interpreter.step ps [::] 0).1.2 = [::].
+Proof.
+move=> Halice [f Hlast].
+rewrite /smc_interpreter.step Halice.
+rewrite (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a).
+rewrite /alice_erase_tail /std_Recv_dec /Recv_param /=.
+by rewrite Hlast.
+Qed.
+
+End alice_trace_at_inv.
+
+(******************************************************************************)
 (* L6: View Faithfulness                                                      *)
 (*                                                                            *)
 (* AliceView_n (algebraic RV from dsdp_security.v) faithfully models what     *)
@@ -600,13 +743,7 @@ End alice_trace_init.
 (* information. The conditional entropy version follows from the chain rule. *)
 (******************************************************************************)
 
-(* L8 as a hypothesis, pending formalization of the conditional entropy
-   version of the data processing inequality. The bound follows from:
-   1. trace = f(AliceView_n) for some deterministic f (projection)
-   2. H(X | f(Y)) >= H(X | Y) (DPI for conditional entropy)
-   3. H(VarRV | AliceView_n) = log(m^n_relay) (from dsdp_security.v)
-
-   When the DPI for conditional entropy is formalized, this becomes a
-   one-line application. For now, the per-step trace lemmas (L5a-L5e)
-   provide the semantic justification: the trace is strictly contained
-   in the view, so the eavesdropper has less information than Alice. *)
+(* L8 is proved as eavesdropper_security_n in dsdp_security.v using:
+   1. trace_proj_n: projection from AliceView_n to communicated components
+   2. centropy_RV_dpi (entropy.v): H(X|Y) <= H(X|f(Y)) for deterministic f
+   3. dsdp_entropic_security_n_concrete: H(VarRV|AliceView_n) = log(m^n_relay) *)

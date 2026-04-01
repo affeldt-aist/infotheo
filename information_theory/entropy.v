@@ -1193,6 +1193,46 @@ End prop.
 
 End conditional_mutual_information.
 
+(* Data processing inequality for conditional entropy:
+   Conditioning on less information cannot decrease conditional entropy.
+   H(X|Y) <= H(X|f(Y)) for any deterministic function f.
+
+   Proof: I(X; Y | f(Y)) = H(X|f(Y)) - H(X|Y,f(Y)) = H(X|f(Y)) - H(X|Y) >= 0
+   where the second equality uses centropy_RV_contraction and the
+   inequality uses cond_mutual_info_ge0.
+
+   Reference: Cover & Thomas, Elements of Information Theory, Thm 2.8.1. *)
+Section centropy_RV_dpi.
+Variables (R : realType) (T TX TY TZ : finType) (P : R.-fdist T).
+Variables (X : {RV P -> TX}) (Y : {RV P -> TY}).
+Variable (f : TY -> TZ).
+
+Let fdist_proj13_triple (Z : {RV P -> TZ}) :
+  fdist_proj13 (`p_ [%X, Y, Z]) = `p_ [%X, Z].
+Proof.
+rewrite /fdist_proj13 /dist_of_RV /fdistC12 /fdist_snd /fdistA.
+rewrite !fdistmap_comp.
+apply/fdist_ext => -[a c]; rewrite !fdistmapE /=.
+by apply eq_bigl => t; rewrite !inE /=.
+Qed.
+
+Let fdistA_triple (Z : {RV P -> TZ}) :
+  fdistA (`p_ [%X, Y, Z]) = `p_ [%X, [%Y, Z]].
+Proof.
+rewrite /dist_of_RV /fdistA !fdistmap_comp.
+apply/fdist_ext => -[a [b c]]; rewrite !fdistmapE /=.
+by apply eq_bigl => t; rewrite !inE /=.
+Qed.
+
+Lemma centropy_RV_dpi : `H(X | Y) <= `H(X | f `o Y).
+Proof.
+rewrite -subr_ge0 -(centropy_RV_contraction X Y f) /centropy_RV.
+rewrite -(fdist_proj13_triple (f `o Y)) -(fdistA_triple (f `o Y)).
+exact: cond_mutual_info_ge0.
+Qed.
+
+End centropy_RV_dpi.
+
 Section conditional_relative_entropy.
 Section def.
 Variable R : realType.

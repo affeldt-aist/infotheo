@@ -2145,6 +2145,31 @@ split.
   by rewrite ltn_exp2l.
 Qed.
 
+(* ========================================================================== *)
+(* L8: Eavesdropper Security (Data Processing Inequality)                     *)
+(*                                                                            *)
+(* Any deterministic function of AliceView_n reveals no more about VarRV      *)
+(* than AliceView_n itself. In particular, an eavesdropper who observes only  *)
+(* a projection of Alice's view (e.g., the communication trace) cannot learn  *)
+(* more than Alice does.                                                      *)
+(*                                                                            *)
+(* For any f : alice_view_type -> B:                                          *)
+(*   H(VarRV | f(AliceView_n)) >= H(VarRV | AliceView_n) = log(m^n) > 0    *)
+(*                                                                            *)
+(* Proved by centropy_RV_dpi (DPI for conditional entropy).                   *)
+(* ========================================================================== *)
+
+Theorem eavesdropper_security_n (B : finType) (f : _ -> B) :
+  `H(VarRV | f `o AliceView_n) >= log ((m ^ n_relay)%:R : R) /\
+  `H(VarRV | f `o AliceView_n) > 0.
+Proof.
+have [Heq Hgt] := dsdp_entropic_security_n_concrete.
+have Hdpi := centropy_RV_dpi VarRV AliceView_n f.
+split.
+- by rewrite -Heq.
+- exact: (Order.POrderTheory.lt_le_trans Hgt Hdpi).
+Qed.
+
 End dsdp_concrete_n.
 
 (******************************************************************************)
