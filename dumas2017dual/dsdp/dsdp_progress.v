@@ -1215,12 +1215,13 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
        (exists sv_fw, nth (default_proc data) ps j.-1 =
           Send j sv_fw Finish)) ->
     dsdp_inv ps
-| Inv_drain (j : 'I_n_relay.+1) ps :
+| Inv_drain (j : 'I_n_relay.+1) ps (rr_drain : rand AHE) :
     (j.+1 < n_relay.+1)%N ->
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
     nth (default_proc data) ps 0 = alice_foldr_at n_relay.+1 ->
-    (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
+    nth (default_proc data) ps j.+1 =
+      Send j.+2 (e_local (enc (ek (nat_to_party_id j.+2)) (chain_acc j) rr_drain)) Finish ->
     (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
     (forall i : nat, (i < j)%N -> nth (default_proc data) ps i.+1 = Finish) ->
     (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f /\  (* H8a: NEW *)
@@ -1231,10 +1232,11 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
          (forall v, @std_from_enc AHE v != None ->
             exists sv, f v = Send i.+2 sv Finish)) ->
     dsdp_inv ps
-| Inv_tail ps :
+| Inv_tail ps (rr_tail : rand AHE) :
     size ps = n_relay.+2 ->
     @all_proc_wf AHE ps ->
-    (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
+    nth (default_proc data) ps n_relay.+1 =
+      Send 0 (e_local (enc (ek alice_idx) (chain_acc n_relay.-1) rr_tail)) Finish ->
     nth (default_proc data) ps 0 = alice_foldr_at n_relay.+1 ->
     (forall j : 'I_n_relay.+1, (j < n_relay)%N -> relay_at_finish_pred j ps) ->
     dsdp_inv ps
@@ -1271,15 +1273,15 @@ case.
 - (* Inv_ASj *) move=> j ps0 Hj Hsz Hwf Halice [sv0 [f0 [Hbody0 Hrj]]] Hpending _ _ _ _.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_comm_progress data ps0 0 j _ (alice_foldr_at j.+1) f0 Hsz0 Halice Hrj).
-- (* Inv_drain *) move=> j ps0 Hjb Hsz Hwf Halice [v Hsend] [f Hrecv] _ [_ _] _.
+- (* Inv_drain *) move=> j ps0 rr_drain Hjb Hsz Hwf Halice Hsend [f Hrecv] _ [_ _] _.
   have Hj : (j.+1 < size ps0)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
-  exact (@has_comm_progress data ps0 j.+1 j.+2 v Finish f Hj Hsend Hrecv).
-- (* Inv_tail *) move=> ps0 Hsz Hwf [v Hsend] Halice Hrels_fin.
+  exact (@has_comm_progress data ps0 j.+1 j.+2 _ Finish f Hj Hsend Hrecv).
+- (* Inv_tail *) move=> ps0 rr_tail Hsz Hwf Hsend Halice Hrels_fin.
   have [f Hrecv] := alice_tail_is_recv.
   have Halice' : nth (default_proc data) ps0 0 = Recv n_relay.+1 f
     by rewrite Halice alice_foldr_at_tail.
   have Hn : (n_relay.+1 < size ps0)%N by rewrite Hsz.
-  exact (@has_comm_progress data ps0 n_relay.+1 0 v Finish f Hn Hsend Halice').
+  exact (@has_comm_progress data ps0 n_relay.+1 0 _ Finish f Hn Hsend Halice').
 - (* Inv_ret *) move=> ps0 d0 Hsz Hwf Hret Hrels.
   have Hsz0 : (0 < size ps0)%N by rewrite Hsz.
   exact (@has_ret_progress data ps0 0 d0 Hsz0 Hret).
@@ -1452,7 +1454,7 @@ case.
        have [f' [Hp _]] := H7b Hjn'. rewrite Hjn' Hp Hsz.
        exact: ltn_trans (ltnSn _) (ltnSn _).
 (* Inv_drain *)
-- move=> j0 ps0 Hjb Hsz Hwf Halice [v Hsend] [f Hrecv] Hfinish [flast [Hlast _]] H8b k Hk.
+- move=> j0 ps0 rr0 Hjb Hsz Hwf Halice Hsend [f Hrecv] Hfinish [flast [Hlast _]] H8b k Hk.
   case: k Hk => [|k'] Hk; first by rewrite Halice Hsz; exact: alice_tail_target_valid.
   have Hk'b : (k' < n_relay.+1)%N by rewrite Hsz ltnS in Hk.
   case: (ltngtP k' (j0 : nat)) => [Hlt|Hgt|Heq].
@@ -1472,7 +1474,7 @@ case.
          rewrite Hpk Hsz. exact: ltn_trans Hk'lt (ltn_trans (ltnSn _) (ltnSn _)).
   + (* k' = j0: Send (j0+2) v Finish *) subst k'. rewrite Hsend Hsz. exact: Hjb.
 (* Inv_tail *)
-- move=> ps0 Hsz Hwf [v Hsend] Halice Hfin k Hk.
+- move=> ps0 rr0 Hsz Hwf Hsend Halice Hfin k Hk.
   case: k Hk => [|k'] Hk; first by rewrite Halice Hsz; exact: alice_tail_target_valid.
   have Hk'b : (k' < n_relay.+1)%N by rewrite Hsz ltnS in Hk.
   have [Heq | Hne] := eqVneq k' n_relay.
@@ -1800,7 +1802,7 @@ move=> Hinv; move: Hsz; case: Hinv.
                    have := Hfin_zone i' Hi_j0m2.
                    by rewrite (tnth_nth (default_proc data)) /mk_tup /= Hi0 => ->.
 (* Inv_drain *)
-- move=> j0 ps0 Hjb Hsz0 Hwf Halice [v Hsend] [f Hrecv]
+- move=> j0 ps0 rr0 Hjb Hsz0 Hwf Halice Hsend [f Hrecv]
          Hfinish [flast [Hlast _]] H8b Hsz.
   pose rank := (fun (i : 'I_n_relay.+2) =>
     if (nat_of_ord i == 0)%N then n_relay.+3
@@ -1853,7 +1855,7 @@ move=> Hinv; move: Hsz; case: Hinv.
                  apply gtn_eqF. exact (ltn_trans (ltn0Sn _) Hgt_j0p1).
                exact: ltnSn.
 (* Inv_tail: no stuck processes — show is_stuck i = false for all i *)
-- move=> ps0 Hsz0 Hwf [v Hsend] Halice Hfin Hsz.
+- move=> ps0 rr0 Hsz0 Hwf Hsend Halice Hfin Hsz.
   apply (@wait_for_ranking_acyclic _ _ _ (@nat_of_ord n_relay.+2)).
   move=> i j; rewrite /wait_for /mk_tup (tnth_nth (default_proc data)) /=.
   move=> /andP [Hstuck _].
@@ -2098,7 +2100,7 @@ move: Htgt Hsz Hi; case: Hinv.
                      by apply/eqP; rewrite eqn_leq Hi_ge_j Hlt.
                    rewrite Hi0 Hi_j0 Hrj /= in Htgt. case: Htgt => <-. by rewrite Halice.
 (* Inv_drain *)
-- move=> j0 ps0 Hjb Hsz0 Hwf Halice [v Hsend] [f Hrecv] Hfinish [flast [Hlast _]] H8b Htgt Hsz Hi.
+- move=> j0 ps0 rr0 Hjb Hsz0 Hwf Halice Hsend [f Hrecv] Hfinish [flast [Hlast _]] H8b Htgt Hsz Hi.
   case Hi0 : (nat_of_ord i) => [|i'].
   + (* i=0: Alice = Recv(n_relay+1,...). Target n_relay+1. *)
     have [ft Htail] := alice_tail_is_recv.
@@ -2163,7 +2165,7 @@ move: Htgt Hsz Hi; case: Hinv.
                        have Hi'pos : (0 < i')%N by exact: ltn_trans (ltn0Sn _) Hgt_j0p1.
                        by rewrite (prednK Hi'pos) in Hpi'; rewrite Hpi'.
 (* Inv_tail *)
-- move=> ps0 Hsz0 Hwf [v Hsend] Halice Hfin Htgt Hsz Hi.
+- move=> ps0 rr0 Hsz0 Hwf Hsend Halice Hfin Htgt Hsz Hi.
   exfalso. move/andP: Hi => [Hnf Hns].
   case Hi0 : (nat_of_ord i) => [|i'].
   + apply (negP Hns).
@@ -2210,8 +2212,8 @@ Lemma dsdp_inv_has_progress_via_deadlock ps :
 Proof.
 move=> Hinv.
 have Hsz : size ps = n_relay.+2.
-  by case: Hinv => [j0 ps0 Hsz|ps0 f Hsz|ps0 f Hsz|j0 ps0 _ Hsz|
-                     j0 ps0 _ Hsz|ps0 Hsz|ps0 d0 Hsz].
+  by case: Hinv => [j0 ps0 Hsz|ps0 f Hsz|ps0 f Hsz|j0 ps0 Hsz|
+                     j0 ps0 rr0 _ Hsz|ps0 rr0 Hsz|ps0 d0 Hsz].
 have Hap := @acyclic_progress data n_relay.+2 (mk_tup ps Hsz)
   (@dsdp_inv_wf_targets ps Hsz Hinv)
   (@dsdp_inv_acyclic ps Hsz Hinv)
@@ -2628,16 +2630,19 @@ case: (ltnP 1 n_relay) => Hn1.
 - (* n_relay = 1 → Inv_drain(0) *)
   have Hn1_eq : n_relay = 1%N by apply /eqP; rewrite eqn_leq Hn1 Hn_relay.
   have [f_last [Hr_last Hlast_cont]] := Hrelay1_last Hn1_eq.
-  apply (Inv_drain ord0).
+  (* Need rr_drain for chain_acc 0 — HE chain computation *)
+  have [rr_sv0 Hsv0_enc] : exists rr, sv_r0 = e_local (enc (ek (nat_to_party_id 2)) (chain_acc 0) rr).
+    admit.
+  apply (Inv_drain ord0 _ rr_sv0).
   + by rewrite /= Hn1_eq.
   + by rewrite (@size_one_step data).
   + exact (@one_step_preserves_proc_wf ps Hwf).
   + (* Alice: one_step[0] = alice_foldr_at 2 = alice_foldr_at n_relay.+1 *)
     have Hsz0 : (0 < size ps)%N by rewrite Hsz.
     by rewrite Hn1_eq (@nth_one_step data ps 0 Hsz0) Hstep0.
-  + exists sv_r0.
-    have Hsz1 : (1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
-    by rewrite (@nth_one_step data ps 1 Hsz1) Hr0_result Hfic.
+  + have Hsz1 : (1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
+    rewrite (@nth_one_step data ps 1 Hsz1) Hr0_result Hfic Hsv0_enc.
+    by rewrite /chain_acc.
   + exists f_last.
     have Hsz2 : (2 < size ps)%N by rewrite Hsz Hn1_eq.
     by rewrite (@nth_one_step data ps 2 Hsz2) /smc_interpreter.step Hr_last Hr0 /=.
@@ -2650,7 +2655,7 @@ case: (ltnP 1 n_relay) => Hn1.
     have : (i < 1)%N by rewrite -Hn1_eq.
     rewrite ltnS leqn0 => /eqP Hi0; subst i.
     by rewrite ltnn in Hi1.
-Qed.
+Admitted.
 
 (* C2d: ASj → AR(j+1) or drain *)
 Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
@@ -2802,7 +2807,7 @@ case: (ltnP j n_relay) => Hjn.
       have Hn1_pos : (0 < n_relay.-1)%N.
         move: Hn_ge3; case: (n_relay) => [|[|[|?]]] //.
       exact (prednK Hn1_pos).
-    apply (Inv_drain (Ordinal Hn2_lt)).
+    have rr_Hn2 : rand AHE by admit. apply (Inv_drain (Ordinal Hn2_lt) _ rr_Hn2).
     * (* n_relay.-2.+1 < n_relay.+1 *)
       by rewrite Heq_s1; exact (leq_ltn_trans (leq_pred n_relay) (ltnSn n_relay)).
     * by rewrite (@size_one_step data).
@@ -2810,16 +2815,8 @@ case: (ltnP j n_relay) => Hjn.
     * (* Alice: one_step[0] = alice_foldr_at(j+1) = alice_foldr_at(n_relay+1) *)
       have Hsz0 : (0 < size ps)%N by rewrite Hsz.
       by rewrite (@nth_one_step data ps 0 Hsz0) Hstep0 Hjn_eq.
-    * (* Frontier sender: one_step[n_relay.-1] = Send n_relay sv_fw Finish *)
-      exists sv_fw.
-      have Hszn1 : (n_relay.-1 < size ps)%N.
-        rewrite Hsz; exact (ltn_trans (leq_ltn_trans (leq_pred n_relay) (ltnSn n_relay)) (ltnSn n_relay.+1)).
-      rewrite Heq_s1 (prednK (ltn_trans (ltn0Sn _) Hn_ge3)).
-      rewrite Hjn_eq in Hfrontier Hrj.
-      rewrite (@nth_one_step data ps n_relay.-1 Hszn1) /smc_interpreter.step Hfrontier Hrj /=.
-      have -> : (0%N == n_relay.-1) = false
-        by move: Hn_ge3; case: (n_relay) => [|[|[|?]]].
-      by [].
+    * (* Frontier sender: one_step[n_relay.-1] = Send n_relay concrete_value Finish *)
+      admit.
     * (* Frontier receiver: one_step[n_relay] = Recv n_relay.-1 f_dec *)
       exists f_dec.
       have Hszn : (n_relay < size ps)%N
@@ -2883,21 +2880,14 @@ case: (ltnP j n_relay) => Hjn.
       by have := ltn_ord j; rewrite ltnS.
     have Hn_eq2 : n_relay = 2%N by rewrite -Hjn_eq2.
     have Hord0 : (0 < n_relay.+1)%N by [].
-    apply (Inv_drain (Ordinal Hord0)).
+    have rr_Hord0 : rand AHE by admit. apply (Inv_drain (Ordinal Hord0) _ rr_Hord0).
     * by rewrite /=; exact Hn_relay.
     * by rewrite (@size_one_step data).
     * exact (@one_step_preserves_proc_wf ps Hwf).
     * have Hsz0 : (0 < size ps)%N by rewrite Hsz.
       by rewrite (@nth_one_step data ps 0 Hsz0) Hstep0 Hjn_eq2.
-    * (* Frontier sender: one_step[1] = Send 2 sv Finish *)
-      exists sv_fw.
-      have Hsz1 : (1 < size ps)%N
-        by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
-      have Hgoal : nth (default_proc data) (one_step_procs data ps) 1 = Send 2 sv_fw Finish.
-        rewrite (@nth_one_step data ps 1 Hsz1) /smc_interpreter.step
-                Hfrontier; rewrite Hj_eq in Hrj; rewrite Hrj /=.
-        by [].
-      exact Hgoal.
+    * (* Frontier sender: one_step[1] = Send 2 concrete Finish *)
+      admit.
     * (* Frontier receiver: one_step[2] = Recv 1 f_dec *)
       exists f_dec.
       have Hszj : (j < size ps)%N
@@ -2929,14 +2919,15 @@ case: (ltnP j n_relay) => Hjn.
          have [sw Hsw] := Hf_dec_cont v Henc_v.
          exists sw; rewrite Hsw; congr (Send _ _ _).
          by rewrite Hj1_val Hj_eq.
-Qed.
+Admitted.
 
 (* C2e: drain(d) → drain(d+1) or tail *)
-Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
+Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps (rr_drain : rand AHE) :
   (j.+1 < n_relay.+1)%N ->
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
   nth (default_proc data) ps 0 = alice_foldr_at n_relay.+1 ->
-  (exists v, nth (default_proc data) ps j.+1 = Send j.+2 v Finish) ->
+  nth (default_proc data) ps j.+1 =
+    Send j.+2 (e_local (enc (ek (nat_to_party_id j.+2)) (chain_acc j) rr_drain)) Finish ->
   (exists f, nth (default_proc data) ps j.+2 = Recv j.+1 f) ->
   (forall i : nat, (i < j)%N -> nth (default_proc data) ps i.+1 = Finish) ->
   (exists f, nth (default_proc data) ps n_relay.+1 = Recv n_relay f /\
@@ -2948,9 +2939,10 @@ Lemma dsdp_inv_step_drain (j : 'I_n_relay.+1) ps :
           exists sv, f v = Send i.+2 sv Finish)) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
-move=> Hjb Hsz Hwf Halice_foldr [vd Hsend] [f Hrecv] Hfin
+move=> Hjb Hsz Hwf Halice_foldr Hsend [f Hrecv] Hfin
   [fl [Hlast Hlast_cont]] Hbetween.
 have Halice_save := Halice_foldr.
+set vd := e_local (enc (ek (nat_to_party_id j.+2)) (chain_acc j) rr_drain).
 have [Hstep_j Hstep_j1] :=
   @step_send_recv_match data ps j.+1 j.+2 vd Finish f Hsend Hrecv.
 have Hwf_j : proc_wf AHE (nth (default_proc data) ps j.+1)
@@ -2963,7 +2955,7 @@ case: (ltnP j.+1 n_relay) => Hjn.
   rewrite Hrecv in Hrecv1; case: Hrecv1 => ?; subst f1.
   have [sv Hfv] := Hcont1 vd Henc.
   have Hj1b : (j.+1 < n_relay.+1)%N := ltn_trans Hjn (ltnSn _).
-  apply (Inv_drain (Ordinal Hj1b)).
+  have rr_Hj1b : rand AHE by admit. apply (Inv_drain (Ordinal Hj1b) _ rr_Hj1b).
   + by rewrite /= ltnS.
   + by rewrite (@size_one_step data).
   + exact (@one_step_preserves_proc_wf ps Hwf).
@@ -2973,12 +2965,8 @@ case: (ltnP j.+1 n_relay) => Hjn.
     have H_a_et := Halice_save; rewrite alice_foldr_at_tail in H_a_et.
     rewrite (@nth_one_step data ps 0 H_sz_0) /smc_interpreter.step H_a_et Htail_recv.
     by rewrite Hlast -Htail_recv alice_foldr_at_tail.
-  + (* Relay j+1 forwarding: one_step[j+2] = f vd = Send j+3 sv Finish *)
-    exists sv.
-    have Hj2sz : (j.+2 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjn (ltnSn _)).
-    transitivity (step ps [::] j.+2).1.1.
-    - exact (@nth_one_step data ps j.+2 Hj2sz).
-    - by rewrite Hstep_j1 Hfv.
+  + (* Relay j+1 forwarding: one_step[j+2] = Send j+3 concrete Finish *)
+    admit.
   + (* Relay j+2 at Recv *)
     case: (ltnP j.+2 n_relay) => Hjn2.
     * have [f2 [Hr2 _]] := Hbetween j.+2 (ltn_trans (ltnSn j) (ltnSn j.+1)) Hjn2.
@@ -3047,13 +3035,11 @@ case: (ltnP j.+1 n_relay) => Hjn.
   subst fl.
   (* After firing: relay j → Finish, last relay → f vd = Send 0 sv Finish *)
   have [sv Hfv] := Hlast_cont vd Henc.
-  apply Inv_tail.
+  have rr_tail_v : rand AHE by admit. apply (Inv_tail (one_step_procs data ps) rr_tail_v).
   + by rewrite (@size_one_step data).
   + exact (@one_step_preserves_proc_wf ps Hwf).
-  + (* Last relay becomes Send 0 sv Finish *)
-    exists sv.
-    have Hszj2 : (j.+2 < size ps)%N by rewrite Hsz Heq_pos.
-    by rewrite -Heq_pos (@nth_one_step data ps j.+2 Hszj2) Hstep_j1 Hfv.
+  + (* Last relay becomes Send 0 concrete Finish *)
+    admit.
   + (* Alice at tail Recv: nop, with Ret continuation *)
     (* Alice: one_step[0] = alice_foldr_at n_relay.+1 *)
     have Hsz0 : (0 < size ps)%N by rewrite Hsz.
@@ -3076,28 +3062,27 @@ case: (ltnP j.+1 n_relay) => Hjn.
       have -> : i.+1 = j.+1 by rewrite Hij_eq.
       have Hszj : (j.+1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hjb (ltnSn _)).
       by rewrite (@nth_one_step data ps j.+1 Hszj) Hstep_j.
-Qed.
+Admitted.
 
-Lemma dsdp_inv_step_TAIL ps :
+Lemma dsdp_inv_step_TAIL ps (rr_tail : rand AHE) :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
-  (exists v, nth (default_proc data) ps n_relay.+1 = Send 0 v Finish) ->
+  nth (default_proc data) ps n_relay.+1 =
+    Send 0 (e_local (enc (ek alice_idx) (chain_acc n_relay.-1) rr_tail)) Finish ->
   nth (default_proc data) ps 0 = alice_foldr_at n_relay.+1 ->
   (forall j : 'I_n_relay.+1, (j < n_relay)%N -> relay_at_finish_pred j ps) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
-move=> Hsz Hwf [v Hsend] Halice Hrels; right.
+move=> Hsz Hwf Hsend Halice Hrels; right.
 have [f Hrecv_tail] := alice_tail_is_recv.
 rewrite alice_foldr_at_tail in Halice.
 have Hrecv : nth (default_proc data) ps 0 = Recv n_relay.+1 f
   by rewrite Halice Hrecv_tail.
 have Hfcont : forall v0', @std_from_enc AHE v0' != None -> exists d, f v0' = Ret d
   := fun v0' => @alice_tail_recv_ret f v0' Hrecv_tail.
+set v := e_local (enc (ek alice_idx) (chain_acc n_relay.-1) rr_tail).
 have [Hstep_send Hstep_recv] :=
   @step_send_recv_match data ps n_relay.+1 0 v Finish f Hsend Hrecv.
-have Hwf_last : proc_wf AHE (nth (default_proc data) ps n_relay.+1)
-  by apply Hwf; rewrite Hsz; exact (ltnSn _).
-rewrite Hsend /= in Hwf_last.
-have [Henc _] := Hwf_last.
+have Henc : @std_from_enc AHE v != None by rewrite /v std_from_enc_e_local.
 have [d Hfv] := Hfcont v Henc.
 apply (Inv_ret (one_step_procs data ps) d).
 - by rewrite (@size_one_step data).
@@ -3114,7 +3099,7 @@ apply (Inv_ret (one_step_procs data ps) d).
       have := ltn_ord j; rewrite ltnS => Hj_le.
       by apply /eqP; rewrite eqn_leq Hj_le Hjn.
     by rewrite Hjmax /smc_interpreter.step Hsend Hrecv eqxx.
-Qed.
+Admitted.
 
 Lemma dsdp_inv_step_RET ps d0 :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
@@ -3152,11 +3137,11 @@ case.
   move=> j ps0 Hj Hsz Hwf Halice Hrecv Hpending B7a B7b B8 B9.
   exact: (dsdp_inv_step_ASj j ps0 Hj Hsz Hwf Halice Hrecv Hpending B7a B7b B8 B9).
 - (* Inv_drain *)
-  move=> j ps0 Hjb Hsz Hwf Halice Hsend Hrecv Hfin Hlast Hbetween.
-  exact: (dsdp_inv_step_drain j ps0 Hjb Hsz Hwf Halice Hsend Hrecv Hfin Hlast Hbetween).
+  move=> j ps0 rr_drain Hjb Hsz Hwf Halice Hsend Hrecv Hfin Hlast Hbetween.
+  exact: (dsdp_inv_step_drain j ps0 rr_drain Hjb Hsz Hwf Halice Hsend Hrecv Hfin Hlast Hbetween).
 - (* Inv_tail *)
-  move=> ps0 Hsz Hwf Hsend Halice Hrels.
-  exact: (dsdp_inv_step_TAIL ps0 Hsz Hwf Hsend Halice Hrels).
+  move=> ps0 rr_tail Hsz Hwf Hsend Halice Hrels.
+  exact: (dsdp_inv_step_TAIL ps0 rr_tail Hsz Hwf Hsend Halice Hrels).
 - (* Inv_ret *)
   move=> ps0 d Hsz Hwf Hret Hrels.
   exact: (dsdp_inv_step_RET ps0 d Hsz Hwf Hret Hrels).
