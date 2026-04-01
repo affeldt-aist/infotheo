@@ -1087,6 +1087,45 @@ case: ifP => [/eqP Heq|] //; subst dst0.
 by exfalso; exact (Hnotsend v0' k0 Hpj).
 Qed.
 
+(* ========================================================================== *)
+(* HE value definitions — derived from piSMC program structure               *)
+(* alice_enc j: the ciphertext Alice computes for relay j                    *)
+(* term j: the plaintext that alice_enc j encrypts                           *)
+(* chain_acc j: the accumulated plaintext through the relay chain            *)
+(* ========================================================================== *)
+
+(* D1: Per-relay plaintext contribution *)
+Definition term (j : 'I_n_relay.+1) : plain AHE :=
+  u (lift ord0 j) * v_relay j + r j.
+
+(* D3: What Alice computes for relay j — from alice_erase_body *)
+Definition alice_enc (j : 'I_n_relay.+1) : cipher AHE :=
+  @Emul AHE
+    (@Epow AHE (enc (ek (nat_to_party_id j.+1)) (v_relay j) (r1_relay j))
+               (u (lift ord0 j)))
+    (enc (ek (nat_to_party_id j.+1)) (r j) (rand_a j)).
+
+(* D2: Accumulated plaintext after relay chain processing *)
+Fixpoint chain_acc (j : nat) : plain AHE :=
+  match j with
+  | 0 => term ord0 + term (inord 1)
+  | j'.+1 => chain_acc j' + term (inord j.+1)
+  end.
+
+(* Bridge: enc k m r = enc_curry AHE k (m, r) — needed for morphism rewriting *)
+Local Lemma enc_curry_eq (kk : pub_key AHE) (m : plain AHE) (rr : rand AHE) :
+  enc kk m rr = ahe_enc.enc_curry AHE kk (m, rr).
+Proof. by []. Qed.
+
+(* L1: alice_enc j encrypts term j — by Epow_scalarM + Emul_addM *)
+Lemma alice_enc_value (j : 'I_n_relay.+1) :
+  exists rr, alice_enc j = enc (ek (nat_to_party_id j.+1)) (term j) rr.
+Proof.
+rewrite /alice_enc /term !enc_curry_eq.
+rewrite -(@Epow_scalarM AHE) -(@Emul_addM AHE) GRing.mulrC.
+by eexists.
+Qed.
+
 (* D3: Protocol invariant — enriched with full relay state tracking *)
 Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AR (j : 'I_n_relay.+1) ps :
