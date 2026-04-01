@@ -1145,7 +1145,9 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
        exists f_enc : cipher AHE -> proc data,
          nth (default_proc data) ps 1 =
            Recv 0 (oapp f_enc Fail \o @std_from_enc AHE) /\
-         forall c, exists sv, f_enc c = Send 2 sv Finish) ->
+         forall c, f_enc c = Send 2
+           (e_local (Emul_local c (enc (ek (nat_to_party_id 2)) (term ord0) (r2_relay ord0))))
+           Finish) ->
     ((2 <= j)%N -> exists sv0 f0,                                      (* A7 *)
        relay_body (@inord n_relay j.-1) = Send 0 sv0 (Recv 0 f0) /\
        nth (default_proc data) ps j = Recv 0 f0) ->
@@ -1170,7 +1172,9 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     (* f_inner produces pRecvEnc form with Send 2 continuation *)
     (forall m, exists g : cipher AHE -> proc data,
        f_inner m = Recv 0 (oapp g Fail \o @std_from_enc AHE) /\
-       forall c, exists sv, g c = Send 2 sv Finish) ->
+       forall c, g c = Send 2
+         (e_local (Emul_local c (enc (ek (nat_to_party_id 2)) m (r2_relay ord0))))
+         Finish) ->
     dsdp_inv ps
 | Inv_AS1 ps (f_inner : cipher AHE -> proc data) :
     size ps = n_relay.+2 ->
@@ -1179,8 +1183,10 @@ Inductive dsdp_inv : seq (proc data) -> Prop :=
     nth (default_proc data) ps 1 =
       Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
     (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
-    (* f_inner produces Send(2,...,Finish) *)
-    (forall c, exists sv, f_inner c = Send 2 sv Finish) ->
+    (* f_inner produces Send(2, Emul(c, enc(ek 2, term 0, r2_relay 0)), Finish) *)
+    (forall c, f_inner c = Send 2
+       (e_local (Emul_local c (enc (ek (nat_to_party_id 2)) (term ord0) (r2_relay ord0))))
+       Finish) ->
     ((1 < n_relay)%N ->                                         (* H6a: NEW *)
        exists sv f, relay_body (Ordinal (n:=n_relay.+1) (m:=1) Hn_relay) =
          Send 0 sv (Recv 0 f) /\
@@ -2234,7 +2240,9 @@ Lemma dsdp_inv_step_AR (j : 'I_n_relay.+1) ps :
   ((j == 1%N :> nat) ->
      exists f_enc : cipher AHE -> proc data,
        nth (default_proc data) ps 1 = Recv 0 (oapp f_enc Fail \o @std_from_enc AHE) /\
-       forall c, exists sv, f_enc c = Send 2 sv Finish) ->
+       forall c, f_enc c = Send 2
+         (e_local (Emul_local c (enc (ek (nat_to_party_id 2)) (term ord0) (r2_relay ord0))))
+         Finish) ->
   ((2 <= j)%N -> exists sv0 f0,
      relay_body (@inord n_relay j.-1) = Send 0 sv0 (Recv 0 f0) /\
      nth (default_proc data) ps j = Recv 0 f0) ->
@@ -2301,7 +2309,7 @@ case: (posnP (j : nat)) => Hj0.
     apply ltn_eqF; exact Hi.
   + move=> m; rewrite /f_inner0 /pRecvEnc_local /std_Recv_enc /Recv_param.
     eexists; split; first by reflexivity.
-    by move=> c; eexists.
+    by move=> c.
 - case: (posnP j.-1) => Hj1.
   + (* j = 1 → Inv_AS1 *)
     have Hj_eq1 : j.-1 = 0%N := Hj1.
@@ -2342,7 +2350,10 @@ case: (posnP (j : nat)) => Hj0.
       have -> : (2%N == i.+1) = false.
         by apply /eqP => Heq; have := Hi; rewrite -ltnS -Heq.
       by [].
-    * exact Hfenc_cont.
+    * move=> c.
+      change (f_enc c = Send 2 (e_local (Emul_local c
+        (enc (ek (nat_to_party_id 2)) (term ord0) (r2_relay ord0)))) Finish).
+      exact (Hfenc_cont c).
     * (* H6a: 1 < n_relay → relay 1 body link *)
       move=> Hn1.
       have Hord1 : (1 < n_relay.+1)%N := Hn_relay.
@@ -2518,7 +2529,9 @@ Lemma dsdp_inv_step_AS0 ps (f_inner : plain AHE -> proc data) :
   (forall i : 'I_n_relay.+1, (0 < i)%N -> relay_at_body i ps) ->
   (forall m, exists g : cipher AHE -> proc data,
      f_inner m = Recv 0 (oapp g Fail \o @std_from_enc AHE) /\
-     forall c, exists sv, g c = Send 2 sv Finish) ->
+     forall c, g c = Send 2
+       (e_local (Emul_local c (enc (ek (nat_to_party_id 2)) m (r2_relay ord0))))
+       Finish) ->
   all_terminated (one_step_procs data ps) \/ dsdp_inv (one_step_procs data ps).
 Proof.
 move=> Hsz Hwf Halice Hr0 Hpending Hfinner_cont; right.
@@ -2533,7 +2546,13 @@ case Hdec: (@dec AHE (dk_relay ord0) c) => [m|];
   last by have := dec_total (dk_relay ord0) c; rewrite Hdec.
 have Hr0_result : (step ps [::] 1).1.1 = f_inner m
   by rewrite Hstep1 /comp Hsfe /= Hdec.
-have [g [Hfm Hg_cont]] := Hfinner_cont m.
+(* Derive m = term ord0 from dec_correct + key_relay + alice_enc_value *)
+have Hm_eq : m = term ord0.
+  have [rr Halice_c] := alice_enc_value ord0.
+  rewrite /c Halice_c (key_relay ord0) in Hdec.
+  by rewrite (@enc_dec.dec_correct AHE) in Hdec; case: Hdec.
+subst m.
+have [g [Hfm Hg_cont]] := Hfinner_cont (term ord0).
 have Hord1 : (1 < n_relay.+1)%N := Hn_relay.
 apply (Inv_AR (Ordinal Hord1)).
 - by rewrite (@size_one_step data).
@@ -2571,7 +2590,9 @@ Lemma dsdp_inv_step_AS1 ps (f_inner : cipher AHE -> proc data) :
   nth (default_proc data) ps 1 =
     Recv 0 (oapp f_inner Fail \o @std_from_enc AHE) ->
   (forall i : 'I_n_relay.+1, (1 < i)%N -> relay_at_body i ps) ->
-  (forall c, exists sv, f_inner c = Send 2 sv Finish) ->
+  (forall c, f_inner c = Send 2
+     (e_local (Emul_local c (enc (ek (nat_to_party_id 2)) (term ord0) (r2_relay ord0))))
+     Finish) ->
   ((1 < n_relay)%N ->
      exists sv f, relay_body (Ordinal (n:=n_relay.+1) (m:=1) Hn_relay) =
        Send 0 sv (Recv 0 f) /\
@@ -2589,7 +2610,8 @@ have Hsfe : @std_from_enc AHE (e_local (alice_enc (inord 1))) = Some (alice_enc 
   := std_from_enc_e_local _.
 set c := alice_enc (inord 1).
 have Hr0_result : (step ps [::] 1).1.1 = f_inner c by rewrite Hstep1 /comp Hsfe.
-have [sv_r0 Hfic] := Hfinner_cont c.
+have Hfic := Hfinner_cont c.
+set sv_r0 := e_local (Emul_local c (enc (ek (nat_to_party_id 2)) (term ord0) (r2_relay ord0))).
 case: (ltnP 1 n_relay) => Hn1.
 - (* n_relay >= 2 → Inv_AR(2) *)
   have Hord2 : (2 < n_relay.+1)%N := Hn1.
@@ -2630,10 +2652,18 @@ case: (ltnP 1 n_relay) => Hn1.
 - (* n_relay = 1 → Inv_drain(0) *)
   have Hn1_eq : n_relay = 1%N by apply /eqP; rewrite eqn_leq Hn1 Hn_relay.
   have [f_last [Hr_last Hlast_cont]] := Hrelay1_last Hn1_eq.
-  (* Need rr_drain for chain_acc 0 — HE chain computation *)
-  have [rr_sv0 Hsv0_enc] : exists rr, sv_r0 = e_local (enc (ek (nat_to_party_id 2)) (chain_acc 0) rr).
-    admit.
-  apply (Inv_drain ord0 _ rr_sv0).
+  (* HE chain: Emul(alice_enc 1, enc(ek 2, term 0, r2)) encrypts chain_acc 0 *)
+  have [rr1 Halice1] := alice_enc_value (inord 1).
+  have Hek2 : (inord 1 : 'I_n_relay.+1).+1 = 2 :> nat by rewrite inordK.
+  have [rr_combined Hcombined] :
+    exists rr, Emul_local (alice_enc (inord 1))
+      (enc (ek (nat_to_party_id 2)) (term ord0) (r2_relay ord0)) =
+      enc (ek (nat_to_party_id 2)) (chain_acc 0) rr.
+    have Hek2' : (inord 1 : 'I_n_relay.+1).+1 = 2 :> nat by rewrite inordK.
+    rewrite /Emul_local Halice1 !enc_curry_eq Hek2' -(@Emul_addM AHE) -enc_curry_eq.
+    rewrite /chain_acc GRing.addrC.
+    by eexists.
+  apply (Inv_drain ord0 _ rr_combined).
   + by rewrite /= Hn1_eq.
   + by rewrite (@size_one_step data).
   + exact (@one_step_preserves_proc_wf ps Hwf).
@@ -2641,8 +2671,8 @@ case: (ltnP 1 n_relay) => Hn1.
     have Hsz0 : (0 < size ps)%N by rewrite Hsz.
     by rewrite Hn1_eq (@nth_one_step data ps 0 Hsz0) Hstep0.
   + have Hsz1 : (1 < size ps)%N by rewrite Hsz; exact (ltn_trans Hn_relay (ltnSn _)).
-    rewrite (@nth_one_step data ps 1 Hsz1) Hr0_result Hfic Hsv0_enc.
-    by rewrite /chain_acc.
+    rewrite (@nth_one_step data ps 1 Hsz1) Hr0_result Hfic /sv_r0 /c Hcombined.
+    by [].
   + exists f_last.
     have Hsz2 : (2 < size ps)%N by rewrite Hsz Hn1_eq.
     by rewrite (@nth_one_step data ps 2 Hsz2) /smc_interpreter.step Hr_last Hr0 /=.
@@ -2655,7 +2685,7 @@ case: (ltnP 1 n_relay) => Hn1.
     have : (i < 1)%N by rewrite -Hn1_eq.
     rewrite ltnS leqn0 => /eqP Hi0; subst i.
     by rewrite ltnn in Hi1.
-Admitted.
+Qed.
 
 (* C2d: ASj → AR(j+1) or drain *)
 Lemma dsdp_inv_step_ASj (j : 'I_n_relay.+1) ps :
@@ -3099,7 +3129,7 @@ apply (Inv_ret (one_step_procs data ps) d).
       have := ltn_ord j; rewrite ltnS => Hj_le.
       by apply /eqP; rewrite eqn_leq Hj_le Hjn.
     by rewrite Hjmax /smc_interpreter.step Hsend Hrecv eqxx.
-Admitted.
+Qed.
 
 Lemma dsdp_inv_step_RET ps d0 :
   size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
