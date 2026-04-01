@@ -3,7 +3,8 @@ From mathcomp Require Import all_boot all_order all_algebra fingroup finalg matr
 From mathcomp Require Import ring boolp finmap matrix lra reals.
 Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter.
-Require Import smc_session_types homomorphic_encryption dsdp_interface dsdp_pismc.
+Require Import smc_session_types smc_interpreter_sound.
+Require Import homomorphic_encryption dsdp_interface dsdp_pismc.
 Require Import dsdp_progress.
 
 Import GRing.Theory.
@@ -687,6 +688,46 @@ rewrite /smc_interpreter.step Halice.
 rewrite (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a).
 rewrite /alice_erase_tail /std_Recv_dec /Recv_param /=.
 by rewrite Hlast.
+Qed.
+
+(* Additional hypotheses needed for dsdp_inv_step *)
+Hypothesis dec_total : forall dk' c, @dec AHE dk' c != None.
+
+Let n_parties := n_relay.+2.
+Let inv := dsdp_inv AHE ek n_relay Hn_relay dk dk_relay relays v0 u r rand_a
+  v_relay r1_relay r2_relay.
+
+(* Bridge: one_step_procs (seq-level) = tval of res_procs (tuple-level) *)
+Lemma one_step_eq_res_procs (ps : n_parties.-tuple (proc data)) :
+  one_step_procs data (tval ps) =
+  tval (res_procs [tuple smc_interpreter.step ps [::] i | i < n_parties]).
+Proof.
+apply: (@eq_from_nth _ (default_proc data)).
+  by rewrite /one_step_procs size_map size_iota size_tuple /res_procs
+     size_map size_tuple.
+rewrite /one_step_procs size_map size_iota size_tuple => i Hi.
+have Hi' : (i < n_parties)%N by [].
+rewrite (nth_map 0%N); last by rewrite size_iota.
+rewrite nth_iota // add0n.
+transitivity (tnth (res_procs [tuple smc_interpreter.step ps [::] i0 | i0 < n_parties]) (Ordinal Hi')).
+  by rewrite /res_procs tnth_map tnth_mktuple.
+by rewrite (tnth_nth (default_proc data)).
+Qed.
+
+(* One round under dsdp_inv: step_sound gives rsteps, dsdp_inv_step preserves
+   the invariant (or terminates). *)
+Lemma dsdp_inv_round (ps : n_parties.-tuple (proc data)) :
+  inv (tval ps) ->
+  let ps' := res_procs [tuple smc_interpreter.step ps [::] i | i < n_parties] in
+  rsteps ps ps' (res_traces [tuple smc_interpreter.step ps [::] i | i < n_parties]) /\
+  (all_terminated (tval ps') \/ inv (tval ps')).
+Proof.
+move=> Hinv ps'.
+split; first exact: step_sound.
+rewrite -one_step_eq_res_procs.
+exact: (@dsdp_inv_step AHE ek n_relay Hn_relay dk dk_relay dec_total
+  relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+  (tval ps) Hinv).
 Qed.
 
 End alice_trace_at_inv.
