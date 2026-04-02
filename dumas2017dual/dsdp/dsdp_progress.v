@@ -1003,6 +1003,17 @@ case Hdec: (@dec AHE dk c) => [m|]; last first.
 by rewrite /= Hdec /=; eexists.
 Qed.
 
+(* L4: Concrete Ret value when Alice decrypts at tail *)
+Lemma alice_tail_recv_ret_concrete (f : data -> proc data) (c : cipher AHE) (m : plain AHE) :
+  @alice_erase_tail AHE n_relay dk v0 u r = Recv n_relay.+1 f ->
+  dec dk c = Some m ->
+  f (e_local c) = Ret (di_d DI (m - \sum_(j < n_relay.+1) r j + u ord0 * v0)).
+Proof.
+rewrite /alice_erase_tail /pRecvDec_local /std_Recv_dec /Recv_param.
+move=> [<-] Hdec.
+by rewrite /comp std_from_enc_e_local /= Hdec /=.
+Qed.
+
 (* T1: REMOVED — unprovable with abstract f_inner. *)
 (* The logic is inlined in C2c where the specific f_inner from Inv_AS1 is known. *)
 
@@ -1159,6 +1170,44 @@ Fixpoint chain_acc (j : nat) : plain AHE :=
   | 0 => term ord0 + term (inord 1)
   | j'.+1 => chain_acc j' + term (inord j.+1)
   end.
+
+(* L1: chain_acc as bigop *)
+Lemma chain_acc_eq k :
+  (k.+2 <= n_relay.+1)%N ->
+  chain_acc k = \sum_(j < k.+2) term (inord j).
+Proof.
+elim: k => [|k IHk] Hk.
+- rewrite /= big_ord_recr big_ord1 /=.
+  by have -> : inord 0 = ord0 :> 'I_n_relay.+1
+    by apply /val_inj; rewrite /= inordK.
+- rewrite /= IHk; last by exact (ltnW Hk).
+  by rewrite [RHS]big_ord_recr /=.
+Qed.
+
+(* L2: chain_acc n_relay.-1 = sum of all terms *)
+Lemma chain_acc_sum :
+  (1 <= n_relay)%N ->
+  chain_acc n_relay.-1 = \sum_(j : 'I_n_relay.+1) term j.
+Proof.
+move=> Hn1.
+rewrite chain_acc_eq; last by rewrite prednK.
+rewrite prednK //.
+apply eq_bigr => j _.
+by rewrite inord_val.
+Qed.
+
+(* L3: chain_acc minus masks = sum of products *)
+Lemma chain_acc_minus_masks :
+  (1 <= n_relay)%N ->
+  chain_acc n_relay.-1 - \sum_(j < n_relay.+1) r j =
+  \sum_(j : 'I_n_relay.+1) u (lift ord0 j) * v_relay j.
+Proof.
+move=> Hn1.
+rewrite chain_acc_sum //.
+rewrite /term.
+rewrite big_split /=.
+by rewrite GRing.addrK.
+Qed.
 
 (* Bridge: enc k m r = enc_curry AHE k (m, r) — needed for morphism rewriting *)
 Local Lemma enc_curry_eq (kk : pub_key AHE) (m : plain AHE) (rr : rand AHE) :
@@ -3370,6 +3419,32 @@ apply (Inv_ret (one_step_procs data ps) d).
       have := ltn_ord j; rewrite ltnS => Hj_le.
       by apply /eqP; rewrite eqn_leq Hj_le Hjn.
     by rewrite Hjmax /smc_interpreter.step Hsend Hrecv eqxx.
+Qed.
+
+(* L5: Concrete Ret value after Inv_tail step *)
+Lemma inv_tail_to_ret_concrete ps (rr_tail : rand AHE) :
+  size ps = n_relay.+2 -> @all_proc_wf AHE ps ->
+  nth (default_proc data) ps n_relay.+1 =
+    Send 0 (e_local (enc (ek alice_idx) (chain_acc n_relay.-1) rr_tail)) Finish ->
+  nth (default_proc data) ps 0 = alice_foldr_at n_relay.+1 ->
+  (forall j : 'I_n_relay.+1, (j < n_relay)%N -> relay_at_finish_pred j ps) ->
+  nth (default_proc data) (one_step_procs data ps) 0 =
+    Ret (di_d DI (chain_acc n_relay.-1 - \sum_(j < n_relay.+1) r j + u ord0 * v0)).
+Proof.
+move=> Hsz Hwf Hsend Halice Hrels.
+have [f Hrecv_tail] := alice_tail_is_recv.
+rewrite alice_foldr_at_tail in Halice.
+have Hrecv : nth (default_proc data) ps 0 = Recv n_relay.+1 f
+  by rewrite Halice Hrecv_tail.
+set v := e_local (enc (ek alice_idx) (chain_acc n_relay.-1) rr_tail).
+have [Hstep_send Hstep_recv] :=
+  @step_send_recv_match data ps n_relay.+1 0 v Finish f Hsend Hrecv.
+have Hdec : dec dk (enc (ek alice_idx) (chain_acc n_relay.-1) rr_tail) =
+  Some (chain_acc n_relay.-1)
+  by rewrite key_alice (@enc_dec.dec_correct AHE).
+have Hsz0 : (0 < size ps)%N by rewrite Hsz.
+rewrite (@nth_one_step data ps 0 Hsz0) Hstep_recv.
+exact: (@alice_tail_recv_ret_concrete f _ _ Hrecv_tail Hdec).
 Qed.
 
 Lemma dsdp_inv_step_RET ps d0 :
