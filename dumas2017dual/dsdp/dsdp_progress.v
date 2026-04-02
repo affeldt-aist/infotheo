@@ -3545,6 +3545,29 @@ eapply (Inv_AR (Ordinal Hord0) _ (r2_relay ord0)). (* dummy rr_fw — A8/A9 vacu
 - by [].         (* A9: 3 <= j → false *)
 Qed.
 
+(* Init state is not all_terminated: relay 0 at body = Send, not terminal *)
+Lemma dsdp_init_not_terminated :
+  ~~ all_terminated (one_step_procs data (one_step_procs data procs)).
+Proof.
+apply /negP => Hall.
+have Hbody : relay_at_body ord0 (one_step_procs data (one_step_procs data procs)).
+  rewrite /relay_at_body.
+  have [d1 [d2 Hb]] := relay_body_eq ord0.
+  have Hsz : (1 < size procs)%N by rewrite size_procs.
+  have Hstep1 : nth (default_proc data) (one_step_procs data procs) 1 =
+    Init d2 (relay_body ord0).
+    by rewrite (@nth_one_step data procs 1 Hsz) /smc_interpreter.step Hb.
+  have Hsz2 : (1 < size (one_step_procs data procs))%N by rewrite size_one_step.
+  by rewrite (@nth_one_step data _ 1 Hsz2) /smc_interpreter.step Hstep1.
+have [sk Hsk] := relay_body_is_send0 ord0.
+rewrite /relay_at_body Hsk in Hbody.
+move/(@all_nthP _ _ _ (default_proc data)): Hall.
+rewrite (@size_one_step data) (@size_one_step data) size_procs.
+have H1lt : (1 < n_relay.+2)%N by rewrite ltnS.
+move=> /(_ 1 H1lt).
+by rewrite Hbody.
+Qed.
+
 (* C4: Connect dsdp_reachable to dsdp_inv *)
 Lemma dsdp_reachable_inv ps k :
   dsdp_reachable ps k -> (2 <= k)%N ->

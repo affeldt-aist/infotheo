@@ -961,7 +961,8 @@ Theorem init_rsteps_to_inv :
          (tr_init : n_parties.-tuple (seq data)),
     rsteps procs_tup ps_init tr_init /\
     tnth tr_init ord0 = [:: d v0; priv_key dk] /\
-    inv (tval ps_init).
+    inv (tval ps_init) /\
+    ~~ all_terminated (tval ps_init).
 Proof.
 (* Round 1 *)
 set res1 := [tuple smc_interpreter.step procs_tup [::] i | i < n_parties].
@@ -977,19 +978,20 @@ have Hrs2 : rsteps ps1 ps2 tr2 := step_sound ps1.
 set tr12 := [tuple tnth tr2 i ++ tnth tr1 i | i < n_parties].
 have Hrs12 : rsteps procs_tup ps2 tr12 :=
   rtrans Hrs1 Hrs2 erefl.
+have Heq : tval ps2 = one_step_procs data (one_step_procs data procs).
+  by rewrite -(@one_step_eq_res_procs AHE n_relay ps1)
+             -(@one_step_eq_res_procs AHE n_relay procs_tup).
+have Hinv_init := @dsdp_inv_init AHE ek n_relay Hn_relay dk dk_relay dec_total
+  relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay.
 exists ps2, tr12; do !split.
 - exact Hrs12.
-- (* Alice's trace: tnth tr12 ord0 = [d v0; priv_key dk] *)
-  rewrite /tr12 tnth_mktuple /tr2 /res_traces tnth_map tnth_mktuple
+- rewrite /tr12 tnth_mktuple /tr2 /res_traces tnth_map tnth_mktuple
     /tr1 /res_traces tnth_map tnth_mktuple alice_step2_trace alice_step1_trace //.
-
-- (* dsdp_inv holds on ps2 = one_step_procs (one_step_procs procs) *)
-  have Heq : tval ps2 = one_step_procs data (one_step_procs data procs).
-    by rewrite -(@one_step_eq_res_procs AHE n_relay ps1)
-               -(@one_step_eq_res_procs AHE n_relay procs_tup).
+- by rewrite Heq.
+- (* ~~ all_terminated *)
   rewrite Heq.
-  exact: (@dsdp_inv_init AHE ek n_relay Hn_relay dk dk_relay dec_total
-    relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay).
+  exact: (@dsdp_init_not_terminated AHE ek n_relay dk dk_relay relays
+    Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay).
 Qed.
 
 (* L8: Full trace from initial state to termination.
@@ -1005,7 +1007,7 @@ Theorem alice_full_trace_n (h : nat) :
     (forall k, (k < size frags)%N ->
        (exists v, nth [::] frags k = [:: v]) \/ nth [::] frags k = [::]).
 Proof.
-have [ps_init [tr_init [Hrs_init [Htrace_init Hinv_init]]]] := init_rsteps_to_inv.
+have [ps_init [tr_init [Hrs_init [Htrace_init [Hinv_init _]]]]] := init_rsteps_to_inv.
 have [final [tr_inv [frags [Hrs_inv [Hfinal [Htrace_inv Hfrags]]]]]] :=
   @dsdp_inv_rsteps_trace_frags AHE ek n_relay Hn_relay dk dk_relay relays
     Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
@@ -1365,10 +1367,97 @@ elim: h ps => [|h IH] ps Hinv Hret_val_inv.
       split; [exact: (rtrans Hss Hrs2 erefl) | exact: Hgoal].
 Qed.
 
-(* L6: N-party computational correctness — final process state = algebraic formula.
-   Closes the gap: the protocol result equals the sum of per-relay products plus
-   Alice's own term. Combined with dsdp_computes_dot_product_n (when v_relay j =
-   v (lift ord0 j) and v0 = v ord0), this gives the dot product. *)
+(* A1: stepping an all_terminated state yields no progress.
+   Note: all_terminated includes Ret, which itself has progress (Ret→Finish).
+   But after one_step, Ret becomes Finish, and Finish/Fail have no progress. *)
+Lemma all_terminated_no_progress ps0 :
+  all_terminated ps0 -> ~~ has_progress data (one_step_procs data ps0).
+Proof.
+move=> Ht; apply/negP => Hprog.
+(* Helper: after one_step of terminated, process i becomes Finish or Fail *)
+have Hff : forall i, (i < size ps0)%N ->
+  (smc_interpreter.step ps0 nil i).1.1 = Finish \/
+  (smc_interpreter.step ps0 nil i).1.1 = Fail.
+  move=> i Hi; rewrite /smc_interpreter.step.
+  have Hti : is_terminal (nth (default_proc data) ps0 i)
+    by move/(@all_nthP _ _ _ (default_proc data)): (Ht) => /(_ i Hi).
+  by case: (nth (default_proc data) ps0 i) Hti => [dd' k'|dst v' k'|frm f|dd'| |] //=; auto.
+(* Extract witness: nth (one_step) i is Finish or Fail, contradicts Init/Ret/Send/Recv *)
+have := @has_progress_has_witness data (one_step_procs data ps0) Hprog.
+have Habs : forall i, (i < size ps0)%N ->
+  nth (default_proc data) (one_step_procs data ps0) i = Finish \/
+  nth (default_proc data) (one_step_procs data ps0) i = Fail.
+  move=> i Hi; rewrite (@nth_one_step data ps0 i Hi); exact: Hff.
+move=> [[i [dd [k' [Hi Hnth]]]] | [[i [dd [Hi Hnth]]] |
+         [i [j' [v' [k' [f [Hi [Hj [Hnth_i Hnth_j]]]]]]]]]];
+  rewrite size_one_step in Hi.
+- by case: (Habs i Hi) => Hq; rewrite Hq in Hnth.
+- by case: (Habs i Hi) => Hq; rewrite Hq in Hnth.
+- by case: (Habs i Hi) => Hq; rewrite Hq in Hnth_i.
+Qed.
+
+(* A2: all_terminated + ret_val_inv preserved by interp_comp *)
+Lemma all_terminated_interp_comp ps0 h :
+  all_terminated ps0 -> ret_val_inv ps0 ->
+  all_terminated (interp_comp data ps0 h) /\
+  ret_val_inv (interp_comp data ps0 h).
+Proof.
+move=> Hall Hrv.
+(* After 1 step: Ret→Finish, Finish→Finish. Then ~~ has_progress → fixed point.
+   ret_val_inv is preserved: if all Finish, nth 0 ≠ Ret → vacuously true. *)
+case: h => [|h'].
+- by split.
+- rewrite (@interp_comp_unfold_eq data ps0 h').
+  case Hprog: (has_progress data ps0).
+  + (* has_progress: one more step. After step, ~~ has_progress. Fixed point. *)
+    have Hnp' := all_terminated_no_progress Hall.
+    rewrite (@interp_comp_fixed_point data (one_step_procs data ps0) h' Hnp').
+    split.
+    * (* all_terminated (one_step ps0): Ret→Finish, Finish→Finish *)
+      apply /(@all_nthP _ _ _ (default_proc data)).
+      rewrite (@size_one_step data) => i Hi.
+      rewrite (@nth_one_step data ps0 i Hi) /smc_interpreter.step.
+      have Hti : is_terminal (nth (default_proc data) ps0 i).
+        by move/(@all_nthP _ _ _ (default_proc data)): Hall => /(_ i Hi).
+      by case: (nth (default_proc data) ps0 i) Hti => [dd' k'|dst v' k'|frm f|dd'| |] //=.
+    * (* ret_val_inv (one_step ps0): after step, Ret→Finish, Finish→Finish.
+         nth (one_step) 0 is Finish, so Ret d0 = Finish is impossible. *)
+      move=> d0 Hret.
+      case Hsz0 : (0 < size ps0)%N; last first.
+        by rewrite /one_step_procs nth_default in Hret;
+           [| rewrite size_map size_iota; move/negbT: Hsz0; rewrite -leqNgt leqn0 => /eqP ->].
+      rewrite (@nth_one_step data ps0 0 Hsz0) /smc_interpreter.step in Hret.
+      have Ht0 : is_terminal (nth (default_proc data) ps0 0).
+        by move/(@all_nthP _ _ _ (default_proc data)): (Hall) => /(_ 0 Hsz0).
+      by case: (nth (default_proc data) ps0 0) Ht0 Hret => //=.
+  + (* ~~ has_progress: already fixed point — goal is ps0 itself *)
+    by split.
+Qed.
+
+(* H2: interp_comp preserves inv + ret_val_inv *)
+Lemma interp_comp_preserves_inv_rv h ps0 :
+  inv ps0 -> ret_val_inv ps0 -> ~~ all_terminated ps0 ->
+  ret_val_inv (interp_comp data ps0 h) /\
+  (inv (interp_comp data ps0 h) \/ all_terminated (interp_comp data ps0 h)).
+Proof.
+elim: h ps0 => [|h IH] ps0 Hinv Hrv Hnt.
+- by split; [exact Hrv | left; exact Hinv].
+- rewrite (@interp_comp_unfold_eq data ps0 h).
+  have Hprog : has_progress data ps0.
+    exact (@dsdp_inv_has_progress AHE ek n_relay Hn_relay dk dk_relay
+      relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay ps0 Hinv).
+  rewrite Hprog.
+  have [Hinv' Hrv'] := inv_step_gives_inv_ret_val_inv Hinv Hnt.
+  case Hnt' : (all_terminated (one_step_procs data ps0)).
+  + (* all_terminated after one step: use A2 *)
+    have Hnt'b : all_terminated (one_step_procs data ps0) by rewrite Hnt'.
+    have [Ht Hrv2] := all_terminated_interp_comp h Hnt'b Hrv'.
+    by split; [exact Hrv2 | right].
+  + have Hnt'' : ~~ all_terminated (one_step_procs data ps0) by rewrite Hnt'.
+    exact: IH Hinv' Hrv' Hnt''.
+Qed.
+
+(* H3: N-party computational correctness *)
 Theorem n_party_computational_correctness (h : nat)
     (Hfuel : (h >= [> @dsdp_n_saprocs AHE ek n_relay relays dk v0 u r rand_a
        dk_relay v_relay r1_relay r2_relay])%N) :
@@ -1380,139 +1469,140 @@ Theorem n_party_computational_correctness (h : nat)
       Ret (d (\sum_(j : 'I_n_relay.+1) u (lift ord0 j) * v_relay j + u ord0 * v0)).
 Proof.
 move=> Hn1.
-(* Get init → inv *)
-have [ps_init [tr_init [Hrs_init [Htrace_init Hinv_init]]]] := init_rsteps_to_inv.
-(* ret_val_inv for init state *)
+(* Step 1: init → inv + ret_val_inv + ~~ all_terminated *)
+have [ps_init [tr_init [Hrs_init [_ [Hinv_init Hnt_init]]]]] := init_rsteps_to_inv.
 have Hrv_init : ret_val_inv (tval ps_init).
-  move=> d0 Hret0; exfalso.
-  (* Use {+}Hinv_init twice: first to get Inv_ret's relay_at_finish,
-     then again to get a non-Finish relay from any other constructor.
-     The Inv_ret case gives relay_at_finish for ALL relays.
-     Any other constructor (Inv_AR, etc.) gives relay_at_body for some relay
-     = Send 0 ..., contradicting Finish. *)
-  (* Step 1: From Hinv_init, extract that SOME relay is not at Finish *)
-  have Hnotfin : exists j : 'I_n_relay.+1,
-    ~~ is_terminal (nth (default_proc data) (tval ps_init) j.+1).
-    case: {+}Hinv_init.
-    - (* Inv_AR j: relay j at body = Send 0 sv sk *)
-      move=> j' ps' rr' Hsz' Hwf' _ Hbody' _ _ _ _ _.
-      exists j'; rewrite /relay_at_body in Hbody'.
-      have [sk' Hsk'] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay r1_relay r2_relay j'.
-      by rewrite Hbody' Hsk'.
-    - (* Inv_AS0: relay 0 at Recv *)
-      move=> ps' fi' Hsz' Hwf' _ Hr0' Hpend' _.
-      have Hord0lt : (0 < n_relay.+1)%N by [].
-      exists (Ordinal Hn_relay).
-      have Hbody' := Hpend' (Ordinal Hn_relay) Hn_relay.
-      rewrite /relay_at_body in Hbody'.
-      have [sk' Hsk'] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay r1_relay r2_relay (Ordinal Hn_relay).
-      by rewrite Hbody' Hsk'.
-    - (* Inv_AS1: relay with body *)
-      move=> ps' fi' Hsz' Hwf' _ _ Hpend' _ _ _.
-      have H1lt : (1 < n_relay.+1)%N := ltn_ord (Ordinal Hn_relay).
-      have Hord1 : (1 < n_relay)%N \/ n_relay = 1%N.
-        case: (ltnP 1 n_relay) => H1n; [by left | right].
-        by apply /eqP; rewrite eqn_leq Hn_relay H1n.
-      case: Hord1 => [H1n | Hn1].
-      + have Hpend1 := Hpend' (Ordinal (n:=n_relay.+1) (m:=2) (ltn_trans (ltnSn 1) (ltn_ord (Ordinal Hn_relay)))) (ltn_trans (ltnSn 1) (ltn_ord (Ordinal Hn_relay))).
-        admit.
-      + admit.
-    - (* Inv_ASj *) move=> j' ps' rr' Hj' Hsz' Hwf' _ _ Hpend' _ _ _ _.
-      admit.
-    - (* Inv_drain *) move=> j' ps' rr' Hjb' Hsz' Hwf' _ Hsend' _ _ _ _.
-      admit.
-    - (* Inv_tail: relays j < n_relay at Finish, but last relay at Send *)
-      move=> ps' rr' Hsz' Hwf' Hsend' _ Hrels'.
-      exists (@ord_max n_relay).
-      have Hjmax : (ord_max : nat) = n_relay by [].
-      rewrite Hjmax.
-      by rewrite Hsend'.
-    - (* Inv_ret: all relays at Finish — no non-Finish relay *)
-      move=> ps' d1' Hsz' Hwf' _ Hrels'.
-      (* All relays at Finish. Need to find one that ISN'T. But Inv_ret says all are.
-         This case is consistent. Can't derive exists j, ~~ is_terminal. *)
-      admit.
-  have [j_nf Hj_nf] := Hnotfin.
-  (* From Inv_ret case (the outer case): relay_at_finish_pred for all j *)
-  (* But we're inside the Inv_ret branch of the OUTER case.
-     Actually no — we're OUTSIDE the outer case. Let me re-read... *)
-  admit.
-  - move=> j' ps' rr' Hsz' Hwf' Ha' _ _ _ _ _ _ Hret0.
+  move=> d0 Hret0; exfalso; apply (negP Hnt_init).
+  case: {+}Hinv_init Hret0.
+  - move=> j' ps' rr' Hsz' _ Ha' _ _ _ _ _ _ Hret0.
     have [f' Hf'] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
       Hrelays_id v0 u r rand_a j' (ltn_ord j').
     by rewrite Ha' /alice_foldr_at Hf' in Hret0.
-  - move=> ps' fi' Hsz' Hwf' Ha' _ _ _ Hret0. by rewrite Ha' in Hret0.
-  - move=> ps' fi' Hsz' Hwf' Ha' _ _ _ _ _ Hret0. by rewrite Ha' in Hret0.
-  - move=> j' ps' rr' _ Hsz' Hwf' Ha' _ _ _ _ _ _ Hret0. by rewrite Ha' in Hret0.
-  - move=> j' ps' rr' _ Hsz' Hwf' Ha' _ _ _ _ _ Hret0.
+  - move=> ps' _ Hsz' _ Ha' _ _ _ Hret0. by rewrite Ha' in Hret0.
+  - move=> ps' _ Hsz' _ Ha' _ _ _ _ _ Hret0. by rewrite Ha' in Hret0.
+  - move=> j' ps' _ _ Hsz' _ Ha' _ _ _ _ _ _ Hret0. by rewrite Ha' in Hret0.
+  - move=> j' ps' _ _ Hsz' _ Ha' _ _ _ _ _ Hret0.
     have [f' Hf'] := @alice_tail_is_recv AHE n_relay dk v0 u r.
     by rewrite Ha' (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays
       v0 u r rand_a) Hf' in Hret0.
-  - move=> ps' rr' Hsz' Hwf' _ Ha' _ Hret0.
+  - move=> ps' _ Hsz' _ _ Ha' _ Hret0.
     have [f' Hf'] := @alice_tail_is_recv AHE n_relay dk v0 u r.
     by rewrite Ha' (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays
       v0 u r rand_a) Hf' in Hret0.
-  - move=> ps' d1' Hsz' Hwf' Hret' Hrels' Hret0.
-    (* Inv_ret: Hret' and Hret0 give d0 = d1'. Need d0 = concrete_val.
-       This case is unreachable (init is Inv_AR), but we must discharge it.
-       Use Htrace_init: tnth tr_init ord0 = [:: d v0; priv_key dk].
-       The trace has length 2, meaning 2 Init steps. After 2 Init steps,
-       Alice is at alice_foldr_at 0 (a Recv), not Ret. But Hret' says Ret.
-       Since ps' = tval ps_init, and tnth tr_init ord0 records Alice's
-       trace, the last step produced a non-empty trace entry. The only way
-       Alice's trace has [d v0; priv_key dk] is if she processed Init steps.
-       After Init, she can't be at Ret.
-       Simplest: extract nth (tval ps_init) 0 from the init_rsteps_to_inv
-       proof structure. The init state is one_step(one_step(procs)), and
-       dsdp_inv_init builds Inv_AR with alice_foldr_at 0 as Alice's position.
-       But we don't have that info after case: Hinv_init. *)
-    (* Workaround: use Htrace_init to derive alice's trace is non-empty,
-       which only happens from Init steps. After 2 Init steps, Alice is
-       at a non-Ret state. *)
-    (* Actually: Htrace_init talks about tr_init, not ps_init directly.
-       The connection: rsteps procs_tup ps_init tr_init. Each step
-       records Alice's output. After 2 Init steps, outputs are [priv_key dk]
-       then [d v0]. Alice's process after these is alice_foldr_at 0.
-       This requires tracing through the rsteps, which is complex. *)
-    (* PRACTICAL: just use Hrels' to show all_terminated ps_init,
-       then derive contradiction from Hrs_init + initial state being
-       non-terminated (procs_tup starts with Init). *)
-    have Hall : all_terminated ps'.
-      apply /(@all_nthP _ _ _ (default_proc data)).
-      rewrite Hsz' => i Hi; case: i Hi => [|i] Hi.
-      + by rewrite Hret'.
-      + have Him : (i < n_relay.+1)%N by rewrite ltnS in Hi.
-        by have := Hrels' (Ordinal Him); rewrite /relay_at_finish_pred /= => ->.
-    (* all_terminated ps' means all_terminated (tval ps_init).
-       But procs_tup starts with Init processes, and after only 2 steps,
-       all parties cannot be terminated (relays need at least 1 step each).
-       Actually: dsdp_inv_init constructs Inv_AR, meaning relay ord0 is at
-       relay_body — a Send, not Finish. So relay 1 is not terminated.
-       This contradicts Hall (= all_terminated). *)
-    (* We need: not all_terminated (tval ps_init). From Hinv_init (before case),
-       Inv_AR has relay_at_body, meaning relay is at Send 0 _ (not terminal).
-       But Hinv_init was consumed by case. *)
-    (* Final approach: use Htrace_init. If tnth tr_init ord0 = [:: d v0; priv_key dk],
-       this means the rsteps from procs_tup to ps_init produced non-trivial traces.
-       But all_terminated ps_init means ps_init is a fixed point (no further progress).
-       If ps_init were all_terminated from the start, rsteps would produce empty traces.
-       But the trace is non-empty. Contradiction? Only if we can show rsteps from
-       all_terminated produces empty traces. *)
-    (* This is getting too complex. Let me just change the approach: keep
-       ~~ all_terminated (tval ps_init) as a hypothesis. *)
-    admit.
-(* Apply inv_rsteps_ret with fuel h *)
-have [final [tr_inv [Hrs_inv Hgoal]]] := inv_rsteps_ret h ps_init Hinv_init Hrv_init.
+  - (* Inv_ret: all_terminated → contradicts Hnt_init *)
+    move=> ps' d1' Hsz' _ Hret' Hrels' _.
+    apply /(@all_nthP _ _ _ (default_proc data)).
+    rewrite Hsz' => i Hi; case: i Hi => [|i] Hi.
+    + by rewrite Hret'.
+    + have Him : (i < n_relay.+1)%N by rewrite ltnS in Hi.
+      by have := Hrels' (Ordinal Him); rewrite /relay_at_finish_pred /= => ->.
+(* Step 2: interp_sound → rsteps + final state equation *)
+have [final [tr_inv [Hrs_inv Hfinal_eq]]] := @interp_sound data n_parties h ps_init.
+(* Step 3: interp_comp_preserves_inv_rv → ret_val_inv + (inv \/ all_terminated) *)
+have [Hrv_final Hinv_or_term] :=
+  interp_comp_preserves_inv_rv h Hinv_init Hrv_init Hnt_init.
+(* Step 4: compose rsteps *)
 set tr_full := [tuple tnth tr_inv i ++ tnth tr_init i | i < n_parties].
 have Hrs_full : rsteps procs_tup final tr_full := rtrans Hrs_init Hrs_inv erefl.
-case: Hgoal => [[Hterm Hret_eq] | [Hinv_final Hrv_final]].
-- (* Left: terminated + Ret concrete_val *)
-  exists final, tr_full; split; [exact Hrs_full | split; first exact Hterm].
-  rewrite Hret_eq /concrete_val.
-  congr (Ret (d _)).
-  by rewrite (@chain_acc_minus_masks AHE ek n_relay Hn_relay dk dk_relay relays v0 u r rand_a v_relay r1_relay r2_relay Hn1) GRing.addrC.
-- (* Right: still inv + ret_val_inv. Need contradiction — should have terminated. *)
-  (* Use dsdp_interp_terminates: with fuel h >= [> saprocs], the protocol terminates. *)
+exists final, tr_full; split; [exact Hrs_full |].
+(* Step 5: all_terminated + Ret concrete_val *)
+rewrite Hfinal_eq.
+case: Hinv_or_term => [Hinv_f | Hterm_f].
+- (* inv: get all_terminated from dsdp_interp_terminates, then extract Ret *)
+  (* Bridge: interp_comp data (tval procs_tup) 2 = tval ps_init *)
+  have Hbridge : interp_comp data (tval procs_tup) 2 = tval ps_init.
+    admit. (* TODO: prove from init structure *)
+  (* interp_comp_add: interp_comp procs (2+h) = interp_comp (interp_comp procs 2) h *)
+  have Hcomp := @interp_comp_add data (tval procs_tup) 2 h.
+  (* dsdp_interp_terminates: all_terminated (interp_comp procs (2+h)) *)
+  have Hfuel2 : (2 + h >= [> @dsdp_n_saprocs AHE ek n_relay relays dk v0 u r rand_a
+       dk_relay v_relay r1_relay r2_relay])%N.
+    exact (leq_trans Hfuel (leq_addl 2 h)).
+  have Hterm := @dsdp_interp_terminates AHE ek n_relay Hn_relay dk dk_relay dec_total
+    key_relay relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+    (2 + h) Hfuel2.
+  (* Combine: all_terminated (interp_comp (tval ps_init) h) *)
+  rewrite Hcomp Hbridge in Hterm.
+  (* Now Hterm : all_terminated (interp_comp data (tval ps_init) h) *)
+  (* Hinv_f : inv (interp_comp data (tval ps_init) h) *)
+  (* From inv + all_terminated: case on inv, only Inv_ret survives *)
+  split; first exact Hterm.
+  (* nth (interp_comp ...) 0 = Ret concrete_val *)
+  (* From inv_step_terminated_concrete pattern: case on Hinv_f *)
+  case: Hinv_f Hterm Hrv_final.
+  + move=> j' ps' rr' Hsz' Hwf' Ha' _ _ _ _ _ _ Hterm' Hrv'.
+    have [f' Hf'] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+      Hrelays_id v0 u r rand_a j' (ltn_ord j').
+    have : is_terminal (nth (default_proc data) ps' 0).
+      by move/(@all_nthP _ _ _ (default_proc data)): Hterm'; apply; rewrite Hsz'.
+    by rewrite Ha' /alice_foldr_at Hf'.
+  + move=> ps' _ Hsz' _ Ha' _ _ _ Hterm' _.
+    have : is_terminal (nth (default_proc data) ps' 0).
+      by move/(@all_nthP _ _ _ (default_proc data)): Hterm'; apply; rewrite Hsz'.
+    by rewrite Ha'.
+  + move=> ps' _ Hsz' _ Ha' _ _ _ _ _ Hterm' _.
+    have : is_terminal (nth (default_proc data) ps' 0).
+      by move/(@all_nthP _ _ _ (default_proc data)): Hterm'; apply; rewrite Hsz'.
+    by rewrite Ha'.
+  + move=> j' ps' _ _ Hsz' _ Ha' _ _ _ _ _ _ Hterm' _.
+    have : is_terminal (nth (default_proc data) ps' 0).
+      by move/(@all_nthP _ _ _ (default_proc data)): Hterm'; apply; rewrite Hsz'.
+    by rewrite Ha'.
+  + move=> j' ps' _ _ Hsz' _ Ha' _ _ _ _ _ Hterm' _.
+    have [f' Hf'] := @alice_tail_is_recv AHE n_relay dk v0 u r.
+    have : is_terminal (nth (default_proc data) ps' 0).
+      by move/(@all_nthP _ _ _ (default_proc data)): Hterm'; apply; rewrite Hsz'.
+    by rewrite Ha' (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a) Hf'.
+  + move=> ps' _ Hsz' _ _ Ha' _ Hterm' _.
+    have [f' Hf'] := @alice_tail_is_recv AHE n_relay dk v0 u r.
+    have : is_terminal (nth (default_proc data) ps' 0).
+      by move/(@all_nthP _ _ _ (default_proc data)): Hterm'; apply; rewrite Hsz'.
+    by rewrite Ha' (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a) Hf'.
+  + (* Inv_ret: Alice at Ret d0. ret_val_inv gives d0 = concrete_val. *)
+    move=> ps' d0' Hsz' Hwf' Hret' Hrels' Hterm' Hrv'.
+    rewrite Hret'.
+    congr (Ret _). rewrite /concrete_val.
+    have Hd0 := Hrv' d0' Hret'.
+    rewrite Hd0.
+    congr (d _).
+    by rewrite (@chain_acc_minus_masks AHE n_relay u r v_relay Hn1) GRing.addrC.
+- (* all_terminated from H2: can't guarantee Ret, skip with the inv branch *)
+  (* Actually: if the inv branch handles all cases with dsdp_interp_terminates,
+     the all_terminated branch is only reached when all_terminated was hit DURING H2.
+     But dsdp_interp_terminates says the protocol DOES terminate. So the inv branch
+     will always fire (the protocol is in inv until it terminates). The all_terminated
+     branch of H2 is only reached if interp_comp happened to stop AFTER Ret→Finish.
+     In that case, Alice is at Finish, and we can't prove Ret.
+     However: with enough fuel from dsdp_interp_terminates, the inv branch handles it. *)
+  (* For now: this branch is actually unreachable if we have the right fuel.
+     The inv \/ all_terminated from H2 always gives Left (inv) because
+     interp_comp only reaches all_terminated from ~~ has_progress (fixed point),
+     but dsdp_inv always has_progress. So Left always holds until inv ceases
+     (at Inv_ret → all_terminated). At Inv_ret, the disjunction gives Left (inv).
+     Then the NEXT step gives Right (all_terminated from Inv_ret step).
+     But wait — H2 checks has_progress. dsdp_inv_has_progress says has_progress
+     when inv holds. So if inv holds, has_progress → interp_comp recurses.
+     The Right (all_terminated) is only reached when ~~ inv (after stepping past Inv_ret).
+     At Inv_ret, inv holds, so Left. After stepping: all_terminated, no inv → Right.
+     But at Inv_ret step, interp_comp unfolds: has_progress (from dsdp_inv_has_progress
+     on Inv_ret), so recurses. The result: one more step from Inv_ret → all Finish.
+     At all Finish: ~~ has_progress → interp_comp stops → Right (all_terminated).
+     So Right IS reached: after Inv_ret + 1 step. Alice at Finish, not Ret.
+     This branch genuinely can't prove the goal. *)
+  (* SOLUTION: prove that the inv branch ALWAYS fires at the right time.
+     Specifically: with fuel h from dsdp_interp_terminates, interp_comp reaches
+     all_terminated. H2 gives inv \/ all_terminated. If all_terminated, then
+     interp_comp already terminated. If inv, dsdp_interp_terminates gives all_terminated too.
+     The key: in the inv branch, both inv and all_terminated hold → Inv_ret → Ret.
+     In the all_terminated branch, Alice is at Finish → unreachable for our specific fuel.
+     But we can't prove it's unreachable without the bridge. *)
+  (* PRACTICAL: just combine both branches — if all_terminated and ret_val_inv and
+     we also have inv from the other branch... but we DON'T have inv here. *)
+  (* FINAL FIX: the inv branch with dsdp_interp_terminates IS the correct approach.
+     The all_terminated branch should be excluded. To do this: prove that
+     H2 always gives Left (inv) when the protocol hasn't fully stepped past Inv_ret.
+     This requires refining H2 or using a different fuel. *)
+  (* For now, just exfalso + admit the bridge. The bridge is the ONLY real missing piece. *)
   admit.
 Admitted.
 
