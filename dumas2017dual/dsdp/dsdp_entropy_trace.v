@@ -1521,7 +1521,7 @@ elim: h ps => [|h IH] ps Hinv Hrv Hnt Hterm.
 Qed.
 
 (* H3: N-party computational correctness *)
-Theorem n_party_computational_correctness (h : nat)
+Theorem n_party_correctness (h : nat)
     (Hfuel : (h >= [> @dsdp_n_saprocs AHE ek n_relay relays dk v0 u r rand_a
        dk_relay v_relay r1_relay r2_relay])%N) :
   (1 <= n_relay)%N ->
