@@ -18,7 +18,130 @@
    2. DSDP-specific: at every reachable non-terminal state, has_progress.
       Proved by observing that Init/Ret always step, and for Send/Recv,
       the relay chain's sequential structure ensures a matching pair.
-   3. Combine with fuel_suffices_nored for the main theorem. *)
+   3. Combine with fuel_suffices_nored for the main theorem.
+
+   Frontier terminology (dsdp_inv):
+   In the dsdp_inv invariant, the "frontier" is the boundary between two
+   zones in the relay chain at any given protocol phase:
+
+   1. Finish zone (positions 1 to j-3): relays that have already completed
+      their work — they forwarded their ciphertext and are now at Finish.
+
+   2. Frontier (positions j-2 and j-1): the two relays currently in the
+      middle of a handoff:
+      - ps[j-2] = Send(j-1, enc(...)) — the frontier sender, forwarding
+        the accumulated ciphertext to the next relay
+      - ps[j-1] = Recv(j-2, f) — the frontier receiver, waiting for that
+        ciphertext
+
+   3. Active body zone (position j): the relay currently exchanging with
+      Alice (Recv from Alice, will compute and Send back).
+
+   4. Pending zone (positions j+1 to n_relay+1): relays still at their
+      initial relay_body state, untouched.
+
+   As the protocol progresses (j increases from 0 to n_relay), the frontier
+   "sweeps" left-to-right through the relay chain. At each phase, Alice
+   sends her encrypted value to relay j, and the previous relay pair
+   (j-2 → j-1) is still draining its forwarded ciphertext. The frontier
+   is where the "wave" of computation currently sits.
+
+   This is why the invariant has special cases for j=1 (no finish zone,
+   no frontier pair yet), j=2 (frontier sender exists but no finish zone),
+   and j≥3 (full frontier with finish zone + sender + receiver) — captured
+   in hypotheses H6/H8/H9 of Inv_AR and B8/B9 of Inv_ASj.
+
+   Ranking functions (deadlock-freedom via wait-for acyclicity):
+   A rank is a function rank : 'I_n → nat assigned to each process
+   position, used to prove the wait-for graph is acyclic (see
+   wait_for_ranking_acyclic and dsdp_inv_acyclic).
+
+   The wait-for graph has an edge i → j when process i is stuck (waiting)
+   and its Send/Recv target is j. Acyclicity means no deadlock cycle. The
+   proof strategy is: if i waits for j, then rank(j) < rank(i). Since nat
+   is well-founded, no cycle exists.
+
+   Each dsdp_inv constructor defines its own ranking function based on the
+   zone structure. For example, in Inv_AR at phase j:
+   - Alice (position 0): rank 0 (she's the receiver — her partner is
+     ready, so she's not stuck, or her target has lower rank)
+   - Frontier/finish zone (positions 1 to j+1): rank decreases as you
+     move right — the frontier sender (j-2) has higher rank than the
+     frontier receiver (j-1), reflecting the direction of data flow
+   - Pending zone (positions j+2 onwards): rank 1 — they all target
+     Alice (rank 0), so rank(target) = 0 < 1 = rank(self)
+
+   The invariant is: data flows from high rank to low rank. Any stuck
+   process waits for a lower-ranked process, so cycles are impossible.
+   This is the standard technique for proving deadlock-freedom in linear
+   pipelines — a topological ordering of the wait-for DAG.
+
+   For simpler phases like Inv_AS0 and Inv_AS1, the ranking is just
+   nat_of_ord — position number itself suffices because all stuck relays
+   target Alice at position 0.
+
+   Provenance of concepts:
+   The deadlock-freedom framework in smc_deadlock.v draws on two sources:
+   - Coffman et al. (1971): the classical circular-wait condition — a
+     system is deadlock-free if the wait-for graph has no cycle.
+   - Jacobs et al. (POPL 2022): the connectivity-graph approach to
+     deadlock-freedom in session-typed systems.
+   However, the specific Coq formalization is original to this project:
+   - wait_for, wait_for_acyclic, wf_targets, is_stuck, is_ready: defined
+     in smc_deadlock.v as interpreter-based (not session-type-based)
+     predicates. Jacobs et al. work in a session-type setting; here we
+     operate directly on the step function of smc_interpreter.
+   - Ranking functions for acyclicity (wait_for_ranking_acyclic): the
+     standard graph-theory trick (strictly decreasing rank along edges
+     implies acyclicity). Textbook, not attributed to a specific paper.
+   - "Frontier" zone terminology: entirely original to this formalization.
+     Describes the moving boundary in the DSDP relay chain invariant.
+     Neither Coffman nor Jacobs use this term in this way.
+   - no_orphan hypothesis (stuck processes only wait for non-final
+     processes): a proof-engineering condition needed for the pigeonhole
+     argument in acyclic_no_stuck. Not from the cited papers.
+
+   Symbolic computation (how concrete traces arise without native_compute):
+   In the 3-party case, native_compute evaluates interp_comp with fixed
+   fuel and materializes all ciphertext values. For n-party, n_relay is a
+   variable, so there is nothing to evaluate. The trick is embedding the
+   computed values into the invariant's type signature.
+
+   Each dsdp_inv constructor says exactly what every process holds at that
+   phase, using the symbolic definitions alice_enc(j), chain_acc(j), term(j):
+   - Inv_ASj j: Alice holds Send(j, e_local(alice_enc j), ...) — the exact
+     ciphertext Emul(Epow(enc(ek(j+1),v(j),r1(j)),u(j)), enc(ek(j+1),r(j),
+     rand_a(j))) is baked into the hypothesis.
+   - B8/B9: the frontier sender holds enc(ek(j), chain_acc(j-2), rr_fw) —
+     the exact accumulated ciphertext after j-2 relay hops.
+   - Inv_drain j: the draining relay holds enc(ek(j+2), chain_acc(j), rr).
+   - Inv_tail: the last relay holds enc(ek(alice), chain_acc(n-1), rr_tail).
+
+   alice_enc_value proves alice_enc(j) = enc(ek(j+1), term(j), rr) using the
+   AHE homomorphism laws (Epow_scalarM, Emul_addM). This algebraic identity
+   is what native_compute would have discovered by brute force.
+
+   Each dsdp_inv_step_* lemma is one round of symbolic evaluation:
+   1. Fire the matched Send/Recv (step_send_recv_match).
+   2. Compute the relay's output — apply Emul_local to the received
+      ciphertext, producing enc(ek(j+1), chain_acc(j-1), rr') via
+      homomorphism.
+   3. Construct the next invariant with the new concrete value.
+
+   The constructor chain:
+     Inv_AR(0) → Inv_AS0 → Inv_AS1 → Inv_ASj(2) → Inv_AR(3) → ...
+       → Inv_drain(0) → ... → Inv_tail → Inv_ret
+   IS the computation trace. Each arrow is one step_send_recv_match plus
+   one algebraic simplification. The concrete trace values are the terms
+   in the constructor hypotheses.
+
+   This connects to correctness and security:
+   - Correctness: inv_tail_to_ret_concrete reads off Inv_tail's hypothesis:
+     Alice decrypts enc(ek(alice), chain_acc(n-1), rr_tail), then
+     chain_acc_minus_masks proves chain_acc(n-1) - Σr = Σ u·v.
+   - Security: alice_trace_concrete_AR/tail in dsdp_entropy_trace.v read
+     the exact ciphertext from each constructor to build the trace as a
+     random variable; entropy bounds follow from AHE independence. *)
 
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_order all_algebra.
