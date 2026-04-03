@@ -126,6 +126,7 @@ dumas2017dual/entropy_fiber/linear_fiber_zpq.v
 dumas2017dual/dsdp/dsdp_interface.v
 dumas2017dual/dsdp/dsdp_program.v
 dumas2017dual/dsdp/dsdp_entropy_trace.v
+dumas2017dual/dsdp/dsdp_trace_progress.v
 dumas2017dual/dsdp/dsdp_entropy.v
 dumas2017dual/dsdp/dsdp_security.v
 dumas2017dual/dsdp/dsdp_syntax_demo.v
