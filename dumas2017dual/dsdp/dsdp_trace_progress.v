@@ -297,7 +297,79 @@ Lemma inv_rsteps_ret_with_trace h (ps : n_parties.-tuple (proc data))
     nth (default_proc data) (tval final) 0 = Ret concrete_val /\
     (* The trace extends tr_acc with the remaining protocol steps *)
     exists suffix, tnth tr_final ord0 = suffix ++ tr_acc.
-Proof. Admitted.
+Proof.
+elim: h ps tr_acc => [|h IH] ps tr_acc Hinv Hrv Hnt Hterm Htr.
+- by move/negP: Hnt.
+- rewrite (@interp_comp_unfold_eq data (tval ps) h) in Hterm.
+  have Hprog : has_progress data (tval ps).
+    exact (@dsdp_inv_has_progress AHE ek n_relay Hn_relay dk dk_relay
+      relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+      (tval ps) Hinv).
+  rewrite Hprog in Hterm.
+  set res := [tuple smc_interpreter.step ps [::] i | i < n_parties].
+  set ps' := res_procs res.
+  set tr1 := res_traces res.
+  have Hss : rsteps ps ps' tr1 := step_sound ps.
+  have Hps'eq : tval ps' = one_step_procs data (tval ps)
+    by rewrite -(@one_step_eq_res_procs AHE n_relay ps).
+  have Hinv_step : all_terminated (one_step_procs data (tval ps)) \/
+                   inv (one_step_procs data (tval ps)).
+    exact: (@dsdp_inv_step AHE ek n_relay Hn_relay dk dk_relay
+      dec_total key_relay relays Hrelays Hrelays_id v0 u r rand_a
+      v_relay r1_relay r2_relay (tval ps) Hinv).
+  have [tr0 [Hrs0 Htr0eq]] := Htr.
+  case: Hinv_step => [Hterm_step | Hinv_step].
+  + (* all_terminated after one step *)
+    set tr_composed := [tuple tnth tr1 i ++ tnth tr0 i | i < n_parties].
+    have Hrs_comp : rsteps procs_tup ps' tr_composed := rtrans Hrs0 Hss erefl.
+    exists ps', tr_composed; split; first exact Hrs_comp.
+    split; first by rewrite Hps'eq.
+    split.
+    * rewrite Hps'eq.
+      exact: (@inv_step_terminated_concrete AHE ek n_relay Hn_relay dk dk_relay
+        relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+        dec_total key_alice key_relay (tval ps) Hinv Hnt Hterm_step).
+    * exists (tnth tr1 ord0); rewrite /tr_composed tnth_mktuple.
+      by rewrite -Htr0eq.
+  + (* inv preserved: check all_terminated or recurse *)
+    have [Hinv' Hrv'] := @inv_step_gives_inv_ret_val_inv AHE ek n_relay Hn_relay dk dk_relay
+      relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+      dec_total key_alice key_relay (tval ps) Hinv Hnt.
+    case Hnt' : (all_terminated (one_step_procs data (tval ps))).
+    * (* all_terminated: same as left branch *)
+      set tr_composed := [tuple tnth tr1 i ++ tnth tr0 i | i < n_parties].
+      have Hrs_comp : rsteps procs_tup ps' tr_composed := rtrans Hrs0 Hss erefl.
+      exists ps', tr_composed; split; first exact Hrs_comp.
+      split; first by rewrite Hps'eq.
+      split.
+      -- rewrite Hps'eq.
+         exact: (@inv_step_terminated_concrete AHE ek n_relay Hn_relay dk dk_relay
+           relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+           dec_total key_alice key_relay (tval ps) Hinv Hnt Hnt').
+      -- exists (tnth tr1 ord0); rewrite /tr_composed tnth_mktuple.
+         by rewrite -Htr0eq.
+    * (* ~~ all_terminated: apply IH *)
+      have Hnt'' : ~~ all_terminated (tval ps') by rewrite Hps'eq Hnt'.
+      have Hinv'' : inv (tval ps') by rewrite Hps'eq; exact Hinv_step.
+      have Hrv'' : ret_val_inv (tval ps') by rewrite Hps'eq.
+      have Hterm' : all_terminated (interp_comp data (tval ps') h)
+        by rewrite Hps'eq.
+      (* Build new trace hypothesis: rsteps procs_tup ps' tr_composed *)
+      set tr_composed := [tuple tnth tr1 i ++ tnth tr0 i | i < n_parties].
+      have Hrs_comp : rsteps procs_tup ps' tr_composed := rtrans Hrs0 Hss erefl.
+      have Htr_new : tnth tr_composed ord0 = tnth tr1 ord0 ++ tr_acc.
+        by rewrite /tr_composed tnth_mktuple -Htr0eq.
+      have Htr_ex : exists tr0' : n_parties.-tuple (seq data),
+        rsteps procs_tup ps' tr0' /\ tnth tr0' ord0 = tnth tr1 ord0 ++ tr_acc.
+        by exists tr_composed.
+      have [final [tr_final [Hrs_final [Htf [Hretf [suffix Hsuf]]]]]] :=
+        IH ps' (tnth tr1 ord0 ++ tr_acc) Hinv'' Hrv'' Hnt'' Hterm' Htr_ex.
+      exists final, tr_final; split; first exact Hrs_final.
+      split; first exact Htf.
+      split; first exact Hretf.
+      exists (suffix ++ tnth tr1 ord0).
+      by rewrite -catA.
+Qed.
 
 (* ================================================================== *)
 (* Full trace characterization: from initial state to termination      *)
@@ -316,6 +388,79 @@ Theorem n_party_trace_correctness (h : nat)
     nth (default_proc data) (tval final) 0 = Ret concrete_val /\
     (* Alice's full trace is concrete_val :: (some ciphertexts) ++ [d v0; priv_key dk] *)
     exists prefix, tnth tr ord0 = prefix ++ [:: d v0; priv_key dk].
-Proof. Admitted.
+Proof.
+move=> Hn1.
+(* Step 1: init → inv + trace *)
+have [ps_init [tr_init [Hrs_init [Htrace_init [Hinv_init [Hnt_init Heq_init]]]]]] :=
+  @init_rsteps_to_inv AHE ek n_relay Hn_relay dk dk_relay relays Hrelays
+    Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay dec_total.
+have Hprocs_eq : Tuple (introT eqP
+  (dsdp_entropy_trace.Hsize_subproof ek dk dk_relay Hrelays v0 u r rand_a
+    v_relay r1_relay r2_relay)) = procs_tup.
+  by apply val_inj.
+rewrite Hprocs_eq in Hrs_init.
+(* Step 2: ret_val_inv at init — vacuously true *)
+have Hrv_init : ret_val_inv (tval ps_init).
+  move=> d0 Hret0; exfalso; apply (negP Hnt_init).
+  case: {+}Hinv_init Hret0.
+  - move=> j' ps' rr' Hsz' _ Ha' _ _ _ _ _ _ Hret0.
+    have [f' Hf'] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+      Hrelays_id v0 u r rand_a j' (ltn_ord j').
+    by rewrite Ha' /alice_foldr_at Hf' in Hret0.
+  - move=> ps' _ Hsz' _ Ha' _ _ _ Hret0. by rewrite Ha' in Hret0.
+  - move=> ps' _ Hsz' _ Ha' _ _ _ _ _ Hret0. by rewrite Ha' in Hret0.
+  - move=> j' ps' _ _ Hsz' _ Ha' _ _ _ _ _ _ Hret0. by rewrite Ha' in Hret0.
+  - move=> j' ps' _ _ Hsz' _ Ha' _ _ _ _ _ Hret0.
+    have [f' Hf'] := @alice_tail_is_recv AHE n_relay dk v0 u r.
+    by rewrite Ha' (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays
+      v0 u r rand_a) Hf' in Hret0.
+  - move=> ps' _ Hsz' _ _ Ha' _ Hret0.
+    have [f' Hf'] := @alice_tail_is_recv AHE n_relay dk v0 u r.
+    by rewrite Ha' (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays
+      v0 u r rand_a) Hf' in Hret0.
+  - (* Inv_ret: all_terminated → contradicts Hnt_init *)
+    move=> ps' d1' Hsz' _ Hret' Hrels' _.
+    apply /(@all_nthP _ _ _ (default_proc data)).
+    rewrite Hsz' => i Hi; case: i Hi => [|i] Hi.
+    + by rewrite Hret'.
+    + have Him : (i < n_relay.+1)%N by rewrite ltnS in Hi.
+      by have := Hrels' (Ordinal Him); rewrite /relay_at_finish_pred /= => ->.
+(* Step 3: Bridge — interp_comp terminates *)
+have Hprog0 : has_progress data procs.
+  exact: (@dsdp_initial_progress AHE ek n_relay dk dk_relay relays Hrelays
+    v0 u r rand_a v_relay r1_relay r2_relay).
+have Hic1 : interp_comp data procs 1 = one_step_procs data procs.
+  by rewrite (@interp_comp_unfold_eq data procs 0) Hprog0.
+have Hprog1 : has_progress data (one_step_procs data procs).
+  have [Ht1|Hp1] := @dsdp_terminated_or_progress AHE ek n_relay Hn_relay dk
+    dk_relay dec_total key_relay relays Hrelays Hrelays_id v0 u r rand_a
+    v_relay r1_relay r2_relay 1.
+  + exfalso; rewrite Hic1 in Ht1.
+    have := @step_all_terminated data _ Ht1.
+    have := @dsdp_init_not_terminated AHE ek n_relay dk dk_relay relays
+      Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay.
+    by move/negP; apply.
+  + by rewrite Hic1 in Hp1.
+have Hbridge : interp_comp data procs 2 = tval ps_init.
+  rewrite Heq_init (@interp_comp_unfold_eq data procs 1) Hprog0.
+  by rewrite (@interp_comp_unfold_eq data (one_step_procs data procs) 0) Hprog1.
+have Hfuel2 : (2 + h >= [> @dsdp_n_saprocs AHE ek n_relay relays dk v0 u r rand_a
+     dk_relay v_relay r1_relay r2_relay])%N.
+  exact (leq_trans Hfuel (leq_addl 2 h)).
+have Hterm_interp := @dsdp_interp_terminates AHE ek n_relay Hn_relay dk dk_relay
+  dec_total key_relay relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay
+  r2_relay (2 + h) Hfuel2.
+have Hcomp := @interp_comp_add data (tval procs_tup) 2 h.
+rewrite Hcomp Hbridge in Hterm_interp.
+(* Step 4: Apply inv_rsteps_ret_with_trace *)
+have Htr_ex : exists tr0 : n_parties.-tuple (seq data),
+  rsteps procs_tup ps_init tr0 /\ tnth tr0 ord0 = [:: d v0; priv_key dk].
+  exists tr_init; split; first exact Hrs_init.
+  exact Htrace_init.
+have [final [tr_final [Hrs_final [Htf [Hretf [suffix Hsuf]]]]]] :=
+  inv_rsteps_ret_with_trace Hinv_init Hrv_init Hnt_init Hterm_interp Htr_ex.
+exists final, tr_final; do !split => //.
+by exists suffix.
+Qed.
 
 End trace_accumulation.
