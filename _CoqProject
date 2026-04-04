@@ -137,6 +137,8 @@ dumas2017dual/dsdp/dsdp_trace_progress.v
 dumas2017dual/dsdp/dsdp_entropy.v
 dumas2017dual/dsdp/dsdp_security.v
 dumas2017dual/dsdp/dsdp_security_instantiation.v
+dumas2017dual/dsdp/dsdp_fsm.v
+dumas2017dual/dsdp/dsdp_fsm_progress.v
 dumas2017dual/dsdp/dsdp_rsteps.v
 
 -R . infotheo
