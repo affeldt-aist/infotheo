@@ -125,16 +125,18 @@ dumas2017dual/entropy_fiber/entropy_fiber_zpq.v
 dumas2017dual/entropy_fiber/linear_fiber_zpq.v
 dumas2017dual/dsdp/dsdp_interface.v
 dumas2017dual/dsdp/dsdp_program.v
-dumas2017dual/dsdp/dsdp_entropy_trace.v
-dumas2017dual/dsdp/dsdp_trace_progress.v
-dumas2017dual/dsdp/dsdp_entropy.v
-dumas2017dual/dsdp/dsdp_security.v
 dumas2017dual/dsdp/dsdp_syntax_demo.v
 dumas2017dual/dsdp/dsdp_correctness.v
 dumas2017dual/dsdp/dsdp_session_types.v
 dumas2017dual/dsdp/dsdp_pismc.v
 dumas2017dual/dsdp/dsdp_nofail.v
 dumas2017dual/dsdp/dsdp_progress.v
+dumas2017dual/dsdp/dsdp_trace_infra.v
+dumas2017dual/dsdp/dsdp_entropy_trace.v
+dumas2017dual/dsdp/dsdp_trace_progress.v
+dumas2017dual/dsdp/dsdp_entropy.v
+dumas2017dual/dsdp/dsdp_security.v
+dumas2017dual/dsdp/dsdp_security_instantiation.v
 dumas2017dual/dsdp/dsdp_rsteps.v
 
 -R . infotheo

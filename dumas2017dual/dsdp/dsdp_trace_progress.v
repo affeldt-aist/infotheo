@@ -35,7 +35,7 @@ Require Import realType_ext realType_ln ssr_ext ssralg_ext bigop_ext fdist.
 Require Import proba jfdist_cond entropy graphoid smc_interpreter.
 Require Import smc_session_types smc_interpreter_sound.
 Require Import homomorphic_encryption dsdp_interface dsdp_pismc.
-Require Import dsdp_progress dsdp_entropy_trace.
+Require Import dsdp_progress dsdp_trace_infra dsdp_entropy_trace.
 
 Import GRing.Theory.
 Import Num.Theory.
@@ -402,29 +402,9 @@ rewrite Hprocs_eq in Hrs_init.
 (* Step 2: ret_val_inv at init — vacuously true *)
 have Hrv_init : ret_val_inv (tval ps_init).
   move=> d0 Hret0; exfalso; apply (negP Hnt_init).
-  case: {+}Hinv_init Hret0.
-  - move=> j' ps' rr' Hsz' _ Ha' _ _ _ _ _ _ Hret0.
-    have [f' Hf'] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
-      Hrelays_id v0 u r rand_a j' (ltn_ord j').
-    by rewrite Ha' /alice_foldr_at Hf' in Hret0.
-  - move=> ps' _ Hsz' _ Ha' _ _ _ Hret0. by rewrite Ha' in Hret0.
-  - move=> ps' _ Hsz' _ Ha' _ _ _ _ _ Hret0. by rewrite Ha' in Hret0.
-  - move=> j' ps' _ _ Hsz' _ Ha' _ _ _ _ _ _ Hret0. by rewrite Ha' in Hret0.
-  - move=> j' ps' _ _ Hsz' _ Ha' _ _ _ _ _ Hret0.
-    have [f' Hf'] := @alice_tail_is_recv AHE n_relay dk v0 u r.
-    by rewrite Ha' (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays
-      v0 u r rand_a) Hf' in Hret0.
-  - move=> ps' _ Hsz' _ _ Ha' _ Hret0.
-    have [f' Hf'] := @alice_tail_is_recv AHE n_relay dk v0 u r.
-    by rewrite Ha' (@alice_foldr_at_tail AHE ek n_relay dk relays Hrelays
-      v0 u r rand_a) Hf' in Hret0.
-  - (* Inv_ret: all_terminated → contradicts Hnt_init *)
-    move=> ps' d1' Hsz' _ Hret' Hrels' _.
-    apply /(@all_nthP _ _ _ (default_proc data)).
-    rewrite Hsz' => i Hi; case: i Hi => [|i] Hi.
-    + by rewrite Hret'.
-    + have Him : (i < n_relay.+1)%N by rewrite ltnS in Hi.
-      by have := Hrels' (Ordinal Him); rewrite /relay_at_finish_pred /= => ->.
+  exact: (@dsdp_trace_infra.inv_alice_ret_terminated AHE ek n_relay Hn_relay
+    dk dk_relay relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay
+    r2_relay (tval ps_init) d0 Hinv_init Hret0).
 (* Step 3: Bridge — interp_comp terminates *)
 have Hprog0 : has_progress data procs.
   exact: (@dsdp_initial_progress AHE ek n_relay dk dk_relay relays Hrelays

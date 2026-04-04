@@ -1348,7 +1348,134 @@ Qed.
 
 
 
-(* D3: Protocol invariant — enriched with full relay state tracking *)
+(* D3: Protocol invariant — 7-constructor FSM for N-party DSDP.
+
+   Each constructor captures a distinct protocol phase, tracking Alice's
+   process form and every relay's state. The 7 phases are:
+
+   - Inv_AR j : Alice at Recv(j+1, f), relay j at Send(0, v, Finish),
+       relays < j at Finish, relays > j at body.
+       Alice receives relay j's cipher — her trace grows by one entry.
+
+   - Inv_AS0 : Alice at Send(1, v, foldr 1), relay 0 at Recv(0, f),
+       all other relays at body.
+       First send after receiving relay 0's cipher. Relay 0 has no
+       predecessor, so the pending-relay structure differs from Inv_ASj.
+
+   - Inv_AS1 : Alice at Send(1, v, foldr 2), relay 0 at Recv(0, f),
+       relay 1 at body or Recv.
+       Second send. Separated because of the n_relay = 1 edge case:
+       the next iteration may enter the tail phase instead of looping.
+
+   - Inv_ASj j : Alice at Send(j, v, foldr j+1), relay j-1 at Recv,
+       frontier zone (sender j-1, receiver j), finish zone < j-1.
+       General send for j >= 2. The relay chain has a "frontier" pair.
+
+   - Inv_drain j : Alice at Recv(n+1, f) (blocked), relay j forwarding
+       to j+1, relays < j at Finish.
+       Alice is done sending. Relays propagate among themselves.
+       No Alice trace entry — a relay-relay step fires.
+
+   - Inv_tail : Alice at Recv(n+1, f), last relay at Send(0, v, Finish),
+       all other relays at Finish.
+       The last relay sends to Alice — her trace grows. Triggers Ret.
+
+   - Inv_ret : Alice at Ret(d), all relays at Finish.
+       Terminal state. The only phase where all_terminated holds.
+
+   WHY 7: Progress proofs need to know which process fires next.
+   The AS variants differ in relay chain state (no predecessor / edge
+   case / frontier zone). The AR/drain/tail variants differ in which
+   party's step is enabled.
+
+   FSM-TO-TRACE CONNECTION:
+   Each constructor pins down Alice's process form AND the active relay's
+   form. Since smc_interpreter.step is deterministic given the process
+   list, the FSM state determines exactly which communication fires and
+   what gets appended to Alice's trace:
+
+     Inv_AR j  → relay j Send matches Alice Recv → trace += [cipher_j]
+     Inv_AS*   → Alice Send, no matching Recv at 0 → trace += []
+     Inv_drain → relay-relay Send/Recv, Alice blocked → trace += []
+     Inv_tail  → last relay Send matches Alice Recv → trace += [tail_cipher]
+     Inv_ret   → Alice Ret → trace += [result]
+
+   FSM AS INDUCTIVE INVARIANT FOR TRACE CORRECTNESS:
+   The proof uses fuel induction (on h = steps remaining). The FSM
+   state is the inductive invariant that threads trace content through:
+
+     1. At step k, I hold dsdp_inv(ps_k) — a known FSM state.
+     2. The FSM state determines which communication fires
+        (via smc_interpreter.step), so I know the trace fragment.
+     3. dsdp_inv_step gives dsdp_inv(ps_{k+1}) — the next FSM state.
+     4. I append the fragment to the accumulated trace.
+     5. The inductive hypothesis (applied to h-1 and ps_{k+1}) gives
+        the remaining trace from step k+1 to termination.
+     6. Concatenation yields the full trace.
+
+   The result: full trace = [result; tail_cipher; c_{n-1}; ...; c_0; v0; dk]
+
+   WHY THIS WORKS — THREE INGREDIENTS:
+     (a) Each FSM state determines a specific trace fragment
+         (from constructor fields: Alice's form + active relay's form).
+     (b) FSM transitions follow a fixed order, forced by the program
+         structure: AS0 → AR0 → AS1 → AR1 → ... → ASn → drain → tail → ret.
+         Each process form (Recv/Send/Ret) has exactly one possible next
+         form, so dsdp_inv_step admits only one or two successor states.
+     (c) Trace accumulation = concatenation of fragments in transition order.
+   No step is ambiguous: the program fixes the order, the FSM captures it,
+   and induction accumulates fragments along that order.
+
+   Without the FSM, the induction breaks: after one step you have
+   one_step_procs(ps) but no invariant to determine which FSM state
+   you're in, so you can't determine the next trace fragment, and the
+   inductive invariant can't carry the trace content forward.
+
+   WHY EACH FRAGMENT IS CORRECT (not just "something is appended"):
+   Each constructor carries the concrete crypto values in its fields.
+   For example, Inv_AR j carries:
+     Hbody : relay_at_body j ps
+   which unfolds to relay j at Send(0, enc(ek(j+1), v_relay(j), r1_relay(j)), Finish).
+   The ciphertext enc(ek(j+1), v_relay(j), r1_relay(j)) is a CONCRETE value
+   determined by the protocol parameters — not an existential. So when the
+   matched Send/Recv pair fires, the trace fragment is this specific ciphertext.
+
+   PROOF STRUCTURE — FROM SPEC TO TRACE:
+
+     Protocol parameters (v_relay, r1_relay, ek, ...)
+       defined in dsdp_program.v                          ← "specification"
+            |
+            v
+     FSM constructors carry these as concrete values
+       in fields like Hbody, Halice                       ← "embedding"
+            |
+            v
+     Each step appends a fragment with these values
+       proved by alice_trace_concrete_AR, _tail, etc.     ← "execution"
+            |
+            v
+     Induction on fuel accumulates fragments
+       proved by inv_rsteps_ret_with_trace                ← "composition"
+            |
+            v
+     Theorem: trace = [values from protocol parameters]   ← "the comparison"
+
+   WHERE THE SPEC LIVES:
+   There is no separate "expected trace" defined independently and then
+   compared. The expected values come from the protocol parameters
+   (Section variables: v_relay, r1_relay, ek, concrete_val, etc.),
+   which are defined in dsdp_program.v (algebraic correctness) and
+   dsdp_entropy_trace.v (concrete return value). The theorem statement
+   IS the comparison — it asserts that the operationally produced trace
+   (rsteps) contains exactly the values predicted by these parameters.
+   The proof constructs the trace and the theorem states what it equals.
+
+   Downstream files use alice_phase (3 constructors) from
+   dsdp_trace_infra.v, which collapses these into:
+     AP_loop j  = Inv_AR + Inv_AS0 + Inv_AS1 + Inv_ASj
+     AP_tail    = Inv_drain + Inv_tail
+     AP_ret     = Inv_ret
+*)
 Inductive dsdp_inv : seq (proc data) -> Prop :=
 | Inv_AR (j : 'I_n_relay.+1) ps (rr_fw : rand AHE) :
     size ps = n_relay.+2 ->
