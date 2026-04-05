@@ -199,6 +199,38 @@ Let pRecvDec_local := @std_Recv_dec AHE.
 Let pRecvEnc_local := @std_Recv_enc AHE.
 Let enc_local := @enc AHE.
 
+(* H4.5: relay erasure gives Init(dk, Init(v, relay_body j)) *)
+Lemma relay_erase_eq (j : 'I_n_relay.+1) :
+  erase_aproc (relay_aproc AHE ek n_relay j
+    (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j)) =
+  Init (priv_key_local (dk_relay j)) (Init (d (v_relay j)) (relay_body j)).
+Proof.
+rewrite /relay_aproc /erase_aproc.
+case: ifP => Hj0.
+- change (erase (aproc_proc (mk_aproc (DParty_first AHE ek j.+1 j.+2
+    (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j))))) with
+    (erase (DParty_first AHE ek j.+1 j.+2
+    (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j))).
+  rewrite DParty_first_erase.
+  rewrite /relay_body Hj0 /priv_key_local /d /e_local /enc_local /DI /=.
+  by rewrite /nat_to_party_id.
+case: ifP => Hjn.
+- change (erase (aproc_proc (mk_aproc (DParty_last AHE ek j.+1 j
+    (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j))))) with
+    (erase (DParty_last AHE ek j.+1 j
+    (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j))).
+  rewrite DParty_last_erase.
+  rewrite /relay_body Hj0 Hjn /priv_key_local /d /e_local /enc_local /DI /=.
+  by rewrite /nat_to_party_id /alice_idx.
+- change (erase (aproc_proc (mk_aproc (DParty_intermediate AHE ek j.+1
+    alice_idx j j.+2 (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j))))) with
+    (erase (DParty_intermediate AHE ek j.+1 alice_idx j j.+2
+    (dk_relay j) (v_relay j) (r1_relay j) (r2_relay j))).
+  rewrite DParty_intermediate_erase.
+  rewrite /relay_body Hj0 Hjn /priv_key_local /d /e_local /enc_local /DI /=.
+  by rewrite /nat_to_party_id.
+Qed.
+
 (* H5: relay_body always starts with Send 0 *)
 Lemma relay_body_is_send0 (j : 'I_n_relay.+1) :
   exists sk,
@@ -865,5 +897,295 @@ Inductive phase_reaches : phase_state -> phase_state -> Prop :=
 | pr_step s1 s2 s3 :
     (one_step_procs (ps_procs s1) = ps_procs s2) ->
     phase_reaches s2 s3 -> phase_reaches s1 s3.
+
+(* ========================================================================== *)
+(* Generic interpreter lemmas (copied from dsdp_progress.v / smc_deadlock.v)  *)
+(* These work for ANY seq (proc data), not DSDP-specific.                     *)
+(* ========================================================================== *)
+
+Lemma nth_one_step (ps : seq (proc data)) (i : nat) :
+  (i < size ps)%N ->
+  nth (@default_proc data) (one_step_procs ps) i =
+  (smc_interpreter.step ps [::] i).1.1.
+Proof.
+move=> Hi.
+rewrite /one_step_procs /unzip1 -!map_comp.
+rewrite (nth_map 0); last by rewrite size_iota.
+by rewrite nth_iota // add0n.
+Qed.
+
+Lemma size_one_step (ps : seq (proc data)) :
+  size (one_step_procs ps) = size ps.
+Proof. by rewrite /one_step_procs /unzip1 -!map_comp size_map size_iota. Qed.
+
+(* interp_comp: iterated stepping. Defined in smc_deadlock.v or smc_interpreter.v.
+   We copy the key unfolding lemma. *)
+Lemma interp_comp_unfold_eq (ps : seq (proc data)) (h : nat) :
+  @interp_comp data ps h.+1 =
+  if @has_progress data ps then @interp_comp data (one_step_procs ps) h
+  else ps.
+Proof. by rewrite /= /has_progress /one_step_procs. Qed.
+
+Lemma step_all_terminated (ps : seq (proc data)) :
+  @all_terminated data ps -> @all_terminated data (one_step_procs ps).
+Proof.
+rewrite /all_terminated => Ht.
+apply/(@all_nthP _ _ _ (default_proc data)).
+rewrite size_one_step => i Hi.
+rewrite nth_one_step //.
+have Hpi : is_terminal (nth (default_proc data) ps i)
+  by move/(@all_nthP _ _ _ (default_proc data)): Ht => /(_ i Hi).
+rewrite /smc_interpreter.step.
+by case: (nth (default_proc data) ps i) Hpi.
+Qed.
+
+Lemma interp_comp_add (ps : seq (proc data)) (h1 h2 : nat) :
+  @interp_comp data ps (h1 + h2) = @interp_comp data (@interp_comp data ps h1) h2.
+Proof.
+elim: h1 ps => [|h1 IH] ps //=.
+case: ifPn => Hhas.
+- by rewrite IH.
+- symmetry.
+  clear IH; move: Hhas; elim: h2 => [|h2' IH2] //= Hhas.
+  by rewrite (negbTE Hhas).
+Qed.
+
+(* ========================================================================== *)
+(* Algebraic correctness: chain_acc_minus_masks                               *)
+(* Copied from dsdp_progress.v. Proves that subtracting all relay masks       *)
+(* from the accumulated chain gives the sum of relay dot products.            *)
+(* ========================================================================== *)
+
+Lemma chain_acc_eq k :
+  (k.+2 <= n_relay.+1)%N ->
+  chain_acc k = \sum_(j < k.+2) term (inord j).
+Proof.
+elim: k => [|k IHk] Hk.
+- rewrite /= big_ord_recr big_ord1 /=.
+  by have -> : inord 0 = ord0 :> 'I_n_relay.+1
+    by apply /val_inj; rewrite /= inordK.
+- rewrite /= IHk; last by exact (ltnW Hk).
+  by rewrite [RHS]big_ord_recr /=.
+Qed.
+
+Lemma chain_acc_sum :
+  (1 <= n_relay)%N ->
+  chain_acc n_relay.-1 = \sum_(j < n_relay.+1) term j.
+Proof.
+move=> Hn1.
+rewrite chain_acc_eq; last by rewrite prednK.
+rewrite prednK //.
+apply eq_bigr => j _.
+by rewrite inord_val.
+Qed.
+
+Lemma chain_acc_minus_masks :
+  (1 <= n_relay)%N ->
+  chain_acc n_relay.-1 - \sum_(j < n_relay.+1) r j =
+  \sum_(j : 'I_n_relay.+1) u (lift ord0 j) * v_relay j.
+Proof.
+move=> Hn1.
+rewrite chain_acc_sum //.
+rewrite /term.
+rewrite big_split /=.
+by rewrite GRing.addrK.
+Qed.
+
+(* ========================================================================== *)
+(* known_state: the FSM invariant for fuel induction                          *)
+(* Replaces dsdp_inv — tracks which concrete state we're at.                 *)
+(* ========================================================================== *)
+
+Inductive known_state : phase_state -> Prop :=
+| KS_done : known_state st_done
+| KS_step st st' :
+    known_state st' ->
+    one_step_procs (ps_procs st) = ps_procs st' ->
+    @has_progress data (ps_procs st) ->
+    known_state st.
+
+(* Every known non-done state has progress *)
+Lemma known_state_has_progress st :
+  known_state st -> ~~ @all_terminated data (ps_procs st) ->
+  @has_progress data (ps_procs st).
+Proof.
+move=> Hks Hnt; case: Hks Hnt.
+- rewrite /= /done_procs /all_terminated all_nseq.
+  by rewrite /= orbT.
+- by move=> st0 st' _ _ Hprog _.
+Qed.
+
+(* Every known non-terminated state steps to another known state *)
+Lemma known_state_step st :
+  known_state st -> ~~ @all_terminated data (ps_procs st) ->
+  @all_terminated data (one_step_procs (ps_procs st)) \/
+  exists st', known_state st' /\
+    one_step_procs (ps_procs st) = ps_procs st'.
+Proof.
+move=> Hks Hnt; case: Hks Hnt.
+- rewrite /= /done_procs /all_terminated all_nseq.
+  by rewrite /= orbT.
+- move=> st0 st' Hks' Hstep Hprog _.
+  right; exists st'; split => //.
+Qed.
+
+(* Helper: all processes in procs are double-Init *)
+Lemma procs_all_double_init (i : nat) :
+  (i < size procs)%N ->
+  exists d1 d2 k0, nth (@default_proc data) procs i = Init d1 (Init d2 k0).
+Proof.
+have Hsz : size procs = n_relay.+2
+  by rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= size_map size_map Hrelays.
+rewrite Hsz => Hi.
+case: i Hi => [|i'] Hi.
+- do 3 eexists.
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= /erase_aproc /=.
+  exact: (@palice_n_erase AHE ek n_relay relays dk v0 u r rand_a).
+- have Hi' : (i' < n_relay.+1)%N by [].
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /=.
+  rewrite -map_comp (nth_map ord0); last by rewrite Hrelays.
+  rewrite /comp /= /erase_aproc /aproc_proc /relay_aproc.
+  set j := nth ord0 relays (Ordinal Hi').
+  case: ifP => Hj0.
+    rewrite /DParty_first /=; by do 3 eexists.
+  case: ifP => Hjn.
+    rewrite /DParty_last /=; by do 3 eexists.
+  rewrite /DParty_intermediate /=; by do 3 eexists.
+Qed.
+
+(* Helper: one_step on a list of Init processes strips one Init layer *)
+Lemma one_step_all_init (ps : seq (proc data)) :
+  (forall i, (i < size ps)%N ->
+     exists d' next, nth (@default_proc data) ps i = Init d' next) ->
+  one_step_procs ps =
+    [seq match p with Init _ next => next | _ => p end | p <- ps].
+Proof.
+move=> Hall.
+apply (eq_from_nth (x0 := default_proc data)).
+  by rewrite size_one_step size_map.
+move=> i Hi; rewrite size_one_step in Hi.
+rewrite nth_one_step //.
+have [d' [next Hnth]] := Hall i Hi.
+rewrite /smc_interpreter.step Hnth /=.
+rewrite (nth_map (default_proc data)); last by [].
+by rewrite Hnth.
+Qed.
+
+(* Initial process list has progress (Alice at Init) *)
+Lemma initial_has_progress :
+  @has_progress data procs.
+Proof.
+rewrite /has_progress /procs /dsdp_n_procs /dsdp_n_saprocs /erase_aprocs /=.
+by [].
+Qed.
+
+(* After one step, still has progress *)
+Lemma initial_step1_has_progress :
+  @has_progress data (one_step_procs procs).
+Proof.
+rewrite /has_progress /one_step_procs /procs /dsdp_n_procs /dsdp_n_saprocs
+  /erase_aprocs /=.
+by [].
+Qed.
+
+(* After 2 init steps, state matches st_recv ord0 *)
+Lemma init_matches_recv0 :
+  one_step_procs (one_step_procs procs) = ps_procs (st_recv ord0).
+Proof.
+rewrite /= /st_recv /st_recv_gen /=.
+have Hszp : size procs = n_relay.+2.
+  by rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= size_map size_map Hrelays.
+have Hprocs0 : exists d1 d2, nth (@default_proc data) procs 0 = Init d1 (Init d2 (alice_foldr 0)).
+  do 2 eexists.
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= /erase_aproc /aproc_proc.
+  rewrite (@palice_n_erase AHE ek n_relay relays dk v0 u r rand_a).
+  congr (Init _ (Init _ _)). by rewrite /alice_foldr drop0.
+have Hprocsi : forall i (Hi : (i < n_relay.+1)%N),
+  exists d1 d2, nth (@default_proc data) procs i.+1 = Init d1 (Init d2 (relay_body (nth ord0 relays (Ordinal Hi)))).
+  move=> i Hi0; do 2 eexists.
+  rewrite /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /=.
+  rewrite -map_comp (nth_map ord0); last by rewrite Hrelays.
+  rewrite /comp /=. exact: relay_erase_eq.
+have H1 : forall i, (i < size procs)%N -> exists d' next, nth (@default_proc data) procs i = Init d' next.
+  move=> i Hi; rewrite Hszp in Hi.
+  case: i Hi => [|i'] Hi.
+    have [d1 [d2 H]] := Hprocs0; by exists d1, (Init d2 (alice_foldr 0)).
+  have Hi' : (i' < n_relay.+1)%N by [].
+  have [d1 [d2 H]] := Hprocsi i' Hi'; by exists d1, (Init d2 (relay_body (nth ord0 relays (Ordinal Hi')))).
+rewrite (one_step_all_init H1).
+set ps1 := [seq _ | _ <- procs].
+have Hsz1 : size ps1 = n_relay.+2 by rewrite /ps1 size_map.
+have H2 : forall i, (i < size ps1)%N -> exists d' next, nth (@default_proc data) ps1 i = Init d' next.
+  move=> i Hi; rewrite Hsz1 in Hi.
+  have Hi' : (i < size procs)%N by rewrite Hszp.
+  have [d1 [next Hk]] := H1 i Hi'.
+  rewrite /ps1 (nth_map (@default_proc data)) // Hk /=.
+  case: i Hi Hi' Hk => [|i'] Hi Hi' Hk.
+    have [d1' [d2' Hk0]] := Hprocs0.
+    rewrite Hk0 in Hk; case: Hk => _ <-.
+    by exists d2', (alice_foldr 0).
+  have Hi'n : (i' < n_relay.+1)%N by [].
+  have [d1' [d2' Hk']] := Hprocsi i' Hi'n.
+  rewrite Hk' in Hk; case: Hk => _ <-.
+  by exists d2', (relay_body (nth ord0 relays (Ordinal Hi'n))).
+rewrite (one_step_all_init H2).
+apply (eq_from_nth (x0 := default_proc data)).
+  by rewrite size_map Hsz1 /recv_procs_gen /= size_map size_iota.
+rewrite size_map Hsz1 => i Hi.
+rewrite (nth_map (@default_proc data)); last by rewrite Hsz1.
+have Hi2 : (i < size ps1)%N by rewrite Hsz1.
+have [d' [next Hnth]] := H2 i Hi2.
+rewrite Hnth /=.
+case: i Hi Hi2 Hnth => [|i'] Hi Hi2 Hnth.
+- rewrite /recv_procs_gen /=.
+  have [d1 [d2 Hk0]] := Hprocs0.
+  have Hps1_0 : nth (@default_proc data) ps1 0 = Init d2 (alice_foldr 0).
+    rewrite /ps1 (nth_map (@default_proc data)); last by rewrite Hszp.
+    by rewrite Hk0.
+  rewrite Hps1_0 in Hnth; case: Hnth => _ ->.
+  by [].
+- have Hi'n : (i' < n_relay.+1)%N by [].
+  rewrite /recv_procs_gen /= nth_mkseq //.
+  rewrite /bg_init; case: ifP => _ //.
+  + have [d1 [d2 Hk']] := Hprocsi i' Hi'n.
+    have Hps1_i : nth (@default_proc data) ps1 i'.+1 = Init d2 (relay_body (nth ord0 relays (Ordinal Hi'n))).
+      rewrite /ps1 (nth_map (@default_proc data)); last by rewrite Hszp; exact Hi.
+      by rewrite Hk'.
+    have : d' = d2 /\ next = relay_body (nth ord0 relays (Ordinal Hi'n)).
+      by rewrite Hps1_i in Hnth; case: Hnth.
+    case=> _ ->; congr relay_body.
+    rewrite (Hrelays_id (Ordinal Hi'n)).
+    by apply val_inj; rewrite /= inordK.
+  + have [d1 [d2 Hk']] := Hprocsi i' Hi'n.
+    have Hps1_i : nth (@default_proc data) ps1 i'.+1 = Init d2 (relay_body (nth ord0 relays (Ordinal Hi'n))).
+      rewrite /ps1 (nth_map (@default_proc data)); last by rewrite Hszp; exact Hi.
+      by rewrite Hk'.
+    have : d' = d2 /\ next = relay_body (nth ord0 relays (Ordinal Hi'n)).
+      by rewrite Hps1_i in Hnth; case: Hnth.
+    case=> _ ->; congr relay_body.
+    rewrite (Hrelays_id (Ordinal Hi'n)).
+    by apply val_inj; rewrite /= inordK.
+Qed.
+
+(* After 2 init steps, not terminated *)
+Lemma init_not_terminated :
+  ~~ @all_terminated data (one_step_procs (one_step_procs procs)).
+Proof.
+rewrite init_matches_recv0 /= /all_terminated /recv_procs_gen /=.
+have Hord0 := ltn_ord (@ord0 n_relay).
+have [f ->] := alice_body_at_recv Hord0.
+by [].
+Qed.
+
+(* Concrete return value: what chain_acc - masks + u0*v0 equals *)
+Let concrete_val_eq :=
+  d (\sum_(j : 'I_n_relay.+1) u (lift ord0 j) * v_relay j + u ord0 * v0).
+
+Lemma concrete_val_sum :
+  (1 <= n_relay)%N -> concrete_val = concrete_val_eq.
+Proof.
+move=> Hn1; rewrite /concrete_val /concrete_val_eq.
+by rewrite chain_acc_minus_masks // GRing.addrC.
+Qed.
 
 End dsdp_fsm.
