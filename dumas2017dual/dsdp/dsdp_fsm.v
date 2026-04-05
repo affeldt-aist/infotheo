@@ -1742,7 +1742,15 @@ Proof. Admitted.
    Each step uses KS2_step with the appropriate step_ok lemma.
    For the general loop (j = 1..n_relay), induction is needed. *)
 Lemma ks2_recv0 : known_state2 (local_st_recv ord0).
-Proof. Admitted.
+Proof.
+suff Hgen : forall (k : nat) (j : 'I_n_relay.+1) (bg0 : nat -> proc (std_data AHE)),
+  (j + k = n_relay)%N ->
+  known_state2 (PhaseState (frag_ok_recv_gen ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j bg0)).
+  apply: (Hgen n_relay ord0 (bg_init ek dk_relay v_relay r1_relay r2_relay)).
+  by rewrite add0n.
+(* General recv chain by induction on k (distance to n_relay) *)
+admit.
+Admitted.
 
 (* known_state2_term_ret: if a known_state2 is all-terminated,
    its process list is that of st_ret *)
