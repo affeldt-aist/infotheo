@@ -2012,11 +2012,123 @@ elim => [|st0 st' frags0 _ IH Hstep Hprog Hnt].
 - exact: (KS2_step IH Hstep Hprog Hnt).
 Qed.
 
+(* NOP propagation: the bg' produced by step_ok_send_recv_gen
+   inherits NOP and structural conditions from the original bg. *)
+
+(* Helper: bg positions > j+1 are unchanged after the send→recv step *)
+Lemma bg_step_unchanged (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
+  (j < n_relay)%N ->
+  bg_nop_send j bg ->
+  one_step_procs (ps_procs (st_send_gen j bg)) =
+  ps_procs (st_recv_gen (inord j.+1) bg') ->
+  forall i, (j.+1 < i)%N -> (i < n_relay.+1)%N ->
+    bg' i = bg i.
+Proof. Admitted.
+
+(* NOP condition propagation for recv *)
+Lemma nop_propagate_recv (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
+  (j < n_relay)%N ->
+  bg_nop_recv j bg ->
+  bg_nop_send j bg ->
+  (exists f, nth (@Finish data) (send_procs_gen j bg)
+             (alice_send_dest j) = Recv 0 f) ->
+  bg j.+1 = relay_body (inord j.+1) ->
+  one_step_procs (ps_procs (st_send_gen j bg)) =
+  ps_procs (st_recv_gen (inord j.+1) bg') ->
+  bg_nop_recv (inord j.+1) bg'.
+Proof. Admitted.
+
+(* NOP condition propagation for send *)
+Lemma nop_propagate_send (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
+  (j < n_relay)%N ->
+  bg_nop_recv j bg ->
+  bg_nop_send j bg ->
+  (exists f, nth (@Finish data) (send_procs_gen j bg)
+             (alice_send_dest j) = Recv 0 f) ->
+  bg j.+1 = relay_body (inord j.+1) ->
+  one_step_procs (ps_procs (st_send_gen j bg)) =
+  ps_procs (st_recv_gen (inord j.+1) bg') ->
+  bg_nop_send (inord j.+1) bg'.
+Proof. Admitted.
+
+(* Recv condition propagation *)
+Lemma recv_propagate (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
+  (j < n_relay)%N ->
+  bg_nop_send j bg ->
+  (exists f, nth (@Finish data) (send_procs_gen j bg)
+             (alice_send_dest j) = Recv 0 f) ->
+  bg j.+1 = relay_body (inord j.+1) ->
+  (forall i, (j < i)%N -> (i < n_relay.+1)%N -> bg i = relay_body (inord i)) ->
+  one_step_procs (ps_procs (st_send_gen j bg)) =
+  ps_procs (st_recv_gen (inord j.+1) bg') ->
+  exists f, nth (@Finish data) (send_procs_gen (@inord n_relay j.+1) bg')
+            (alice_send_dest (@inord n_relay j.+1)) = Recv 0 f.
+Proof. Admitted.
+
+(* bg = relay_body propagation for positions > j+1 *)
+Lemma bg_relay_propagate (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
+  (j < n_relay)%N ->
+  bg_nop_send j bg ->
+  (forall i, (j < i)%N -> (i < n_relay.+1)%N -> bg i = relay_body (inord i)) ->
+  one_step_procs (ps_procs (st_send_gen j bg)) =
+  ps_procs (st_recv_gen (inord j.+1) bg') ->
+  forall i, (j.+1 < i)%N -> (i < n_relay.+1)%N ->
+    bg' i = relay_body (inord i).
+Proof.
+move=> Hjn Hns Hbg Hstep i Hi1 Hi2.
+rewrite (bg_step_unchanged Hjn Hns Hstep Hi1 Hi2).
+apply Hbg; first by apply (ltn_trans (ltnSn j) Hi1).
+exact Hi2.
+Qed.
+
+(* Main induction: known_state2 for recv at any position *)
+Lemma ks2_recv_gen_induction (k : nat) (j : 'I_n_relay.+1)
+    (bg : nat -> proc data) :
+  (j + k = n_relay)%N ->
+  bg_nop_recv j bg ->
+  bg_nop_send j bg ->
+  (exists f, nth (@Finish data) (send_procs_gen j bg)
+             (alice_send_dest j) = Recv 0 f) ->
+  (forall i, (j < i)%N -> (i < n_relay.+1)%N -> bg i = relay_body (inord i)) ->
+  known_state2 (st_recv_gen j bg).
+Proof.
+elim: k j bg => [|k IH] j bg Hjk Hnr Hns Hrecv Hbg.
+- (* Base case: j = n_relay (ord_max). Chain: recv → send → drain → tail → ret *)
+  admit.
+- (* Step case: j < n_relay. Use ks2_recv_gen_step. *)
+  have Hjn : (j < n_relay)%N.
+    move: (Hjk). rewrite addnS. move/eqP => Hjk2.
+    apply (leq_ltn_trans (leq_addr k j)). by rewrite (eqP Hjk2).
+  apply (ks2_recv_gen_step Hnr Hjn Hns Hrecv).
+  + apply Hbg; first exact (ltnSn j). exact Hjn.
+  + move=> bg' Hbg_eq.
+    apply (IH (inord j.+1) bg').
+    * rewrite inordK; last exact Hjn.
+      by rewrite -addSnnS.
+    * exact: (nop_propagate_recv Hjn Hnr Hns Hrecv
+              (Hbg j.+1 (ltnSn j) Hjn) Hbg_eq).
+    * exact: (nop_propagate_send Hjn Hnr Hns Hrecv
+              (Hbg j.+1 (ltnSn j) Hjn) Hbg_eq).
+    * exact: (recv_propagate Hjn Hns Hrecv
+              (Hbg j.+1 (ltnSn j) Hjn) Hbg Hbg_eq).
+    * exact: (bg_relay_propagate Hjn Hns Hbg Hbg_eq).
+Admitted.
+
 (* ks2_recv0: known_state2 (st_recv ord0)
    Built by descending induction on relay index using ks2_recv_gen_step
    for intermediate relays and step_ok_* for transitions. *)
 
 Lemma ks2_recv0 : known_state2 (st_recv ord0).
-Proof. Admitted.
+Proof.
+rewrite /st_recv.
+apply (ks2_recv_gen_induction (k:=n_relay) (j:=ord0) (bg:=bg_init)).
+- by rewrite add0n.
+- exact: (@bg_init_nop_recv ord0).
+- exact: (@bg_init_nop_send ord0).
+- rewrite /send_procs_gen /alice_send_dest /= /relay_after_send0
+    inordK //= /std_Recv_dec /std_Recv_enc /Recv_param.
+  by eexists.
+- by move=> i _ _; rewrite /bg_init.
+Qed.
 
 End dsdp_fsm.
