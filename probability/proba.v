@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-Require realType_ext.  (* Remove this line when requiring Rocq >= 9.2 *)
+From Stdlib Require Peano_dec.
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup lra.
 From mathcomp Require boolp.
