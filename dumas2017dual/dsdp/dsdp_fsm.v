@@ -1741,4 +1741,138 @@ case=> [|st0 st' frags0 _ _ _ Hnt] Hterm.
 - by rewrite Hterm in Hnt.
 Qed.
 
+(* ========================================================================== *)
+(* Part A: Relay state evolution after protocol interactions                   *)
+(* These lemmas trace how each relay's process form evolves through the       *)
+(* protocol rounds, using AHE homomorphism for the algebraic steps.           *)
+(* ========================================================================== *)
+
+(* A1: relay 0 after its initial Send 0 to Alice *)
+Lemma relay0_after_send0_form :
+  relay_after_send0 ord0 =
+  @std_Recv_dec AHE alice_idx (dk_relay ord0) (fun m0 =>
+    @std_Recv_enc AHE alice_idx (fun enc1 =>
+      @smc_interpreter.Send data 2
+        (e_local (@Emul AHE enc1 (@enc AHE (ek (nat_to_party_id 2)) m0 (r2_relay ord0))))
+        Finish)).
+Proof. by rewrite /relay_after_send0 /=. Qed.
+
+(* A2a: relay 0 after FIRST Alice message (round j=0, Recv_dec fires) *)
+Lemma relay0_after_first_alice :
+  exists f,
+    relay_after_send0 ord0 = Recv 0 f /\
+    forall c m, @dec AHE (dk_relay ord0) c = Some m ->
+      f (e_local c) =
+        @std_Recv_enc AHE alice_idx (fun enc1 =>
+          @smc_interpreter.Send data 2
+            (e_local (@Emul AHE enc1
+              (@enc AHE (ek (nat_to_party_id 2)) m (r2_relay ord0))))
+            Finish).
+Proof.
+rewrite /relay_after_send0 /=.
+rewrite /std_Recv_dec /std_Recv_enc /Recv_param /std_from_enc /=.
+eexists; split; first by reflexivity.
+move=> c m Hdec.
+by rewrite /e_local /DI /= Hdec /=.
+Qed.
+
+(* Bridge: enc k m r = enc_curry AHE k (m, r) — needed for morphism rewriting *)
+Local Lemma enc_curry_eq (kk : pub_key AHE) (m : plain AHE) (rr : rand AHE) :
+  enc kk m rr = ahe_enc.enc_curry AHE kk (m, rr).
+Proof. by []. Qed.
+
+(* A2b: relay 0's Recv_enc callback applied to enc1:
+   Send 2 (e_local (Emul enc1 (enc ek2 m0 r2_0))) Finish *)
+Lemma relay0_after_second_alice (m0 : plain AHE) (enc1 : cipher AHE) :
+  forall f,
+    relay_after_send0 ord0 = Recv 0 f ->
+    forall c, @dec AHE (dk_relay ord0) c = Some m0 ->
+      exists g,
+        f (e_local c) = Recv 0 g /\
+        g (e_local enc1) =
+          Send 2 (e_local (@Emul AHE enc1 (@enc AHE (ek (nat_to_party_id 2)) m0 (r2_relay ord0))))
+            Finish.
+Proof.
+move=> f Hf c Hdec.
+rewrite /relay_after_send0 /= in Hf.
+rewrite /std_Recv_dec /std_Recv_enc /Recv_param in Hf.
+injection Hf => Hfeq.
+subst f.
+rewrite /e_local /DI /std_from_enc /= Hdec /=.
+eexists; split; first by reflexivity.
+by rewrite /= /std_from_enc /DI /=.
+Qed.
+
+(* A3: middle relay (0 < j < n_relay) after Alice's Recv_enc fires:
+   still at Recv from predecessor j-1, waiting for chain cipher *)
+Lemma relay_mid_after_alice (j : 'I_n_relay.+1) :
+  (0 < j)%N -> (j < n_relay)%N ->
+  exists f_pred,
+    relay_after_send0 j = Recv 0 f_pred /\
+    forall c, @std_from_enc AHE (e_local c) != None ->
+      exists f_dec, f_pred (e_local c) = Recv (j : nat) f_dec.
+Proof.
+move=> Hj0 Hjn.
+rewrite /relay_after_send0.
+have -> : (j : nat) == 0 = false by rewrite eqn0Ngt Hj0.
+have -> : (j : nat) == n_relay = false
+  by apply/negP => /eqP Heq; rewrite Heq ltnn in Hjn.
+rewrite /std_Recv_enc /std_Recv_dec /Recv_param.
+eexists; split; first by reflexivity.
+move=> c _.
+rewrite /e_local /DI /std_from_enc /=.
+by eexists.
+Qed.
+
+(* A4: middle relay after Alice's enc (enc0) and predecessor's chain cipher:
+   Recv_enc fires with enc0 → Recv_dec fires with dec dk' chain_cipher = Some m0
+   → Send j+2 (e_local (Emul enc0 (enc ek_{j+2} m0 r2_j))) Finish *)
+Lemma relay_mid_drain_callback (j : 'I_n_relay.+1) :
+  (0 < j)%N -> (j < n_relay)%N ->
+  forall (enc0 : cipher AHE),
+    exists f_dec,
+      relay_after_send0 j = Recv 0 (fun d0 =>
+        match @std_from_enc AHE d0 with
+        | Some c0 => Recv (j : nat) (f_dec c0)
+        | None => Fail
+        end) /\
+      forall c m0, @dec AHE (dk_relay j) c = Some m0 ->
+        (f_dec enc0) (e_local c) =
+          Send j.+2 (e_local (@Emul AHE enc0
+            (@enc AHE (ek (nat_to_party_id j.+2)) m0 (r2_relay j)))) Finish.
+Proof.
+move=> Hj0 Hjn enc0.
+rewrite /relay_after_send0.
+have -> : (j : nat) == 0 = false by rewrite eqn0Ngt Hj0.
+have -> : (j : nat) == n_relay = false
+  by apply/negP => /eqP Heq; rewrite Heq ltnn in Hjn.
+rewrite /std_Recv_enc /std_Recv_dec /Recv_param.
+exists (fun (c0 : cipher AHE) =>
+  oapp (fun m0 : plain AHE =>
+    Send j.+2 (e_local (@Emul AHE c0 (enc (ek (nat_to_party_id j.+2)) m0 (r2_relay j)))) Finish)
+    Fail \o (obind (dec (dk_relay j)) \o @std_from_enc AHE)).
+split; first by reflexivity.
+move=> c m0 Hdec.
+by rewrite /e_local /DI /std_from_enc /= Hdec.
+Qed.
+
+(* A5: last relay drain callback: Recv from predecessor applied to chain cipher.
+   dec dk_last chain_cipher = Some m0 →
+   Send 0 (e_local (enc ek_alice m0 r2_last)) Finish *)
+Lemma relay_last_drain_callback :
+  exists f_dec,
+    relay_after_send0 ord_max = Recv (n_relay : nat) f_dec /\
+    forall c m0, @dec AHE (dk_relay ord_max) c = Some m0 ->
+      f_dec (e_local c) =
+        Send 0 (e_local (@enc AHE (ek alice_idx) m0 (r2_relay ord_max))) Finish.
+Proof.
+rewrite /relay_after_send0 /=.
+have -> : (n_relay == 0) = false by rewrite eqn0Ngt Hn_relay.
+rewrite eqxx.
+rewrite /std_Recv_dec /Recv_param.
+eexists; split; first by reflexivity.
+move=> c m0 Hdec.
+by rewrite /e_local /DI /std_from_enc /= Hdec.
+Qed.
+
 End dsdp_fsm.
