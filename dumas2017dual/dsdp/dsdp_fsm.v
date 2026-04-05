@@ -735,6 +735,480 @@ by have -> : (i' < n_relay)%N = true
 Qed.
 
 (* ========================================================================== *)
+(* Missing step_ok: send → recv, send → drain, drain → drain, drain → tail   *)
+(* These prove extensional list equality for the remaining transitions.       *)
+(* ========================================================================== *)
+
+(* send(j) → recv(j+1): general send→recv transition.
+   Requires: j < n_relay (not the last), NOP condition on bg,
+   the target position has a Recv from Alice,
+   and the next relay is still in its initial state. *)
+Lemma step_ok_send_recv_gen (j : 'I_n_relay.+1) (bg : nat -> proc data) :
+  (j < n_relay)%N ->
+  bg_nop_send j bg ->
+  (exists f, nth (@Finish data) (send_procs_gen j bg) (alice_send_dest j) =
+             Recv 0 f) ->
+  bg j.+1 = relay_body (inord j.+1) ->
+  exists bg',
+    one_step_procs (ps_procs (st_send_gen j bg)) =
+    ps_procs (st_recv_gen (inord j.+1) bg').
+Proof.
+move=> Hjn Hnop [ff Hrecv] Hbg_next.
+set sp := send_procs_gen j bg.
+have Hszsp : size sp = n_relay.+2
+  by rewrite /sp /send_procs_gen /= size_map size_iota.
+have Hinord : (inord j.+1 : 'I_n_relay.+1) = j.+1 :> nat
+  by rewrite inordK // ltnS.
+exists (fun i => (step sp [::] i.+1).1.1).
+rewrite /one_step_procs /ps_procs /st_send_gen -/sp Hszsp
+        /st_recv_gen /recv_procs_gen /unzip1 -2!map_comp.
+apply (@eq_from_nth _ (@Finish data)).
+  by rewrite size_map size_iota /= size_map size_iota.
+move=> i; rewrite size_map size_iota => Hi.
+rewrite (nth_map 0) ?size_iota // nth_iota // add0n /comp /=.
+case: i Hi => [|i] Hi.
+  (* Position 0: Alice's Send fires *)
+  rewrite /= /step /sp /send_procs_gen /=.
+  have -> : nth (default_proc data)
+    (Send (alice_send_dest j) (e_local (alice_enc j)) (alice_foldr j.+1) ::
+     mkseq (fun i => if i == j then relay_after_send0 (inord i) else bg i)
+       n_relay.+1)
+    (alice_send_dest j) = Recv 0 ff.
+    rewrite -(Hrecv) /send_procs_gen; apply set_nth_default.
+    rewrite /= size_map size_iota /alice_send_dest /maxn.
+    case: ifP => _ //.
+    by apply ltn_trans with n_relay.+1; [exact: ltn_ord | exact: ltnSn].
+  by rewrite /= Hinord.
+(* Position i.+1: relay positions *)
+rewrite /= nth_mkseq; last by rewrite ltnS in Hi.
+case Heq : (i == (inord j.+1 : 'I_n_relay.+1) :> nat).
+  (* i == j.+1: relay_body at position j.+2, NOP since Alice is Send *)
+  move/eqP: Heq => Heq; subst i.
+  rewrite Hinord /sp /step /send_procs_gen /=.
+  have Hjlt : (j < size (iota 1 n_relay))%N by rewrite size_iota.
+  rewrite (nth_map 0) // nth_iota // add1n.
+  have -> : (j.+1 == j :> nat) = false by rewrite gtn_eqF.
+  rewrite Hbg_next (relay_body_send0_cont (inord j.+1)) /=.
+  by [].
+by [].
+Qed.
+
+(* send_0 → recv(1): special case with bg_init *)
+Lemma step_ok_send0_recv1 :
+  (0 < n_relay)%N ->
+  exists bg',
+    one_step_procs (ps_procs st_send_0) =
+    ps_procs (st_recv_gen (inord 1) bg').
+Proof.
+move=> Hn1.
+apply (step_ok_send_recv_gen (j := ord0) (bg := bg_init)) => //.
+- move=> i Hi Hneq.
+  rewrite /is_nop /send_procs_gen /step /=.
+  rewrite nth_mkseq; last by [].
+  have -> : (i == 0 :> nat) = false by rewrite (negbTE Hneq).
+  rewrite /bg_init (relay_body_send0_cont (inord i)) /=.
+  have [frm [f Hras]] := relay_after_send0_is_recv (inord 0 : 'I_n_relay.+1).
+  by [].
+- rewrite /send_procs_gen /alice_send_dest /= /mkseq /=.
+  rewrite /relay_after_send0 inordK //=.
+  rewrite /pRecvDec_local /std_Recv_dec /Recv_param /=.
+  by eexists.
+Qed.
+
+(* send(last) → drain(0): last send triggers drain phase.
+   Requires: NOP condition, the target has matching Recv,
+   and bg(0) already has the right Send form for drain. *)
+Lemma step_ok_send_last_drain (bg : nat -> proc data) :
+  bg_nop_send ord_max bg ->
+  (exists f, nth (@Finish data) (send_procs_gen (@ord_max n_relay) bg)
+             (alice_send_dest (@ord_max n_relay)) = Recv 0 f) ->
+  (* bg(0) is the drain-phase Send from relay 0 to relay 1 *)
+  (exists rr0, bg 0 = Send 2
+    (e_local (enc_local (ek (nat_to_party_id 2)) (chain_acc 0) rr0)) Finish) ->
+  (* bg(1) is a Recv from position 1 (next drain receiver) *)
+  (exists f1, bg 1 = Recv 1 f1) ->
+  (* bg n_relay does not Send to Alice *)
+  (forall v k, bg n_relay.-1 <> Send 0 v k) ->
+  exists (rr' : rand AHE) (bg' : nat -> proc data)
+         (Hsafe : forall v k, bg' n_relay <> Send 0 v k),
+    one_step_procs (ps_procs (@st_send_gen (@ord_max n_relay) bg)) =
+    ps_procs (@st_drain_gen ord0 rr' bg' Hsafe).
+Proof.
+(* Helper: nth on cons with positive index *)
+have nth_cons_pos : forall (T : Type) (x0 : T) (a : T) (s : seq T) (n : nat),
+  (0 < n)%N -> nth x0 (a :: s) n = nth x0 s n.-1
+  by move=> T x0 a s [].
+move=> Hnop [ff Hrecv] [rr0 Hbg0] [f1 Hbg1] Hbg_safe.
+set sp := send_procs_gen ord_max bg.
+have Hszsp : size sp = n_relay.+2
+  by rewrite /sp /send_procs_gen /= size_map size_iota.
+have Hmaxn : alice_send_dest (@ord_max n_relay) = n_relay.
+  rewrite /alice_send_dest /maxn.
+  case: ltnP => H //.
+  by apply anti_leq; rewrite Hn_relay H.
+(* Derive bg n_relay.-1 = Recv 0 ff from Hrecv *)
+have Hbgnr : bg n_relay.-1 = Recv 0 ff.
+  move: Hrecv; rewrite Hmaxn /sp /send_procs_gen.
+  rewrite nth_cons_pos //.
+  rewrite nth_mkseq; last by apply (leq_ltn_trans (leq_pred _)).
+  by rewrite ltn_eqF; last rewrite prednK.
+(* NOP helper *)
+have Hnop_step : forall i, (i < n_relay.+1)%N -> i != (ord_max : 'I_n_relay.+1) :> nat ->
+  (step sp [::] i.+1).1.1 = bg i.
+  move=> i Hi Hneq.
+  have Hnopi := Hnop i Hi Hneq.
+  rewrite /is_nop in Hnopi.
+  rewrite /sp /send_procs_gen /step /= in Hnopi |- *.
+  rewrite nth_mkseq in Hnopi |- *; try exact Hi.
+  rewrite (negbTE Hneq) in Hnopi |- *.
+  move: Hnopi.
+  case: (bg i) => [d0 next|dst w next|frm ff0|d0| |] //=.
+    case: (nth _ _ dst) => [? ?|? ? ?|? ?|?| |] //=.
+    by case: ifP.
+    case: (nth _ _ frm) => [? ?|? ? ?|? ?|?| |] //=.
+    by case: ifP.
+(* Step at position 0: Alice fires *)
+have Hstep0 : (step sp [::] 0).1.1 = alice_foldr n_relay.+1.
+  rewrite /sp /send_procs_gen /step /=.
+  have -> : nth (default_proc data)
+    (Send (alice_send_dest n_relay) (e_local (alice_enc ord_max))
+       (alice_foldr n_relay.+1) ::
+     mkseq (fun i => if i == n_relay then relay_after_send0 (inord i) else bg i)
+       n_relay.+1)
+    (alice_send_dest n_relay) = Recv 0 ff.
+    have Hasd : alice_send_dest n_relay = alice_send_dest (@ord_max n_relay) by [].
+    rewrite Hasd -(Hrecv) /send_procs_gen; apply set_nth_default.
+    rewrite /= size_map size_iota Hmaxn.
+    by apply ltn_trans with n_relay.+1; [exact: ltnSn | exact: ltnSn].
+  by [].
+(* Existentials *)
+exists rr0.
+exists (fun i => (step sp [::] i.+1).1.1).
+(* Hsafe: step at n_relay.+1 is NOP, result is Recv, not Send 0 *)
+have Hstep_last_nop : (step sp [::] n_relay.+1).2 = false.
+  rewrite /sp /send_procs_gen /step /=.
+  rewrite nth_mkseq; last by [].
+  rewrite eqxx /relay_after_send0.
+  have Hn0 : (n_relay == 0) = false by rewrite eqn0Ngt Hn_relay.
+  rewrite inordK //= Hn0 eqxx /pRecvDec_local /std_Recv_dec /Recv_param /=.
+  have -> : nth (default_proc data)
+    (Send (alice_send_dest n_relay) (e_local (alice_enc ord_max))
+       (alice_foldr n_relay.+1) ::
+     mkseq (fun i => if i == n_relay then relay_after_send0 (inord i) else bg i)
+       n_relay.+1)
+    n_relay = Recv 0 ff.
+    have Hasd : alice_send_dest n_relay = alice_send_dest (@ord_max n_relay) by [].
+    have Hnr : nth Finish sp n_relay = Recv 0 ff.
+      move: Hrecv; by rewrite Hmaxn.
+    rewrite /sp /send_procs_gen in Hnr.
+    rewrite -(Hnr); apply set_nth_default.
+    rewrite /= size_map size_iota.
+    by apply ltn_trans with n_relay.+1; [exact: ltnSn | exact: ltnSn].
+  by [].
+have Hsafe_pf : forall v k, (step sp [::] n_relay.+1).1.1 <> Send 0 v k.
+  move=> v k.
+  rewrite /sp /send_procs_gen /step /=.
+  rewrite nth_mkseq; last by [].
+  rewrite eqxx /relay_after_send0.
+  have Hn0 : (n_relay == 0) = false by rewrite eqn0Ngt Hn_relay.
+  rewrite inordK //= Hn0 eqxx /pRecvDec_local /std_Recv_dec /Recv_param /=.
+  have -> : nth (default_proc data)
+    (Send (alice_send_dest n_relay) (e_local (alice_enc ord_max))
+       (alice_foldr n_relay.+1) ::
+     mkseq (fun i => if i == n_relay then relay_after_send0 (inord i) else bg i)
+       n_relay.+1)
+    n_relay = Recv 0 ff.
+    have Hnr : nth Finish sp n_relay = Recv 0 ff.
+      move: Hrecv; by rewrite Hmaxn.
+    rewrite /sp /send_procs_gen in Hnr.
+    rewrite -(Hnr); apply set_nth_default.
+    rewrite /= size_map size_iota.
+    by apply ltn_trans with n_relay.+1; [exact: ltnSn | exact: ltnSn].
+  by [].
+exists Hsafe_pf.
+(* Main goal: eq_from_nth *)
+rewrite /one_step_procs /ps_procs /st_send_gen -/sp Hszsp
+        /st_drain_gen /drain_procs_gen /unzip1 -2!map_comp.
+apply (@eq_from_nth _ (@Finish data)).
+  by rewrite size_map size_iota /= size_map size_iota.
+move=> i; rewrite size_map size_iota => Hi.
+rewrite (nth_map 0) ?size_iota // nth_iota // add0n /comp /=.
+case: i Hi => [|i] Hi.
+  (* Position 0: Alice *)
+  by rewrite Hstep0.
+(* Position i.+1: relay positions *)
+rewrite /= nth_mkseq; last by rewrite ltnS in Hi.
+case Heq0 : (i == 0 :> nat).
+  (* i == 0: drain active sender position *)
+  move/eqP: Heq0 => Heq0; subst i.
+  rewrite Hnop_step //.
+    by rewrite Hbg0.
+  by rewrite eq_sym eqn0Ngt Hn_relay.
+case Heq1 : (i == 1 :> nat).
+  (* i == 1: drain receiver position *)
+  move/eqP: Heq1 => Heq1; subst i.
+  (* need (step sp [::] 2).1.1 = match (step sp [::] 2).1.1 with Recv _ f => Recv 1 f | ... *)
+  (* Derive 1 != n_relay from Hbgnr + Hbg0 contradiction *)
+  have Hineq1 : (1 : nat) != (ord_max : 'I_n_relay.+1) :> nat.
+    apply/negP => /eqP Hnr1.
+    have : n_relay = 1 by exact Hnr1.
+    move=> Hnr1'.
+    by move: Hbgnr; rewrite Hnr1' /= Hbg0.
+  rewrite Hnop_step // Hbg1 /=.
+  by [].
+(* All other positions: NOP and bg match *)
+case Heqnr : (i == (ord_max : 'I_n_relay.+1) :> nat).
+  (* i == n_relay: this is the position that was the receiver of Alice's send.
+     After stepping, it became ff(alice_enc ord_max).
+     In drain_procs_gen, this position is bg' i where i != 0, i != 1. *)
+  by [].
+by [].
+Qed.
+
+(* drain(j) → drain(j+1): relay j forwards cipher to j+1.
+   The callback hypothesis says what bg j.+1 does when receiving the chain.
+   Hcallback: relay j+1 receives, computes, and produces a Send. *)
+Lemma step_ok_drain_drain_gen (j : 'I_n_relay.+1) (rr : rand AHE)
+    (bg : nat -> proc data)
+    (Hsafe : forall v k, bg n_relay <> Send 0 v k) :
+  let cipher_j := e_local (enc_local (ek (nat_to_party_id j.+2))
+                                      (chain_acc j) rr) in
+  (j.+2 < n_relay.+1)%N ->
+  (* bg j.+1 is a Recv whose callback produces a Send *)
+  (exists f rr_next,
+     bg j.+1 = Recv (j : nat) f /\
+     f cipher_j =
+       Send j.+3
+         (e_local (enc_local (ek (nat_to_party_id j.+3))
+                              (chain_acc j.+1) rr_next))
+         Finish) ->
+  (* bg j.+2 is a Recv from j.+1 (for the next drain receiver) *)
+  (exists f_next, bg j.+2 = Recv j.+2 f_next) ->
+  (* Finish (from stepped relay j) doesn't Send to Alice *)
+  (forall v k, bg j <> Send 0 v k) ->
+  exists (rr' : rand AHE) (bg' : nat -> proc data)
+         (Hsafe' : forall v k, bg' n_relay <> Send 0 v k),
+    one_step_procs (ps_procs (@st_drain_gen j rr bg Hsafe)) =
+    ps_procs (@st_drain_gen (inord j.+1) rr' bg' Hsafe').
+Proof.
+move=> cipher_j Hj2 [f_cb [rr_next [Hbgj1 Hfcj]]] [f_next Hbgj2] Hbgj_safe.
+set dp := drain_procs_gen j rr bg.
+have Hszdp : size dp = n_relay.+2
+  by rewrite /dp /drain_procs_gen /= size_map size_iota.
+have Hjlt : (j < n_relay)%N by apply ltnW; rewrite -ltnS.
+have Hj1lt : (j.+1 < n_relay)%N by rewrite -ltnS.
+(* Step at position 0: Alice at tail, NOP *)
+have Hstep0 : (step dp [::] 0).1.1 = alice_foldr n_relay.+1.
+  rewrite /dp /drain_procs_gen alice_foldr_at_tail /alice_erase_tail
+    /pRecvDec_local /std_Recv_dec /Recv_param /step /=.
+  set X := nth _ _ _.
+  have HX : X = bg n_relay.
+    rewrite /X nth_mkseq //=.
+    by rewrite gtn_eqF // ltnW // ltnW // gtn_eqF // -ltnS.
+  rewrite HX.
+  case Hbgn : (bg n_relay) => [d0 next|dst w next|frm ff0|d0| |] //=.
+  case: ifP => //= /eqP Hdst.
+  by exfalso; apply (Hsafe w next); rewrite -Hdst Hbgn.
+(* Step at position j+1: active sender fires, becomes Finish *)
+have Hstepj1 : (step dp [::] j.+1).1.1 = Finish.
+  rewrite /dp /drain_procs_gen /step /=.
+  rewrite nth_mkseq; last exact (ltn_ord j).
+  rewrite eqxx /=.
+  rewrite nth_cons_pos; last by [].
+  rewrite nth_mkseq; last exact Hjlt.
+  rewrite [j.+1 == j]gtn_eqF // eqxx Hbgj1 /= eqxx.
+  by [].
+(* Step at position j+2: receiver fires, becomes f_cb(cipher_j) *)
+have Hstepj2 : (step dp [::] j.+2).1.1 = f_cb cipher_j.
+  rewrite /dp /drain_procs_gen /step /=.
+  rewrite nth_cons_pos; last by [].
+  rewrite nth_mkseq; last exact Hj1lt.
+  rewrite [j.+1 == j]gtn_eqF // eqxx Hbgj1 /=.
+  rewrite nth_cons_pos; last by [].
+  rewrite nth_mkseq; last exact (ltn_ord j).
+  rewrite eqxx /= eqxx.
+  by [].
+(* Existentials *)
+exists rr_next.
+exists (fun i => (step dp [::] i.+1).1.1).
+(* Hsafe' *)
+have Hsafe' : forall v k, (step dp [::] n_relay.+1).1.1 <> Send 0 v k.
+  move=> v k.
+  (* Position n_relay.+1 in dp = bg n_relay (since n_relay != j, n_relay != j.+1) *)
+  rewrite /dp /drain_procs_gen /step /=.
+  rewrite nth_mkseq; last by [].
+  rewrite gtn_eqF; last by rewrite ltnW // ltnW.
+  rewrite gtn_eqF; last by rewrite -ltnS.
+  (* dp[n_relay.+1] = bg n_relay *)
+  (* Now show bg n_relay doesn't match Send to position n_relay.+1 *)
+  case Hbgn : (bg n_relay) => [d0 next|dst w next|frm ff0|d0| |] //=.
+  - by case: (nth _ _ _) => [? ?|? ? ?|? ?|?| |] //=; case: ifP.
+  - case Hdst : (nth _ _ frm) => [? ?|? ? ?|? ?|?| |] //=.
+    by case: ifP.
+    by case: ifP.
+exists Hsafe'.
+(* Main goal: eq_from_nth *)
+rewrite /one_step_procs /ps_procs /st_drain_gen -/dp Hszdp
+        /drain_procs_gen /unzip1 -2!map_comp.
+apply (@eq_from_nth _ (@Finish data)).
+  by rewrite size_map size_iota /= size_map size_iota.
+move=> i; rewrite size_map size_iota => Hi.
+rewrite (nth_map 0) ?size_iota // nth_iota // add0n /comp /=.
+case: i Hi => [|i] Hi.
+  by rewrite Hstep0.
+rewrite /= nth_mkseq; last by rewrite ltnS in Hi.
+have Hinord : inord j.+1 = j.+1 :> nat by rewrite inordK // ltnS.
+rewrite Hinord.
+case Heqj : (i == j :> nat).
+  (* i == j: was the sender, now Finish *)
+  move/eqP: Heqj => <-.
+  rewrite Hstepj1 /=.
+  case Heqj1 : (i == j.+1 :> nat).
+    by move/eqP: Heqj1 => Heqj1; move: (ltn_ord j); rewrite -Heqj1 ltnn.
+  by [].
+case Heqj1 : (i == j.+1 :> nat).
+  (* i == j.+1: was the receiver, now f_cb(cipher_j) = Send j.+3 ... Finish *)
+  move/eqP: Heqj1 => <-.
+  rewrite Hstepj2 Hfcj /=.
+  case Heqj2 : (i == j.+2 :> nat).
+    by move/eqP: Heqj2 Heqj => ->; rewrite eqSS => /eqP; move: (ltn_ord j); rewrite -{2}(eqP (eqxx j)) => H; rewrite -H ltnn.
+  by [].
+case Heqj2 : (i == j.+2 :> nat).
+  (* i == j.+2: should match bg' j.+2 with drain_procs_gen's match *)
+  move/eqP: Heqj2 => <-.
+  (* step dp at i.+1: bg j.+2 since j.+2 != j and j.+2 != j.+1 *)
+  (* Need to show step result = match step result with Recv _ f => Recv (j.+1).+1 f | ... end *)
+  rewrite /dp /drain_procs_gen /step /=.
+  rewrite nth_cons_pos; last by [].
+  rewrite nth_mkseq; last by rewrite ltnS in Hi.
+  rewrite (negbTE Heqj) (negbTE Heqj1) Hbgj2 /=.
+  (* bg j.+2 = Recv j.+2 f_next *)
+  (* step checks dp[j.+2] which is Send from j or Recv from j.+1 *)
+  rewrite nth_cons_pos; last by [].
+  rewrite nth_mkseq; last exact Hj1lt.
+  rewrite [j.+1 == j]gtn_eqF // eqxx Hbgj1 /=.
+  (* dp[j+1+1] = Recv j.+1 f_cb. Recv j.+2 f_next checks nth dp j.+2 = Recv j.+1 f_cb.
+     This is a Recv, not Send. So NOP. *)
+  have -> : (j.+1 == j.+2) = false by rewrite eqSS gtn_eqF.
+  by [].
+(* All other positions: step gives bg i, drain target gives bg' i = step result *)
+by [].
+Qed.
+
+(* drain(last) → tail: last relay sends result to Alice.
+   The callback hypothesis says what bg j.+1 produces. *)
+Lemma step_ok_drain_tail_gen (j : 'I_n_relay.+1) (rr : rand AHE)
+    (bg : nat -> proc data)
+    (Hsafe : forall v k, bg n_relay <> Send 0 v k) :
+  let cipher_j := e_local (enc_local (ek (nat_to_party_id j.+2))
+                                      (chain_acc j) rr) in
+  (j.+1 = n_relay)%N ->
+  (* bg j.+1 is a Recv whose callback produces Send to Alice *)
+  (exists f rr_next,
+     bg j.+1 = Recv (j : nat) f /\
+     f cipher_j =
+       Send 0 (e_local (enc_local (ek alice_idx)
+                                   (chain_acc n_relay.-1) rr_next))
+              Finish) ->
+  (* All non-active relay positions are Finish *)
+  (forall i, (i < n_relay.+1)%N -> i != (j : nat) -> i != j.+1 -> bg i = Finish) ->
+  exists rr',
+    one_step_procs (ps_procs (@st_drain_gen j rr bg Hsafe)) =
+    ps_procs (st_tail rr').
+Proof.
+move=> cipher_j Hj1nr [f_cb [rr_next [Hbgj1 Hfcj]]] Hbg_finish.
+set dp := drain_procs_gen j rr bg.
+have Hszdp : size dp = n_relay.+2
+  by rewrite /dp /drain_procs_gen /= size_map size_iota.
+have Hjlt : (j < n_relay)%N by have : (j < j.+1)%N by []; rewrite Hj1nr.
+(* Step at position 0: Alice at tail, Recv n_relay.+1 ...
+   Checks if dp[n_relay.+1] sends to 0. dp[n_relay.+1] = mkseq index n_relay.
+   n_relay = j.+1, so mkseq[j.+1] = match bg j.+1 with Recv _ f => Recv j.+1 f | ... end
+   bg j.+1 = Recv j f_cb, so this = Recv j.+1 f_cb.
+   Recv doesn't send to Alice. NOP for Alice unless dp[n_relay.+1] = Send 0 ... *)
+have Hstep0 : (step dp [::] 0).1.1 = alice_foldr n_relay.+1.
+  rewrite /dp /drain_procs_gen alice_foldr_at_tail /alice_erase_tail
+    /pRecvDec_local /std_Recv_dec /Recv_param /step /=.
+  set X := nth _ _ _.
+  have HX : X = Recv j.+1 f_cb.
+    rewrite /X nth_mkseq //=.
+    rewrite gtn_eqF //.
+    case: ifP => [_|/negP Habs].
+      by rewrite Hbgj1.
+    exfalso; apply Habs; apply/eqP; exact (esym Hj1nr).
+  by rewrite HX /=.
+(* Step at position j+1: Send j.+2 cipher_j Finish fires *)
+have Hstepj1 : (step dp [::] j.+1).1.1 = Finish.
+  rewrite /dp /drain_procs_gen /step /=.
+  rewrite nth_mkseq; last exact (ltn_ord j).
+  rewrite eqxx /=.
+  rewrite nth_cons_pos; last by [].
+  rewrite nth_mkseq; last exact Hjlt.
+  rewrite [j.+1 == j]gtn_eqF //.
+  case: ifP => [_|/negP Habs].
+    by rewrite Hbgj1 /= eqxx.
+  exfalso; apply Habs; apply/eqP; exact (esym Hj1nr).
+(* Step at position j+2 = n_relay.+1: Recv j.+1 f_cb fires *)
+have Hstepj2 : (step dp [::] j.+2).1.1 = f_cb cipher_j.
+  rewrite /dp /drain_procs_gen /step /=.
+  (* dp[j.+2] = mkseq[j.+1] = match bg j.+1 with Recv _ f => Recv j.+1 f | ... end *)
+  rewrite nth_cons_pos; last by [].
+  have Hj1lt : (j.+1 < n_relay.+1)%N by rewrite Hj1nr.
+  rewrite nth_mkseq; last exact Hj1lt.
+  rewrite [j.+1 == j]gtn_eqF //.
+  have -> : (j.+1 == j.+1 :> nat) = true by [].
+  rewrite Hbgj1 /=.
+  (* dp[j.+1] = mkseq[j] = Send j.+2 cipher_j Finish *)
+  rewrite nth_cons_pos; last by [].
+  rewrite nth_mkseq; last exact (ltn_ord j).
+  rewrite eqxx /= eqxx.
+  by [].
+(* Existentials *)
+exists rr_next.
+(* Main: eq_from_nth *)
+rewrite /one_step_procs /ps_procs /st_drain_gen -/dp Hszdp
+        /tail_procs /unzip1 -2!map_comp.
+apply (@eq_from_nth _ (@Finish data)).
+  by rewrite size_map size_iota /= size_cat size_nseq /= addn1.
+move=> i; rewrite size_map size_iota => Hi.
+rewrite (nth_map 0) ?size_iota // nth_iota // add0n /comp /=.
+case: i Hi => [|i] Hi.
+  by rewrite Hstep0.
+(* Position i.+1 in tail_procs: alice_foldr ... :: nseq n_relay Finish ++ [:: Send 0 ... Finish] *)
+(* = nth Finish (nseq n_relay Finish ++ [:: Send 0 ... Finish]) i *)
+rewrite /= nth_cat size_nseq.
+case: ltnP => Hi'.
+  (* i < n_relay: position in nseq Finish *)
+  rewrite nth_nseq Hi'.
+  (* Step at i.+1 in dp: need to show it's Finish *)
+  (* Positions < n_relay in dp: for i == j, it's the sender (becomes Finish after step).
+     For i == j.+1, it's the receiver Recv j.+1 f_cb.
+     For others, it's bg i. *)
+  (* When i < n_relay: either i == j (Finish) or i != j and i != j.+1 *)
+  case Heqj : (i == j :> nat).
+    by move/eqP: Heqj => <-; rewrite Hstepj1.
+  case Heqj1 : (i == j.+1 :> nat).
+    (* i == j.+1 but i < n_relay, and j.+1 = n_relay. Contradiction. *)
+    by move/eqP: Heqj1 => Hi1; move: Hi'; rewrite Hi1 Hj1nr ltnn.
+  (* i != j, i != j.+1: bg i position, NOP *)
+  rewrite /dp /drain_procs_gen /step /=.
+  rewrite nth_cons_pos; last by [].
+  rewrite nth_mkseq; last by rewrite ltnS in Hi.
+  rewrite (negbTE Heqj) (negbTE Heqj1).
+  rewrite Hbg_finish //; last by rewrite ltnS in Hi.
+  by [].
+(* i >= n_relay: the Send 0 ... Finish position *)
+have Hinr : i = n_relay.
+  apply anti_leq; rewrite Hi' andbT.
+  by rewrite ltnS in Hi; rewrite -Hj1nr in Hi.
+subst i.
+rewrite subnn /=.
+(* step at n_relay.+1 = j.+2: the receiver fires *)
+rewrite Hj1nr Hstepj2 Hfcj.
+by rewrite Hj1nr.
+Qed.
+
+(* ========================================================================== *)
 (* Progress: every non-done state has progress                                *)
 (* ========================================================================== *)
 
