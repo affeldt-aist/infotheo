@@ -151,7 +151,11 @@ Qed.
    TODO: prove once full chain lemmas are added to dsdp_fsm.v. *)
 Lemma known_state2_recv0 :
   known_state2 v0 u r v_relay (st_recv_local ord0).
-Proof. Admitted.
+Proof.
+exact: (@ks2_recv0 AHE ek n_relay Hn_relay dk dk_relay relays Hrelays
+  Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay dec_total
+  key_alice key_relay).
+Qed.
 
 Lemma known_state_recv0 :
   known_state n_relay (st_recv_local ord0).

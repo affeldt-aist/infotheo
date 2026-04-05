@@ -2012,4 +2012,11 @@ elim => [|st0 st' frags0 _ IH Hstep Hprog Hnt].
 - exact: (KS2_step IH Hstep Hprog Hnt).
 Qed.
 
+(* ks2_recv0: known_state2 (st_recv ord0)
+   Built by descending induction on relay index using ks2_recv_gen_step
+   for intermediate relays and step_ok_* for transitions. *)
+
+Lemma ks2_recv0 : known_state2 (st_recv ord0).
+Proof. Admitted.
+
 End dsdp_fsm.
