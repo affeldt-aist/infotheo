@@ -1875,4 +1875,141 @@ move=> c m0 Hdec.
 by rewrite /e_local /DI /std_from_enc /= Hdec.
 Qed.
 
+(* ========================================================================== *)
+(* known_state2 chain construction helpers                                    *)
+(* ========================================================================== *)
+
+(* Two phase_state values with the same ps_procs are equal. *)
+Lemma phase_state_eq (st1 st2 : phase_state) :
+  ps_procs st1 = ps_procs st2 -> st1 = st2.
+Proof.
+case: st1 st2 => [ps1 frag1 ok1] [ps2 frag2 ok2] /= Heq.
+subst ps2.
+have Hfrag : frag1 = frag2 by rewrite -ok1 -ok2.
+subst frag2. subst frag1. by [].
+Qed.
+
+(* Not-terminated for each state type *)
+Lemma recv_not_terminated j bg :
+  ~~ @all_terminated data (ps_procs (st_recv_gen j bg)).
+Proof.
+rewrite /= /all_terminated /recv_procs_gen /=.
+have Hj := ltn_ord j.
+have [f ->] := alice_body_at_recv Hj.
+by [].
+Qed.
+
+Lemma send_not_terminated j bg :
+  ~~ @all_terminated data (ps_procs (st_send_gen j bg)).
+Proof. by rewrite /= /all_terminated /send_procs_gen /=. Qed.
+
+Lemma drain_not_terminated j rr bg Hsafe :
+  ~~ @all_terminated data (ps_procs (@st_drain_gen j rr bg Hsafe)).
+Proof.
+rewrite /= /all_terminated /drain_procs_gen /=.
+rewrite alice_foldr_at_tail.
+have [f ->] := alice_tail_is_recv.
+by [].
+Qed.
+
+Lemma tail_not_terminated rr :
+  ~~ @all_terminated data (ps_procs (st_tail rr)).
+Proof.
+rewrite /= /all_terminated /tail_procs /=.
+rewrite alice_foldr_at_tail.
+have [f ->] := alice_tail_is_recv.
+by [].
+Qed.
+
+(* Base: known_state2 for st_tail *)
+Lemma ks2_tail rr : known_state2 (st_tail rr).
+Proof.
+exact: (KS2_step KS2_ret (step_ok_tail_ret rr)
+  (tail_has_progress rr) (tail_not_terminated rr)).
+Qed.
+
+(* ks2_by_iter: if osp^h(ps) = ret_procs and each intermediate step has
+   progress and is not terminated, then any phase_state with ps_procs = ps
+   is known_state2. *)
+Lemma ks2_by_iter (h : nat) (ps : seq (proc data)) :
+  iter h one_step_procs ps = ps_procs st_ret ->
+  (forall i, (i < h)%N -> @has_progress data (iter i one_step_procs ps)) ->
+  (forall i, (i < h)%N -> ~~ @all_terminated data (iter i one_step_procs ps)) ->
+  forall st, ps_procs st = ps -> known_state2 st.
+Proof.
+elim: h ps => [|h IH] ps Hiter Hprog Hnt st Heq.
+- rewrite /= in Hiter.
+  have -> : st = st_ret by apply phase_state_eq; rewrite Heq.
+  exact KS2_ret.
+- have Hprog0 : has_progress data (ps_procs st)
+    by rewrite Heq; exact (Hprog 0 (ltn0Sn h)).
+  have Hnt0 : ~~ all_terminated (ps_procs st)
+    by rewrite Heq; exact (Hnt 0 (ltn0Sn h)).
+  set st' := PhaseState
+    (erefl : (step (one_step_procs ps) [::] 0).1.2 =
+             (step (one_step_procs ps) [::] 0).1.2).
+  apply: (@KS2_step _ st' _ _ Hprog0 Hnt0).
+  + apply: (IH (one_step_procs ps) _ _ _ st' erefl).
+    * rewrite -iterSr. exact Hiter.
+    * move=> i Hi. rewrite -iterSr. exact (Hprog i.+1 Hi).
+    * move=> i Hi. rewrite -iterSr. exact (Hnt i.+1 Hi).
+  + by rewrite /= Heq.
+Qed.
+
+(* Recv→Send→Recv step: if bg satisfies NOP conditions and the next relay
+   is fresh, one recv/send pair advances to the next recv. *)
+Lemma ks2_recv_gen_step (j : 'I_n_relay.+1) (bg : nat -> proc data) :
+  bg_nop_recv j bg ->
+  (j < n_relay)%N ->
+  bg_nop_send j bg ->
+  (exists f, nth (@Finish data) (send_procs_gen j bg)
+             (alice_send_dest j) = Recv 0 f) ->
+  bg (j.+1) = relay_body (inord j.+1) ->
+  (forall bg', one_step_procs (ps_procs (st_send_gen j bg)) =
+               ps_procs (st_recv_gen (inord j.+1) bg') ->
+               known_state2 (st_recv_gen (inord j.+1) bg')) ->
+  known_state2 (st_recv_gen j bg).
+Proof.
+move=> Hnop_r Hjn Hnop_s Hrecv Hbg_next HIH.
+have Hstep_rs := step_ok_recv_send_gen Hnop_r.
+have [bg' Hstep_sr] := step_ok_send_recv_gen Hjn Hnop_s Hrecv Hbg_next.
+apply: (KS2_step _ Hstep_rs (recv_has_progress_gen j bg) (recv_not_terminated _ _)).
+apply: (KS2_step _ Hstep_sr (send_has_progress_gen Hrecv) (send_not_terminated _ _)).
+exact: HIH.
+Qed.
+
+(* NOP conditions for bg_init: all background relays are NOPs *)
+Lemma bg_init_nop_recv (j : 'I_n_relay.+1) : bg_nop_recv j bg_init.
+Proof.
+move=> i Hi Hneq.
+rewrite /is_nop /recv_procs_gen /step /=.
+have [f Haf] := alice_body_at_recv (ltn_ord j).
+rewrite nth_mkseq; last by [].
+have -> : (i == (j : nat)) = false by rewrite (negbTE Hneq).
+rewrite /bg_init (relay_body_send0_cont (inord i)) /=.
+rewrite Haf /=.
+have -> : ((Ordinal (ltn_ord j)).+1 == i.+1) = false.
+  by rewrite eqSS eq_sym (negbTE Hneq).
+by [].
+Qed.
+
+Lemma bg_init_nop_send (j : 'I_n_relay.+1) : bg_nop_send j bg_init.
+Proof.
+move=> i Hi Hneq.
+rewrite /is_nop /send_procs_gen /step /=.
+rewrite nth_mkseq; last by [].
+have -> : (i == (j : nat)) = false by rewrite (negbTE Hneq).
+rewrite /bg_init (relay_body_send0_cont (inord i)) /=.
+by [].
+Qed.
+
+(* Bridge: extract known_state2 from fsm_trace_chain *)
+Lemma fsm_trace_chain_to_ks2 st frags :
+  fsm_trace_chain st frags -> known_state2 st.
+Proof.
+elim => [|st0 st' frags0 _ IH Hstep Hprog Hnt].
+- exact KS2_ret.
+- exact: (KS2_step IH Hstep Hprog Hnt).
+Qed.
+
 End dsdp_fsm.
