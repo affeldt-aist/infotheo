@@ -150,7 +150,7 @@ Qed.
    st_ret uses KS2_ret base case.
    TODO: prove once full chain lemmas are added to dsdp_fsm.v. *)
 Lemma known_state2_recv0 :
-  known_state2 n_relay (st_recv_local ord0).
+  known_state2 v0 u r v_relay (st_recv_local ord0).
 Proof. Admitted.
 
 Lemma known_state_recv0 :
@@ -301,7 +301,7 @@ Qed.
 
 Lemma fsm_ret_induction h (ps : n_parties.-tuple (proc data))
     (st : phase_state AHE) :
-  known_state2 n_relay st ->
+  known_state2 v0 u r v_relay st ->
   tval ps = ps_procs st ->
   ~~ @all_terminated data (tval ps) ->
   @all_terminated data (@interp_comp data (tval ps) h) ->
@@ -334,7 +334,8 @@ case: (boolP (@all_terminated data (tval ps'))) => Hnt'.
 - (* ps' is all_terminated — use known_state2_term_ret *)
   exists ps', tr_new; split; first exact Hrs_new.
   split; first exact Hnt'.
-  have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt.
+  have Hnt2 : ~~ @all_terminated data (ps_procs st) by rewrite -Heq.
+  have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt2.
   have Hps'_st' : tval ps' = ps_procs st'.
     rewrite Hps'_eq Heq; exact Hst'_eq.
   have Hterm_st' : @all_terminated data (ps_procs st').
@@ -345,7 +346,8 @@ case: (boolP (@all_terminated data (tval ps'))) => Hnt'.
   rewrite Hps'_st'.
   exact: (known_state2_term_ret Hks' Hterm_st').
 - (* ps' is NOT all_terminated — continue by IH *)
-  have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt.
+  have Hnt2 : ~~ @all_terminated data (ps_procs st) by rewrite -Heq.
+  have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt2.
   have Hps'_st' : tval ps' = ps_procs st'.
     rewrite Hps'_eq Heq; exact Hst'_eq.
   have Hterm'_ps' : @all_terminated data (@interp_comp data (tval ps') h).

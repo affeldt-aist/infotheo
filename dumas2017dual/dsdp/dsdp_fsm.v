@@ -1706,4 +1706,39 @@ case=> [|st0 st' _ _ _ Hnt0] Hterm.
 - by rewrite Hterm in Hnt0.
 Qed.
 
+(* ========================================================================== *)
+(* fsm_trace_chain: the Record-driven chain with ps_frag accumulation         *)
+(* Replaces known_state/known_state2. ONE inductive gives step transitions,   *)
+(* progress, non-termination, AND trace content — all via Record fields.      *)
+(* ========================================================================== *)
+
+Inductive fsm_trace_chain : phase_state -> seq data -> Prop :=
+| FTC_ret : fsm_trace_chain st_ret [:: concrete_val]
+| FTC_step st st' frags :
+    fsm_trace_chain st' frags ->
+    one_step_procs (ps_procs st) = ps_procs st' ->
+    @has_progress data (ps_procs st) ->
+    ~~ @all_terminated data (ps_procs st) ->
+    fsm_trace_chain st (ps_frag st ++ frags).
+
+(* Bridge: extract known_state from fsm_trace_chain *)
+Lemma fsm_trace_chain_to_known st frags :
+  fsm_trace_chain st frags -> known_state st.
+Proof.
+elim=> [|st0 st' frags0 _ Hks Hstep Hprog Hnt].
+- exact: (KS_step KS_done step_ok_ret_done ret_has_progress).
+- exact: (KS_step Hks Hstep Hprog).
+Qed.
+
+(* Bridge: termination → Ret concrete_val *)
+Lemma fsm_trace_chain_term_ret st frags :
+  fsm_trace_chain st frags ->
+  @all_terminated data (ps_procs st) ->
+  nth (@default_proc data) (ps_procs st) 0 = Ret concrete_val.
+Proof.
+case=> [|st0 st' frags0 _ _ _ Hnt] Hterm.
+- exact: ret_alice.
+- by rewrite Hterm in Hnt.
+Qed.
+
 End dsdp_fsm.
