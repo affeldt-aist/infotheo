@@ -143,15 +143,19 @@ rewrite /= /procs /dsdp_n_procs /erase_aprocs /dsdp_n_saprocs /= /erase_aproc
 by rewrite /d /std_d.
 Qed.
 
-(* Helper: known_state for st_recv ord0.
-   Requires chaining KS_step through the full FSM:
-     recv(0) → send_0 → recv(1) → ... → tail → ret → done.
-   The send→recv transitions (step_ok_send_gen) are parametric;
-   completing this chain needs additional intermediate lemmas in dsdp_fsm.v.
-   TODO: prove once send→next state lemmas are added to dsdp_fsm.v. *)
+(* Helper: known_state2 for st_recv ord0.
+   Requires chaining KS2_step through the full FSM:
+     recv(0) → send_0 → recv(1) → ... → tail → ret.
+   Each intermediate state is non-terminated (KS2_step),
+   st_ret uses KS2_ret base case.
+   TODO: prove once full chain lemmas are added to dsdp_fsm.v. *)
+Lemma known_state2_recv0 :
+  known_state2 n_relay (st_recv_local ord0).
+Proof. Admitted.
+
 Lemma known_state_recv0 :
   known_state n_relay (st_recv_local ord0).
-Proof. Admitted.
+Proof. exact: (known_state2_to_known known_state2_recv0). Qed.
 
 Lemma init_to_recv0 :
   exists (ps_init : n_parties.-tuple (proc data))
@@ -286,6 +290,67 @@ exists h2.
 rewrite interp_comp_unfold_eq initial_has_progress in Hfuel.
 rewrite interp_comp_unfold_eq initial_step1_has_progress in Hfuel.
 exact Hfuel.
+Qed.
+
+(* ========================================================================== *)
+(* Ret-tracking induction: like fsm_trace_induction but also gives nth 0     *)
+(* Uses known_state2 to distinguish Ret from Finish at termination.          *)
+(* KS2_step only applies to non-terminated states, so the first terminated   *)
+(* successor must be KS2_ret (Alice = Ret concrete_val), not KS2_done.       *)
+(* ========================================================================== *)
+
+Lemma fsm_ret_induction h (ps : n_parties.-tuple (proc data))
+    (st : phase_state AHE) :
+  known_state2 n_relay st ->
+  tval ps = ps_procs st ->
+  ~~ @all_terminated data (tval ps) ->
+  @all_terminated data (@interp_comp data (tval ps) h) ->
+  (exists tr0, rsteps procs_tup ps tr0) ->
+  exists (final : n_parties.-tuple (proc data)) tr_final,
+    rsteps procs_tup final tr_final /\
+    @all_terminated data (tval final) /\
+    nth (@default_proc data) (tval final) 0 = Ret concrete_val.
+Proof.
+elim: h ps st => [|h IH] ps st Hks Heq Hnt Hterm [tr0 Hrs0].
+- by rewrite /= in Hterm; rewrite Hterm in Hnt.
+have Hprog : @has_progress data (tval ps).
+  rewrite Heq.
+  apply (known_state2_has_progress Hks).
+  by rewrite -Heq.
+have Hterm' : @all_terminated data (@interp_comp data (osp (tval ps)) h).
+  rewrite interp_comp_unfold_eq Hprog in Hterm.
+  exact: Hterm.
+have Hss := @step_sound data n_parties ps.
+set res_step := [tuple step ps [::] i | i < n_parties] in Hss.
+set ps' := res_procs res_step in Hss.
+set tr_step := res_traces res_step in Hss.
+have Hss' : rsteps ps ps' tr_step by exact Hss.
+have Hps'_eq : tval ps' = osp (tval ps).
+  rewrite /ps' /res_step -(one_step_eq_res_procs_local ps) //.
+set tr_new := [tuple (tnth tr_step i ++ tnth tr0 i) | i < n_parties].
+have Hrs_new : rsteps procs_tup ps' tr_new.
+  exact: (rtrans Hrs0 Hss' erefl).
+case: (boolP (@all_terminated data (tval ps'))) => Hnt'.
+- (* ps' is all_terminated — use known_state2_term_ret *)
+  exists ps', tr_new; split; first exact Hrs_new.
+  split; first exact Hnt'.
+  have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt.
+  have Hps'_st' : tval ps' = ps_procs st'.
+    rewrite Hps'_eq Heq; exact Hst'_eq.
+  have Hterm_st' : @all_terminated data (ps_procs st').
+    by rewrite -Hps'_st'.
+  (* known_state2 has no KS2_done — only KS2_ret and KS2_step.
+     KS2_step requires ~~ all_terminated, contradiction.
+     So st' must be KS2_ret, giving nth 0 = Ret concrete_val. *)
+  rewrite Hps'_st'.
+  exact: (known_state2_term_ret Hks' Hterm_st').
+- (* ps' is NOT all_terminated — continue by IH *)
+  have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt.
+  have Hps'_st' : tval ps' = ps_procs st'.
+    rewrite Hps'_eq Heq; exact Hst'_eq.
+  have Hterm'_ps' : @all_terminated data (@interp_comp data (tval ps') h).
+    by rewrite Hps'_eq.
+  exact: (IH ps' st' Hks' Hps'_st' Hnt' Hterm'_ps' (ex_intro _ tr_new Hrs_new)).
 Qed.
 
 (* ========================================================================== *)

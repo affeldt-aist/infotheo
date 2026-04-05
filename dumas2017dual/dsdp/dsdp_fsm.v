@@ -1644,4 +1644,66 @@ move=> Hn1; rewrite /concrete_val /concrete_val_eq.
 by rewrite chain_acc_minus_masks // GRing.addrC.
 Qed.
 
+(* ret_procs is all_terminated *)
+Lemma ret_all_terminated :
+  @all_terminated data (ps_procs st_ret).
+Proof. by rewrite /= /ret_procs /all_terminated /= all_nseq orbT. Qed.
+
+(* nth ret_procs 0 = Ret concrete_val *)
+Lemma ret_alice :
+  nth (@default_proc data) (ps_procs st_ret) 0 = Ret concrete_val.
+Proof. by []. Qed.
+
+(* known_state2: refined variant with st_ret as sole base case.
+   - KS2_ret: base for st_ret (terminated, Alice = Ret concrete_val)
+   - KS2_step: only for non-terminated states
+   The chain goes: ... → KS2_step (st_tail rr) st_ret KS2_ret → KS2_ret.
+   st_done is NOT in this chain — it's unreachable from KS2_ret. *)
+Inductive known_state2 : phase_state -> Prop :=
+| KS2_ret : known_state2 st_ret
+| KS2_step st st' :
+    known_state2 st' ->
+    one_step_procs (ps_procs st) = ps_procs st' ->
+    @has_progress data (ps_procs st) ->
+    ~~ @all_terminated data (ps_procs st) ->
+    known_state2 st.
+
+Lemma known_state2_to_known st :
+  known_state2 st -> known_state st.
+Proof.
+elim=> [|st0 st' _ IH Hstep Hprog _].
+- exact: (KS_step KS_done step_ok_ret_done ret_has_progress).
+- exact: (KS_step IH Hstep Hprog).
+Qed.
+
+Lemma known_state2_has_progress st :
+  known_state2 st -> ~~ @all_terminated data (ps_procs st) ->
+  @has_progress data (ps_procs st).
+Proof.
+move=> Hks Hnt; exact: (known_state_has_progress (known_state2_to_known Hks) Hnt).
+Qed.
+
+Lemma known_state2_step st :
+  known_state2 st -> ~~ @all_terminated data (ps_procs st) ->
+  exists st', known_state2 st' /\
+    one_step_procs (ps_procs st) = ps_procs st'.
+Proof.
+case=> [|st0 st' Hks' Hstep Hprog Hnt0] Hnt.
+- exfalso; move/negP: Hnt; apply; exact: ret_all_terminated.
+- by exists st'.
+Qed.
+
+(* KEY: known_state2 + all_terminated implies Ret concrete_val at pos 0.
+   KS2_ret: all_terminated ret_procs, nth 0 = Ret concrete_val.
+   KS2_step: ~~ all_terminated, contradiction. *)
+Lemma known_state2_term_ret st :
+  known_state2 st ->
+  @all_terminated data (ps_procs st) ->
+  nth (@default_proc data) (ps_procs st) 0 = Ret concrete_val.
+Proof.
+case=> [|st0 st' _ _ _ Hnt0] Hterm.
+- exact: ret_alice.
+- by rewrite Hterm in Hnt0.
+Qed.
+
 End dsdp_fsm.
