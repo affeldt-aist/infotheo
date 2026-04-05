@@ -2541,25 +2541,33 @@ Qed.
    The drain callback, when applied to enc ek_{i+1} (chain_acc (i-1)) rr,
    produces Send (i+2) (enc ek_{i+2} (chain_acc i) rr') Finish (mid relay)
    or Send 0 (enc ek_alice (chain_acc (n_relay-1)) rr') Finish (last relay). *)
+(* bg_drain_ready j bg: Invariant tracking relay states through the
+   recv/send chain for the drain phase.
+   - Part A: for j >= 1, bg(j-1) = relay_after_send0(inord(j-1))
+   - Part B: for j >= 2, bg(0) = Send 2 (chain cipher) Finish
+   - Part C: for j >= 3, positions 1..j-2 are Recv with drain callbacks *)
 Definition bg_drain_ready (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
-  (1 < j)%N ->
-  (* Relay 0: Send 2 (enc ek_2 (chain_acc 0) rr0) Finish *)
-  (exists rr0, bg 0 = Send 2
-    (e_local (enc_local (ek (nat_to_party_id 2)) (chain_acc 0) rr0)) Finish) /\
-  (* Relays 1..j-1: Recv with drain callback *)
-  (forall i : nat, (0 < i)%N -> (i < j)%N -> (i < n_relay)%N ->
-    exists f, bg i = Recv (i : nat) f /\
-    exists rr_cb,
-      forall rr,
-        f (e_local (enc_local (ek (nat_to_party_id i.+1)) (chain_acc i.-1) rr)) =
-        (if (i.+1 < n_relay)%N then
-           Send i.+2
-             (e_local (enc_local (ek (nat_to_party_id i.+2)) (chain_acc i) rr_cb))
-             Finish
-         else
-           Send 0
-             (e_local (@enc AHE (ek alice_idx) (chain_acc n_relay.-1) rr_cb))
-             Finish)).
+  (* Part A: latest relay is relay_after_send0 *)
+  ((0 < j)%N -> bg j.-1 = relay_after_send0 (inord j.-1)) /\
+  (* Part B: relay 0 is fully processed *)
+  ((1 < j)%N ->
+    exists rr0, bg 0 = Send 2
+      (e_local (enc_local (ek (nat_to_party_id 2)) (chain_acc 0) rr0)) Finish) /\
+  (* Part C: middle relays are fully processed *)
+  ((2 < j)%N ->
+    forall i : nat, (0 < i)%N -> (i.+2 < j)%N -> (i < n_relay)%N ->
+      exists f, bg i = Recv (i : nat) f /\
+      exists rr_cb,
+        forall rr,
+          f (e_local (enc_local (ek (nat_to_party_id i.+1)) (chain_acc i.-1) rr)) =
+          (if (i.+1 < n_relay)%N then
+             Send i.+2
+               (e_local (enc_local (ek (nat_to_party_id i.+2)) (chain_acc i) rr_cb))
+               Finish
+           else
+             Send 0
+               (e_local (@enc AHE (ek alice_idx) (chain_acc n_relay.-1) rr_cb))
+               Finish)).
 
 (* Main induction: known_state2 for recv at any position *)
 Lemma ks2_recv_gen_induction (k : nat) (j : 'I_n_relay.+1)
@@ -2644,8 +2652,8 @@ apply (ks2_recv_gen_induction (k:=n_relay) (j:=ord0) (bg:=bg_init)).
     inordK //= /std_Recv_dec /std_Recv_enc /Recv_param.
   by eexists.
 - by move=> i _ _; rewrite /bg_init.
-- (* bg_drain_ready ord0 bg_init: vacuously true since 1 < ord0 = 1 < 0 is false *)
-  rewrite /bg_drain_ready => Habs. exfalso. by rewrite /= in Habs.
+- (* bg_drain_ready ord0 bg_init: all parts vacuously true *)
+  by split; [|split]; move=> /=.
 Qed.
 
 End dsdp_fsm.
