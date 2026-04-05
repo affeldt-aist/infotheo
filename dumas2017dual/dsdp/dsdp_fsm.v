@@ -1730,7 +1730,17 @@ Lemma ks2_drain_chain (j : 'I_n_relay.+1) (rr : rand AHE)
        v0 u r rand_a v_relay j rr bg Hbg_safe).
 Proof. Admitted.
 
-(* ks2_recv0: the initial recv state is in known_state2 *)
+(* Section-closed arg order discovery (by interactive testing):
+   step_ok_recv_send0: ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
+   step_ok_send0_recv1: ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay Hn_relay
+   recv_has_progress: ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j
+   send_0_has_progress: ek dk dk_relay relays Hrelays v0 u r rand_a v_relay r1_relay r2_relay
+*)
+
+(* ks2_recv0: the initial recv state is in known_state2.
+   Chain: recv(0) → send_0 → recv_gen(1, bg') → ... → ret.
+   Each step uses KS2_step with the appropriate step_ok lemma.
+   For the general loop (j = 1..n_relay), induction is needed. *)
 Lemma ks2_recv0 : known_state2 (local_st_recv ord0).
 Proof. Admitted.
 
