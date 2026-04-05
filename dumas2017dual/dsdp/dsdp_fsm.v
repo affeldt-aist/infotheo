@@ -2023,7 +2023,74 @@ Lemma bg_step_unchanged (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
   ps_procs (st_recv_gen (inord j.+1) bg') ->
   forall i, (j.+1 < i)%N -> (i < n_relay.+1)%N ->
     bg' i = bg i.
-Proof. Admitted.
+Proof.
+move=> Hjn Hns Hstep i Hi1 Hi2.
+have Hineq : i != (inord j.+1 : 'I_n_relay.+1) :> nat.
+  rewrite inordK; last by exact Hjn.
+  by rewrite neq_ltn Hi1 orbT.
+have Hneqj : i != (j : nat).
+  rewrite neq_ltn; apply/orP; right.
+  exact (ltn_trans (ltnSn j) Hi1).
+have Hnth_rhs : nth (@Finish data) (ps_procs (st_recv_gen (inord j.+1) bg')) i.+1 = bg' i.
+  rewrite /= /recv_procs_gen /= nth_mkseq //.
+  by rewrite (negbTE Hineq).
+rewrite -Hnth_rhs -Hstep.
+set sp := send_procs_gen j bg.
+have Hszsp : size sp = n_relay.+2
+  by rewrite /sp /send_procs_gen /= size_map size_iota.
+rewrite /one_step_procs /ps_procs /st_send_gen -/sp /unzip1 -2!map_comp.
+have Hi3 : (i.+1 < size sp)%N by rewrite Hszsp ltnS.
+rewrite (nth_map 0); last by rewrite size_iota.
+rewrite nth_iota // add0n /comp /=.
+have Hnopi := Hns i Hi2 Hneqj.
+rewrite /is_nop -/sp in Hnopi.
+rewrite /sp /step /send_procs_gen /= in Hnopi |- *.
+rewrite nth_mkseq in Hnopi |- *; last by [].
+rewrite (negbTE Hneqj) in Hnopi |- *.
+move: Hnopi.
+case: (bg i) => [d0 next|dst w next|frm ff|d0| |] //=.
+- case: (nth _ _ dst) => [? ?|? ? ?|? ?|?| |] //=.
+  by case: ifP.
+- case: (nth _ _ frm) => [? ?|? ? ?|? ?|?| |] //=.
+  by case: ifP.
+Qed.
+
+(* General: bg' i = bg i whenever i != j and i != j.+1 *)
+Lemma bg_step_unchanged_gen (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
+  (j < n_relay)%N ->
+  bg_nop_send j bg ->
+  one_step_procs (ps_procs (st_send_gen j bg)) =
+  ps_procs (st_recv_gen (inord j.+1) bg') ->
+  forall i, (i < n_relay.+1)%N -> i != (j : nat) -> i != j.+1 :> nat ->
+    bg' i = bg i.
+Proof.
+move=> Hjn Hns Hstep i Hi Hneqj Hneqj1.
+have Hineq : i != (inord j.+1 : 'I_n_relay.+1) :> nat.
+  by rewrite inordK.
+have Hnth_rhs : nth (@Finish data)
+  (ps_procs (st_recv_gen (inord j.+1) bg')) i.+1 = bg' i.
+  rewrite /= /recv_procs_gen /= nth_mkseq //.
+  by rewrite (negbTE Hineq).
+rewrite -Hnth_rhs -Hstep.
+set sp := send_procs_gen j bg.
+have Hszsp : size sp = n_relay.+2
+  by rewrite /sp /send_procs_gen /= size_map size_iota.
+rewrite /one_step_procs /ps_procs /st_send_gen -/sp /unzip1 -2!map_comp.
+have Hi3 : (i.+1 < size sp)%N by rewrite Hszsp ltnS.
+rewrite (nth_map 0); last by rewrite size_iota.
+rewrite nth_iota // add0n /comp /=.
+have Hnopi := Hns i Hi Hneqj.
+rewrite /is_nop -/sp in Hnopi.
+rewrite /sp /step /send_procs_gen /= in Hnopi |- *.
+rewrite nth_mkseq in Hnopi |- *; last by [].
+rewrite (negbTE Hneqj) in Hnopi |- *.
+move: Hnopi.
+case: (bg i) => [d0 next|dst w next|frm ff|d0| |] //=.
+- case: (nth _ _ dst) => [? ?|? ? ?|? ?|?| |] //=.
+  by case: ifP.
+- case: (nth _ _ frm) => [? ?|? ? ?|? ?|?| |] //=.
+  by case: ifP.
+Qed.
 
 (* NOP condition propagation for recv *)
 Lemma nop_propagate_recv (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
@@ -2103,15 +2170,17 @@ elim: k j bg => [|k IH] j bg Hjk Hnr Hns Hrecv Hbg.
   + apply Hbg; first exact (ltnSn j). exact Hjn.
   + move=> bg' Hbg_eq.
     apply (IH (inord j.+1) bg').
-    * rewrite inordK; last exact Hjn.
-      by rewrite -addSnnS.
+    * rewrite inordK; last exact Hjn. by rewrite addSnnS.
     * exact: (nop_propagate_recv Hjn Hnr Hns Hrecv
               (Hbg j.+1 (ltnSn j) Hjn) Hbg_eq).
     * exact: (nop_propagate_send Hjn Hnr Hns Hrecv
               (Hbg j.+1 (ltnSn j) Hjn) Hbg_eq).
     * exact: (recv_propagate Hjn Hns Hrecv
               (Hbg j.+1 (ltnSn j) Hjn) Hbg Hbg_eq).
-    * exact: (bg_relay_propagate Hjn Hns Hbg Hbg_eq).
+    * move=> i Hi1 Hi2.
+      have Hinord : (inord j.+1 : 'I_n_relay.+1) = j.+1 :> nat by rewrite inordK.
+      rewrite Hinord in Hi1.
+      exact: (bg_relay_propagate Hjn Hns Hbg Hbg_eq Hi1 Hi2).
 Admitted.
 
 (* ks2_recv0: known_state2 (st_recv ord0)
