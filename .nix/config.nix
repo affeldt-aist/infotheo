@@ -104,6 +104,8 @@
       "9.0" = {
         rocqPackages = {
           rocq-core.override.version = "9.0";
+          mathcomp.override.version = "2.4.0";
+          mathcomp.job = false;
         };
         coqPackages = common-bundle // {
           coq.override.version = "9.0";
@@ -114,6 +116,8 @@
       "9.1" = {
         rocqPackages = {
           rocq-core.override.version = "9.1";
+          mathcomp.override.version = "2.4.0";
+          mathcomp.job = false;
         };
         coqPackages = common-bundle // {
           coq.override.version = "9.1";
@@ -124,11 +128,12 @@
       "9.1-mcmaster" = {
         rocqPackages = {
           rocq-core.override.version = "9.1";
+          mathcomp.override.version = "master";
+          mathcomp.job = false;
         };
         coqPackages = common-bundle // {
           coq.override.version = "9.1";
           mathcomp.override.version = "master";
-          mathcomp.job = false;
           mathcomp-bigenough.override.version = "master";
           mathcomp-bigenough.job = false;
           mathcomp-finmap.override.version = "master";
@@ -147,6 +152,8 @@
           mathcomp-algebra-tactics.job = false;
           coquelicot.override.version = "master";
           coquelicot.job = false;
+          interval.override.version = "master";
+          interval.job = false;
         };
       };
     };
