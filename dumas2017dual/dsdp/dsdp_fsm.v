@@ -414,13 +414,11 @@ Definition bg_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
     is_nop (recv_procs_gen j bg) i.+1.
 
 (* bg_nop_send j bg: all background relays are NOPs in send_procs_gen j bg.
-   NOTE: This excludes position j (relay_after_send0). The relay at
-   alice_send_dest(j) also fires (receives from Alice) but is checked separately
-   by the step_ok lemmas. For the propagation to work, the definition should
-   also exclude alice_send_dest(j)-1, but the current definition is used
-   throughout. The propagation bug is documented in the Admitted lemmas. *)
+   Excludes position j (relay_after_send0) and alice_send_dest(j)
+   (the relay that receives Alice's enc message). *)
 Definition bg_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
   forall i, (i < n_relay.+1)%N -> i != (j : nat) ->
+    i.+1 != alice_send_dest j ->
     is_nop (send_procs_gen j bg) i.+1.
 
 (* ========================================================================== *)
@@ -807,7 +805,7 @@ Lemma step_ok_send0_recv1 :
 Proof.
 move=> Hn1.
 apply (step_ok_send_recv_gen (j := ord0) (bg := bg_init)) => //.
-- move=> i Hi Hneq.
+- move=> i Hi Hneq _.
   rewrite /is_nop /send_procs_gen /step /=.
   rewrite nth_mkseq; last by [].
   have -> : (i == 0 :> nat) = false by rewrite (negbTE Hneq).
@@ -859,10 +857,13 @@ have Hbgnr : bg n_relay.-1 = Recv 0 ff.
   rewrite nth_mkseq; last by apply (leq_ltn_trans (leq_pred _)).
   by rewrite ltn_eqF; last rewrite prednK.
 (* NOP helper *)
-have Hnop_step : forall i, (i < n_relay.+1)%N -> i != (ord_max : 'I_n_relay.+1) :> nat ->
+have Hnop_step : forall i, (i < n_relay.+1)%N ->
+  i != n_relay ->
+  i.+1 != n_relay ->
   (step sp [::] i.+1).1.1 = bg i.
-  move=> i Hi Hneq.
-  have Hnopi := Hnop i Hi Hneq.
+  move=> i Hi Hneq Hdest.
+  rewrite -Hmaxn in Hdest.
+  have Hnopi := Hnop i Hi Hneq Hdest.
   rewrite /is_nop in Hnopi.
   rewrite /sp /send_procs_gen /step /= in Hnopi |- *.
   rewrite nth_mkseq in Hnopi |- *; try exact Hi.
@@ -950,7 +951,10 @@ case Heq0 : (i == 0 :> nat).
   have H0lt : (0 < n_relay.+1)%N by [].
   have H0nr : (0 : nat) != (ord_max : 'I_n_relay.+1) :> nat.
     by rewrite eq_sym eqn0Ngt Hn_relay.
-  by rewrite (Hnop_step 0 H0lt H0nr) Hbg0.
+  have H0dest : (0.+1 != n_relay).
+    apply/negP => /eqP Hnr1.
+    by move: Hbgnr; rewrite -Hnr1 /= Hbg0.
+  by rewrite (Hnop_step 0 H0lt H0nr H0dest) Hbg0.
 case Heq1 : (i == 1 :> nat).
   (* i == 1: drain receiver position *)
   move/eqP: Heq1 => Heq1; subst i.
@@ -960,7 +964,10 @@ case Heq1 : (i == 1 :> nat).
     apply/negP => /eqP Hnr1.
     have Hnr1' : n_relay = 1 by rewrite /= in Hnr1; exact (esym Hnr1).
     by move: Hbgnr; rewrite Hnr1' /= Hbg0.
-  rewrite Hnop_step // Hbg1 /=.
+  have H1dest : (1.+1 != n_relay).
+    apply/negP => /eqP Hnr2.
+    by move: Hbgnr; rewrite -Hnr2 /= Hbg1.
+  rewrite (Hnop_step 1 _ Hineq1 H1dest) Hbg1 /=.
   by [].
 (* All other positions: NOP and bg match *)
 case Heqnr : (i == (ord_max : 'I_n_relay.+1) :> nat).
@@ -2000,7 +2007,7 @@ Qed.
 
 Lemma bg_init_nop_send (j : 'I_n_relay.+1) : bg_nop_send j bg_init.
 Proof.
-move=> i Hi Hneq.
+move=> i Hi Hneq _.
 rewrite /is_nop /send_procs_gen /step /=.
 rewrite nth_mkseq; last by [].
 have -> : (i == (j : nat)) = false by rewrite (negbTE Hneq).
@@ -2047,7 +2054,11 @@ rewrite /one_step_procs /ps_procs /st_send_gen -/sp /unzip1 -2!map_comp.
 have Hi3 : (i.+1 < size sp)%N by rewrite Hszsp ltnS.
 rewrite (nth_map 0); last by rewrite size_iota.
 rewrite nth_iota // add0n /comp /=.
-have Hnopi := Hns i Hi2 Hneqj.
+have Hdest : i.+1 != alice_send_dest j.
+  rewrite /alice_send_dest neq_ltn; apply/orP; right.
+  have : (maxn 1 j <= j.+1)%N by rewrite /maxn; case: ltnP.
+  move=> Hmj. exact (ltn_trans (leq_ltn_trans Hmj Hi1) (ltnSn i)).
+have Hnopi := Hns i Hi2 Hneqj Hdest.
 rewrite /is_nop -/sp in Hnopi.
 rewrite /sp /step /send_procs_gen /= in Hnopi |- *.
 rewrite nth_mkseq in Hnopi |- *; last by [].
@@ -2060,16 +2071,17 @@ case: (bg i) => [d0 next|dst w next|frm ff|d0| |] //=.
   by case: ifP.
 Qed.
 
-(* General: bg' i = bg i whenever i != j and i != j.+1 *)
+(* General: bg' i = bg i whenever i != j, i != j.+1, and i.+1 != alice_send_dest j *)
 Lemma bg_step_unchanged_gen (j : 'I_n_relay.+1) (bg bg' : nat -> proc data) :
   (j < n_relay)%N ->
   bg_nop_send j bg ->
   one_step_procs (ps_procs (st_send_gen j bg)) =
   ps_procs (st_recv_gen (inord j.+1) bg') ->
   forall i, (i < n_relay.+1)%N -> i != (j : nat) -> i != j.+1 :> nat ->
+    i.+1 != alice_send_dest j ->
     bg' i = bg i.
 Proof.
-move=> Hjn Hns Hstep i Hi Hneqj Hneqj1.
+move=> Hjn Hns Hstep i Hi Hneqj Hneqj1 Hdest.
 have Hineq : i != (inord j.+1 : 'I_n_relay.+1) :> nat.
   by rewrite inordK.
 have Hnth_rhs : nth (@Finish data)
@@ -2084,7 +2096,7 @@ rewrite /one_step_procs /ps_procs /st_send_gen -/sp /unzip1 -2!map_comp.
 have Hi3 : (i.+1 < size sp)%N by rewrite Hszsp ltnS.
 rewrite (nth_map 0); last by rewrite size_iota.
 rewrite nth_iota // add0n /comp /=.
-have Hnopi := Hns i Hi Hneqj.
+have Hnopi := Hns i Hi Hneqj Hdest.
 rewrite /is_nop -/sp in Hnopi.
 rewrite /sp /step /send_procs_gen /= in Hnopi |- *.
 rewrite nth_mkseq in Hnopi |- *; last by [].
