@@ -413,7 +413,12 @@ Definition bg_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
   forall i, (i < n_relay.+1)%N -> i != (j : nat) ->
     is_nop (recv_procs_gen j bg) i.+1.
 
-(* bg_nop_send j bg: all background relays are NOPs in send_procs_gen j bg. *)
+(* bg_nop_send j bg: all background relays are NOPs in send_procs_gen j bg.
+   NOTE: This excludes position j (relay_after_send0). The relay at
+   alice_send_dest(j) also fires (receives from Alice) but is checked separately
+   by the step_ok lemmas. For the propagation to work, the definition should
+   also exclude alice_send_dest(j)-1, but the current definition is used
+   throughout. The propagation bug is documented in the Admitted lemmas. *)
 Definition bg_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
   forall i, (i < n_relay.+1)%N -> i != (j : nat) ->
     is_nop (send_procs_gen j bg) i.+1.
@@ -2517,6 +2522,33 @@ apply Hbg; first by apply (ltn_trans (ltnSn j) Hi1).
 exact Hi2.
 Qed.
 
+(* Drain-readiness invariant: bg at positions below j supports the drain chain.
+   This tracks the relay states after they've been processed by Alice's erase chain.
+   - Relay 0 (j >= 2): has completed both Alice messages → Send 2 (chain cipher) Finish
+   - Relay i (0 < i, i+1 < j, i < n_relay): received Alice's enc → Recv i (drain callback)
+   The drain callback, when applied to enc ek_{i+1} (chain_acc (i-1)) rr,
+   produces Send (i+2) (enc ek_{i+2} (chain_acc i) rr') Finish (mid relay)
+   or Send 0 (enc ek_alice (chain_acc (n_relay-1)) rr') Finish (last relay). *)
+Definition bg_drain_ready (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
+  (1 < j)%N ->
+  (* Relay 0: Send 2 (enc ek_2 (chain_acc 0) rr0) Finish *)
+  (exists rr0, bg 0 = Send 2
+    (e_local (enc_local (ek (nat_to_party_id 2)) (chain_acc 0) rr0)) Finish) /\
+  (* Relays 1..j-1: Recv with drain callback *)
+  (forall i : nat, (0 < i)%N -> (i < j)%N -> (i < n_relay)%N ->
+    exists f, bg i = Recv (i : nat) f /\
+    exists rr_cb,
+      forall rr,
+        f (e_local (enc_local (ek (nat_to_party_id i.+1)) (chain_acc i.-1) rr)) =
+        (if (i.+1 < n_relay)%N then
+           Send i.+2
+             (e_local (enc_local (ek (nat_to_party_id i.+2)) (chain_acc i) rr_cb))
+             Finish
+         else
+           Send 0
+             (e_local (@enc AHE (ek alice_idx) (chain_acc n_relay.-1) rr_cb))
+             Finish)).
+
 (* Main induction: known_state2 for recv at any position *)
 Lemma ks2_recv_gen_induction (k : nat) (j : 'I_n_relay.+1)
     (bg : nat -> proc data) :
@@ -2526,11 +2558,42 @@ Lemma ks2_recv_gen_induction (k : nat) (j : 'I_n_relay.+1)
   (exists f, nth (@Finish data) (send_procs_gen j bg)
              (alice_send_dest j) = Recv 0 f) ->
   (forall i, (j < i)%N -> (i < n_relay.+1)%N -> bg i = relay_body (inord i)) ->
+  bg_drain_ready j bg ->
   known_state2 (st_recv_gen j bg).
 Proof.
-elim: k j bg => [|k IH] j bg Hjk Hnr Hns Hrecv Hbg.
+elim: k j bg => [|k IH] j bg Hjk Hnr Hns Hrecv Hbg Hdrain.
 - (* Base case: j = n_relay (ord_max). Chain: recv → send → drain → tail → ret *)
-  admit.
+  have Hjn : (j : nat) = n_relay by rewrite addn0 in Hjk.
+  have Hjord : j = ord_max by apply val_inj; rewrite /= Hjn.
+  apply: (KS2_step _ (step_ok_recv_send_gen Hnr)
+    (recv_has_progress_gen j bg) (recv_not_terminated _ _)).
+  case Hn1 : (1 < n_relay)%N; last first.
+  + (* n_relay = 1 case *)
+    admit.
+  + (* n_relay >= 2: use Hdrain *)
+    have Hj1 : (1 < j)%N by rewrite Hjn.
+    have [Hbg0_ex Hbg_mid] := Hdrain Hj1.
+    have [rr0 Hbg0_eq] := Hbg0_ex.
+    have Hbg1 : exists f1, bg 1 = Recv 1 f1.
+      have [f1 [Hf1 _]] := Hbg_mid 1 (erefl : (0 < 1)%N) Hj1 Hn1.
+      by exists f1.
+    have Hbg_safe : forall v0' k0, bg n_relay.-1 <> Send 0 v0' k0.
+      move=> v0' k0.
+      have Hpred_pos : (0 < n_relay.-1)%N
+        by case: (n_relay) Hn1 => [//|[//|nr']] _.
+      have Hpred_ltj : (n_relay.-1 < j)%N
+        by rewrite Hjn; case: (n_relay) Hn1 => [//|[//|nr']] _.
+      have Hpred_ltn : (n_relay.-1 < n_relay)%N by rewrite prednK // ltnSn.
+      have [f_pred [Hfpred _]] := Hbg_mid n_relay.-1 Hpred_pos Hpred_ltj Hpred_ltn.
+      by rewrite Hfpred.
+    subst j.
+    have [rr' [bg' [Hsafe' Hstep_sd]]] :=
+      step_ok_send_last_drain Hns Hrecv (ex_intro _ rr0 Hbg0_eq) Hbg1 Hbg_safe.
+    apply: (KS2_step _ Hstep_sd
+      (send_has_progress_gen Hrecv) (send_not_terminated _ _)).
+    (* Now: known_state2 (st_drain_gen ord0 rr' bg' Hsafe') *)
+    (* Chain: drain(0) → ... → drain(n_relay-2) → tail → ret *)
+    admit.
 - (* Step case: j < n_relay. Use ks2_recv_gen_step. *)
   have Hjn : (j < n_relay)%N.
     move: (Hjk). rewrite addnS. move/eqP => Hjk2.
@@ -2550,6 +2613,8 @@ elim: k j bg => [|k IH] j bg Hjk Hnr Hns Hrecv Hbg.
       have Hinord : (inord j.+1 : 'I_n_relay.+1) = j.+1 :> nat by rewrite inordK.
       rewrite Hinord in Hi1.
       exact: (bg_relay_propagate Hjn Hns Hbg Hbg_eq Hi1 Hi2).
+    * (* Drain readiness propagation *)
+      admit.
 Admitted.
 
 (* ks2_recv0: known_state2 (st_recv ord0)
@@ -2567,6 +2632,8 @@ apply (ks2_recv_gen_induction (k:=n_relay) (j:=ord0) (bg:=bg_init)).
     inordK //= /std_Recv_dec /std_Recv_enc /Recv_param.
   by eexists.
 - by move=> i _ _; rewrite /bg_init.
+- (* bg_drain_ready ord0 bg_init: vacuously true since 1 < ord0 = 1 < 0 is false *)
+  rewrite /bg_drain_ready => Habs. exfalso. by rewrite /= in Habs.
 Qed.
 
 End dsdp_fsm.
