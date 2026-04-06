@@ -1721,26 +1721,197 @@ apply (KS2_step KS2_ret).
 - exact: (tail_not_terminated rr).
 Qed.
 
-(* ks2_drain_chain: every drain state is in known_state2 *)
+(* Local notations for section-closed state constructors *)
+Local Notation recv_st :=
+  (st_recv_gen ek dk dk_relay Hrelays Hrelays_id
+     v0 u r rand_a v_relay r1_relay r2_relay).
+Local Notation send_st :=
+  (@st_send_gen AHE ek n_relay dk dk_relay relays
+     v0 u r rand_a v_relay r1_relay r2_relay).
+Local Notation drain_st :=
+  (@st_drain_gen AHE ek n_relay dk relays Hrelays
+     v0 u r rand_a v_relay).
+Local Notation tail_st :=
+  (@st_tail AHE ek n_relay dk relays Hrelays
+     v0 u r rand_a v_relay).
+
+(* drain_steppable: inductive evidence that a drain chain reaches tail.
+   Each constructor carries one drain step plus evidence for the rest. *)
+Inductive drain_steppable :
+  forall (j : 'I_n_relay.+1) (rr : rand AHE)
+         (bg : nat -> proc (std_data AHE)), Prop :=
+| DS_last (j : 'I_n_relay.+1) (rr : rand AHE)
+    (bg : nat -> proc (std_data AHE))
+    (Hsafe : forall (v : std_data AHE) (k : proc (std_data AHE)),
+       bg n_relay <> Send 0 v k)
+    (rr' : rand AHE) :
+    one_step_procs (ps_procs (drain_st j rr (bg:=bg) Hsafe)) =
+    ps_procs (tail_st rr') ->
+    @has_progress (std_data AHE)
+      (ps_procs (drain_st j rr (bg:=bg) Hsafe)) ->
+    ~~ @all_terminated (std_data AHE)
+      (ps_procs (drain_st j rr (bg:=bg) Hsafe)) ->
+    drain_steppable j rr bg
+| DS_step (j : 'I_n_relay.+1) (rr : rand AHE)
+    (bg : nat -> proc (std_data AHE))
+    (Hsafe : forall (v : std_data AHE) (k : proc (std_data AHE)),
+       bg n_relay <> Send 0 v k)
+    (rr' : rand AHE) (bg' : nat -> proc (std_data AHE))
+    (Hsafe' : forall (v : std_data AHE) (k : proc (std_data AHE)),
+       bg' n_relay <> Send 0 v k) :
+    one_step_procs (ps_procs (drain_st j rr (bg:=bg) Hsafe)) =
+    ps_procs (drain_st (inord j.+1) rr' (bg:=bg') Hsafe') ->
+    @has_progress (std_data AHE)
+      (ps_procs (drain_st j rr (bg:=bg) Hsafe)) ->
+    ~~ @all_terminated (std_data AHE)
+      (ps_procs (drain_st j rr (bg:=bg) Hsafe)) ->
+    drain_steppable (inord j.+1) rr' bg' ->
+    drain_steppable j rr bg.
+
+(* ks2_drain_chain: if drain chain evidence exists, drain is in known_state2 *)
 Lemma ks2_drain_chain (j : 'I_n_relay.+1) (rr : rand AHE)
     (bg : nat -> proc (std_data AHE))
     (Hbg_safe : forall v k, bg n_relay <> Send 0 v k) :
-  known_state2
-    (@st_drain_gen AHE ek n_relay dk relays Hrelays
-       v0 u r rand_a v_relay j rr bg Hbg_safe).
-Proof. Admitted.
+  drain_steppable j rr bg ->
+  known_state2 (drain_st j rr (bg:=bg) Hbg_safe).
+Proof.
+move=> Hds; induction Hds as
+  [j0 rr0 bg0 Hs0 rr0' Hstep0 Hprog0 Hnt0
+  |j0 rr0 bg0 Hs0 rr0' bg0' Hs0' Hstep0 Hprog0 Hnt0 _ IH].
+- have Hirr : ps_procs (drain_st j0 rr0 (bg:=bg0) Hs0) =
+              ps_procs (drain_st j0 rr0 (bg:=bg0) Hbg_safe) by [].
+  apply (KS2_step (ks2_tail rr0')); rewrite -Hirr //.
+- have Hirr : ps_procs (drain_st j0 rr0 (bg:=bg0) Hs0) =
+              ps_procs (drain_st j0 rr0 (bg:=bg0) Hbg_safe) by [].
+  apply (KS2_step (IH Hs0')); rewrite -Hirr //.
+Qed.
 
-(* Section-closed arg order discovery (by interactive testing):
-   step_ok_recv_send0: ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
-   step_ok_send0_recv1: ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay Hn_relay
-   recv_has_progress: ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j
-   send_0_has_progress: ek dk dk_relay relays Hrelays v0 u r rand_a v_relay r1_relay r2_relay
-*)
+(* recv_send_steppable: inductive evidence that recv/send loop reaches drain.
+   Each constructor carries one recv→send step plus evidence for the rest. *)
+Inductive recv_send_steppable :
+  forall (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE)), Prop :=
+| RSS_to_drain (j : 'I_n_relay.+1) (bg bg_s : nat -> proc (std_data AHE))
+    (rr_d : rand AHE) (bg_d : nat -> proc (std_data AHE))
+    (Hsafe_d : forall (v : std_data AHE) (k : proc (std_data AHE)),
+       bg_d n_relay <> Send 0 v k) :
+    @has_progress (std_data AHE) (ps_procs (recv_st j bg)) ->
+    ~~ @all_terminated (std_data AHE) (ps_procs (recv_st j bg)) ->
+    one_step_procs (ps_procs (recv_st j bg)) =
+      ps_procs (send_st j bg_s) ->
+    @has_progress (std_data AHE) (ps_procs (send_st j bg_s)) ->
+    ~~ @all_terminated (std_data AHE) (ps_procs (send_st j bg_s)) ->
+    one_step_procs (ps_procs (send_st j bg_s)) =
+      ps_procs (drain_st ord0 rr_d (bg:=bg_d) Hsafe_d) ->
+    drain_steppable ord0 rr_d bg_d ->
+    recv_send_steppable j bg
+| RSS_continue (j : 'I_n_relay.+1) (bg bg_s : nat -> proc (std_data AHE))
+    (j' : 'I_n_relay.+1) (bg' : nat -> proc (std_data AHE)) :
+    @has_progress (std_data AHE) (ps_procs (recv_st j bg)) ->
+    ~~ @all_terminated (std_data AHE) (ps_procs (recv_st j bg)) ->
+    one_step_procs (ps_procs (recv_st j bg)) =
+      ps_procs (send_st j bg_s) ->
+    @has_progress (std_data AHE) (ps_procs (send_st j bg_s)) ->
+    ~~ @all_terminated (std_data AHE) (ps_procs (send_st j bg_s)) ->
+    one_step_procs (ps_procs (send_st j bg_s)) =
+      ps_procs (recv_st j' bg') ->
+    recv_send_steppable j' bg' ->
+    recv_send_steppable j bg.
+
+(* ks2_recv_gen: if recv/send chain evidence exists, recv is in known_state2 *)
+Lemma ks2_recv_gen (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE)) :
+  recv_send_steppable j bg ->
+  known_state2 (recv_st j bg).
+Proof.
+move=> Hrss; induction Hrss as
+  [j0 bg0 bg_s0 rr_d0 bg_d0 Hs_d0
+     Hprog_r0 Hnt_r0 Hstep_rs0
+     Hprog_s0 Hnt_s0 Hstep_sd0 Hds0
+  |j0 bg0 bg_s0 j0' bg0'
+     Hprog_r0 Hnt_r0 Hstep_rs0
+     Hprog_s0 Hnt_s0 Hstep_sr0 _ IH].
+- apply (KS2_step _ Hstep_rs0 Hprog_r0 Hnt_r0).
+  apply (KS2_step _ Hstep_sd0 Hprog_s0 Hnt_s0).
+  exact (@ks2_drain_chain _ _ _ Hs_d0 Hds0).
+- apply (KS2_step _ Hstep_rs0 Hprog_r0 Hnt_r0).
+  apply (KS2_step IH Hstep_sr0 Hprog_s0 Hnt_s0).
+Qed.
+
+(* recv states are not all-terminated (Alice at position 0 is Recv, not terminal) *)
+Lemma recv_not_terminated_gen (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE)) :
+  ~~ @all_terminated data (ps_procs (recv_st j bg)).
+Proof.
+rewrite /= /all_terminated /recv_procs_gen.
+have Hj := ltn_ord j.
+have [f ->] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id v0 u r rand_a Hj.
+by [].
+Qed.
+
+(* send states are not all-terminated (Alice at position 0 is Send, not terminal) *)
+Lemma send_not_terminated_gen (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE)) :
+  ~~ @all_terminated data (ps_procs (send_st j bg)).
+Proof.
+by rewrite /= /all_terminated /send_procs_gen.
+Qed.
+
+(* NOP condition for recv: if for all i != j, bg(i) is either
+   Send 0 _ _ or Recv 0 _ or Finish, then bg_nop_recv j bg holds.
+   This is because position 0 is Recv j.+1, so:
+   - Send 0 at i+1: destination 0 has Recv j.+1, frm=j.+1 != i.+1 (since i!=j). NOP.
+   - Recv 0 at i+1: source 0 has Recv (not Send). NOP.
+   - Finish at i+1: always NOP. *)
+Lemma bg_nop_recv_safe (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE)) :
+  (forall i, (i < n_relay.+1)%N -> i != (j : nat) ->
+    match bg i with
+    | Send 0 _ _ => True
+    | Recv 0 _ => True
+    | Finish => True
+    | _ => False
+    end) ->
+  @bg_nop_recv AHE ek n_relay dk dk_relay relays v0 u r rand_a v_relay r1_relay r2_relay j bg.
+Proof.
+move=> Hsafe i Hi Hneq.
+rewrite /is_nop /recv_procs_gen /smc_interpreter.step /=.
+have Hj := ltn_ord j.
+have [f Haf] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id v0 u r rand_a Hj.
+rewrite nth_mkseq; last exact Hi.
+rewrite (negbTE Hneq).
+have Hsafei := Hsafe i Hi Hneq.
+case Hbgi : (bg i) Hsafei => [d0 next|dst w next|frm ff|d0| |] //=.
+- (* Send dst w next *)
+  case: dst Hbgi => [|dst'] Hbgi Hsafei.
+  + (* Send 0: check if receiver matches *)
+    rewrite Haf /=.
+    have -> : ((Ordinal Hj).+1 == i.+1) = false.
+      apply /eqP. move=> H. apply (negP Hneq).
+      by apply /eqP; apply succn_inj.
+    by [].
+  + by case: Hsafei.
+- (* Recv frm ff *)
+  case: frm Hbgi => [|frm'] Hbgi Hsafei.
+  + (* Recv 0: position 0 is Recv, not Send. NOP. *)
+    rewrite Haf /=. by [].
+  + by case: Hsafei.
+Qed.
+
+(* bg_init satisfies the NOP condition for any j *)
+Lemma bg_nop_recv_init (j : 'I_n_relay.+1) :
+  @bg_nop_recv AHE ek n_relay dk dk_relay relays v0 u r rand_a v_relay r1_relay r2_relay j
+    (@bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay).
+Proof.
+apply bg_nop_recv_safe.
+move=> i Hi _.
+rewrite /bg_init.
+have [sk ->] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay r1_relay r2_relay (inord i).
+by [].
+Qed.
+
+(* relay_body is always Send 0 ... *)
+Lemma relay_body_send0 (j : 'I_n_relay.+1) :
+  exists v k, @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay j = Send 0 v k.
+Proof. exact: @relay_body_is_send0 AHE ek n_relay dk_relay v_relay r1_relay r2_relay j. Qed.
 
 (* ks2_recv0: the initial recv state is in known_state2.
-   Chain: recv(0) → send_0 → recv_gen(1, bg') → ... → ret.
-   Each step uses KS2_step with the appropriate step_ok lemma.
-   For the general loop (j = 1..n_relay), induction is needed. *)
+   Proof: construct recv_send_steppable evidence for the concrete protocol. *)
 Lemma ks2_recv0 : known_state2 (local_st_recv ord0).
 Proof. Admitted.
 
