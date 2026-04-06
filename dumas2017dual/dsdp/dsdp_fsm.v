@@ -2117,8 +2117,37 @@ Qed.
    send_0_has_progress: ek dk dk_relay relays Hrelays v0 u r rand_a v_relay r1_relay r2_relay
 *)
 
+(* bg_drain_ready j bg: invariant tracking relay states through the
+   recv/send chain, needed for the drain phase at the base case (j=n_relay).
+   Part A: for j >= 1, bg(j-1) = relay_after_send0(inord(j-1))
+   Part B: for j >= 2, bg(0) is a drain-phase Send to position 2
+   Part C: for 0 < i, i+2 <= j: bg(i) is Recv i with drain callback *)
+Definition bg_drain_ready (j : 'I_n_relay.+1) (bg0 : nat -> proc data) : Prop :=
+  ((0 < j)%N ->
+    bg0 j.-1 = @relay_after_send0 AHE ek n_relay dk_relay v_relay
+              r1_relay r2_relay (inord j.-1)) /\
+  ((1 < j)%N ->
+    exists rr0, bg0 0 = Send 2
+      (e_local (enc_local (ek (nat_to_party_id 2)) (chain_acc 0) rr0))
+      Finish) /\
+  (forall i : nat, (0 < i)%N -> (i.+2 <= j)%N -> (i < n_relay)%N ->
+    exists f, bg0 i = Recv i f /\
+    exists rr_cb,
+      f (e_local (enc_local (ek (nat_to_party_id i.+1))
+                             (chain_acc i.-1) rr_cb)) =
+      (if (i.+1 < n_relay)%N then
+         Send i.+2
+           (e_local (enc_local (ek (nat_to_party_id i.+2))
+                               (chain_acc i) rr_cb))
+           Finish
+       else
+         Send 0
+           (e_local (@enc AHE (ek alice_idx)
+                         (chain_acc n_relay.-1) rr_cb))
+           Finish)).
+
 (* ks2_recv0: the initial recv state is in known_state2.
-   Chain: recv(0) → send_0 → recv_gen(1, bg') → ... → ret.
+   Chain: recv(0) -> send_0 -> recv_gen(1, bg') -> ... -> ret.
    Each step uses KS2_step with the appropriate step_ok lemma.
    For the general loop (j = 1..n_relay), induction is needed. *)
 Lemma ks2_recv0 : known_state2 (local_st_recv ord0).
@@ -2132,6 +2161,7 @@ suff Hgen : forall (k : nat) (j : 'I_n_relay.+1) (bg0 : nat -> proc data),
     (alice_send_dest j) = Recv 0 f) ->
   (forall i, (j < i)%N -> (i < n_relay.+1)%N ->
     bg0 i = @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay (inord i)) ->
+  bg_drain_ready j bg0 ->
   known_state2 (PhaseState (frag_ok_recv_gen ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j bg0)).
 { apply: (Hgen n_relay ord0 (bg_init ek dk_relay v_relay r1_relay r2_relay)).
   - by rewrite add0n.
@@ -2163,16 +2193,62 @@ suff Hgen : forall (k : nat) (j : 'I_n_relay.+1) (bg0 : nat -> proc data),
   - rewrite /send_procs_gen /alice_send_dest /= /relay_after_send0
       (@inordK n_relay 0 (ltn0Sn _)) /= /std_Recv_dec /std_Recv_enc /Recv_param.
     by eexists.
-  - by move=> i _ _; rewrite /bg_init. }
-elim=> [|k IH] j bg0 Hjk Hnr_bg Hns_bg Hrecv_bg Hbg_relay.
-- (* Base case: j = n_relay → drain → tail → ret *)
+  - by move=> i _ _; rewrite /bg_init.
+  - (* bg_drain_ready ord0 bg_init: vacuously true *)
+    split; [by [] | split; [by [] |
+    move=> i Hi1 Hi2; exfalso; exact (leq_ltn_trans Hi2 Hi1)]]. }
+elim=> [|k IH] j bg0 Hjk Hnr_bg Hns_bg Hrecv_bg Hbg_relay Hdrain.
+- (* Base case: j = n_relay, chain: recv -> send -> drain -> tail -> ret *)
+  have Hjn : (j : nat) = n_relay by rewrite addn0 in Hjk.
+  have Hjord : j = ord_max by apply val_inj; rewrite /= Hjn.
+  (* recv not terminated *)
+  have Hnt_r : ~~ @all_terminated data (ps_procs (PhaseState (frag_ok_recv_gen ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j bg0))).
+    rewrite /= /recv_procs_gen /all_terminated /=.
+    have [f_alice ->] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+      Hrelays_id v0 u r rand_a (j : nat) (ltn_ord j).
+    by [].
+  (* recv(j) -> send(j) *)
+  refine (KS2_step _ (@step_ok_recv_send_gen AHE ek n_relay dk dk_relay relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j bg0 Hnr_bg)
+    (@recv_has_progress_gen AHE ek n_relay dk dk_relay relays Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j bg0) Hnt_r).
+  (* send not terminated *)
+  have Hnt_s : ~~ @all_terminated data (ps_procs (PhaseState (@frag_ok_send_gen AHE ek n_relay dk dk_relay relays v0 u r rand_a v_relay r1_relay r2_relay j bg0))).
+    rewrite /= /send_procs_gen /all_terminated /=. by [].
+  (* Extract drain-readiness *)
+  have [HdrA [HdrB HdrC]] := Hdrain.
+  have Hj1 : (1 < j)%N by rewrite Hjn; exact (ltn_trans (isT : (1 < 2)%N) Hn_relay).
+  have Hj0 : (0 < j)%N by exact (ltn_trans (isT : (0 < 1)%N) Hj1).
+  have [rr0 Hbg0] := HdrB Hj1.
+  have Hbg1 : exists f1, bg0 1 = Recv 1 f1.
+    have H1n : (1 < n_relay)%N by exact (ltn_trans (isT : (1 < 2)%N) Hn_relay).
+    have H1j : (1.+2 <= j)%N by rewrite Hjn.
+    have [f1 [Hf1 _]] := HdrC 1 (isT : (0 < 1)%N) H1j H1n.
+    by exists f1.
+  have Hbg_safe : forall v0' k0, bg0 n_relay.-1 <> Send 0 v0' k0.
+    move=> v0' k0.
+    case Hn_eq : (n_relay.-1 == 0)%N.
+      move/eqP: Hn_eq => Hn_eq; by rewrite Hn_eq Hbg0.
+    have Hpred_pos : (0 < n_relay.-1)%N by rewrite lt0n Hn_eq.
+    have Hpred_ltj : (n_relay.-1.+2 <= j)%N.
+      rewrite Hjn prednK; last exact (ltn_trans (isT : (0 < 2)%N) Hn_relay).
+      by [].
+    have Hpred_ltn : (n_relay.-1 < n_relay)%N by rewrite prednK // ltnSn.
+    have [f_pred [Hfpred _]] := HdrC n_relay.-1 Hpred_pos Hpred_ltj Hpred_ltn.
+    by rewrite Hfpred.
+  subst j.
+  have [rr' [bg' [Hsafe' Hstep_sd]]] :=
+    @step_ok_send_last_drain AHE ek n_relay dk dk_relay relays Hrelays Hrelays_id
+      v0 u r rand_a v_relay r1_relay r2_relay bg0 Hn_relay Hns_bg Hrecv_bg
+      (ex_intro _ rr0 Hbg0) Hbg1 Hbg_safe.
+  refine (KS2_step _ Hstep_sd
+    (@send_has_progress_gen AHE ek n_relay dk dk_relay relays v0 u r rand_a v_relay r1_relay r2_relay ord_max bg0 Hrecv_bg) Hnt_s).
+  (* Drain chain: drain(0) -> ... -> drain(n_relay-1) -> tail -> ret *)
+  (* Inner induction on drain chain length *)
   admit.
-- (* Step case: j < n_relay → recv(j) → send(j) → recv(j+1) via IH *)
+- (* Step case: j < n_relay, recv(j) -> send(j) -> recv(j+1) via IH *)
   have Hjn : (j < n_relay)%N.
     have : (j < (j + k).+1)%N by rewrite ltnS leq_addr.
     by rewrite addnS in Hjk; rewrite Hjk.
   have Hnt_r : ~~ @all_terminated data (ps_procs (PhaseState (frag_ok_recv_gen ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j bg0))).
-    (* recv not terminated: alice_foldr j is a Recv, hence not is_terminal *)
     rewrite /= /recv_procs_gen /all_terminated /=.
     have [f_alice ->] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
       Hrelays_id v0 u r rand_a (j : nat) (ltn_ord j).
@@ -2192,6 +2268,8 @@ elim=> [|k IH] j bg0 Hjk Hnr_bg Hns_bg Hrecv_bg Hbg_relay.
     have Hinord : (@inord n_relay j.+1 : 'I_n_relay.+1) = j.+1 :> nat by rewrite inordK.
     rewrite Hinord in Hi1.
     exact: (bg_relay_propagate Hjn Hns_bg Hbg_relay Hstep_sr Hi1 Hi2).
+  + (* bg_drain_ready propagation from j to j+1 *)
+    admit.
 Admitted.
 
 (* known_state2_term_ret: if a known_state2 is all-terminated,
