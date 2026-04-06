@@ -2291,44 +2291,38 @@ case: ifP => Hj0.
 - (* j = 0 *)
   apply BSF_recv0 => v0'.
   rewrite /std_Recv_dec /Recv_param /= /std_from_enc /=.
-  case: v0' => [[c|p|e]|d].
-  + case Hdec: (dec (dk_relay j) c) => [m|].
-    * rewrite /= /std_Recv_enc /Recv_param /=.
-      apply BSF_recv0 => v1'.
-      rewrite /std_from_enc /=.
-      case: v1' => [[c'|p'|e']|d'].
-      all: try by apply BSF_send.
-      all: try by apply BSF_fail.
-    * by apply BSF_fail.
+  case: v0' => [[[m|c]|p]|d].
   + by apply BSF_fail.
+  + case Hdec: (dec (dk_relay j) c) => [m0|].
+    * rewrite /= /std_Recv_enc /Recv_param /=.
+      rewrite Hdec /=.
+      apply BSF_recv0 => v1'.
+      rewrite /= /std_from_enc.
+      case: v1' => [[[m'|c']|p']|d'] /=;
+        [by apply BSF_fail | by apply BSF_send |
+         by apply BSF_fail | by apply BSF_fail].
+    * exfalso. move/eqP: (dec_total (dk_relay j) c). by rewrite Hdec.
   + by apply BSF_fail.
   + by apply BSF_fail.
 - case: ifP => Hjn'.
   + (* j = n_relay: contradicts Hjn *)
-    by move/eqP: Hjn'; rewrite ltnn in Hjn.
+    exfalso. move/eqP: Hjn' => Hjn'.
+    rewrite Hjn' in Hjn. by rewrite ltnn in Hjn.
   + (* intermediate j *)
     apply BSF_recv0 => v0'.
     rewrite /std_Recv_enc /Recv_param /= /std_from_enc /=.
-    case: v0' => [[c|p|e]|d].
-    * apply BSF_recv_i => v1'.
-      rewrite /std_Recv_dec /Recv_param /= /std_from_enc /=.
-      case: v1' => [[c'|p'|e']|d'].
-      -- case Hdec: (dec (dk_relay j) c') => [m|].
-         ** by apply BSF_send.
-         ** by apply BSF_fail.
-      -- by apply BSF_fail.
-      -- by apply BSF_fail.
-      -- by apply BSF_fail.
+    case: v0' => [[[m|c]|p]|d].
     * by apply BSF_fail.
     * apply BSF_recv_i => v1'.
       rewrite /std_Recv_dec /Recv_param /= /std_from_enc /=.
-      case: v1' => [[c'|p'|e']|d'].
-      -- case Hdec: (dec (dk_relay j) c') => [m|].
-         ** by apply BSF_send.
-         ** by apply BSF_fail.
+      case: v1' => [[[m'|c']|p']|d'].
+      -- by apply BSF_fail.
+      -- case Hdec: (dec (dk_relay j) c') => [m0|].
+         ** rewrite /= Hdec /=. by apply BSF_send.
+         ** exfalso. move/eqP: (dec_total (dk_relay j) c'). by rewrite Hdec.
       -- by apply BSF_fail.
       -- by apply BSF_fail.
-      -- by apply BSF_fail.
+    * by apply BSF_fail.
     * by apply BSF_fail.
 Qed.
 
@@ -2460,10 +2454,13 @@ elim: k j bg => [|k IH] j bg Hjk Hahead Hbehind Hsafe.
          case Hdc2: (dec (dk_relay j) c_val) => [m2|]; last by rewrite Hdc2 in Hdec2.
          rewrite /= /std_Recv_enc /Recv_param /=.
          apply BSF_recv0 => v0'.
-         admit. (* callback of Recv 0 for j=0 produces safe form *)
+         rewrite /std_from_enc /=.
+         case: v0' => [[[m'|c']|p']|d'] /=;
+           [by apply BSF_fail | by apply BSF_send |
+            by apply BSF_fail | by apply BSF_fail].
       -- (* j >= 1: NOP, stays as Recv 0 *)
-         apply BSF_recv0 => v0'.
-         admit. (* callback of Recv 0 for j>=1 produces safe form *)
+         rewrite /=. rewrite -Hras Hinord_j.
+         exact: relay_after_send0_safe.
     * (* i < j: bg'(i) evolves from bg(i) through recv then send steps *)
       admit. (* bg_safe_form propagation for i < j *)
 Admitted.
