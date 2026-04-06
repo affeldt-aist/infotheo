@@ -1926,22 +1926,24 @@ Lemma interp_chain_ks2 (fuel : nat) (st : phase_state AHE) :
 Proof.
 elim: fuel st => [|fuel IH] st Hreach Hprog Hnt.
 - (* fuel = 0 *)
-  rewrite /= in Hreach.
+  rewrite interp_comp_unfold_eq in Hreach.
   case Hhas : (has_progress (std_data AHE) (ps_procs st)); last first.
     by exfalso; move: (Hprog 0 (ltn0Sn _)); rewrite Hhas.
   rewrite Hhas in Hreach.
   exact (KS2_step KS2_ret Hreach Hhas (Hnt 0 (ltn0Sn _))).
 - (* fuel = n+1 *)
-  rewrite /= in Hreach.
+  rewrite interp_comp_unfold_eq in Hreach.
   case Hhas : (has_progress (std_data AHE) (ps_procs st)); last first.
     by exfalso; move: (Hprog 0 (ltn0Sn _)); rewrite Hhas.
   rewrite Hhas in Hreach.
   set st' := @PhaseState AHE (one_step_procs (ps_procs st))
     ((smc_interpreter.step (one_step_procs (ps_procs st)) [::] 0).1.2) erefl.
-  apply (KS2_step (st' := st') _ erefl Hhas (Hnt 0 (ltn0Sn _))).
-  apply IH => //.
-  + move=> k Hk. move: (Hprog k.+1 Hk). by rewrite /= Hhas.
-  + move=> k Hk. move: (Hnt k.+1 Hk). by rewrite /= Hhas.
+  have Hst' : ps_procs st' = one_step_procs (ps_procs st) by [].
+  refine (KS2_step _ (esym Hst') Hhas (Hnt 0 (ltn0Sn _))).
+  apply IH.
+  + by rewrite Hst'.
+  + move=> k Hk. move: (Hprog k.+1 Hk). by rewrite interp_comp_unfold_eq Hhas.
+  + move=> k Hk. move: (Hnt k.+1 Hk). by rewrite interp_comp_unfold_eq Hhas.
 Qed.
 
 (* ks2_recv0: the initial recv state is in known_state2.
