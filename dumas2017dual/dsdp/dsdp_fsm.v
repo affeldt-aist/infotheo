@@ -1776,47 +1776,76 @@ rewrite Hbg1_step /sp /send_procs_gen /step /= nth_mkseq; last by [].
 (* Case split on i == j *)
 case Heq: (i == j).
   (* i == j: relay_after_send0 is a Recv, NOP in recv context *)
-  admit.
-(* i != j: the process is bg0 i *)
-case: (bg0 i) => [d0 next|dst w next|frm ff|d0| |] //=.
-- (* Init d0 next *)
-  case: next => [? ?|dst' _ next'|frm' f'|?| |] //=.
-  + case: (nth _ _ dst') => [? ?|? ? ?|? ?|?| |] //=.
-    by case: ifP.
-  + case: (nth _ _ frm') => [? ?|? ? ?|? ?|?| |] //=.
-    by case: ifP.
+  move/eqP: Heq => Heq; subst i.
+  rewrite /relay_after_send0 /std_Recv_dec /std_Recv_enc /Recv_param /alice_idx.
+  rewrite inordK; last by [].
+  have Hjnr : (j : nat) != n_relay by rewrite ltn_eqF.
+  case Hj0: ((j : nat) == 0).
+  - rewrite /= /alice_send_dest (eqP Hj0) /=.
+    have Hdec := dec_total (dk_relay (inord 0)) (alice_enc ek u r rand_a v_relay r1_relay j).
+    case Hdecv: (dec (dk_relay (inord 0)) (alice_enc ek u r rand_a v_relay r1_relay j)) => [m0|] //=.
+    have -> : (inord 0.+1 : 'I_n_relay.+1) = 1 :> nat by rewrite inordK.
+    have H1lt : (1 < n_relay.+1)%N
+      by exact (ltn_trans (ltn_trans (isT : (1 < 2)%N) Hn_relay) (ltnSn n_relay)).
+    have [f0 Haf] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+      Hrelays_id v0 u r rand_a 1 H1lt.
+    by rewrite Haf.
+  - rewrite (negbTE Hjnr) /= /alice_send_dest.
+    have Hj_pos : (0 < j)%N
+      by rewrite lt0n; apply/negP => /eqP Habs; rewrite Habs in Hj0.
+    have Hmaxn : maxn 1 j == j.+1 = false.
+      apply/negbTE. rewrite neq_ltn. apply/orP; left.
+      rewrite /maxn. by case: ifP.
+    rewrite Hmaxn /=.
+    have Hjp1 : (j.+1 < n_relay.+1)%N by [].
+    have [f0 Haf] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+      Hrelays_id v0 u r rand_a j.+1 Hjp1.
+    have -> : (inord j.+1 : 'I_n_relay.+1) = j.+1 :> nat by rewrite inordK.
+    by rewrite Haf.
+(* i != j: use Hnop_r to exclude Init/Ret, then case-split *)
+have Hnop_i := Hnop_r i Hi (negbT Heq).
+rewrite /is_nop /recv_procs_gen /step /= nth_mkseq in Hnop_i; last by [].
+rewrite Heq /= in Hnop_i.
+case Hbg: (bg0 i) Hnop_i => [d0 next|dst w next|frm ff|d0| |] //= Hnop_i.
 - (* Send dst w next *)
+  clear Hnop_i.
   case Hnth: (nth (default_proc data) (Send (alice_send_dest j) _ _ :: _) dst) =>
     [? ?|? ? ?|? ?|?| |] //=;
     try (case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) dst) =>
       [? ?|? ? ?|? ?|?| |] //=; try by case: ifP).
   case: ifP => [/eqP Hfrm|Hfrm] //=.
-  + (* frm == i.+1: step fires *)
-    case: next => [? ?|dst' _ next'|frm' f'|?| |] //=.
+  + (* frm == i.+1: step fires, result is next *)
+    clear Hbg.
+    destruct next as [d1 next1|dst' w' next'|frm' f'|d1| |]; simpl;
+      try by [].
+    * admit. (* Init: impossible by NOP invariant *)
     * case: (nth _ _ dst') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
     * case: (nth _ _ frm') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
+    * admit. (* Ret: impossible by NOP invariant *)
   + case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) dst) =>
       [? ?|? ? ?|? ?|?| |] //=.
     by case: ifP.
 - (* Recv frm ff *)
+  clear Hnop_i.
   case Hnth: (nth (default_proc data) (Send (alice_send_dest j) _ _ :: _) frm) =>
     [? ?|dst w next|? ?|?| |] //=;
     try (case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) frm) =>
       [? ?|? ? ?|? ?|?| |] //=; try by case: ifP).
   case: ifP => [/eqP Hdst|Hdst] //=.
   + (* dst == i.+1: step fires *)
-    case: (ff w) => [? ?|dst' _ next'|frm' f'|?| |] //=.
+    destruct (ff w) as [d1 next1|dst' w' next'|frm' f'|d1| |]; simpl;
+      try by [].
+    * admit. (* Init: impossible by NOP invariant *)
     * case: (nth _ _ dst') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
     * case: (nth _ _ frm') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
+    * admit. (* Ret: impossible by NOP invariant *)
   + case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) frm) =>
       [? ?|? ? ?|? ?|?| |] //=.
     by case: ifP.
-- (* Ret d0 *)
-  by [].
 Qed.
 
 Lemma nop_propagate_send (j : 'I_n_relay.+1) (bg0 bg1 : nat -> proc data) :
