@@ -1765,7 +1765,8 @@ have Hbg1_step : bg1 i = (step sp [::] i.+1).1.1.
   rewrite (negbTE Hineq) => <-.
   rewrite /one_step_procs /ps_procs /st_send_gen /sp
           /unzip1 -2!map_comp /= size_map size_iota.
-  rewrite (nth_map 0); last by rewrite size_iota.
+  case: i Hi Hineq Hineq_nat => [|i'] Hi Hineq Hineq_nat; first by [].
+  rewrite /= (nth_map 0); last by rewrite size_iota.
   by rewrite nth_iota // add0n /comp /= /sp.
 (* Unfold is_nop for the recv state at position i.+1 *)
 rewrite /is_nop /recv_procs_gen /step /= nth_mkseq; last by [].
@@ -1872,7 +1873,8 @@ have Hbg1_step : bg1 i = (step sp [::] i.+1).1.1.
   rewrite (negbTE Hineq) => <-.
   rewrite /one_step_procs /ps_procs /st_send_gen /sp
           /unzip1 -2!map_comp /= size_map size_iota.
-  rewrite (nth_map 0); last by rewrite size_iota.
+  case: i Hi Hineq Hasd_neq Hineq_nat => [|i'] Hi Hineq Hasd_neq Hineq_nat; first by [].
+  rewrite /= (nth_map 0); last by rewrite size_iota.
   by rewrite nth_iota // add0n /comp /= /sp.
 (* Unfold is_nop for the send state at position i.+1 *)
 rewrite /is_nop /send_procs_gen /step /= nth_mkseq; last by [].
@@ -2111,22 +2113,27 @@ Lemma ks2_drain_mid (j : 'I_n_relay.+1) (rr : rand AHE)
     (@st_drain_gen AHE ek n_relay dk relays Hrelays
        v0 u r rand_a v_relay j rr bg Hbg_safe).
 Proof.
-move=> cipher_j Hjlt Hrecv Hbg_safe_j Hnop [f [rr_next [Hbg1 Hcb]]] [f_next Hbg_next] Hks2_next.
-have [rr' [bg' [Hsafe' Hstep]]] := @step_ok_drain_drain_gen AHE ek n_relay dk relays Hrelays
-  v0 u r rand_a v_relay j rr bg Hbg_safe Hjlt
+move=> cipher_j Hjlt Hrecv Hbg_safe_j Hnop [f [rr_next [Hbg1 Hcb]]] [f_next Hbg2] Hks2_next.
+have [rr' [bg' [Hsafe' Hstep]]] := @step_ok_drain_drain_gen AHE ek n_relay dk
+  relays Hrelays v0 u r rand_a v_relay j rr bg Hbg_safe Hjlt
   (ex_intro _ f (ex_intro _ rr_next (conj Hbg1 Hcb)))
-  (ex_intro _ f_next Hbg_next) Hbg_safe_j Hnop.
+  (ex_intro _ f_next Hbg2) Hbg_safe_j Hnop.
 apply (KS2_step (Hks2_next rr' bg' Hsafe' Hstep) Hstep).
 - apply (@drain_has_progress_gen AHE ek n_relay dk relays Hrelays
     v0 u r rand_a v_relay j rr bg Hbg_safe).
   + exact (ltn_trans (ltnSn _) Hjlt).
   + exact Hrecv.
-- rewrite /= /drain_procs_gen /all_terminated /=.
-  rewrite all_map.
-  apply /allP => x Hx /=.
-  rewrite /is_terminated.
-  (* The Send at position j+1 is not terminated *)
-Admitted.
+- rewrite /= /drain_procs_gen /all_terminated /= all_map.
+  apply negbT.
+  rewrite -has_predC.
+  apply /hasP.
+  exists (j : nat).
+  + rewrite mem_iota /=. apply /andP; split => //.
+    exact (ltn_trans (ltn_ord j) (ltnSn _)).
+  + rewrite /= /predC /= /is_terminated.
+    rewrite nth_mkseq; last exact (ltn_ord j).
+    by rewrite eqxx.
+Qed.
 
 (* Section-closed arg order discovery (by interactive testing):
    step_ok_recv_send0: ek dk dk_relay Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay
