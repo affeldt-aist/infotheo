@@ -2262,6 +2262,41 @@ Let local_send_procs_gen := @send_procs_gen AHE ek n_relay dk dk_relay relays
     v0 u r rand_a v_relay r1_relay r2_relay.
 Let local_relay_body := @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
 Let local_bg_init := @bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
+Let local_chain_acc := @chain_acc AHE u r v_relay.
+Let local_alice_enc := @alice_enc AHE ek u r rand_a v_relay r1_relay.
+Let local_term := @term AHE u r v_relay.
+
+(* bg_frontier_inv j bg rr_fw: enriched invariant tracking exact cipher values
+   at processed relay positions. Adapted from dsdp_progress.v's Inv_AR A7-A9.
+   Index convention: bg[k] = ps[k+1] where ps is the process list. *)
+Definition bg_frontier_inv (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE))
+    (rr_fw : rand AHE) : Prop :=
+  (* F1: Finish zone: bg[0..j-4] — from Inv_AR A9 finish *)
+  (forall i, (i.+1 < j.-2)%N -> bg i = Finish) /\
+  (* F2: Frontier sender at bg[j-3] for j >= 3 — from A9 sender *)
+  ((3 <= j)%N ->
+    bg (j - 3) = Send j.-1
+      (e_local (@enc AHE (ek (nat_to_party_id j.-1))
+                    (local_chain_acc (j - 3)) rr_fw)) Finish) /\
+  (* F2b: j=2 special case at bg[0] — from A8 *)
+  ((j == 2%N :> nat) ->
+    bg 0 = Send 2
+      (e_local (@enc AHE (ek (nat_to_party_id 2))
+                    (local_chain_acc 0) rr_fw)) Finish) /\
+  (* F3: Frontier receiver at bg[j-2] for j >= 3 — from A9 receiver *)
+  ((3 <= j)%N ->
+    exists f_recv, bg (j - 2) = Recv j.-2 f_recv /\
+    forall m rr,
+      f_recv (e_local (@enc AHE (ek (nat_to_party_id j.-1)) m rr)) =
+      Send j (e_local (@Emul AHE (local_alice_enc (inord j.-1))
+        (@enc AHE (ek (nat_to_party_id j)) m (r2_relay (inord (j - 2))))))
+      Finish) /\
+  (* F3b: j=1 special case — from H6 *)
+  ((j == 1%N :> nat) ->
+    exists f_enc, bg 0 = Recv 0 (oapp f_enc Fail \o @std_from_enc AHE) /\
+    forall c, f_enc c = Send 2
+      (e_local (@Emul AHE c (@enc AHE (ek (nat_to_party_id 2))
+                                  (local_term ord0) (r2_relay ord0)))) Finish).
 
 (* bg_safe_form i p: process p at relay position i has a "safe" form
    that doesn't interfere with active communication and will eventually
@@ -2355,15 +2390,15 @@ elim: Hbsf => {p Hnth} [i0|i0|i0 v|i0 f Hf IH|i0 f Hf IH].
 Qed.
 
 Lemma ks2_recv0_gen (k : nat) (j : 'I_n_relay.+1)
-    (bg : nat -> proc (std_data AHE)) :
+    (bg : nat -> proc (std_data AHE)) (rr_fw : rand AHE) :
   (j + k = n_relay)%N ->
   (forall i, (j < i)%N -> (i < n_relay.+1)%N ->
      bg i = local_relay_body (inord i)) ->
   ((0 < j)%N -> exists f, bg j.-1 = Recv 0 f) ->
-  (forall i, (i < j)%N -> bg_safe_form i (bg i)) ->
+  bg_frontier_inv j bg rr_fw ->
   known_state2 (recv_st j bg).
 Proof.
-elim: k j bg => [|k IH] j bg Hjk Hahead Hbehind Hsafe.
+elim: k j bg rr_fw => [|k IH] j bg rr_fw Hjk Hahead Hbehind Hfront.
 - (* Base case: k=0, j = n_relay = ord_max *)
   have Hjmax : j = n_relay :> nat by have := Hjk; rewrite addn0.
   admit.
@@ -2452,71 +2487,25 @@ elim: k j bg => [|k IH] j bg Hjk Hahead Hbehind Hsafe.
       by eexists.
     * (* j >= 1: NOP *)
       by eexists.
-  + (* Hsafe for bg': bg_safe_form i (bg' i) for i < j.+1 *)
-    move=> i.
-    rewrite Hinord => Hi.
-    rewrite ltnS leq_eqVlt in Hi.
-    case/orP: Hi => [/eqP Hi_eq | Hi_lt].
-    * (* i = j: bg'(j) = Recv 0 f — proved in Hbehind bullet *)
-      subst i.
-      rewrite /bg' /local_send_procs_gen /send_procs_gen.
-      rewrite /smc_interpreter.step /= nth_mkseq; last by [].
-      rewrite eqxx.
-      have Hinord_j : inord (nat_of_ord j) = j :> 'I_n_relay.+1 by exact: inord_val.
-      have Hjn' : ((inord j : 'I_n_relay.+1) < n_relay)%N by rewrite Hinord_j.
-      have [f_ras Hras] := @relay_after_send0_recv0 AHE ek n_relay dk_relay
-        v_relay r1_relay r2_relay (inord j) Hjn'.
-      rewrite Hras /=.
-      case: ifP => Hdst.
-      -- (* j = 0: after recv, becomes Recv 0 *)
-         rewrite /relay_after_send0 Hinord_j in Hras.
-         have Hj0 : (j : nat) == 0.
-           rewrite /alice_send_dest in Hdst.
-           case: (j : nat) Hdst => [|n] //=.
-           rewrite /maxn. case: ltnP => // _. move/eqP => Habs.
-           exfalso. move: Habs. exact: n_Sn.
-         rewrite Hj0 /= /std_Recv_dec /Recv_param /= in Hras.
-         case: Hras => Hras_eq. rewrite /= -Hras_eq /= /std_from_enc /=.
-         set c_val := alice_enc _ _ _ _ _ _ _.
-         have Hdec2 := dec_total (dk_relay j) c_val.
-         case Hdc2: (dec (dk_relay j) c_val) => [m2|]; last by rewrite Hdc2 in Hdec2.
-         rewrite /= /std_Recv_enc /Recv_param /=.
-         apply BSF_recv0 => v0'.
-         rewrite /std_from_enc /=.
-         case: v0' => [[[m'|c']|p']|d'] /=;
-           [by apply BSF_fail | by apply BSF_send |
-            by apply BSF_fail | by apply BSF_fail].
-      -- (* j >= 1: NOP, stays as Recv 0 *)
-         rewrite /=. rewrite -Hras Hinord_j.
-         exact: relay_after_send0_safe.
-    * (* i < j: bg'(i) evolves from bg(i) through recv then send steps.
-         bg_safe_form is preserved through both steps by bg_safe_form_step_any. *)
-      have Hi_nr : (i < n_relay.+1)%N by exact (ltn_trans Hi_lt (ltn_ord j)).
-      (* Step 1: bg_safe_form i (bg_s i) — recv step preserves *)
-      have Hsafe_recv : bg_safe_form i (bg_s i).
-        apply (bg_safe_form_step_any (ps := local_recv_procs_gen j bg) (p := bg i)).
-        + rewrite /local_recv_procs_gen /recv_procs_gen /=.
-          rewrite nth_mkseq //.
-          by have -> : (i == j :> nat) = false
-            by apply /eqP => Heq; rewrite Heq ltnn in Hi_lt.
-        + exact: Hsafe.
-      (* Step 2: bg_safe_form i (bg' i) — send step preserves *)
-      apply (bg_safe_form_step_any (ps := local_send_procs_gen j bg_s) (p := bg_s i)).
-      + rewrite /local_send_procs_gen /send_procs_gen /=.
-        rewrite nth_mkseq //.
-        by have -> : (i == j :> nat) = false
-          by apply /eqP => Heq; rewrite Heq ltnn in Hi_lt.
-      + exact Hsafe_recv.
+  + (* bg_frontier_inv for bg' at j+1 with rr_fw *)
+    (* TODO: prove frontier propagation *)
+    admit.
 Admitted.
 
 (* ks2_recv0: the initial recv state is in known_state2. *)
 Lemma ks2_recv0 : known_state2 (local_st_recv ord0).
 Proof.
-apply (ks2_recv0_gen (k := n_relay) (j := ord0) (bg := local_bg_init)).
+apply (ks2_recv0_gen (k := n_relay) (j := ord0) (bg := local_bg_init)
+         (rr_fw := r2_relay ord0)). (* initial rr_fw unused at j=0 *)
 - by rewrite add0n.
 - move=> i Hi0 Hi. by rewrite /local_bg_init /bg_init.
 - by move=> /=.
-- by move=> i /=.
+- (* bg_frontier_inv ord0 bg_init rr_fw: all clauses vacuous *)
+  split; [by move=> i; rewrite /= |
+  split; [by [] |
+  split; [by move/eqP |
+  split; [by [] |
+  by move/eqP]]]].
 Qed.
 
 (* known_state2_term_ret: if a known_state2 is all-terminated,
