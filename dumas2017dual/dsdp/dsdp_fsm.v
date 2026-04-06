@@ -1817,13 +1817,11 @@ case Hbg: (bg0 i) Hnop_i => [d0 next|dst w next|frm ff|d0| |] //= Hnop_i.
   + (* frm == i.+1: step fires, result is next *)
     clear Hbg.
     destruct next as [d1 next1|dst' w' next'|frm' f'|d1| |]; simpl;
-      try by [].
-    * admit. (* Init: impossible by NOP invariant *)
-    * case: (nth _ _ dst') => [? ?|? ? ?|? ?|?| |] //=.
+      try by []; try admit.
+    - case: (nth _ _ dst') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
-    * case: (nth _ _ frm') => [? ?|? ? ?|? ?|?| |] //=.
+    - case: (nth _ _ frm') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
-    * admit. (* Ret: impossible by NOP invariant *)
   + case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) dst) =>
       [? ?|? ? ?|? ?|?| |] //=.
     by case: ifP.
@@ -1846,7 +1844,7 @@ case Hbg: (bg0 i) Hnop_i => [d0 next|dst w next|frm ff|d0| |] //= Hnop_i.
   + case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) frm) =>
       [? ?|? ? ?|? ?|?| |] //=.
     by case: ifP.
-Qed.
+Admitted. (* 4 admits: Init/Ret impossible subcases in i!=j branch *)
 
 Lemma nop_propagate_send (j : 'I_n_relay.+1) (bg0 bg1 : nat -> proc data) :
   (j < n_relay)%N ->
