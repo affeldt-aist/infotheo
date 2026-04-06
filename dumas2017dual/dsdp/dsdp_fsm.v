@@ -1829,11 +1829,11 @@ move=> Hrss; induction Hrss as
   |j0 bg0 bg_s0 j0' bg0'
      Hprog_r0 Hnt_r0 Hstep_rs0
      Hprog_s0 Hnt_s0 Hstep_sr0 _ IH].
-- apply (KS2_step _ Hstep_rs0 Hprog_r0 Hnt_r0).
-  apply (KS2_step _ Hstep_sd0 Hprog_s0 Hnt_s0).
+- refine (KS2_step _ Hstep_rs0 Hprog_r0 Hnt_r0).
+  refine (KS2_step _ Hstep_sd0 Hprog_s0 Hnt_s0).
   exact (@ks2_drain_chain _ _ _ Hs_d0 Hds0).
-- apply (KS2_step _ Hstep_rs0 Hprog_r0 Hnt_r0).
-  apply (KS2_step IH Hstep_sr0 Hprog_s0 Hnt_s0).
+- refine (KS2_step _ Hstep_rs0 Hprog_r0 Hnt_r0).
+  exact (KS2_step IH Hstep_sr0 Hprog_s0 Hnt_s0).
 Qed.
 
 (* recv states are not all-terminated (Alice at position 0 is Recv, not terminal) *)
@@ -1842,7 +1842,7 @@ Lemma recv_not_terminated_gen (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AH
 Proof.
 rewrite /= /all_terminated /recv_procs_gen.
 have Hj := ltn_ord j.
-have [f ->] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id v0 u r rand_a Hj.
+have [f ->] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id v0 u r rand_a (j : nat) Hj.
 by [].
 Qed.
 
@@ -1872,7 +1872,7 @@ Proof.
 move=> Hsafe i Hi Hneq.
 rewrite /is_nop /recv_procs_gen /smc_interpreter.step /=.
 have Hj := ltn_ord j.
-have [f Haf] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id v0 u r rand_a Hj.
+have [f Haf] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays Hrelays_id v0 u r rand_a (j : nat) Hj.
 rewrite nth_mkseq; last exact Hi.
 rewrite (negbTE Hneq).
 have Hsafei := Hsafe i Hi Hneq.
@@ -1908,10 +1908,44 @@ Qed.
 (* relay_body is always Send 0 ... *)
 Lemma relay_body_send0 (j : 'I_n_relay.+1) :
   exists v k, @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay j = Send 0 v k.
-Proof. exact: @relay_body_is_send0 AHE ek n_relay dk_relay v_relay r1_relay r2_relay j. Qed.
+Proof.
+have [sk Hsk] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay r1_relay r2_relay j.
+by eexists; eexists; exact Hsk.
+Qed.
+
+(* interp_chain_ks2: if interp_comp reaches st_ret in fuel+1 steps
+   with progress and non-termination at every intermediate step,
+   then the starting state is known_state2. *)
+Lemma interp_chain_ks2 (fuel : nat) (st : phase_state AHE) :
+  @interp_comp (std_data AHE) (ps_procs st) fuel.+1 = ps_procs local_st_ret ->
+  (forall k, (k < fuel.+1)%N ->
+    @has_progress (std_data AHE) (@interp_comp (std_data AHE) (ps_procs st) k)) ->
+  (forall k, (k < fuel.+1)%N ->
+    ~~ @all_terminated (std_data AHE) (@interp_comp (std_data AHE) (ps_procs st) k)) ->
+  known_state2 st.
+Proof.
+elim: fuel st => [|fuel IH] st Hreach Hprog Hnt.
+- (* fuel = 0 *)
+  rewrite /= in Hreach.
+  case Hhas : (has_progress (std_data AHE) (ps_procs st)); last first.
+    by exfalso; move: (Hprog 0 (ltn0Sn _)); rewrite Hhas.
+  rewrite Hhas in Hreach.
+  exact (KS2_step KS2_ret Hreach Hhas (Hnt 0 (ltn0Sn _))).
+- (* fuel = n+1 *)
+  rewrite /= in Hreach.
+  case Hhas : (has_progress (std_data AHE) (ps_procs st)); last first.
+    by exfalso; move: (Hprog 0 (ltn0Sn _)); rewrite Hhas.
+  rewrite Hhas in Hreach.
+  set st' := @PhaseState AHE (one_step_procs (ps_procs st))
+    ((smc_interpreter.step (one_step_procs (ps_procs st)) [::] 0).1.2) erefl.
+  apply (KS2_step (st' := st') _ erefl Hhas (Hnt 0 (ltn0Sn _))).
+  apply IH => //.
+  + move=> k Hk. move: (Hprog k.+1 Hk). by rewrite /= Hhas.
+  + move=> k Hk. move: (Hnt k.+1 Hk). by rewrite /= Hhas.
+Qed.
 
 (* ks2_recv0: the initial recv state is in known_state2.
-   Proof: construct recv_send_steppable evidence for the concrete protocol. *)
+   Proof: use interp_chain_ks2 with a fuel bound. *)
 Lemma ks2_recv0 : known_state2 (local_st_recv ord0).
 Proof. Admitted.
 
