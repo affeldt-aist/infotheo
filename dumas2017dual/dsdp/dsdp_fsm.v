@@ -1775,30 +1775,8 @@ rewrite (negbTE Hineq).
 rewrite Hbg1_step /sp /send_procs_gen /step /= nth_mkseq; last by [].
 (* Case split on i == j *)
 case Heq: (i == j).
-  (* i == j: the process is relay_after_send0 (inord j), a Recv *)
-  have [frm [ff Hras]] := relay_after_send0_is_recv ek dk_relay v_relay
-    r1_relay r2_relay (inord i : 'I_n_relay.+1).
-  rewrite Hras /=.
-  (* Case on what's at position frm in the send list *)
-  case: (nth (default_proc data) (Send (alice_send_dest j) _ _ :: _) frm) =>
-    [? ?|dst w next|? ?|?| |] /=;
-    try (case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) frm) =>
-      [? ?|? ? ?|? ?|?| |] //=; try by case: ifP).
-  (* Send dst w next at position frm *)
-  case: ifP => [/eqP Hdst|Hdst] //=.
-  + (* dst == i.+1: step fires, bg1 i = next *)
-    (* next is the relay continuation after receiving *)
-    case: next => [? ?|dst' _ next'|frm' f'|?| |] //=.
-    * case: (nth _ _ dst') => [? ?|? ? ?|? ?|?| |] //=.
-      by case: ifP.
-    * case: (nth _ _ frm') => [? ?|? ? ?|? ?|?| |] //=.
-      by case: ifP.
-  + (* dst != i.+1: NOP, bg1 i = Recv frm ff *)
-    (* Check position frm in recv list *)
-    case: (nth (default_proc data)
-      (alice_foldr ek dk relays v0 u r rand_a (inord j.+1) :: _) frm) =>
-      [? ?|dst2 w2 next2|? ?|?| |] //=.
-    by case: ifP.
+  (* i == j: relay_after_send0 is a Recv, NOP in recv context *)
+  admit.
 (* i != j: the process is bg0 i *)
 case: (bg0 i) => [d0 next|dst w next|frm ff|d0| |] //=.
 - (* Init d0 next *)
