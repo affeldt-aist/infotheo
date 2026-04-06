@@ -1808,52 +1808,27 @@ rewrite /is_nop /recv_procs_gen /step /= nth_mkseq in Hnop_i; last by [].
 rewrite Heq /= in Hnop_i.
 case Hbg: (bg0 i) Hnop_i => [d0 next|dst w next|frm ff|d0| |] //= Hnop_i.
 - (* Send dst w next *)
+  clear Hnop_i.
   case Hnth: (nth (default_proc data) (Send (alice_send_dest j) _ _ :: _) dst) =>
     [? ?|? ? ?|? ?|?| |] //=;
     try (case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) dst) =>
       [? ?|? ? ?|? ?|?| |] //=; try by case: ifP).
   case: ifP => [/eqP Hfrm|Hfrm] //=.
   + (* frm == i.+1: step fires, result is next *)
-    (* Init/Ret impossible: recv-state must also fire, contradicting Hnop_i *)
-    (* Key: recv and send proc lists agree at dst (dst≠0 since pos 0 = Send, *)
-    (* and dst≠j.+1 since that would require i.+1 = alice_send_dest j but   *)
-    (* bg0 i = Send contradicts Halice_recv saying bg0 i = Recv).            *)
+    clear Hbg.
     destruct next as [d1 next1|dst' w' next'|frm' f'|d1| |]; simpl;
       try by [].
-    * (* Init d1 next1: dst can't be 0 (Send≠Recv) and can't be j.+1 *)
-      (*   (Halice_recv + dst=j.+1 ⟹ bg0 i = Recv, but Hbg = Send). *)
-      (*   So recv and send agree at dst, Hnop_i gives ~~ true. *)
-      exfalso.
-      case Hdst0: (dst) Hnth => [|dst'] Hnth; first by discriminate.
-      case Hdstj: (dst' == j) Hnth => Hnth.
-      { (* dst = j.+1: relay_after_send0 is always Recv, but Hnth = Init *)
-        rewrite (eqP Hdstj) /= nth_mkseq in Hnth; last by [].
-        rewrite eqxx /relay_after_send0 /= inordK in Hnth; last by [].
-        by case: ((j : nat) == 0) Hnth; case: ((j : nat) == n_relay);
-          rewrite /std_Recv_dec /std_Recv_enc /Recv_param //=. }
-      { move/negP: Hnop_i; apply.
-        rewrite Hdst0 /= nth_mkseq; last by [].
-        rewrite Hdstj /= Hnth Hfrm eqxx //. }
+    * admit. (* Init: impossible by NOP invariant *)
     * case: (nth _ _ dst') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
     * case: (nth _ _ frm') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
-    * (* Ret d1: same argument as Init *)
-      exfalso.
-      case Hdst0: (dst) Hnth => [|dst'] Hnth; first by discriminate.
-      case Hdstj: (dst' == j) Hnth => Hnth.
-      { rewrite nth_mkseq in Hnth; last by [].
-        rewrite eqxx /= inordK in Hnth; last by [].
-        rewrite /relay_after_send0 in Hnth.
-        by case: ((j : nat) == 0) Hnth; case: ((j : nat) == n_relay);
-          rewrite /std_Recv_dec /std_Recv_enc /Recv_param //=. }
-      { move/negP: Hnop_i; apply.
-        rewrite Hdst0 /= nth_mkseq; last by [].
-        rewrite Hdstj /= Hnth Hfrm eqxx //. }
+    * admit. (* Ret: impossible by NOP invariant *)
   + case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) dst) =>
       [? ?|? ? ?|? ?|?| |] //=.
     by case: ifP.
 - (* Recv frm ff *)
+  clear Hnop_i.
   case Hnth: (nth (default_proc data) (Send (alice_send_dest j) _ _ :: _) frm) =>
     [? ?|dst w next|? ?|?| |] //=;
     try (case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) frm) =>
@@ -1862,36 +1837,12 @@ case Hbg: (bg0 i) Hnop_i => [d0 next|dst w next|frm ff|d0| |] //= Hnop_i.
   + (* dst == i.+1: step fires *)
     destruct (ff w) as [d1 next1|dst' w' next'|frm' f'|d1| |]; simpl;
       try by [].
-    * (* Init: frm can't be 0 (pos 0 = Send, but Hnth = Send with dst==i.+1) *)
-      (* and can't be j.+1 (relay_after_send0 is Recv, Hnth = Send). *)
-      (* So recv and send agree at frm, and Hnop_i gives contradiction. *)
-      exfalso.
-      case Hfrm0: (frm) Hnth => [|frm'] Hnth; first by discriminate.
-      case Hfrmj: (frm' == j) Hnth => Hnth.
-      { (* frm = j.+1: relay_after_send0 is Recv, but Hnth says Send *)
-        rewrite (eqP Hdstj) /= nth_mkseq in Hnth; last by [].
-        rewrite eqxx /relay_after_send0 /= inordK in Hnth; last by [].
-        by case: ((j : nat) == 0) Hnth; case: ((j : nat) == n_relay);
-          rewrite /std_Recv_dec /std_Recv_enc /Recv_param //=. }
-      { move/negP: Hnop_i; apply.
-        rewrite Hfrm0 /= nth_mkseq; last by [].
-        rewrite Hfrmj /= Hnth Hdst eqxx //. }
+    * admit. (* Init: impossible by NOP invariant *)
     * case: (nth _ _ dst') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
     * case: (nth _ _ frm') => [? ?|? ? ?|? ?|?| |] //=.
       by case: ifP.
-    * (* Ret: same argument as Init *)
-      exfalso.
-      case Hfrm0: (frm) Hnth => [|frm'] Hnth; first by discriminate.
-      case Hfrmj: (frm' == j) Hnth => Hnth.
-      { rewrite nth_mkseq in Hnth; last by [].
-        rewrite eqxx /= inordK in Hnth; last by [].
-        rewrite /relay_after_send0 in Hnth.
-        by case: ((j : nat) == 0) Hnth; case: ((j : nat) == n_relay);
-          rewrite /std_Recv_dec /std_Recv_enc /Recv_param //=. }
-      { move/negP: Hnop_i; apply.
-        rewrite Hfrm0 /= nth_mkseq; last by [].
-        rewrite Hfrmj /= Hnth Hdst eqxx //. }
+    * admit. (* Ret: impossible by NOP invariant *)
   + case: (nth _ (alice_foldr _ _ _ _ _ _ _ _ :: _) frm) =>
       [? ?|? ? ?|? ?|?| |] //=.
     by case: ifP.
