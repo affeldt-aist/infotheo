@@ -2326,6 +2326,34 @@ case: ifP => Hj0.
     * by apply BSF_fail.
 Qed.
 
+(* bg_safe_form processes always step to bg_safe_form processes,
+   regardless of what's in the process list.
+   Key insight: all bg_safe_form constructors either produce terminal forms
+   (Finish, Fail) or communicate on specific channels. If a pair fires,
+   the callback output also satisfies bg_safe_form by the inductive
+   closure in BSF_recv0/BSF_recv_i. *)
+Lemma bg_safe_form_step_any (ps : seq (proc (std_data AHE))) (i : nat)
+    (p : proc (std_data AHE)) :
+  nth (@default_proc (std_data AHE)) ps i.+1 = p ->
+  bg_safe_form i p ->
+  bg_safe_form i (smc_interpreter.step ps [::] i.+1).1.1.
+Proof.
+move=> Hnth Hbsf.
+rewrite /smc_interpreter.step Hnth.
+elim: Hbsf => {p Hnth} [i0|i0|i0 v|i0 f Hf IH|i0 f Hf IH].
+- by apply BSF_finish.
+- by apply BSF_fail.
+- case: (nth _ ps i0.+2) => [d0 next|dst' w next'|frm ff|d0| |] //=;
+    try by apply BSF_send.
+  case: ifP => _; [by apply BSF_finish | by apply BSF_send].
+- case: (nth _ ps 0) => [d0' next'|dst' w' next'|frm' ff'|d0'| |] //=;
+    try by (apply BSF_recv0 => v'; exact: Hf).
+  case: ifP => Hdst'; [exact: Hf | by apply BSF_recv0 => v'; exact: Hf].
+- case: (nth _ ps i0) => [d0' next'|dst' w' next'|frm' ff'|d0'| |] //=;
+    try by (apply BSF_recv_i => v'; exact: Hf).
+  case: ifP => Hdst'; [exact: Hf | by apply BSF_recv_i => v'; exact: Hf].
+Qed.
+
 Lemma ks2_recv0_gen (k : nat) (j : 'I_n_relay.+1)
     (bg : nat -> proc (std_data AHE)) :
   (j + k = n_relay)%N ->
@@ -2461,8 +2489,24 @@ elim: k j bg => [|k IH] j bg Hjk Hahead Hbehind Hsafe.
       -- (* j >= 1: NOP, stays as Recv 0 *)
          rewrite /=. rewrite -Hras Hinord_j.
          exact: relay_after_send0_safe.
-    * (* i < j: bg'(i) evolves from bg(i) through recv then send steps *)
-      admit. (* bg_safe_form propagation for i < j *)
+    * (* i < j: bg'(i) evolves from bg(i) through recv then send steps.
+         bg_safe_form is preserved through both steps by bg_safe_form_step_any. *)
+      have Hi_nr : (i < n_relay.+1)%N by exact (ltn_trans Hi_lt (ltn_ord j)).
+      (* Step 1: bg_safe_form i (bg_s i) — recv step preserves *)
+      have Hsafe_recv : bg_safe_form i (bg_s i).
+        apply (bg_safe_form_step_any (ps := local_recv_procs_gen j bg) (p := bg i)).
+        + rewrite /local_recv_procs_gen /recv_procs_gen /=.
+          rewrite nth_mkseq //.
+          by have -> : (i == j :> nat) = false
+            by apply /eqP => Heq; rewrite Heq ltnn in Hi_lt.
+        + exact: Hsafe.
+      (* Step 2: bg_safe_form i (bg' i) — send step preserves *)
+      apply (bg_safe_form_step_any (ps := local_send_procs_gen j bg_s) (p := bg_s i)).
+      + rewrite /local_send_procs_gen /send_procs_gen /=.
+        rewrite nth_mkseq //.
+        by have -> : (i == j :> nat) = false
+          by apply /eqP => Heq; rewrite Heq ltnn in Hi_lt.
+      + exact Hsafe_recv.
 Admitted.
 
 (* ks2_recv0: the initial recv state is in known_state2. *)
