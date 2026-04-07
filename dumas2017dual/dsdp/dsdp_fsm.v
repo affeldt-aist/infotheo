@@ -19,6 +19,26 @@
    The full trace = concatenation of fragments in transition order.
 
    Self-contained: does not import dsdp_progress.v or dsdp_entropy_trace.v.
+
+   NAMING CONVENTIONS (used throughout this file and dsdp_fsm_progress.v):
+   - `relay_bg` ("relay background") = the per-position relay state
+     function `nat -> proc data`. Each relay position holds a process;
+     the bg function is the indexed family. Lemmas / Records / fields
+     starting with `relay_bg_*` describe properties of, or operations
+     on, this background. Inside lemma signatures and proof bodies the
+     short binder name `bg` is used as a parameter, but every top-level
+     identifier is spelled out as `relay_bg_*` so the meaning is visible
+     at every reference.
+   - `recv` / `send` / `drain` / `tail` = the four protocol phases
+     (Alice receives, Alice sends, the relay drain chain, and the final
+     tail returning the answer).
+   - `_at_j0` / `_at_j1` / `_at_j2` / `_at_j_eq_nrelay` / `_when_nrelay_eq_*`
+     suffixes encode case values: numeric tags are never version
+     numbers, only specific values of `j` or `n_relay` that the lemma
+     applies to.
+   - `known_ret_state` = the chain invariant whose terminal case is
+     `Ret` (Alice's return); compare to the older `known_state` whose
+     terminal case is `Done`.
 *)
 
 From HB Require Import structures.
@@ -401,15 +421,15 @@ Definition drain_procs (j : 'I_n_relay.+1) (rr_drain : rand AHE)
     else bg i) n_relay.+1.
 
 (* Initial background: all relays in their initial state *)
-Definition bg_init : nat -> proc data :=
+Definition relay_bg_init : nat -> proc data :=
   fun i => relay_body (inord i).
 
 (* recv_procs and send_procs_at_j0 are specializations of the parametric versions *)
 Definition recv_procs (j : 'I_n_relay.+1) : seq (proc data) :=
-  recv_procs_gen j bg_init.
+  recv_procs_gen j relay_bg_init.
 
 Definition send_procs_at_j0 : seq (proc data) :=
-  send_procs ord0 bg_init.
+  send_procs ord0 relay_bg_init.
 
 (* ========================================================================== *)
 (* NOP condition: background relays don't interfere with active communication *)
@@ -420,14 +440,14 @@ Definition send_procs_at_j0 : seq (proc data) :=
 Definition is_nop (ps : seq (proc data)) (i : nat) : bool :=
   ~~ (smc_interpreter.step ps [::] i).2.
 
-(* bg_nop_recv j bg: all background relays are NOPs in recv_procs_gen j bg.
+(* relay_bg_nop_recv j bg: all background relays are NOPs in recv_procs_gen j bg.
    This ensures only the Alice-relay j pair fires during the recv step. *)
-Definition bg_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
+Definition relay_bg_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
   forall i, (i < n_relay.+1)%N -> i != (j : nat) ->
     is_nop (recv_procs_gen j bg) i.+1.
 
-(* bg_nop_send j bg: all background relays are NOPs in send_procs j bg. *)
-Definition bg_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
+(* relay_bg_nop_send j bg: all background relays are NOPs in send_procs j bg. *)
+Definition relay_bg_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data) : Prop :=
   forall i, (i < n_relay.+1)%N -> i != (j : nat) ->
     is_nop (send_procs j bg) i.+1.
 
@@ -524,13 +544,13 @@ Definition st_recv_gen (j : 'I_n_relay.+1) (bg : nat -> proc data) : phase_state
   PhaseState (frag_ok_recv_gen j bg).
 
 Definition st_recv (j : 'I_n_relay.+1) : phase_state :=
-  st_recv_gen j bg_init.
+  st_recv_gen j relay_bg_init.
 
 Definition st_send (j : 'I_n_relay.+1) (bg : nat -> proc data) : phase_state :=
   PhaseState (frag_ok_send j bg).
 
 Definition st_send_at_j0 : phase_state :=
-  st_send ord0 bg_init.
+  st_send ord0 relay_bg_init.
 
 Definition st_drain (j : 'I_n_relay.+1) (rr_drain : rand AHE)
     (bg : nat -> proc data)
@@ -543,9 +563,9 @@ Definition st_drain (j : 'I_n_relay.+1) (rr_drain : rand AHE)
 
 (* Parametric step_ok: recv(j) → send(j) under NOP condition on bg.
    The active pair (Alice at 0, relay j at j+1) fires.
-   All other positions are NOPs (by bg_nop_recv). *)
+   All other positions are NOPs (by relay_bg_nop_recv). *)
 Lemma step_ok_recv_send_nop (j : 'I_n_relay.+1) (bg : nat -> proc data) :
-  bg_nop_recv j bg ->
+  relay_bg_nop_recv j bg ->
   one_step_procs (ps_procs (st_recv_gen j bg)) =
   ps_procs (st_send j bg).
 Proof.
@@ -623,7 +643,7 @@ have Hineq : i != (j : nat) by rewrite Heq.
 by rewrite Hnop_step.
 Qed.
 
-(* Special case: recv(0) → send_0 is the parametric lemma with bg_init *)
+(* Special case: recv(0) → send_0 is the parametric lemma with relay_bg_init *)
 Lemma step_ok_recv_send_at_j0 :
   one_step_procs (ps_procs (st_recv ord0)) = ps_procs st_send_at_j0.
 Proof.
@@ -633,7 +653,7 @@ rewrite /is_nop /recv_procs_gen /step /=.
 have [f Haf] := alice_body_at_recv (ltn_ord (@ord0 n_relay)).
 rewrite nth_mkseq; last by [].
 have -> : (i == 0 :> nat) = false by rewrite (negbTE Hneq).
-rewrite /bg_init.
+rewrite /relay_bg_init.
 rewrite (relay_body_send0_cont (inord i)) /=.
 rewrite Haf /=.
 have -> : (Ordinal (ltn_ord ord0)).+1 = 1 :> nat by [].
@@ -651,7 +671,7 @@ Lemma step_ok_send_gen (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (Htarget : nth (@Finish data) (send_procs j bg) (alice_send_dest j) =
                target_relay)
     (Htarget_recv : exists frm f, target_relay = Recv frm f /\ frm == 0) :
-  bg_nop_send j bg ->
+  relay_bg_nop_send j bg ->
   (smc_interpreter.step (send_procs j bg) [::] 0).2 = true.
 Proof.
 move=> _.
@@ -750,7 +770,7 @@ Qed.
    and the next relay is still in its initial state. *)
 Lemma step_ok_send_recv_nop (j : 'I_n_relay.+1) (bg : nat -> proc data) :
   (j < n_relay)%N ->
-  bg_nop_send j bg ->
+  relay_bg_nop_send j bg ->
   (exists f, nth (@Finish data) (send_procs j bg) (alice_send_dest j) =
              Recv 0 f) ->
   bg j.+1 = relay_body (inord j.+1) ->
@@ -798,7 +818,7 @@ case Heq : (i == (inord j.+1 : 'I_n_relay.+1) :> nat).
 by [].
 Qed.
 
-(* send_0 → recv(1): special case with bg_init *)
+(* send_0 → recv(1): special case with relay_bg_init *)
 Lemma step_ok_send_j0_to_recv_j1 :
   (0 < n_relay)%N ->
   exists bg',
@@ -806,12 +826,12 @@ Lemma step_ok_send_j0_to_recv_j1 :
     ps_procs (st_recv_gen (inord 1) bg').
 Proof.
 move=> Hn1.
-apply (step_ok_send_recv_nop (j := ord0) (bg := bg_init)) => //.
+apply (step_ok_send_recv_nop (j := ord0) (bg := relay_bg_init)) => //.
 - move=> i Hi Hneq.
   rewrite /is_nop /send_procs /step /=.
   rewrite nth_mkseq; last by [].
   have -> : (i == 0 :> nat) = false by rewrite (negbTE Hneq).
-  rewrite /bg_init (relay_body_send0_cont (inord i)) /=.
+  rewrite /relay_bg_init (relay_body_send0_cont (inord i)) /=.
   have [frm [f Hras]] := relay_after_send0_is_recv (inord 0 : 'I_n_relay.+1).
   by [].
 - rewrite /send_procs /alice_send_dest /= /mkseq /=.
@@ -829,7 +849,7 @@ Proof. by case: n. Qed.
    Requires: NOP condition, the target has matching Recv,
    and bg(0) already has the right Send form for drain. *)
 Lemma step_ok_send_last_drain (bg : nat -> proc data) :
-  bg_nop_send ord_max bg ->
+  relay_bg_nop_send ord_max bg ->
   (exists f, nth (@Finish data) (send_procs (@ord_max n_relay) bg)
              (alice_send_dest (@ord_max n_relay)) = Recv 0 f) ->
   (* bg(0) is the drain-phase Send from relay 0 to relay 1 *)
@@ -1629,7 +1649,7 @@ case: i Hi Hi2 Hnth => [|i'] Hi Hi2 Hnth.
   by [].
 - have Hi'n : (i' < n_relay.+1)%N by [].
   rewrite /recv_procs_gen /= nth_mkseq //.
-  rewrite /bg_init; case: ifP => _ //.
+  rewrite /relay_bg_init; case: ifP => _ //.
   + have [d1 [d2 Hk']] := Hprocsi i' Hi'n.
     have Hps1_i : nth (@default_proc data) ps1 i'.+1 = Init d2 (relay_body (nth ord0 relays (Ordinal Hi'n))).
       rewrite /ps1 (nth_map (@default_proc data)); last by rewrite Hszp; exact Hi.
@@ -1911,7 +1931,7 @@ by [].
 Qed.
 
 (* Relay ahead of active position j is NOP in recv: preserved *)
-Lemma bg_relay_ahead_recv (j : 'I_n_relay.+1) (bg : nat -> proc data)
+Lemma relay_bg_ahead_recv (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (i : nat) :
   (j < i)%N -> (i < n_relay.+1)%N ->
   bg i = relay_body (inord i) ->
@@ -1935,7 +1955,7 @@ by [].
 Qed.
 
 (* Relay ahead of active position j is NOP in send: preserved *)
-Lemma bg_relay_ahead_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
+Lemma relay_bg_ahead_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (i : nat) :
   (j < i)%N -> (i < n_relay.+1)%N ->
   bg i = relay_body (inord i) ->
@@ -1958,7 +1978,7 @@ Qed.
 (* ================================================================== *)
 
 (* R1: Finish is NOP in recv step *)
-Lemma bg_finish_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data)
+Lemma relay_bg_finish_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (i : nat) :
   (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Finish ->
   (step (recv_procs_gen j bg) [::] i.+1).1.1 = Finish.
@@ -1971,7 +1991,7 @@ by [].
 Qed.
 
 (* R2: Recv 0 f is NOP in recv step — Alice at pos 0 is Recv, not Send *)
-Lemma bg_recv0_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data)
+Lemma relay_bg_recv_from0_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (i : nat) (f : data -> proc data) :
   (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Recv 0 f ->
   (step (recv_procs_gen j bg) [::] i.+1).1.1 = Recv 0 f.
@@ -1986,7 +2006,7 @@ by rewrite Haf.
 Qed.
 
 (* R4: Frontier sender fires with receiver in recv step → Finish *)
-Lemma bg_frontier_sender_fires (j : 'I_n_relay.+1)
+Lemma relay_bg_frontier_sender_fires (j : 'I_n_relay.+1)
     (bg : nat -> proc data) (v_s : data) (f_r : data -> proc data) :
   (3 <= j)%N ->
   bg ((j : nat) - 3)%N = Send j.-1 v_s Finish ->
@@ -2021,7 +2041,7 @@ Qed.
 
 (* R5: Frontier receiver fires (in recv step) — at position (j-2)+1 the
    receiver fires and produces f_r applied to the sender's value. *)
-Lemma bg_frontier_receiver_fires (j : 'I_n_relay.+1)
+Lemma relay_bg_frontier_receiver_fires (j : 'I_n_relay.+1)
     (bg : nat -> proc data) (v_s : data) (f_r : data -> proc data) :
   (3 <= j)%N ->
   bg ((j : nat) - 3)%N = Send j.-1 v_s Finish ->
@@ -2063,7 +2083,7 @@ have -> : (j.-1 == j.-2.+1) = true.
 Qed.
 
 (* S1: Finish is NOP in send step *)
-Lemma bg_finish_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
+Lemma relay_bg_finish_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (i : nat) :
   (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Finish ->
   (step (send_procs j bg) [::] i.+1).1.1 = Finish.
@@ -2076,7 +2096,7 @@ by [].
 Qed.
 
 (* S3: Recv 0 fires with Alice in send step *)
-Lemma bg_recv0_fire_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
+Lemma relay_bg_recv_from0_fire_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (i : nat) (f : data -> proc data) :
   (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Recv 0 f ->
   alice_send_dest j = i.+1 ->
@@ -2090,7 +2110,7 @@ by [].
 Qed.
 
 (* S4: Recv 0 is NOP in send step when Alice doesn't target this position *)
-Lemma bg_recv0_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
+Lemma relay_bg_recv_from0_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (i : nat) (f : data -> proc data) :
   (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Recv 0 f ->
   alice_send_dest j != i.+1 ->
@@ -2283,7 +2303,7 @@ Let recv_procs_gen_local := @recv_procs_gen AHE ek n_relay dk dk_relay relays
 Let send_procs_gen_local := @send_procs AHE ek n_relay dk dk_relay relays
     v0 u r rand_a v_relay r1_relay r2_relay.
 Let relay_body_local := @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
-Let bg_init_local := @bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
+Let relay_bg_init_local := @relay_bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
 Let chain_acc_local := @chain_acc AHE n_relay u r v_relay.
 Let alice_enc_local := @alice_enc AHE ek n_relay u r rand_a v_relay r1_relay.
 Let term_local := @term AHE n_relay u r v_relay.
@@ -2336,34 +2356,34 @@ Record recv_phase := MkRecvPhase {
                                  (term_local ord0) (r2_relay ord0)))) Finish;
 }.
 
-(* bg_safe_form i p: process p at relay position i has a "safe" form
+(* relay_bg_safe_form i p: process p at relay position i has a "safe" form
    that doesn't interfere with active communication and will eventually
    terminate through the drain chain.
    The inductive structure ensures Recv callbacks produce safe forms. *)
-Inductive bg_safe_form : nat -> proc (std_data AHE) -> Prop :=
-| BSF_finish i : bg_safe_form i Finish
-| BSF_fail i : bg_safe_form i Fail
-| BSF_send i v : bg_safe_form i (Send i.+2 v Finish)
+Inductive relay_bg_safe_form : nat -> proc (std_data AHE) -> Prop :=
+| BSF_finish i : relay_bg_safe_form i Finish
+| BSF_fail i : relay_bg_safe_form i Fail
+| BSF_send i v : relay_bg_safe_form i (Send i.+2 v Finish)
 | BSF_recv0 i f :
-    (forall v, bg_safe_form i (f v)) ->
-    bg_safe_form i (Recv 0 f)
+    (forall v, relay_bg_safe_form i (f v)) ->
+    relay_bg_safe_form i (Recv 0 f)
 | BSF_recv_i i f :
-    (forall v, bg_safe_form i (f v)) ->
-    bg_safe_form i (Recv i f).
+    (forall v, relay_bg_safe_form i (f v)) ->
+    relay_bg_safe_form i (Recv i f).
 
-(* bg_s_of rp: bg after recv step (relay j fires with Alice) *)
-Definition bg_s_of (rp : recv_phase) : nat -> proc (std_data AHE) :=
+(* relay_bg_after_recv_step rp: bg after recv step (relay j fires with Alice) *)
+Definition relay_bg_after_recv_step (rp : recv_phase) : nat -> proc (std_data AHE) :=
   fun i => (smc_interpreter.step (recv_procs_gen_local (rp_j rp) (rp_relay_bg rp))
               [::] i.+1).1.1.
 
-(* bg'_of rp: bg after recv then send step *)
-Definition bg'_of (rp : recv_phase) : nat -> proc (std_data AHE) :=
-  fun i => (step (send_procs_gen_local (rp_j rp) (bg_s_of rp))
+(* relay_bg_after_recv_send rp: bg after recv then send step *)
+Definition relay_bg_after_recv_send (rp : recv_phase) : nat -> proc (std_data AHE) :=
+  fun i => (step (send_procs_gen_local (rp_j rp) (relay_bg_after_recv_step rp))
               [::] i.+1).1.1.
 
 (* ================================================================== *)
 (* Helper lemmas for mk_recv_next_exists: one per Record field.       *)
-(* Each shows how bg'_of rp behaves at a specific frontier position.  *)
+(* Each shows how relay_bg_after_recv_send rp behaves at a specific frontier position.  *)
 (* ================================================================== *)
 
 
