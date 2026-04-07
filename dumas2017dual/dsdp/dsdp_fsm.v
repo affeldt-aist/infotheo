@@ -2657,21 +2657,24 @@ case: (boolP (i.+1 < (rp_j rp).-2)%N) => [Hi_deep | Hi_border].
     by rewrite Habs ltnn.
 Qed.
 
-(* H4: rp_sender — frontier sender at (j+1)-3 *)
+(* H4: rp_sender — frontier sender at (j+1)-3.
+   The randomness rr_fw' is fresh per phase (Type-level sig so it can be
+   destructed during Record construction): it equals
+   rand_mul (alice_rr (j-1)) (r2_relay (j-2)) for the new phase j' = j+1. *)
 Lemma mk_next_sender (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   let j' := next_j Hjn in
   (3 <= j')%N ->
-  bg'_of rp ((j' : nat) - 3)%N = Send j'.-1
+  { rr_fw' : rand AHE | bg'_of rp ((j' : nat) - 3)%N = Send j'.-1
     (e_loc (@enc AHE (ek (nat_to_party_id j'.-1))
-                 (local_chain_acc ((j' : nat) - 3)%N) (rp_rr_fw rp))) Finish.
+                 (local_chain_acc ((j' : nat) - 3)%N) rr_fw')) Finish }.
 Proof. admit. Admitted.
 
-(* H5: rp_sender2 — j+1=2 special case *)
+(* H5: rp_sender2 — j+1=2 special case. New randomness from alice/r2 mix. *)
 Lemma mk_next_sender2 (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   (next_j Hjn == 2%N :> nat) ->
-  bg'_of rp 0 = Send 2
+  { rr_fw' : rand AHE | bg'_of rp 0 = Send 2
     (e_loc (@enc AHE (ek (nat_to_party_id 2))
-                 (local_chain_acc 0) (rp_rr_fw rp))) Finish.
+                 (local_chain_acc 0) rr_fw')) Finish }.
 Proof. admit. Admitted.
 
 (* H6: rp_receiver — frontier receiver at (j+1)-2 *)
@@ -2787,22 +2790,52 @@ eexists. split; first reflexivity. by [].
 Qed.
 
 (* mk_recv_next_exists: construct recv_phase at j+1 from recv_phase at j.
-   Requires j < n_relay so there is a next relay to step into. *)
+   Requires j < n_relay so there is a next relay to step into.
+   The new rp_rr_fw is freshly chosen from the active mk_next_sender/sender2
+   existential (only one applies at a time, based on next_j's value). *)
 Lemma mk_recv_next_exists (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   exists rp' : recv_phase,
     rp_j rp' = next_j Hjn /\ rp_bg rp' = bg'_of rp.
 Proof.
+(* Case-split on next_j to choose the right rr_fw' *)
+case: (boolP ((next_j Hjn : nat) == 2%N)) => [Hnj2 | Hnne].
+  (* next_j = 2: use mk_next_sender2 *)
+  have [rr_fw' Hrr] := @mk_next_sender2 rp Hjn Hnj2.
+  refine (ex_intro _ (@MkRecvPhase (next_j Hjn) rr_fw' (bg'_of rp)
+    _ _ _ _ _ _ _) (conj erefl erefl)).
+  - move=> i Hij Hi.
+    have Hinord : (next_j Hjn : nat) = (rp_j rp).+1 by rewrite /next_j inordK.
+    rewrite Hinord in Hij. exact: (mk_next_ahead Hjn Hij Hi).
+  - exact (@mk_next_behind rp Hjn).
+  - exact (@mk_next_finish rp Hjn).
+  - move=> Hj3. by rewrite (eqP Hnj2) in Hj3.
+  - move=> Hnj2'. by move: Hrr; rewrite (eqP Hnj2).
+  - exact (@mk_next_receiver rp Hjn).
+  - exact (@mk_next_j1_recv rp Hjn).
+case: (boolP ((3 <= next_j Hjn)%N)) => [Hj3 | Hlt].
+  (* next_j >= 3: use mk_next_sender *)
+  have [rr_fw' Hrr] := @mk_next_sender rp Hjn Hj3.
+  refine (ex_intro _ (@MkRecvPhase (next_j Hjn) rr_fw' (bg'_of rp)
+    _ _ _ _ _ _ _) (conj erefl erefl)).
+  - move=> i Hij Hi.
+    have Hinord : (next_j Hjn : nat) = (rp_j rp).+1 by rewrite /next_j inordK.
+    rewrite Hinord in Hij. exact: (mk_next_ahead Hjn Hij Hi).
+  - exact (@mk_next_behind rp Hjn).
+  - exact (@mk_next_finish rp Hjn).
+  - move=> _. exact Hrr.
+  - move=> /eqP H. by rewrite H in Hnne.
+  - exact (@mk_next_receiver rp Hjn).
+  - exact (@mk_next_j1_recv rp Hjn).
+(* next_j = 1 (or 0, but 0 impossible since next_j > 0): use placeholder *)
 refine (ex_intro _ (@MkRecvPhase (next_j Hjn) (rp_rr_fw rp) (bg'_of rp)
   _ _ _ _ _ _ _) (conj erefl erefl)).
-- (* rp_ahead *)
-  move=> i Hij Hi.
+- move=> i Hij Hi.
   have Hinord : (next_j Hjn : nat) = (rp_j rp).+1 by rewrite /next_j inordK.
-  rewrite Hinord in Hij.
-  exact: (mk_next_ahead Hjn Hij Hi).
+  rewrite Hinord in Hij. exact: (mk_next_ahead Hjn Hij Hi).
 - exact (@mk_next_behind rp Hjn).
 - exact (@mk_next_finish rp Hjn).
-- exact (@mk_next_sender rp Hjn).
-- exact (@mk_next_sender2 rp Hjn).
+- move=> Hj3. by rewrite Hj3 in Hlt.
+- move=> /eqP H. by rewrite H in Hnne.
 - exact (@mk_next_receiver rp Hjn).
 - exact (@mk_next_j1_recv rp Hjn).
 Qed.
