@@ -2662,11 +2662,6 @@ Lemma mk_next_sender2 (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
 Proof. admit. Admitted.
 
 (* H6: rp_receiver — frontier receiver at (j+1)-2 *)
-(* WIP: partial proof that has compile errors at the final coercion step.
-   Architecture is correct: extract f0 via strengthened rp_behind, compute
-   bg'_of rp j.-1 = f0(alice_enc j) via R2 + S3, unfold f0 via Hbody decomposition,
-   apply dec_correct via key_relay. The remaining issue is matching
-   ek j with ek (inord (rp_j rp).-1).+1 at the party_id coercion level. *)
 Lemma mk_next_receiver (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   let j' := next_j Hjn in
   (3 <= j')%N ->
@@ -2677,7 +2672,6 @@ Lemma mk_next_receiver (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
       (@enc AHE (ek (nat_to_party_id j')) m (r2_relay (inord ((j' : nat) - 2)%N)))))
     Finish.
 Proof.
-(* WIP attempt — see comment above. Reverted to admit pending coercion fix. *)
 move=> /=.
 set j := rp_j rp.
 have Hinord : ((next_j Hjn : nat) = j.+1)%N by rewrite /next_j inordK.
@@ -2706,8 +2700,42 @@ have Hbg' : bg'_of rp j.-1 = f0 (e_loc (alice_enc ek u r rand_a v_relay r1_relay
   set bg_s_local := (fun i => _).
   have Hbg_s_local : bg_s_local j.-1 = Recv 0 f0 by exact Hbg_s_jm1.
   by apply: bg_recv0_fire_send Hbg_s_local _.
-admit.
-Admitted.
+have Hjm1_pos : (0 < j.-1)%N by rewrite -subn1 subn_gt0.
+have Hjm1_lt : (j.-1 < n_relay)%N by rewrite -ltnS prednK //; exact (ltn_trans Hjn (ltnSn _)).
+have Hjm1_inord : ((inord j.-1 : 'I_n_relay.+1) : nat) = j.-1
+  by rewrite inordK //; exact (ltnW Hjm1_lt).
+have Hjm1_ne0 : ((inord j.-1 : 'I_n_relay.+1) : nat) != 0%N by rewrite Hjm1_inord -lt0n.
+have Hjm1_ne_n : ((inord j.-1 : 'I_n_relay.+1) : nat) != n_relay
+  by rewrite Hjm1_inord; apply /eqP => Habs; rewrite Habs ltnn in Hjm1_lt.
+rewrite /local_relay_body /relay_body in Hbody.
+rewrite (negbTE Hjm1_ne0) (negbTE Hjm1_ne_n) Hjm1_inord in Hbody.
+move: Hbody. rewrite /alice_idx. case=> _ Hf0_eq.
+rewrite /std_Recv_enc /Recv_param in Hf0_eq.
+have Hf0_apply : forall c, f0 (e_loc c) =
+  std_Recv_dec j.-1 (dk_relay (inord (rp_j rp).-1))
+    (fun m0 => Send j.-1.+2 (e_loc (Emul c (enc (ek (nat_to_party_id j.-1.+2)) m0
+                                                (r2_relay (inord (rp_j rp).-1))))) Finish).
+  move=> c. rewrite -Hf0_eq /=. rewrite /e_loc /std_from_enc /=.
+  reflexivity.
+rewrite Hbg' Hf0_apply.
+rewrite /std_Recv_dec /Recv_param /=.
+eexists. split.
+- reflexivity.
+- move=> m rr.
+  rewrite /= /std_from_enc /=.
+  have Hkr := key_relay (inord (rp_j rp).-1).
+  rewrite /j Hjm1_inord prednK // in Hkr.
+  rewrite -/j in Hkr.
+  rewrite Hkr dec_correct /=.
+  have Hjp : j.-1.+2 = j.+1 by rewrite (prednK Hj1pos).
+  rewrite Hjp.
+  congr (Send _ (e_loc (Emul _ (enc _ _ _))) Finish).
+  + rewrite /local_alice_enc.
+    have -> : (inord j : 'I_n_relay.+1) = j by apply val_inj; rewrite /= inordK.
+    by [].
+  + case Hjval : (j : nat) => [|[|jv]] //=.
+    by rewrite Hjval in Hj2.
+Qed.
 
 (* H7: rp_j1_recv — j+1=1 special case *)
 Lemma mk_next_j1_recv (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
