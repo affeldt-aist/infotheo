@@ -120,21 +120,23 @@ rewrite mulrBr; apply: is_deriveB=> /=; last first.
   rewrite expr1 -!mulr_regl.
   ring.
 rewrite (_ : q - p = p * (- (1 - q)) + (1 - p) * q ); last by ring.
+have l2n0 : ln 2 != 0 :> R by exact: ln2_neq0.
+have pn0 : p != 0 by rewrite gt_eqF.
+have qn0 : q != 0 by rewrite gt_eqF.
+have opn0 : 1 - p != 0 by rewrite subr_eq0 gt_eqF.
+have oqn0 : 1 - q != 0 by rewrite subr_eq0 gt_eqF.
 rewrite mulrDl; apply: is_deriveD=> /=.
   rewrite -!mulrA; apply: is_deriveZ=> /=.
   apply: is_derive1_LogfM_eq=> //.
   - by apply: is_deriveV; rewrite gt_eqF.
   - by rewrite invr_gt0.
-  - by rewrite mulr_algl -mulr_regl; field;
-      rewrite ?ln2_neq0 /= ?subr_eq0 ?gt_eqF//= !gt_eqF.
+  - by rewrite mulr_algl -mulr_regl; field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
 rewrite -!mulrA; apply: is_deriveZ=> /=.
 rewrite invfM mulrA mulfV ?gt_eqF//.
 apply: is_derive1_LogfM_eq=> //=.
-- by apply: is_deriveV; rewrite subr_eq0 gt_eqF.
 - by rewrite subr_gt0.
 - by rewrite invr_gt0 subr_gt0.
-  by rewrite -mulr_regl; field;
-    rewrite ?ln2_neq0 /= ?subr_eq0 ?gt_eqF.
+- by rewrite -mulr_regl; field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
 Qed.
 
 Lemma derive1_pinsker_fun (p : R) (Hp : 0 < p < 1) c q (Hq : 0 < q < 1) :
@@ -160,7 +162,9 @@ Proof.
 move: Hq=> /andP [q0 q1].
 apply: is_deriveB.
   apply: is_deriveN_eq; first by apply: is_derive1_Logf=> //; rewrite subr_gt0.
-  by simpl; field; rewrite ?ln2_neq0 ?subr_eq0 ?gt_eqF.
+  have l2n0 : ln 2 != 0 :> R by rewrite ln2_neq0.
+  have oqn0 : 1 - q != 0 by rewrite subr_eq0 gt_eqF.
+  by field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
 have->: 8 * c = 4 * c * 2 by ring.
 apply: is_deriveZ_eq.
 by rewrite -!mulr_regr; ring.

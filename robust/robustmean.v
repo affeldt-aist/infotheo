@@ -725,7 +725,10 @@ apply: ler_pM.
 - rewrite ler_sqr ?nnegrE; lra.
 - rewrite -[leRHS]mulr1 ler_pdivlMl; last lra.
   rewrite [leLHS](_ : _ = 8 * eps * eps / (1 - 5 * eps)); last first.
-    rewrite /delta; field; do ?[apply/andP; split]; lra.
+    rewrite /delta.
+    have en0 : 1 - eps != 0 by lra.
+    have fen0 : 1 - 5 * eps != 0 by lra.
+    by field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
   rewrite ler_pdivrMr; last lra.
   rewrite mul1r (@le_trans _ _ eps) //; last lra.
   by rewrite ler_piMl //; lra.

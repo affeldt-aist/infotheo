@@ -165,7 +165,9 @@ set F := f n S.
 set PHI := @phi _ n _ S def.
 exists (mkScode F PHI); split.
   rewrite /SrcRate /r /n /k.
-  by field; rewrite !nat1r/= !gt_eqF.
+  have dn0 : 1 + den%:R != 0 :> R by rewrite nat1r gt_eqF.
+  have k'n0 : 1 + k'%:R != 0 :> R by rewrite nat1r gt_eqF.
+  by field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
 set lhs := esrc(_, _).
 suff -> : lhs = 1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)).
   rewrite lerBlDr addrC -lerBlDr.
