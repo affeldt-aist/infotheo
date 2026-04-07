@@ -2452,7 +2452,7 @@ elim: k j bg rr_fw => [|k IH] j bg rr_fw Hjk Hahead Hbehind Hfront.
     ps_procs (send_st j bg_s) by exact Hstep_rs.
   refine (KS2_step _ Hstep_rs' Hprog_r Hnt_r).
   refine (KS2_step _ Hstep_sr Hprog_s (send_not_terminated_gen j bg_s)).
-  apply IH.
+  apply (IH _ _ rr_fw).
   + by rewrite Hinord addSnnS.
   + (* Hahead for bg': relay ahead preserved *)
     move=> i Hi1 Hi2.
