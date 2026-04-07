@@ -3081,8 +3081,6 @@ Qed.
 (*  in dsdp_progress.v). Used by the base case of recv_phase_to_known.       *)
 (* ======================================================================== *)
 
-Local Set Primitive Projections.
-
 (* send_phase: state after the recv→send transition at iteration j.
    The accumulator is "shifted" to chain_acc(j-2) at position j-1, compared
    to recv_phase which has chain_acc(j-3) at position j-3.
@@ -3192,17 +3190,15 @@ Record tail_phase := MkTailPhase {
   tp_finish  : forall j : 'I_n_relay.+1, (j < n_relay)%N -> tp_bg j = Finish
 }.
 
-Local Unset Primitive Projections.
-
 (* L4: drain_phase_step — wraps step_ok_drain_drain_gen and rebuilds Record fields *)
 Lemma drain_phase_step (dp : drain_phase) :
   ((dp_j dp : nat).+1 < n_relay)%N ->
   { dp' : drain_phase |
     (dp_j dp' : nat) = (dp_j dp).+1 /\
     one_step_procs (ps_procs (drain_st (dp_j dp) (dp_rr_drain dp)
-                                       (bg := dp_bg dp) dp.(dp_safe))) =
+                                       (bg := dp_bg dp) (@dp_safe dp))) =
     ps_procs (drain_st (dp_j dp') (dp_rr_drain dp')
-                       (bg := dp_bg dp') dp'.(dp_safe)) }.
+                       (bg := dp_bg dp') (@dp_safe dp')) }.
 Proof.
 Admitted.
 
