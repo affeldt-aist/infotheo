@@ -2455,7 +2455,31 @@ set j := rp_j rp; set bg := rp_bg rp.
     by rewrite addSn -addnS; exact Hjk.
   have [rp' [Hrpj Hrpbg]] : exists rp' : recv_phase,
     rp_j rp' = inord j.+1 /\ rp_bg rp' = bg'.
-    admit.
+    refine (ex_intro _ (@MkRecvPhase (inord j.+1) (rp_rr_fw rp) bg'
+      _ _ _ _ _ _ _) (conj erefl erefl)).
+    + (* rp_ahead: relays ahead of j+1 untouched by recv/send *)
+      move=> i Hij Hi.
+      rewrite Hinord in Hij.
+      have Hji : (j < i)%N by apply (ltn_trans (ltnSn j) Hij).
+      rewrite /bg'.
+      have Hbg_s_i : bg_s i = local_relay_body (inord i).
+        rewrite /bg_s. apply bg_relay_ahead_recv => //.
+        exact: (@rp_ahead rp _ Hji Hi).
+      transitivity (bg_s i); last exact Hbg_s_i.
+      apply (@bg_relay_ahead_send AHE ek n_relay dk dk_relay relays
+        v0 u r rand_a v_relay r1_relay r2_relay j bg_s i) => //.
+    + (* rp_behind: bg'(j+1-1) = bg'(j) = Recv 0 f *)
+      admit.
+    + (* rp_finish *)
+      admit.
+    + (* rp_sender *)
+      admit.
+    + (* rp_sender2 *)
+      admit.
+    + (* rp_receiver *)
+      admit.
+    + (* rp_j1_recv *)
+      admit.
   have Hkey : (rp_j rp' + k)%N = n_relay.
     by rewrite Hrpj Hinord.
   have := IH rp' Hkey.
