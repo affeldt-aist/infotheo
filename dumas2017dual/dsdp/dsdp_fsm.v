@@ -173,6 +173,19 @@ Fixpoint chain_acc (j : nat) : plain AHE :=
   | j'.+1 => chain_acc j' + term (inord j.+1)
   end.
 
+(* L0: alice_enc j is an encryption of term j (from dsdp_progress.v alice_enc_value) *)
+Local Lemma enc_curry_eq (kk : pub_key AHE) (m : plain AHE) (rr : rand AHE) :
+  enc kk m rr = ahe_enc.enc_curry AHE kk (m, rr).
+Proof. by []. Qed.
+
+Lemma alice_enc_value (j : 'I_n_relay.+1) :
+  exists rr, alice_enc j = enc (ek (nat_to_party_id j.+1)) (term j) rr.
+Proof.
+rewrite /alice_enc /term !enc_curry_eq.
+rewrite -(@Epow_scalarM AHE) -(@Emul_addM AHE) GRing.mulrC.
+by eexists.
+Qed.
+
 (* Concrete return value *)
 Let concrete_val :=
   d (chain_acc n_relay.-1 -
