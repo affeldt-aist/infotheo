@@ -1912,6 +1912,114 @@ rewrite Hsk /=.
 by [].
 Qed.
 
+(* ================================================================== *)
+(* Transition lemmas: step-function interface for recv_phase proofs   *)
+(* R-series: recv step; S-series: send step                          *)
+(* ================================================================== *)
+
+(* R1: Finish is NOP in recv step *)
+Lemma bg_finish_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data)
+    (i : nat) :
+  (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Finish ->
+  (step (recv_procs_gen j bg) [::] i.+1).1.1 = Finish.
+Proof.
+move=> Hi Hneq Hbgi.
+rewrite /recv_procs_gen /step /=.
+rewrite nth_mkseq; last exact Hi.
+rewrite (negbTE Hneq) Hbgi.
+by [].
+Qed.
+
+(* R2: Recv 0 f is NOP in recv step — Alice at pos 0 is Recv, not Send *)
+Lemma bg_recv0_nop_recv (j : 'I_n_relay.+1) (bg : nat -> proc data)
+    (i : nat) (f : data -> proc data) :
+  (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Recv 0 f ->
+  (step (recv_procs_gen j bg) [::] i.+1).1.1 = Recv 0 f.
+Proof.
+move=> Hi Hneq Hbgi.
+rewrite /recv_procs_gen /step /=.
+rewrite nth_mkseq; last exact Hi.
+rewrite (negbTE Hneq) Hbgi /=.
+have Hj := ltn_ord j.
+have [fa Haf] := alice_body_at_recv Hj.
+by rewrite Haf.
+Qed.
+
+(* R4: Frontier sender fires with receiver in recv step → Finish *)
+Lemma bg_frontier_sender_fires (j : 'I_n_relay.+1)
+    (bg : nat -> proc data) (v_s : data) (f_r : data -> proc data) :
+  (3 <= j)%N ->
+  bg ((j : nat) - 3)%N = Send j.-1 v_s Finish ->
+  bg ((j : nat) - 2)%N = Recv j.-2 f_r ->
+  (step (recv_procs_gen j bg) [::] ((j : nat) - 3).+1).1.1 = Finish.
+Proof.
+move=> Hj3 Hsnd Hrcv.
+rewrite /recv_procs_gen /step /=.
+have Hj3_bound : ((j : nat) - 3 < n_relay.+1)%N.
+  apply (leq_ltn_trans (leq_subr 3 j)). exact (ltn_ord j).
+rewrite nth_mkseq; last exact Hj3_bound.
+have -> : ((j - 3)%N == j :> nat) = false.
+  apply /eqP => Heq.
+  have : (j - 3 < j)%N by rewrite ltn_subrL /= (ltn_trans _ Hj3).
+  by rewrite Heq ltnn.
+rewrite Hsnd /=.
+rewrite nth_cons_pos; last by rewrite -ltnS prednK // (ltn_trans _ Hj3).
+rewrite nth_mkseq; last first.
+  exact (leq_ltn_trans (leq_pred _) (leq_ltn_trans (leq_pred _) (ltn_ord j))).
+have -> : (j.-2 == j :> nat) = false.
+  apply /eqP => Heq.
+  have : (j.-2 < j)%N by rewrite -subn2 ltn_subrL /= (ltn_trans _ Hj3).
+  by rewrite Heq ltnn.
+have -> : j.-2 = ((j : nat) - 2)%N by rewrite subn2.
+rewrite Hrcv /=.
+suff -> : (j.-2 == ((j : nat) - 3).+1) = true by [].
+apply /eqP.
+have -> : j.-2 = (j - 2)%N by rewrite subn2.
+have -> : ((j : nat) - 3).+1 = (j - 2)%N by rewrite subnS prednK // subn_gt0.
+by [].
+Qed.
+
+(* S1: Finish is NOP in send step *)
+Lemma bg_finish_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
+    (i : nat) :
+  (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Finish ->
+  (step (send_procs_gen j bg) [::] i.+1).1.1 = Finish.
+Proof.
+move=> Hi Hneq Hbgi.
+rewrite /send_procs_gen /step /=.
+rewrite nth_mkseq; last exact Hi.
+rewrite (negbTE Hneq) Hbgi.
+by [].
+Qed.
+
+(* S3: Recv 0 fires with Alice in send step *)
+Lemma bg_recv0_fire_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
+    (i : nat) (f : data -> proc data) :
+  (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Recv 0 f ->
+  alice_send_dest j = i.+1 ->
+  (step (send_procs_gen j bg) [::] i.+1).1.1 = f (e_local (alice_enc j)).
+Proof.
+move=> Hi Hneq Hbgi Hdst.
+rewrite /send_procs_gen /step /=.
+rewrite nth_mkseq; last exact Hi.
+rewrite (negbTE Hneq) Hbgi /= Hdst eqxx.
+by [].
+Qed.
+
+(* S4: Recv 0 is NOP in send step when Alice doesn't target this position *)
+Lemma bg_recv0_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
+    (i : nat) (f : data -> proc data) :
+  (i < n_relay.+1)%N -> i != (j : nat) -> bg i = Recv 0 f ->
+  alice_send_dest j != i.+1 ->
+  (step (send_procs_gen j bg) [::] i.+1).1.1 = Recv 0 f.
+Proof.
+move=> Hi Hneq Hbgi Hdst.
+rewrite /send_procs_gen /step /=.
+rewrite nth_mkseq; last exact Hi.
+rewrite (negbTE Hneq) Hbgi /= (negbTE Hdst).
+by [].
+Qed.
+
 (* Destination in send_procs_gen has Recv 0 *)
 Lemma send_dest_recv0 (j : 'I_n_relay.+1) (bg : nat -> proc data) :
   (j < n_relay)%N ->
