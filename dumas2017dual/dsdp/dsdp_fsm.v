@@ -2586,7 +2586,56 @@ Qed.
 (* H3: rp_finish — finish zone preserved *)
 Lemma mk_next_finish (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   forall i, (i.+1 < (next_j Hjn).-2)%N -> bg'_of rp i = Finish.
-Proof. admit. Admitted.
+Proof.
+have Hinord : (next_j Hjn : nat) = (rp_j rp).+1 by rewrite /next_j inordK.
+rewrite Hinord => i Hi.
+have Hi' : (i.+1 < (rp_j rp).-1)%N by exact Hi.
+have Hi1j : (i.+1 < rp_j rp)%N := leq_trans Hi' (leq_pred _).
+have Hij : (i < rp_j rp)%N := ltn_trans (ltnSn i) Hi1j.
+have Hineq : (i != (rp_j rp : nat))%N by rewrite neq_ltn Hij.
+have Hi_bound : (i < n_relay.+1)%N := ltn_trans Hij (ltn_ord _).
+case: (boolP (i.+1 < (rp_j rp).-2)%N) => [Hi_deep | Hi_border].
+- (* Deep finish zone *)
+  have Hfin : rp_bg rp i = Finish by apply (@rp_finish rp).
+  rewrite /bg'_of /bg_s_of /local_send_procs_gen /local_recv_procs_gen /=.
+  set bg_s_local := (fun i0 : nat => _).
+  have Hbg_s_i : bg_s_local i = Finish.
+    rewrite /bg_s_local. by apply bg_finish_nop_recv.
+  by apply: bg_finish_nop_send Hbg_s_i.
+- (* Border case: i = (rp_j rp - 3)%N, frontier sender fires *)
+  rewrite -ltnNge in Hi_border.
+  have Hj3 : (3 <= rp_j rp)%N.
+    have Hjm1_2 : (2 <= (rp_j rp).-1)%N by apply: leq_trans Hi'.
+    have Hjpos : (0 < rp_j rp)%N := ltn_trans (ltn0Sn i) Hi1j.
+    by rewrite -(prednK Hjpos) ltnS.
+  have Hi_eq : i = ((rp_j rp : nat) - 3)%N.
+    apply anti_leq.
+    apply /andP; split.
+    + rewrite leq_subRL.
+        have Hjpos : (0 < rp_j rp)%N := ltn_trans (ltn0Sn _) Hi1j.
+        have Hhi : (i.+3 <= rp_j rp)%N by rewrite -(prednK Hjpos) ltnS; exact Hi'.
+        by rewrite addnC addn3.
+      exact Hj3.
+    + rewrite leq_subLR.
+      have H2 : ((rp_j rp).-2 + 2 <= i + 3)%N.
+        have : ((rp_j rp).-2 + 2 <= i.+1 + 2)%N by rewrite leq_add2r; exact Hi_border.
+        by rewrite addnS addn2 addn3 ltnS.
+      rewrite -subn2 in H2.
+      rewrite subnK in H2; last by exact (ltnW Hj3).
+      by rewrite addnC.
+  rewrite /bg'_of /bg_s_of /local_send_procs_gen /local_recv_procs_gen /=.
+  have Hsnd := @rp_sender rp Hj3.
+  have [f_r [Hrcv _]] := @rp_receiver rp Hj3.
+  rewrite Hi_eq.
+  have Hbg_s : (step (recv_procs_gen ek dk dk_relay relays v0 u r rand_a
+    v_relay r1_relay r2_relay (rp_j rp) (rp_bg rp)) [::] ((rp_j rp : nat) - 3).+1).1.1 = Finish.
+    by apply: bg_frontier_sender_fires Hsnd Hrcv.
+  apply: bg_finish_nop_send Hbg_s.
+  - apply (leq_ltn_trans (leq_subr 3 _) (ltn_ord _)).
+  - apply /eqP => Habs.
+    have : (rp_j rp - 3 < rp_j rp)%N by rewrite ltn_subrL /= (ltn_trans _ Hj3).
+    by rewrite Habs ltnn.
+Qed.
 
 (* H4: rp_sender — frontier sender at (j+1)-3 *)
 Lemma mk_next_sender (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
