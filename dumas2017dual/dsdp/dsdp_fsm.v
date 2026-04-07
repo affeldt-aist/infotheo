@@ -2193,13 +2193,13 @@ Hypothesis key_relay : forall j : 'I_n_relay.+1,
   ek (nat_to_party_id j.+1) = pub_of_priv (dk_relay j).
 
 (* Local abbreviations for section-closed state constructors *)
-Let local_st_ret := @st_ret AHE n_relay v0 u r v_relay.
-Let local_st_tail := fun rr =>
+Let st_ret_local := @st_ret AHE n_relay v0 u r v_relay.
+Let st_tail_local := fun rr =>
   @st_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a v_relay rr.
-Let local_st_drain_gen := fun j rr bg Hbg =>
+Let st_drain_gen_local := fun j rr bg Hbg =>
   @st_drain_gen AHE ek n_relay dk relays Hrelays v0 u r rand_a v_relay
     j rr bg Hbg.
-Let local_st_recv := fun j =>
+Let st_recv_local := fun j =>
   @st_recv AHE ek n_relay dk dk_relay relays Hrelays Hrelays_id
     v0 u r rand_a v_relay r1_relay r2_relay j.
 
@@ -2207,7 +2207,7 @@ Let local_st_recv := fun j =>
    Unlike known_state (which uses st_done), this tracks all_terminated
    explicitly and terminates at st_ret (the actual final protocol state). *)
 Inductive known_state2 : phase_state AHE -> Prop :=
-| KS2_ret : known_state2 local_st_ret
+| KS2_ret : known_state2 st_ret_local
 | KS2_step st st' :
     known_state2 st' ->
     one_step_procs (ps_procs st) = ps_procs st' ->
@@ -2297,15 +2297,15 @@ Inductive recv_send_steppable :
     recv_send_steppable j bg.
 
 (* Local aliases for section-closed lemmas *)
-Let local_recv_procs_gen := @recv_procs_gen AHE ek n_relay dk dk_relay relays
+Let recv_procs_gen_local := @recv_procs_gen AHE ek n_relay dk dk_relay relays
     v0 u r rand_a v_relay r1_relay r2_relay.
-Let local_send_procs_gen := @send_procs_gen AHE ek n_relay dk dk_relay relays
+Let send_procs_gen_local := @send_procs_gen AHE ek n_relay dk dk_relay relays
     v0 u r rand_a v_relay r1_relay r2_relay.
-Let local_relay_body := @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
-Let local_bg_init := @bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
-Let local_chain_acc := @chain_acc AHE n_relay u r v_relay.
-Let local_alice_enc := @alice_enc AHE ek n_relay u r rand_a v_relay r1_relay.
-Let local_term := @term AHE n_relay u r v_relay.
+Let relay_body_local := @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
+Let bg_init_local := @bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
+Let chain_acc_local := @chain_acc AHE n_relay u r v_relay.
+Let alice_enc_local := @alice_enc AHE ek n_relay u r rand_a v_relay r1_relay.
+Let term_local := @term AHE n_relay u r v_relay.
 
 Let e_loc := @di_e _ DI.  (* cipher -> std_data wrapper *)
 
@@ -2319,13 +2319,13 @@ Record recv_phase := MkRecvPhase {
   rp_bg    : nat -> proc (std_data AHE);
   (* Ahead: untouched relays *)
   rp_ahead : forall i, (rp_j < i)%N -> (i < n_relay.+1)%N ->
-    rp_bg i = local_relay_body (inord i);
+    rp_bg i = relay_body_local (inord i);
   (* Behind (strengthened from Inv_AR A7): for j >= 2, bg(j-1) carries the
      SAME callback f0 as the second continuation of relay_body(inord (j-1)).
      For j=1, see rp_j1_recv (different callback shape). *)
   rp_behind : (2 <= rp_j)%N ->
     exists sv0 f0,
-      local_relay_body (inord rp_j.-1) = Send 0 sv0 (Recv 0 f0) /\
+      relay_body_local (inord rp_j.-1) = Send 0 sv0 (Recv 0 f0) /\
       rp_bg rp_j.-1 = Recv 0 f0;
   (* F1: Finish zone: bg[0..j-4] — from Inv_AR A9 finish *)
   rp_finish : forall i, (i.+1 < rp_j.-2)%N -> rp_bg i = Finish;
@@ -2333,18 +2333,18 @@ Record recv_phase := MkRecvPhase {
   rp_sender : (3 <= rp_j)%N ->
     rp_bg ((rp_j : nat) - 3)%N = Send rp_j.-1
       (e_loc (@enc AHE (ek (nat_to_party_id rp_j.-1))
-                   (local_chain_acc ((rp_j : nat) - 3)%N) rp_rr_fw)) Finish;
+                   (chain_acc_local ((rp_j : nat) - 3)%N) rp_rr_fw)) Finish;
   (* F2b: j=2 special case at bg[0] — from A8 *)
   rp_sender2 : (rp_j == 2%N :> nat) ->
     rp_bg 0 = Send 2
       (e_loc (@enc AHE (ek (nat_to_party_id 2))
-                   (local_chain_acc 0) rp_rr_fw)) Finish;
+                   (chain_acc_local 0) rp_rr_fw)) Finish;
   (* F3: Frontier receiver at bg[j-2] for j >= 3 — from A9 receiver *)
   rp_receiver : (3 <= rp_j)%N ->
     exists f_recv, rp_bg ((rp_j : nat) - 2)%N = Recv rp_j.-2 f_recv /\
     forall m rr,
       f_recv (e_loc (@enc AHE (ek (nat_to_party_id rp_j.-1)) m rr)) =
-      Send rp_j (e_loc (@Emul AHE (local_alice_enc (inord rp_j.-1))
+      Send rp_j (e_loc (@Emul AHE (alice_enc_local (inord rp_j.-1))
         (@enc AHE (ek (nat_to_party_id rp_j)) m (r2_relay (inord ((rp_j : nat) - 2)%N)))))
       Finish;
   (* F3b: j=1 special case — from H6 *)
@@ -2352,7 +2352,7 @@ Record recv_phase := MkRecvPhase {
     exists f_enc, rp_bg 0 = Recv 0 (oapp f_enc Fail \o @std_from_enc AHE) /\
     forall c, f_enc c = Send 2
       (e_loc (@Emul AHE c (@enc AHE (ek (nat_to_party_id 2))
-                                 (local_term ord0) (r2_relay ord0)))) Finish;
+                                 (term_local ord0) (r2_relay ord0)))) Finish;
 }.
 
 (* bg_safe_form i p: process p at relay position i has a "safe" form
@@ -2372,12 +2372,12 @@ Inductive bg_safe_form : nat -> proc (std_data AHE) -> Prop :=
 
 (* bg_s_of rp: bg after recv step (relay j fires with Alice) *)
 Definition bg_s_of (rp : recv_phase) : nat -> proc (std_data AHE) :=
-  fun i => (smc_interpreter.step (local_recv_procs_gen (rp_j rp) (rp_bg rp))
+  fun i => (smc_interpreter.step (recv_procs_gen_local (rp_j rp) (rp_bg rp))
               [::] i.+1).1.1.
 
 (* bg'_of rp: bg after recv then send step *)
 Definition bg'_of (rp : recv_phase) : nat -> proc (std_data AHE) :=
-  fun i => (step (local_send_procs_gen (rp_j rp) (bg_s_of rp))
+  fun i => (step (send_procs_gen_local (rp_j rp) (bg_s_of rp))
               [::] i.+1).1.1.
 
 (* ================================================================== *)
@@ -2405,18 +2405,18 @@ Record send_phase := MkSendPhase {
 
   (* B5: active relay at position j-1 after relay_body's Send 0 has fired (sig form) *)
   sp_active : { sv0_f0 : data * (data -> proc data) |
-    local_relay_body (inord sp_j.-1) = Send 0 sv0_f0.1 (Recv 0 sv0_f0.2) /\
+    relay_body_local (inord sp_j.-1) = Send 0 sv0_f0.1 (Recv 0 sv0_f0.2) /\
     sp_bg sp_j.-1 = Recv 0 sv0_f0.2 };
 
   (* B6: positions ahead of j carry fresh relay_body *)
   sp_ahead : forall i, (sp_j < i)%N -> (i < n_relay.+1)%N ->
-    sp_bg i = local_relay_body (inord i);
+    sp_bg i = relay_body_local (inord i);
 
   (* B7a: intermediate relay (j < n_relay): position j holds Recv 0 from
      the next relay's relay_body (sig form) *)
   sp_next_behind : (sp_j < n_relay)%N ->
     { sv_f : data * (data -> proc data) |
-      local_relay_body (inord sp_j) = Send 0 sv_f.1 (Recv 0 sv_f.2) /\
+      relay_body_local (inord sp_j) = Send 0 sv_f.1 (Recv 0 sv_f.2) /\
       sp_bg sp_j = Recv 0 sv_f.2 };
 
   (* B7b: last relay (j = n_relay): position n_relay holds the decryption
@@ -2431,7 +2431,7 @@ Record send_phase := MkSendPhase {
   sp_sender2 : (sp_j == 2%N :> nat) ->
     sp_bg 0 = Send 2
       (e_loc (@enc AHE (ek (nat_to_party_id 2))
-                   (local_chain_acc 0) sp_rr_fw)) Finish;
+                   (chain_acc_local 0) sp_rr_fw)) Finish;
 
   (* B9: j >= 3 — Finish zone before the SHIFTED frontier sender at position
      j-2 with chain_acc(j-2) *)
@@ -2439,7 +2439,7 @@ Record send_phase := MkSendPhase {
     (forall i, (i.+3 <= sp_j)%N -> sp_bg i = Finish) /\
     sp_bg ((sp_j : nat) - 2)%N = Send sp_j
       (e_loc (@enc AHE (ek (nat_to_party_id sp_j))
-                   (local_chain_acc ((sp_j : nat) - 2)%N) sp_rr_fw)) Finish
+                   (chain_acc_local ((sp_j : nat) - 2)%N) sp_rr_fw)) Finish
 }.
 
 (* drain_phase: state in the drain (forwarding) phase at drain index j.
@@ -2461,7 +2461,7 @@ Record drain_phase := MkDrainPhase {
   (* H5: active drain forwarder at bg index j *)
   dp_sender   : dp_bg dp_j = Send dp_j.+2
     (e_loc (@enc AHE (ek (nat_to_party_id dp_j.+2))
-                 (local_chain_acc dp_j) dp_rr_drain)) Finish;
+                 (chain_acc_local dp_j) dp_rr_drain)) Finish;
 
   (* H7: Finish zone before the active forwarder *)
   dp_finish   : forall i, (i < dp_j)%N -> dp_bg i = Finish;
@@ -2479,7 +2479,7 @@ Record drain_phase := MkDrainPhase {
   dp_between  : forall i, (dp_j < i)%N -> (i < n_relay)%N ->
     { f | dp_bg i = Recv i f /\
       forall m rr, f (e_loc (@enc AHE (ek (nat_to_party_id i.+1)) m rr)) =
-        Send i.+2 (e_loc (@Emul AHE (local_alice_enc (inord i.+1))
+        Send i.+2 (e_loc (@Emul AHE (alice_enc_local (inord i.+1))
           (@enc AHE (ek (nat_to_party_id i.+2)) m
             (r2_relay (inord i))))) Finish }
 }.
@@ -2493,7 +2493,7 @@ Record tail_phase := MkTailPhase {
 
   (* T3: last relay holds the final Send 0 to Alice with chain_acc(n_relay.-1) *)
   tp_last    : tp_bg n_relay = Send 0
-    (e_loc (@enc AHE (ek alice_idx) (local_chain_acc n_relay.-1) tp_rr_tail))
+    (e_loc (@enc AHE (ek alice_idx) (chain_acc_local n_relay.-1) tp_rr_tail))
     Finish;
 
   (* T5: all other relay positions are Finish *)

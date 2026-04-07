@@ -162,13 +162,12 @@ Let procs_tup : n_parties.-tuple (proc data) :=
 (* Required for the Record-based progress proofs migrated from dsdp_fsm.v.    *)
 (* ========================================================================== *)
 
-Let local_st_ret := @st_ret AHE n_relay v0 u r v_relay.
-Let local_st_tail := fun rr =>
+Let st_ret_local := @st_ret AHE n_relay v0 u r v_relay.
+Let st_tail_local := fun rr =>
   @st_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a v_relay rr.
-Let local_st_drain_gen := fun j rr bg Hbg =>
+Let st_drain_gen_local := fun j rr bg Hbg =>
   @st_drain_gen AHE ek n_relay dk relays Hrelays v0 u r rand_a v_relay
     j rr bg Hbg.
-Let local_st_recv := st_recv_local.  (* alias to match dsdp_fsm_chain naming *)
 
 Local Notation recv_st :=
   (st_recv_gen ek dk dk_relay Hrelays Hrelays_id
@@ -183,15 +182,14 @@ Local Notation tail_st :=
   (@st_tail AHE ek n_relay dk relays Hrelays
      v0 u r rand_a v_relay).
 
-Let local_recv_procs_gen := @recv_procs_gen AHE ek n_relay dk dk_relay relays
+Let recv_procs_gen_local := @recv_procs_gen AHE ek n_relay dk dk_relay relays
     v0 u r rand_a v_relay r1_relay r2_relay.
-Let local_send_procs_gen := @send_procs_gen AHE ek n_relay dk dk_relay relays
+Let send_procs_gen_local := @send_procs_gen AHE ek n_relay dk dk_relay relays
     v0 u r rand_a v_relay r1_relay r2_relay.
-Let local_relay_body := @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
-Let local_bg_init := @bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
-Let local_chain_acc := @chain_acc AHE n_relay u r v_relay.
-Let local_alice_enc := @alice_enc AHE ek n_relay u r rand_a v_relay r1_relay.
-Let local_term := @term AHE n_relay u r v_relay.
+Let relay_body_local := @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
+Let bg_init_local := @bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
+Let alice_enc_local := @alice_enc AHE ek n_relay u r rand_a v_relay r1_relay.
+Let term_local := @term AHE n_relay u r v_relay.
 
 Let e_loc := @di_e _ DI.  (* cipher -> std_data wrapper *)
 
@@ -249,15 +247,15 @@ Qed.
 
 (* Helper: tail state is not terminated (last relay still active) *)
 Lemma tail_not_terminated (rr : rand AHE) :
-  ~~ @all_terminated data (ps_procs (local_st_tail rr)).
+  ~~ @all_terminated data (ps_procs (st_tail_local rr)).
 Proof.
-rewrite /local_st_tail /= /all_terminated /tail_procs.
+rewrite /st_tail_local /= /all_terminated /tail_procs.
 rewrite all_cat /= andbF.
 by rewrite andbF.
 Qed.
 
 (* ks2_tail: the tail state is in known_state2 *)
-Lemma ks2_tail (rr : rand AHE) : known_state2 (local_st_tail rr).
+Lemma ks2_tail (rr : rand AHE) : known_state2 (st_tail_local rr).
 Proof.
 apply (KS2_step KS2_ret).
 - exact: (@step_ok_tail_ret AHE ek n_relay Hn_relay dk relays Hrelays
@@ -347,7 +345,7 @@ Qed.
    with progress and non-termination at every intermediate step,
    then the starting state is known_state2. *)
 Lemma interp_chain_ks2 (fuel : nat) (st : phase_state AHE) :
-  @interp_comp (std_data AHE) (ps_procs st) fuel.+1 = ps_procs local_st_ret ->
+  @interp_comp (std_data AHE) (ps_procs st) fuel.+1 = ps_procs st_ret_local ->
   (forall k, (k < fuel.+1)%N ->
     @has_progress (std_data AHE) (@interp_comp (std_data AHE) (ps_procs st) k)) ->
   (forall k, (k < fuel.+1)%N ->
@@ -524,12 +522,12 @@ Qed.
 Lemma mk_next_ahead (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   let j := rp_j rp in
   forall i, (j.+1 < i)%N -> (i < n_relay.+1)%N ->
-    bg'_of rp i = local_relay_body (inord i).
+    bg'_of rp i = relay_body_local (inord i).
 Proof.
 move=> /= i Hij Hi.
 set j := rp_j rp.
 have Hji : (j < i)%N by apply (ltn_trans (ltnSn j) Hij).
-have Hbg_s_i : bg_s_of rp i = local_relay_body (inord i).
+have Hbg_s_i : bg_s_of rp i = relay_body_local (inord i).
   rewrite /bg_s_of /=. apply bg_relay_ahead_recv => //.
   exact: (rp_ahead rp Hji Hi).
 rewrite /bg'_of /=.
@@ -543,7 +541,7 @@ Qed.
 Lemma mk_next_behind (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   (2 <= next_j Hjn)%N ->
   exists sv0 f0,
-    local_relay_body (inord (next_j Hjn).-1) = Send 0 sv0 (Recv 0 f0) /\
+    relay_body_local (inord (next_j Hjn).-1) = Send 0 sv0 (Recv 0 f0) /\
     bg'_of rp (next_j Hjn).-1 = Recv 0 f0.
 Proof.
 set j := rp_j rp.
@@ -559,7 +557,7 @@ exists (e_loc (enc (ek (nat_to_party_id j.+1)) (v_relay j) (r1_relay j))).
 exists f_ras.
 split.
 - (* relay_body (inord j) = Send 0 ... (Recv 0 f_ras) *)
-  rewrite /local_relay_body Hinord_j Hrb.
+  rewrite /relay_body_local Hinord_j Hrb.
   by rewrite Hras_eq.
 - (* bg'_of rp j = Recv 0 f_ras *)
   rewrite /bg'_of /bg_s_of /=.
@@ -592,7 +590,7 @@ have Hi_bound : (i < n_relay.+1)%N := ltn_trans Hij (ltn_ord _).
 case: (boolP (i.+1 < (rp_j rp).-2)%N) => [Hi_deep | Hi_border].
 - (* Deep finish zone *)
   have Hfin : rp_bg rp i = Finish by apply (rp_finish rp Hi_deep).
-  rewrite /bg'_of /bg_s_of /local_send_procs_gen /local_recv_procs_gen /=.
+  rewrite /bg'_of /bg_s_of /send_procs_gen_local /recv_procs_gen_local /=.
   set bg_s_local := (fun i0 : nat => _).
   have Hbg_s_i : bg_s_local i = Finish.
     rewrite /bg_s_local. by apply bg_finish_nop_recv.
@@ -618,7 +616,7 @@ case: (boolP (i.+1 < (rp_j rp).-2)%N) => [Hi_deep | Hi_border].
       rewrite -subn2 in H2.
       rewrite subnK in H2; last by exact (ltnW Hj3).
       by rewrite addnC.
-  rewrite /bg'_of /bg_s_of /local_send_procs_gen /local_recv_procs_gen /=.
+  rewrite /bg'_of /bg_s_of /send_procs_gen_local /recv_procs_gen_local /=.
   have Hsnd := (rp_sender rp) Hj3.
   have [f_r [Hrcv _]] := (rp_receiver rp) Hj3.
   rewrite Hi_eq.
@@ -641,7 +639,7 @@ Lemma mk_next_sender (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   (3 <= j')%N ->
   { rr_fw' : rand AHE | bg'_of rp ((j' : nat) - 3)%N = Send j'.-1
     (e_loc (@enc AHE (ek (nat_to_party_id j'.-1))
-                 (local_chain_acc ((j' : nat) - 3)%N) rr_fw')) Finish }.
+                 (chain_acc_local ((j' : nat) - 3)%N) rr_fw')) Finish }.
 Proof.
 move=> /=. set j := rp_j rp.
 have Hinord : ((next_j Hjn : nat) = j.+1) by rewrite /next_j inordK.
@@ -663,7 +661,7 @@ case: (boolP ((j : nat) == 2%N)) => [Hj2eq | Hjne].
   rewrite Hjm1z in Hbg1.
   rewrite /bg'_of /=. set bgs := bg_s_of rp.
   have Hbgs0 : bgs 0 = rp_bg rp 0.
-    rewrite /bgs /bg_s_of /local_recv_procs_gen /recv_procs_gen /step /=.
+    rewrite /bgs /bg_s_of /recv_procs_gen_local /recv_procs_gen /step /=.
     rewrite nth_mkseq; last by [].
     have -> : (0 == j :> nat) = false by rewrite eq_sym Hjz.
     rewrite Hbg0 /=.
@@ -672,7 +670,7 @@ case: (boolP ((j : nat) == 2%N)) => [Hj2eq | Hjne].
     have -> : (1 == j :> nat) = false by rewrite eq_sym Hjz.
     by rewrite Hbg1.
   have Hbgs1 : bgs 1 = rp_bg rp 1.
-    rewrite /bgs /bg_s_of /local_recv_procs_gen /recv_procs_gen /step /=.
+    rewrite /bgs /bg_s_of /recv_procs_gen_local /recv_procs_gen /step /=.
     rewrite (nth_map 0); last by rewrite size_iota.
     rewrite nth_iota //=.
     have -> : (1 == j :> nat) = false by rewrite eq_sym Hjz.
@@ -680,7 +678,7 @@ case: (boolP ((j : nat) == 2%N)) => [Hj2eq | Hjne].
     have [f_alice Halice_eq] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
       Hrelays_id v0 u r rand_a (rp_j rp) (ltn_ord _).
     by rewrite Halice_eq.
-  rewrite /local_send_procs_gen /send_procs_gen /step /=.
+  rewrite /send_procs_gen_local /send_procs_gen /step /=.
   rewrite (nth_map 0); last by rewrite size_iota.
   rewrite nth_iota //=.
   have -> : (0 == j :> nat) = false by rewrite eq_sym Hjz.
@@ -702,12 +700,12 @@ rewrite -/j in Hsnd.
 have [f_recv [Hrcv Hf_recv_eq]] := (rp_receiver rp) Hj3'.
 rewrite -/j in Hrcv Hf_recv_eq.
 have Hbgs_jm2 : bg_s_of rp ((j : nat) - 2)%N =
-  f_recv (e_loc (enc (ek j.-1) (local_chain_acc ((j : nat) - 3)) (rp_rr_fw rp))).
+  f_recv (e_loc (enc (ek j.-1) (chain_acc_local ((j : nat) - 3)) (rp_rr_fw rp))).
   exact: bg_frontier_receiver_fires Hsnd Hrcv.
 have [sv0 [f0 [_ Hbg_jm1]]] := (rp_behind rp) (ltnW Hj3').
 rewrite -/j in Hbg_jm1.
 have Hbgs_jm1 : bg_s_of rp j.-1 = rp_bg rp j.-1.
-  rewrite /bg_s_of /local_recv_procs_gen /recv_procs_gen /step /=.
+  rewrite /bg_s_of /recv_procs_gen_local /recv_procs_gen /step /=.
   rewrite (nth_map 0); last first.
     by rewrite size_iota; apply (leq_ltn_trans (leq_pred _) (ltn_ord _)).
   rewrite nth_iota; last by apply (leq_ltn_trans (leq_pred _) (ltn_ord _)).
@@ -721,7 +719,7 @@ have Hbgs_jm1 : bg_s_of rp j.-1 = rp_bg rp j.-1.
     Hrelays_id v0 u r rand_a (rp_j rp) (ltn_ord _).
   by rewrite Halice_eq.
 rewrite /bg'_of /=. set bgs := bg_s_of rp.
-rewrite /local_send_procs_gen /send_procs_gen /step /=.
+rewrite /send_procs_gen_local /send_procs_gen /step /=.
 rewrite (nth_map 0); last first.
   by rewrite size_iota; apply (leq_ltn_trans (leq_subr 2 j) (ltn_ord _)).
 rewrite nth_iota; last by apply (leq_ltn_trans (leq_subr 2 j) (ltn_ord _)).
@@ -731,7 +729,7 @@ have -> : ((j - 2)%N == j) = false.
   have : ((j : nat) - 2 < j)%N by rewrite ltn_subrL /= (ltn_trans _ Hj3').
   by rewrite Heq ltnn.
 have Hbgs_jm2' : bgs ((j : nat) - 2)%N =
-  f_recv (e_loc (enc (ek j.-1) (local_chain_acc ((j : nat) - 3)) (rp_rr_fw rp))).
+  f_recv (e_loc (enc (ek j.-1) (chain_acc_local ((j : nat) - 3)) (rp_rr_fw rp))).
   by rewrite /bgs -Hbgs_jm2.
 rewrite Hbgs_jm2' Hf_recv_eq /=.
 rewrite nth_cons_pos; last by exact (ltn_trans (ltn0Sn _) Hj3').
@@ -746,7 +744,7 @@ have -> : (j.-1 == j :> nat) = false.
 have Hbgs_jm1' : bgs j.-1 = rp_bg rp j.-1 by rewrite /bgs.
 rewrite Hbgs_jm1' Hbg_jm1 /=.
 (* Algebraic identity: Emul + chain_acc *)
-rewrite /local_alice_enc Halice.
+rewrite /alice_enc_local Halice.
 have Hek_eq : ek ((inord j.-1 : 'I_n_relay.+1) : nat).+1 = ek j.
   congr ek. rewrite inordK; first by rewrite prednK // (ltn_trans _ Hj3').
   by rewrite (leq_ltn_trans (leq_pred _) (ltn_ord _)).
@@ -760,7 +758,7 @@ congr ( _, _).
 have Hjm2_pred : ((j : nat) - 2)%N = ((j : nat) - 3).+1.
   case: (j : nat) Hj3' => [|[|[|n']]] // _.
   by rewrite subSS subSS subSn // subn0.
-rewrite /local_chain_acc Hjm2_pred /chain_acc -/chain_acc.
+rewrite /chain_acc_local Hjm2_pred /chain_acc -/chain_acc.
 rewrite GRing.addrC.
 congr (_ + _).
 congr (term _ _ _ _).
@@ -782,7 +780,7 @@ Lemma mk_next_sender2 (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   (next_j Hjn == 2%N :> nat) ->
   { rr_fw' : rand AHE | bg'_of rp 0 = Send 2
     (e_loc (@enc AHE (ek (nat_to_party_id 2))
-                 (local_chain_acc 0) rr_fw')) Finish }.
+                 (chain_acc_local 0) rr_fw')) Finish }.
 Proof.
 move=> Hj1.
 have Hjz : (rp_j rp : nat) = 1%N.
@@ -794,7 +792,7 @@ have Hj_eq : (rp_j rp == 1%N :> nat) by rewrite Hjz.
 have [f_enc [Hbg0 Hf_enc_eq]] := (rp_j1_recv rp) Hj_eq.
 rewrite /bg'_of /=. set bgs := bg_s_of rp.
 have Hbgs0 : bgs 0 = rp_bg rp 0.
-  rewrite /bgs /bg_s_of /local_recv_procs_gen /recv_procs_gen /step /=.
+  rewrite /bgs /bg_s_of /recv_procs_gen_local /recv_procs_gen /step /=.
   rewrite nth_mkseq; last by [].
   have -> : (0 == rp_j rp :> nat) = false by rewrite eq_sym Hjz.
   rewrite Hbg0 /=.
@@ -802,7 +800,7 @@ have Hbgs0 : bgs 0 = rp_bg rp 0.
     Hrelays_id v0 u r rand_a (rp_j rp) (ltn_ord _).
   have [f_alice Halice_eq] := Halice_recv.
   by rewrite Halice_eq /=.
-rewrite /local_send_procs_gen /send_procs_gen /step /=.
+rewrite /send_procs_gen_local /send_procs_gen /step /=.
 rewrite nth_mkseq; last by [].
 have -> : (0 == rp_j rp :> nat) = false by rewrite eq_sym Hjz.
 rewrite Hbgs0 Hbg0 /=.
@@ -814,7 +812,7 @@ rewrite H2 !enc_curry_eq -(@Emul_addM AHE).
 rewrite /mr_bop /=.
 have Hjeqi : rp_j rp = (inord 1 : 'I_n_relay.+1).
   apply val_inj => /=. by rewrite Hjz inordK.
-by rewrite /local_term Hjeqi GRing.addrC.
+by rewrite /term_local Hjeqi GRing.addrC.
 Qed.
 
 (* H6: rp_receiver — frontier receiver at (j+1)-2 *)
@@ -824,7 +822,7 @@ Lemma mk_next_receiver (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   exists f_recv, bg'_of rp ((j' : nat) - 2)%N = Recv j'.-2 f_recv /\
   forall m rr,
     f_recv (e_loc (@enc AHE (ek (nat_to_party_id j'.-1)) m rr)) =
-    Send j' (e_loc (@Emul AHE (local_alice_enc (inord j'.-1))
+    Send j' (e_loc (@Emul AHE (alice_enc_local (inord j'.-1))
       (@enc AHE (ek (nat_to_party_id j')) m (r2_relay (inord ((j' : nat) - 2)%N)))))
     Finish.
 Proof.
@@ -852,7 +850,7 @@ have Hadt : alice_send_dest j = j.-1.+1.
   have Habs : j = 1 :> nat by apply anti_leq; rewrite Hj1pos H.
   by rewrite Habs in Hj2.
 have Hbg' : bg'_of rp j.-1 = f0 (e_loc (alice_enc ek u r rand_a v_relay r1_relay j)).
-  rewrite /bg'_of /bg_s_of /local_send_procs_gen /local_recv_procs_gen /=.
+  rewrite /bg'_of /bg_s_of /send_procs_gen_local /recv_procs_gen_local /=.
   set bg_s_local := (fun i => _).
   have Hbg_s_local : bg_s_local j.-1 = Recv 0 f0 by exact Hbg_s_jm1.
   by apply: bg_recv0_fire_send Hbg_s_local _.
@@ -863,7 +861,7 @@ have Hjm1_inord : ((inord j.-1 : 'I_n_relay.+1) : nat) = j.-1
 have Hjm1_ne0 : ((inord j.-1 : 'I_n_relay.+1) : nat) != 0%N by rewrite Hjm1_inord -lt0n.
 have Hjm1_ne_n : ((inord j.-1 : 'I_n_relay.+1) : nat) != n_relay
   by rewrite Hjm1_inord; apply /eqP => Habs; rewrite Habs ltnn in Hjm1_lt.
-rewrite /local_relay_body /relay_body in Hbody.
+rewrite /relay_body_local /relay_body in Hbody.
 rewrite (negbTE Hjm1_ne0) (negbTE Hjm1_ne_n) Hjm1_inord in Hbody.
 move: Hbody. rewrite /alice_idx. case=> _ Hf0_eq.
 rewrite /std_Recv_enc /Recv_param in Hf0_eq.
@@ -886,7 +884,7 @@ eexists. split.
   have Hjp : j.-1.+2 = j.+1 by rewrite (prednK Hj1pos).
   rewrite Hjp.
   congr (Send _ (e_loc (Emul _ (enc _ _ _))) Finish).
-  + rewrite /local_alice_enc.
+  + rewrite /alice_enc_local.
     have -> : (inord j : 'I_n_relay.+1) = j by apply val_inj; rewrite /= inordK.
     by [].
   + case Hjval : (j : nat) => [|[|jv]] //=.
@@ -899,7 +897,7 @@ Lemma mk_next_j1_recv (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   exists f_enc, bg'_of rp 0 = Recv 0 (oapp f_enc Fail \o @std_from_enc AHE) /\
   forall c, f_enc c = Send 2
     (e_loc (@Emul AHE c (@enc AHE (ek (nat_to_party_id 2))
-                               (local_term ord0) (r2_relay ord0)))) Finish.
+                               (term_local ord0) (r2_relay ord0)))) Finish.
 Proof.
 move=> Hj1.
 have Hjz : (rp_j rp : nat) = 0%N.
@@ -908,7 +906,7 @@ have Hjz : (rp_j rp : nat) = 0%N.
 have [f_ras Hras] := @relay_after_send0_recv0 AHE ek n_relay dk_relay v_relay
   r1_relay r2_relay (rp_j rp) Hjn.
 rewrite /bg'_of /=. set bgs := bg_s_of rp.
-rewrite /local_send_procs_gen /send_procs_gen /step /=.
+rewrite /send_procs_gen_local /send_procs_gen /step /=.
 rewrite nth_mkseq; last by [].
 rewrite Hjz eqxx /=.
 have Hinord_zero : (inord 0 : 'I_n_relay.+1) = rp_j rp.
@@ -1040,7 +1038,7 @@ have Hjp1_lt_nrp1 : (j.+1 < n_relay.+1)%N by rewrite ltnS; exact: ltnW Hjlt.
 have Hjp2_lt_nrp1 : (j.+2 < n_relay.+1)%N by rewrite ltnS; exact: Hjlt.
 have Hj_lt_nr : (j < n_relay)%N by exact: ltnW Hjlt.
 have Hsender : bg j = Send j.+2
-    (e_loc (@enc AHE (ek (nat_to_party_id j.+2)) (local_chain_acc j) rr)) Finish
+    (e_loc (@enc AHE (ek (nat_to_party_id j.+2)) (chain_acc_local j) rr)) Finish
   := dp_sender dp.
 have Hjp1_lt_nr : (j.+1 < n_relay)%N by exact Hjlt.
 have [f_act [Hbg_act Hf_act]] := dp_between dp j.+1 (ltnSn _) Hjp1_lt_nr.
@@ -1049,18 +1047,18 @@ have [rr0 Halice2] :=
   @alice_enc_value AHE ek n_relay u r rand_a v_relay r1_relay (inord j.+2).
 have Hek_inord : ek (inord j.+2 : 'I_n_relay.+1).+1 = ek j.+3
   by congr ek; rewrite Hinord_j2.
-have Hchain_step : local_chain_acc j.+1 = local_chain_acc j + local_term (inord j.+2).
-  by rewrite /local_chain_acc /local_term /chain_acc -/chain_acc.
+have Hchain_step : chain_acc_local j.+1 = chain_acc_local j + term_local (inord j.+2).
+  by rewrite /chain_acc_local /term_local /chain_acc -/chain_acc.
 have Hbg_act_hyp : { f : data -> proc data & { rr_next : rand AHE |
    bg j.+1 = Recv j.+1 f /\
-   f (e_loc (enc (ek (nat_to_party_id j.+2)) (local_chain_acc j) rr)) =
+   f (e_loc (enc (ek (nat_to_party_id j.+2)) (chain_acc_local j) rr)) =
    Send j.+3
-     (e_loc (enc (ek (nat_to_party_id j.+3)) (local_chain_acc j.+1) rr_next))
+     (e_loc (enc (ek (nat_to_party_id j.+3)) (chain_acc_local j.+1) rr_next))
      Finish }}.
   exists f_act, (rand_mul rr0 (r2_relay (inord j.+1))).
   split; first by rewrite -/bg.
-  rewrite (Hf_act (local_chain_acc j) rr).
-  rewrite /local_alice_enc Halice2 Hek_inord.
+  rewrite (Hf_act (chain_acc_local j) rr).
+  rewrite /alice_enc_local Halice2 Hek_inord.
   rewrite !enc_curry_eq -(@Emul_addM AHE).
   rewrite /mr_bop /=.
   congr (Send _ _ Finish).
@@ -1136,7 +1134,7 @@ have Hinord_eq : ((inord j.+1 : 'I_n_relay.+1) : nat) = j.+1 by rewrite inordK.
 have Hsender' : bg' (inord j.+1 : 'I_n_relay.+1) =
   Send (inord j.+1 : 'I_n_relay.+1).+2
     (e_loc (@enc AHE (ek (nat_to_party_id (inord j.+1 : 'I_n_relay.+1).+2))
-                 (local_chain_acc (inord j.+1 : 'I_n_relay.+1)) rr')) Finish.
+                 (chain_acc_local (inord j.+1 : 'I_n_relay.+1)) rr')) Finish.
   by rewrite Hinord_eq Hbgj1_send.
 have Hfinish' : forall i, (i < (inord j.+1 : 'I_n_relay.+1))%N -> bg' i = Finish.
   move=> i Hi.
@@ -1167,7 +1165,7 @@ have Hbetween' : forall i,
     ((inord j.+1 : 'I_n_relay.+1) < i)%N -> (i < n_relay)%N ->
     { f | bg' i = Recv i f /\
       forall m rr1, f (e_loc (@enc AHE (ek (nat_to_party_id i.+1)) m rr1)) =
-        Send i.+2 (e_loc (@Emul AHE (local_alice_enc (inord i.+1))
+        Send i.+2 (e_loc (@Emul AHE (alice_enc_local (inord i.+1))
           (@enc AHE (ek (nat_to_party_id i.+2)) m
             (r2_relay (inord i))))) Finish }.
   move=> i Hi1lt Hilt.
@@ -1209,7 +1207,7 @@ set bg := rp_bg rp.
 set bgs := bg_s_of rp.
 have Hj_lt : (j < n_relay.+1)%N := ltn_ord _.
 (* Step equation: concrete recv→send transition *)
-have Hstep : one_step_procs (local_recv_procs_gen j bg) = local_send_procs_gen j bgs.
+have Hstep : one_step_procs (recv_procs_gen_local j bg) = send_procs_gen_local j bgs.
   by exact: step_ok_recv_send_concrete.
 have Hjpos : (0 < j)%N := ltn_trans (ltn0Sn _) Hj2.
 have Hjm1_ne : (j.-1 != (j : nat)).
@@ -1226,13 +1224,13 @@ have Hinord_jm1 : ((inord j.-1 : 'I_n_relay.+1) : nat) = j.-1 by rewrite inordK.
 have [f_ras Hras_eq] := @relay_after_send0_recv0_sig (inord j.-1 : 'I_n_relay.+1)
   (eq_ind _ (fun n => (n < n_relay)%N) Hjm1_lt_nr _ (esym Hinord_jm1)).
 have Hsp_active : { sv0_f0 : data * (data -> proc data) |
-    local_relay_body (inord j.-1) = Send 0 sv0_f0.1 (Recv 0 sv0_f0.2) /\
+    relay_body_local (inord j.-1) = Send 0 sv0_f0.1 (Recv 0 sv0_f0.2) /\
     bgs j.-1 = Recv 0 sv0_f0.2 }.
   exists (e_loc (enc (ek (nat_to_party_id (inord j.-1 : 'I_n_relay.+1).+1))
                  (v_relay (inord j.-1 : 'I_n_relay.+1))
                  (r1_relay (inord j.-1 : 'I_n_relay.+1))), f_ras).
   split.
-  { rewrite /local_relay_body
+  { rewrite /relay_body_local
       (@relay_body_send0_cont AHE ek n_relay dk_relay v_relay r1_relay r2_relay (inord j.-1))
       Hras_eq.
     by []. }
@@ -1240,24 +1238,24 @@ have Hsp_active : { sv0_f0 : data * (data -> proc data) |
   (* Derive bg j.-1 = Recv 0 f_ras by matching Prop rp_behind with our f_ras. *)
   have Hbg_jm1_eq : bg j.-1 = Recv 0 f_ras.
   { have [sv0 [f0 [Hbody0 Hbg0]]] := (rp_behind rp) Hj2.
-    rewrite /local_relay_body in Hbody0.
+    rewrite /relay_body_local in Hbody0.
     rewrite (@relay_body_send0_cont AHE ek n_relay dk_relay v_relay r1_relay r2_relay (inord j.-1))
       Hras_eq in Hbody0.
     case: Hbody0 => _ Heq_f.
     rewrite /bg Hbg0. by rewrite Heq_f. }
-  rewrite /bgs /bg_s_of /local_recv_procs_gen -/j -/bg.
+  rewrite /bgs /bg_s_of /recv_procs_gen_local -/j -/bg.
   by apply: bg_recv0_nop_recv Hbg_jm1_eq.
 (* Field sp_ahead *)
 have Hsp_ahead : forall i, (j < i)%N -> (i < n_relay.+1)%N ->
-    bgs i = local_relay_body (inord i).
+    bgs i = relay_body_local (inord i).
   move=> i Hji Hi.
-  rewrite /bgs /bg_s_of /local_recv_procs_gen -/j -/bg.
+  rewrite /bgs /bg_s_of /recv_procs_gen_local -/j -/bg.
   apply bg_relay_ahead_recv => //.
   exact: (rp_ahead rp Hji Hi).
 (* Field sp_next_behind: j < n_relay case *)
 have Hsp_next_behind : (j < n_relay)%N ->
   { sv_f : data * (data -> proc data) |
-    local_relay_body (inord j) = Send 0 sv_f.1 (Recv 0 sv_f.2) /\
+    relay_body_local (inord j) = Send 0 sv_f.1 (Recv 0 sv_f.2) /\
     bgs j = Recv 0 sv_f.2 }.
   move=> Hjn.
   have Hinord_j : ((inord j : 'I_n_relay.+1) : nat) = j by rewrite inordK //.
@@ -1268,11 +1266,11 @@ have Hsp_next_behind : (j < n_relay)%N ->
                  (r1_relay (inord j : 'I_n_relay.+1))), f_ras2).
   simpl.
   split.
-  { rewrite /local_relay_body
+  { rewrite /relay_body_local
       (@relay_body_send0_cont AHE ek n_relay dk_relay v_relay r1_relay r2_relay (inord j))
       Hras2_eq.
     by []. }
-  rewrite /bgs /bg_s_of /local_recv_procs_gen -/j -/bg
+  rewrite /bgs /bg_s_of /recv_procs_gen_local -/j -/bg
           /recv_procs_gen /smc_interpreter.step /=.
   rewrite nth_mkseq; last exact Hj_lt.
   rewrite eqxx.
@@ -1296,7 +1294,7 @@ have Hsp_last : ((j : nat) = n_relay) ->
     bgs n_relay = Recv n_relay f_dec.
   { move=> f_dec Hrs_eq.
     rewrite -Hjn.
-    rewrite /bgs /bg_s_of /local_recv_procs_gen -/j -/bg
+    rewrite /bgs /bg_s_of /recv_procs_gen_local -/j -/bg
             /recv_procs_gen /smc_interpreter.step /=.
     rewrite nth_mkseq; last exact Hj_lt.
     rewrite eqxx.
@@ -1329,12 +1327,12 @@ have Hsp_last : ((j : nat) = n_relay) ->
 (* Field sp_sender2: j = 2 case — inherits from rp_sender2 via NOP *)
 have Hsp_sender2 : (j == 2%N :> nat) ->
   bgs 0 = Send 2
-    (e_loc (@enc AHE (ek (nat_to_party_id 2)) (local_chain_acc 0) (rp_rr_fw rp))) Finish.
+    (e_loc (@enc AHE (ek (nat_to_party_id 2)) (chain_acc_local 0) (rp_rr_fw rp))) Finish.
   move=> Hj2eq.
-  have Hbg0 : bg 0 = Send 2 (e_loc (enc (ek 2%N) (local_chain_acc 0) (rp_rr_fw rp))) Finish.
+  have Hbg0 : bg 0 = Send 2 (e_loc (enc (ek 2%N) (chain_acc_local 0) (rp_rr_fw rp))) Finish.
     rewrite /bg. exact: (rp_sender2 rp Hj2eq).
   have Hjz : (j : nat) = 2%N by exact (eqP Hj2eq).
-  rewrite /bgs /bg_s_of /local_recv_procs_gen -/j -/bg
+  rewrite /bgs /bg_s_of /recv_procs_gen_local -/j -/bg
           /recv_procs_gen /smc_interpreter.step /=.
   rewrite nth_mkseq; last exact (ltn0Sn _).
   have -> : (0 == j :> nat) = false by rewrite eq_sym Hjz.
@@ -1354,7 +1352,7 @@ case: (boolP ((j : nat) == 2%N)) => [Hj2eq | Hjne2].
   have Hsp_sender_vac : (3 <= j)%N ->
     (forall i, (i.+3 <= j)%N -> bgs i = Finish) /\
     bgs ((j : nat) - 2)%N = Send j
-      (e_loc (@enc AHE (ek (nat_to_party_id j)) (local_chain_acc ((j : nat) - 2)%N) (rp_rr_fw rp))) Finish.
+      (e_loc (@enc AHE (ek (nat_to_party_id j)) (chain_acc_local ((j : nat) - 2)%N) (rp_rr_fw rp))) Finish.
     move=> Hj3. exfalso. move/eqP: Hj2eq => Hjz. by rewrite Hjz in Hj3.
   refine (exist _ (@MkSendPhase AHE ek n_relay dk_relay u r v_relay r1_relay r2_relay j (rp_rr_fw rp) bgs Hj2 Hsp_active
     Hsp_ahead Hsp_next_behind Hsp_last Hsp_sender2 Hsp_sender_vac) _).
@@ -1369,13 +1367,13 @@ pose sp_rr := rand_mul rr_a (r2_relay (inord ((j : nat) - 2)%N)).
 (* sp_sender2 vacuous: j != 2 *)
 have Hsp_sender2_vac : (j == 2%N :> nat) ->
   bgs 0 = Send 2
-    (e_loc (@enc AHE (ek (nat_to_party_id 2)) (local_chain_acc 0) sp_rr)) Finish.
+    (e_loc (@enc AHE (ek (nat_to_party_id 2)) (chain_acc_local 0) sp_rr)) Finish.
   move=> Habs. by rewrite Habs in Hjne2.
 (* sp_sender: at j-2, shifted sender; Finish zone at i.+3 ≤ j
    Note: rp_receiver is Prop-level exists, so we can only destructure it
    inside Prop-level sub-goals (Hsp_sender_fin, Hsp_sender_snd). *)
 have Hsnd : bg ((j : nat) - 3)%N = Send j.-1
-    (e_loc (@enc AHE (ek (nat_to_party_id j.-1)) (local_chain_acc ((j : nat) - 3)) (rp_rr_fw rp))) Finish.
+    (e_loc (@enc AHE (ek (nat_to_party_id j.-1)) (chain_acc_local ((j : nat) - 3)) (rp_rr_fw rp))) Finish.
   rewrite /bg. exact: (rp_sender rp Hj3).
 have Hsp_sender_fin : forall i, (i.+3 <= j)%N -> bgs i = Finish.
   move=> i Hi3.
@@ -1389,7 +1387,7 @@ have Hsp_sender_fin : forall i, (i.+3 <= j)%N -> bgs i = Finish.
         have Hjm1_eq : j.-1 = i.+2 by move/eqP: Hieq => ->.
         by rewrite -(prednK Hjpos) Hjm1_eq.
       rewrite Hj_val. by rewrite !subSS subn0.
-    rewrite Hi_eq /bgs /bg_s_of /local_recv_procs_gen -/j -/bg.
+    rewrite Hi_eq /bgs /bg_s_of /recv_procs_gen_local -/j -/bg.
     have [f_recv [Hrcv _]] := (rp_receiver rp) Hj3.
     rewrite -/j in Hrcv.
     exact: bg_frontier_sender_fires Hsnd Hrcv.
@@ -1403,19 +1401,19 @@ have Hsp_sender_fin : forall i, (i.+3 <= j)%N -> bgs i = Finish.
     have Hi1_lt_jm2 : (i.+1 < j.-2)%N.
       by rewrite -(ltn_add2r 1) !addn1 Hjm2p1.
     have Hbgi : bg i = Finish by apply: (rp_finish rp).
-    rewrite /bgs /bg_s_of /local_recv_procs_gen -/j -/bg.
+    rewrite /bgs /bg_s_of /recv_procs_gen_local -/j -/bg.
     by apply: bg_finish_nop_recv Hbgi.
 have Hsp_sender_snd : bgs ((j : nat) - 2)%N = Send j
-    (e_loc (@enc AHE (ek (nat_to_party_id j)) (local_chain_acc ((j : nat) - 2)%N) sp_rr)) Finish.
+    (e_loc (@enc AHE (ek (nat_to_party_id j)) (chain_acc_local ((j : nat) - 2)%N) sp_rr)) Finish.
   have [f_recv [Hrcv Hf_recv_eq]] := (rp_receiver rp) Hj3.
   rewrite -/j in Hrcv Hf_recv_eq.
   have Hbgs_jm2 : bgs ((j : nat) - 2)%N =
-    f_recv (e_loc (enc (ek j.-1) (local_chain_acc ((j : nat) - 3)) (rp_rr_fw rp))).
-    rewrite /bgs /bg_s_of /local_recv_procs_gen -/j -/bg.
+    f_recv (e_loc (enc (ek j.-1) (chain_acc_local ((j : nat) - 3)) (rp_rr_fw rp))).
+    rewrite /bgs /bg_s_of /recv_procs_gen_local -/j -/bg.
     exact: bg_frontier_receiver_fires Hsnd Hrcv.
   rewrite Hbgs_jm2 Hf_recv_eq.
   (* Algebraic identity: Emul + chain_acc shift *)
-  rewrite /local_alice_enc Halice.
+  rewrite /alice_enc_local Halice.
   have Hek_eq : ek ((inord j.-1 : 'I_n_relay.+1) : nat).+1 = ek j.
     congr ek. rewrite inordK; first by rewrite prednK // (ltn_trans _ Hj3).
     by rewrite (leq_ltn_trans (leq_pred _) Hj_lt).
@@ -1429,7 +1427,7 @@ have Hsp_sender_snd : bgs ((j : nat) - 2)%N = Send j
   have Hjm2_pred : ((j : nat) - 2)%N = ((j : nat) - 3).+1.
     case: (j : nat) Hj3 => [|[|[|n']]] // _.
     by rewrite subSS subSS subSn // subn0.
-  rewrite /local_chain_acc Hjm2_pred /chain_acc -/chain_acc.
+  rewrite /chain_acc_local Hjm2_pred /chain_acc -/chain_acc.
   rewrite GRing.addrC.
   congr (_ + _).
   congr (term _ _ _ _).
@@ -1448,7 +1446,7 @@ have Hsp_sender_snd : bgs ((j : nat) - 2)%N = Send j
 have Hsp_sender : (3 <= j)%N ->
   (forall i, (i.+3 <= j)%N -> bgs i = Finish) /\
   bgs ((j : nat) - 2)%N = Send j
-    (e_loc (@enc AHE (ek (nat_to_party_id j)) (local_chain_acc ((j : nat) - 2)%N) sp_rr)) Finish.
+    (e_loc (@enc AHE (ek (nat_to_party_id j)) (chain_acc_local ((j : nat) - 2)%N) sp_rr)) Finish.
   by move=> _; split; [exact: Hsp_sender_fin | exact: Hsp_sender_snd].
 refine (exist _ (@MkSendPhase AHE ek n_relay dk_relay u r v_relay r1_relay r2_relay j sp_rr bgs Hj2 Hsp_active
   Hsp_ahead Hsp_next_behind Hsp_last Hsp_sender2_vac Hsp_sender) _).
@@ -1481,7 +1479,7 @@ move=> Hjn Hnr3.
 set j := sp_j sp.
 set bg := sp_bg sp.
 set rr := sp_rr_fw sp.
-set bgs := fun i => (smc_interpreter.step (local_send_procs_gen j bg) [::] i.+1).1.1.
+set bgs := fun i => (smc_interpreter.step (send_procs_gen_local j bg) [::] i.+1).1.1.
 have Hj_lt : (j < n_relay.+1)%N := ltn_ord _.
 have Hj3 : (3 <= j)%N by rewrite -/j Hjn.
 have Hj2 : (2 <= j)%N := ltnW Hj3.
@@ -1515,8 +1513,8 @@ have Hjm1_ne_n : (j.-1 != n_relay :> nat).
 have Hadt_jm1 : alice_send_dest j = j.-1.+1.
   rewrite Hadt. transitivity (j : nat); first by [].
   by rewrite (prednK Hjpos).
-have Hbgs_jm1 : bgs j.-1 = f0 (e_loc (local_alice_enc j)).
-  rewrite /bgs /local_send_procs_gen.
+have Hbgs_jm1 : bgs j.-1 = f0 (e_loc (alice_enc_local j)).
+  rewrite /bgs /send_procs_gen_local.
   apply: bg_recv0_fire_send Hjm1_lt Hjm1_ne Hbg_jm1 Hadt_jm1.
 (* Unfold f0 from the relay_body (intermediate position) *)
 have Hjm1_inord : ((inord j.-1 : 'I_n_relay.+1) : nat) = j.-1.
@@ -1526,7 +1524,7 @@ have Hjm1_ne0 : ((inord j.-1 : 'I_n_relay.+1) : nat) != 0%N
   by rewrite Hjm1_inord -lt0n.
 have Hjm1_ne_n_inord : ((inord j.-1 : 'I_n_relay.+1) : nat) != n_relay
   by rewrite Hjm1_inord.
-rewrite /local_relay_body /relay_body in Hbody0.
+rewrite /relay_body_local /relay_body in Hbody0.
 rewrite (negbTE Hjm1_ne0) (negbTE Hjm1_ne_n_inord) Hjm1_inord in Hbody0.
 case: Hbody0 => _ Hf0_eq.
 have Hjm1S : (j.-1).+1 = j by rewrite (prednK Hjpos).
@@ -1539,7 +1537,7 @@ have Hbgs_finish : forall i, (i.+2 < j)%N -> bgs i = Finish.
   have Hi_ne : i != (j : nat).
     apply/eqP => Heq. rewrite Heq in Hi.
     by move: Hi; rewrite ltnNge => /negP; apply; rewrite ltnW // ltnW.
-  rewrite /bgs /local_send_procs_gen.
+  rewrite /bgs /send_procs_gen_local.
   by apply: bg_finish_nop_send Hi_lt Hi_ne Hbgi.
 (* H1 (DONE): bgs (j - 2) is a Send n_relay ... Finish. The background bg has
    Send j v Finish at position j-2 (from sp_sender); in send_procs_gen, position
@@ -1553,11 +1551,11 @@ have Hj2_ne : (((j : nat) - 2)%N != (j : nat)).
   have Hjgt : ((j : nat) - 2 < j)%N by rewrite ltn_subrL.
   by rewrite H ltnn in Hjgt.
 have Hbg_jm2 : bg ((j:nat) - 2)%N = Send j
-    (e_loc (@enc AHE (ek (nat_to_party_id j)) (local_chain_acc ((j:nat) - 2)%N) rr)) Finish.
+    (e_loc (@enc AHE (ek (nat_to_party_id j)) (chain_acc_local ((j:nat) - 2)%N) rr)) Finish.
   by rewrite /bg /rr; exact: Hsp_snd.
 have Hbgs_snd_eq : bgs ((j : nat) - 2)%N = Send j
-    (e_loc (@enc AHE (ek (nat_to_party_id j)) (local_chain_acc ((j:nat) - 2)%N) rr)) Finish.
-  rewrite /bgs /local_send_procs_gen /send_procs_gen /smc_interpreter.step /=.
+    (e_loc (@enc AHE (ek (nat_to_party_id j)) (chain_acc_local ((j:nat) - 2)%N) rr)) Finish.
+  rewrite /bgs /send_procs_gen_local /send_procs_gen /smc_interpreter.step /=.
   rewrite nth_mkseq; last exact Hj2_lt.
   rewrite (negbTE Hj2_ne).
   rewrite Hbg_jm2 /=.
@@ -1584,7 +1582,7 @@ have Hras_n_sig : { f' | relay_after_send0 ek dk_relay v_relay r1_relay r2_relay
   rewrite /std_Recv_dec /Recv_param /=. by eexists.
 have [f_n Hras_n_eq] := Hras_n_sig.
 have Hbgs_n_recv : bgs n_relay = Recv n_relay f_n.
-  rewrite /bgs /local_send_procs_gen /send_procs_gen.
+  rewrite /bgs /send_procs_gen_local /send_procs_gen.
   rewrite /smc_interpreter.step.
   rewrite nth_cons_pos //.
   rewrite nth_mkseq //.
@@ -1610,7 +1608,7 @@ have Hsafe : forall v k, bgs n_relay <> Send 0 v k.
 have Hbgs_jm1_recv : { f_recv : data -> proc data |
   bgs j.-1 = Recv j.-1 f_recv /\
   forall m rr0, f_recv (e_loc (@enc AHE (ek (nat_to_party_id j)) m rr0)) =
-    Send j.+1 (e_loc (@Emul AHE (local_alice_enc j)
+    Send j.+1 (e_loc (@Emul AHE (alice_enc_local j)
       (@enc AHE (ek (nat_to_party_id j.+1)) m
         (r2_relay (inord j.-1))))) Finish }.
 { rewrite Hbgs_jm1 -Hf0_eq /=.
@@ -1635,7 +1633,7 @@ have Hj_eq3 : (j : nat) = ((j : nat) - 2).+2.
   by case: (j : nat) Hj3 => [|[|[|n']]] // _.
 have Hdp_sender_eq : bgs dp_j_ord = Send dp_j_ord.+2
     (e_loc (@enc AHE (ek (nat_to_party_id dp_j_ord.+2))
-                 (local_chain_acc dp_j_ord) rr)) Finish.
+                 (chain_acc_local dp_j_ord) rr)) Finish.
 { rewrite /dp_j_ord /=.
   rewrite -Hjm2_n.
   rewrite Hbgs_snd_eq.
@@ -1670,7 +1668,7 @@ have Hdp_last_sig : { f | bgs n_relay = Recv n_relay f /\
 have Hdp_between_sig : forall i : 'I_n_relay.+1, (dp_j_ord < i)%N -> (i < n_relay)%N ->
   { f | bgs i = Recv i f /\
     forall m rr0, f (e_loc (@enc AHE (ek (nat_to_party_id i.+1)) m rr0)) =
-      Send i.+2 (e_loc (@Emul AHE (local_alice_enc (inord i.+1))
+      Send i.+2 (e_loc (@Emul AHE (alice_enc_local (inord i.+1))
         (@enc AHE (ek (nat_to_party_id i.+2)) m
           (r2_relay (inord i))))) Finish }.
 { move=> i Hilow Hihigh.
@@ -1697,7 +1695,7 @@ have Hdp_between_sig : forall i : 'I_n_relay.+1, (dp_j_ord < i)%N -> (i < n_rela
 have Hdp_between_sig2 : forall i : nat, (dp_j_ord < i)%N -> (i < n_relay)%N ->
   { f | bgs i = Recv i f /\
     forall m rr0, f (e_loc (@enc AHE (ek (nat_to_party_id i.+1)) m rr0)) =
-      Send i.+2 (e_loc (@Emul AHE (local_alice_enc (inord i.+1))
+      Send i.+2 (e_loc (@Emul AHE (alice_enc_local (inord i.+1))
         (@enc AHE (ek (nat_to_party_id i.+2)) m
           (r2_relay (inord i))))) Finish }.
 { move=> i Hilow Hihigh.
@@ -1709,7 +1707,7 @@ split; first by [].
 (* H4: main step equation via eq_from_nth. *)
 simpl.
 rewrite /one_step_procs /ps_procs /send_st /drain_st.
-rewrite /local_send_procs_gen /send_procs_gen /drain_procs_gen.
+rewrite /send_procs_gen_local /send_procs_gen /drain_procs_gen.
 rewrite /unzip1 -2!map_comp.
 set sp_list := (Send (alice_send_dest j) _ _ :: _).
 have Hszsp : size sp_list = n_relay.+2.
@@ -1785,7 +1783,7 @@ move=> Hjn Hnr2.
 set j := sp_j sp.
 set bg := sp_bg sp.
 set rr := sp_rr_fw sp.
-set bgs := fun i => (smc_interpreter.step (local_send_procs_gen j bg) [::] i.+1).1.1.
+set bgs := fun i => (smc_interpreter.step (send_procs_gen_local j bg) [::] i.+1).1.1.
 have Hj_lt : (j < n_relay.+1)%N := ltn_ord _.
 have Hj2 : (j : nat) = 2%N by rewrite -/j Hjn.
 have Hj2eq : (sp_j sp == 2%N :> nat) by apply/eqP; exact Hjn.
@@ -1811,8 +1809,8 @@ have Hjm1_ne_n : (j.-1 != n_relay :> nat).
 have Hadt_jm1 : alice_send_dest j = j.-1.+1.
   rewrite Hadt. transitivity (j : nat); first by [].
   by rewrite (prednK Hjpos).
-have Hbgs_jm1 : bgs j.-1 = f0 (e_loc (local_alice_enc j)).
-  rewrite /bgs /local_send_procs_gen.
+have Hbgs_jm1 : bgs j.-1 = f0 (e_loc (alice_enc_local j)).
+  rewrite /bgs /send_procs_gen_local.
   apply: bg_recv0_fire_send Hjm1_lt Hjm1_ne Hbg_jm1 Hadt_jm1.
 have Hjm1_inord : ((inord j.-1 : 'I_n_relay.+1) : nat) = j.-1.
   apply inordK. by apply: leq_trans Hjm1_lt (leqnn _).
@@ -1821,7 +1819,7 @@ have Hjm1_ne0 : ((inord j.-1 : 'I_n_relay.+1) : nat) != 0%N
   by rewrite Hjm1_inord -lt0n.
 have Hjm1_ne_n_inord : ((inord j.-1 : 'I_n_relay.+1) : nat) != n_relay
   by rewrite Hjm1_inord.
-rewrite /local_relay_body /relay_body in Hbody0.
+rewrite /relay_body_local /relay_body in Hbody0.
 rewrite (negbTE Hjm1_ne0) (negbTE Hjm1_ne_n_inord) Hjm1_inord in Hbody0.
 case: Hbody0 => _ Hf0_eq.
 have Hjm1S : (j.-1).+1 = j by rewrite (prednK Hjpos).
@@ -1829,11 +1827,11 @@ have H0_lt : (0 < n_relay.+1)%N by [].
 have H0_ne_j : 0%N != (j : nat).
   apply/eqP => H. by rewrite -H in Hjpos.
 have Hbg_0 : bg 0 = Send 2
-    (e_loc (@enc AHE (ek (nat_to_party_id 2)) (local_chain_acc 0) rr)) Finish.
+    (e_loc (@enc AHE (ek (nat_to_party_id 2)) (chain_acc_local 0) rr)) Finish.
   by rewrite /bg /rr; exact: Hsp_snd2.
 have Hbgs_0 : bgs 0%N = Send 2
-    (e_loc (@enc AHE (ek (nat_to_party_id 2)) (local_chain_acc 0) rr)) Finish.
-  rewrite /bgs /local_send_procs_gen /send_procs_gen /smc_interpreter.step /=.
+    (e_loc (@enc AHE (ek (nat_to_party_id 2)) (chain_acc_local 0) rr)) Finish.
+  rewrite /bgs /send_procs_gen_local /send_procs_gen /smc_interpreter.step /=.
   rewrite nth_mkseq //.
   rewrite (negbTE H0_ne_j).
   rewrite Hbg_0 /=.
@@ -1858,7 +1856,7 @@ have Hras_n_sig : { f' | relay_after_send0 ek dk_relay v_relay r1_relay r2_relay
   rewrite /std_Recv_dec /Recv_param /=. by eexists.
 have [f_n Hras_n_eq] := Hras_n_sig.
 have Hbgs_n_recv : bgs n_relay = Recv n_relay f_n.
-  rewrite /bgs /local_send_procs_gen /send_procs_gen.
+  rewrite /bgs /send_procs_gen_local /send_procs_gen.
   rewrite /smc_interpreter.step.
   rewrite nth_cons_pos //.
   rewrite (nth_map 0%N); last by rewrite size_iota.
@@ -1885,7 +1883,7 @@ have Hsafe : forall v k, bgs n_relay <> Send 0 v k.
 have Hbgs_jm1_recv : { f_recv : data -> proc data |
   bgs j.-1 = Recv j.-1 f_recv /\
   forall m rr0, f_recv (e_loc (@enc AHE (ek (nat_to_party_id j)) m rr0)) =
-    Send j.+1 (e_loc (@Emul AHE (local_alice_enc j)
+    Send j.+1 (e_loc (@Emul AHE (alice_enc_local j)
       (@enc AHE (ek (nat_to_party_id j.+1)) m
         (r2_relay (inord j.-1))))) Finish }.
 { rewrite Hbgs_jm1 -Hf0_eq /=.
@@ -1908,7 +1906,7 @@ have Hdp_j_lt : (dp_j_ord.+1 < n_relay.+1)%N.
   by rewrite /dp_j_ord /= Hnr2.
 have Hdp_sender_eq : bgs dp_j_ord = Send dp_j_ord.+2
     (e_loc (@enc AHE (ek (nat_to_party_id dp_j_ord.+2))
-                 (local_chain_acc dp_j_ord) rr)) Finish.
+                 (chain_acc_local dp_j_ord) rr)) Finish.
 { rewrite /dp_j_ord /=. exact: Hbgs_0. }
 have Hdp_finish_eq : forall i : nat, (i < dp_j_ord)%N -> bgs i = Finish.
 { move=> i Hi. by rewrite /dp_j_ord /= ltn0 in Hi. }
@@ -1934,7 +1932,7 @@ have Hdp_last_sig : { f | bgs n_relay = Recv n_relay f /\
 have Hdp_between_sig : forall i : nat, (dp_j_ord < i)%N -> (i < n_relay)%N ->
   { f | bgs i = Recv i f /\
     forall m rr0, f (e_loc (@enc AHE (ek (nat_to_party_id i.+1)) m rr0)) =
-      Send i.+2 (e_loc (@Emul AHE (local_alice_enc (inord i.+1))
+      Send i.+2 (e_loc (@Emul AHE (alice_enc_local (inord i.+1))
         (@enc AHE (ek (nat_to_party_id i.+2)) m
           (r2_relay (inord i))))) Finish }.
 { move=> i Hilow Hihigh.
@@ -1960,7 +1958,7 @@ unshelve refine (exist _ (@MkDrainPhase AHE ek n_relay u r rand_a v_relay r1_rel
 split; first by [].
 simpl.
 rewrite /one_step_procs /ps_procs /send_st /drain_st.
-rewrite /local_send_procs_gen /send_procs_gen /drain_procs_gen.
+rewrite /send_procs_gen_local /send_procs_gen /drain_procs_gen.
 rewrite /unzip1 -2!map_comp.
 set sp_list := (Send (alice_send_dest j) _ _ :: _).
 have Hszsp : size sp_list = n_relay.+2.
@@ -2038,23 +2036,23 @@ have Hbg_l_at_jp1 : bg j.+1 = Recv j.+1 f_l.
 have Hek_eq : ek j.+2 = ek n_relay.+1.
   have : j.+2 = n_relay.+1 by rewrite Hjeq.
   by move=> ->.
-have Hca_eq : local_chain_acc n_relay.-1 = local_chain_acc j by rewrite Hjm.
-have Hcb : f_l (e_loc (enc (ek j.+2) (local_chain_acc j) rr)) =
-  Send 0 (e_loc (enc (ek alice_idx) (local_chain_acc n_relay.-1) (r2_relay (inord n_relay)))) Finish.
+have Hca_eq : chain_acc_local n_relay.-1 = chain_acc_local j by rewrite Hjm.
+have Hcb : f_l (e_loc (enc (ek j.+2) (chain_acc_local j) rr)) =
+  Send 0 (e_loc (enc (ek alice_idx) (chain_acc_local n_relay.-1) (r2_relay (inord n_relay)))) Finish.
   rewrite Hek_eq Hca_eq.
-  exact: (Hf_l (local_chain_acc j) rr).
+  exact: (Hf_l (chain_acc_local j) rr).
 have Hsig : { f : data -> proc data & { rr_next : rand AHE |
    bg j.+1 = Recv j.+1 f /\
-   f (e_loc (enc (ek j.+2) (local_chain_acc j) rr)) =
-   Send 0 (e_loc (enc (ek alice_idx) (local_chain_acc n_relay.-1) rr_next)) Finish }}.
+   f (e_loc (enc (ek j.+2) (chain_acc_local j) rr)) =
+   Send 0 (e_loc (enc (ek alice_idx) (chain_acc_local n_relay.-1) rr_next)) Finish }}.
   exists f_l, (r2_relay (inord n_relay)). by split.
 have [rr' Hstep_eq] := @step_ok_drain_tail_gen AHE ek n_relay dk relays Hrelays
   v0 u r rand_a v_relay j rr bg Hsafe Hjeq Hsig Hbg_finish.
 pose tp_bg' := fun i : nat => if i == n_relay then
-  Send 0 (e_loc (enc (ek alice_idx) (local_chain_acc n_relay.-1) rr')) Finish
+  Send 0 (e_loc (enc (ek alice_idx) (chain_acc_local n_relay.-1) rr')) Finish
   else @Finish data.
 have Htp_last : tp_bg' n_relay = Send 0
-  (e_loc (@enc AHE (ek alice_idx) (local_chain_acc n_relay.-1) rr')) Finish.
+  (e_loc (@enc AHE (ek alice_idx) (chain_acc_local n_relay.-1) rr')) Finish.
   by rewrite /tp_bg' eqxx.
 have Htp_finish : forall j0 : 'I_n_relay.+1, (j0 < n_relay)%N -> tp_bg' j0 = Finish.
   move=> j0 Hj0. rewrite /tp_bg'.
@@ -2142,11 +2140,11 @@ set j := rp_j rp; set bg := rp_bg rp.
 have Hj1 : (j == 1%N :> nat) by rewrite /j Hjeq.
 have [f_enc [Hbg0 Hf_enc_eq]] := (rp_j1_recv rp) Hj1.
 rewrite -/bg in Hbg0.
-set bg_s := fun i => (smc_interpreter.step (local_recv_procs_gen j bg) [::] i.+1).1.1.
+set bg_s := fun i => (smc_interpreter.step (recv_procs_gen_local j bg) [::] i.+1).1.1.
 have Hstep_rs : one_step_procs (ps_procs (recv_st j bg)) = ps_procs (send_st j bg_s)
   by exact: step_ok_recv_send_concrete.
 have Hbg_s_0 : bg_s 0%N = bg 0%N.
-{ rewrite /bg_s /local_recv_procs_gen /recv_procs_gen /smc_interpreter.step /=.
+{ rewrite /bg_s /recv_procs_gen_local /recv_procs_gen /smc_interpreter.step /=.
   rewrite nth_mkseq //.
   have -> : (0%N == j :> nat) = false by rewrite eq_sym (eqP Hj1).
   rewrite Hbg0 /=.
@@ -2156,27 +2154,27 @@ have Hbg_s_0 : bg_s 0%N = bg 0%N.
 }
 have Hinord_j : (inord 1 : 'I_n_relay.+1) = j.
 { apply: val_inj => /=. by rewrite inordK ?(eqP Hj1) // Hnr. }
-set sp_list := local_send_procs_gen j bg_s.
+set sp_list := send_procs_gen_local j bg_s.
 set bg_s2 := fun i => (smc_interpreter.step sp_list [::] i.+1).1.1.
 have Hadt : alice_send_dest j = 1.
 { rewrite /alice_send_dest /maxn (eqP Hj1). by []. }
 have [rr_a Halice_eq] := @alice_enc_value AHE ek n_relay u r rand_a v_relay r1_relay j.
 have Hbg_s2_0 : bg_s2 0%N = Send 2 (e_loc (enc (ek (nat_to_party_id 2))
-  (local_chain_acc 0) (rand_mul rr_a (r2_relay ord0)))) Finish.
-{ rewrite /bg_s2 /sp_list /local_send_procs_gen /send_procs_gen /smc_interpreter.step /=.
+  (chain_acc_local 0) (rand_mul rr_a (r2_relay ord0)))) Finish.
+{ rewrite /bg_s2 /sp_list /send_procs_gen_local /send_procs_gen /smc_interpreter.step /=.
   rewrite Hadt /=.
   rewrite (nth_map 0%N); last by rewrite size_iota.
   rewrite nth_iota //=.
   have -> : (0%N == j :> nat) = false by rewrite eq_sym (eqP Hj1).
   rewrite Hbg_s_0 Hbg0 /=.
   rewrite Hf_enc_eq Halice_eq.
-  rewrite /local_chain_acc /chain_acc.
+  rewrite /chain_acc_local /chain_acc.
   have Hek_eq : ek j.+1 = ek 2%N by congr ek; rewrite (eqP Hj1).
   rewrite Hek_eq !enc_curry_eq -(@Emul_addM AHE) /mr_bop /=.
   congr (Send _ _ Finish).
   congr (e_loc _).
   congr ((E[ _]) _).
-  rewrite /local_term GRing.addrC.
+  rewrite /term_local GRing.addrC.
   by rewrite Hinord_j.
 }
 (* Step A: Prepare witnesses for the drain_phase Record. *)
@@ -2190,7 +2188,7 @@ have Hras_n_sig : { f' | relay_after_send0 ek dk_relay v_relay r1_relay r2_relay
 have [f_n Hras_n_eq] := Hras_n_sig.
 (* Step B: bg_s 1 and bg_s2 1 both equal relay_after_send0 (inord 1). *)
 have Hbg_s_1 : bg_s 1%N = relay_after_send0 ek dk_relay v_relay r1_relay r2_relay (inord 1 : 'I_n_relay.+1).
-{ rewrite /bg_s /local_recv_procs_gen /recv_procs_gen /smc_interpreter.step /=.
+{ rewrite /bg_s /recv_procs_gen_local /recv_procs_gen /smc_interpreter.step /=.
   rewrite (nth_map 0%N); last by rewrite size_iota Hnr.
   rewrite nth_iota; last by rewrite Hnr.
   rewrite addn0 /=.
@@ -2204,7 +2202,7 @@ have Hbg_s_1 : bg_s 1%N = relay_after_send0 ek dk_relay v_relay r1_relay r2_rela
   by [].
 }
 have Hbg_s2_1 : bg_s2 1%N = relay_after_send0 ek dk_relay v_relay r1_relay r2_relay (inord 1 : 'I_n_relay.+1).
-{ rewrite /bg_s2 /sp_list /local_send_procs_gen /send_procs_gen /smc_interpreter.step /=.
+{ rewrite /bg_s2 /sp_list /send_procs_gen_local /send_procs_gen /smc_interpreter.step /=.
   rewrite Hadt /=.
   rewrite (nth_map 0%N); last by rewrite size_iota Hnr.
   rewrite nth_iota; last by rewrite Hnr.
@@ -2235,7 +2233,7 @@ have Hsafe : forall v k, bg_s2 n_relay <> Send 0 v k.
 { move=> v k. rewrite Hnr Hbg_s2_1_recv. by []. }
 have Hdp_sender_eq : bg_s2 dp_j_ord = Send dp_j_ord.+2
   (e_loc (@enc AHE (ek (nat_to_party_id dp_j_ord.+2))
-               (local_chain_acc dp_j_ord) (rand_mul rr_a (r2_relay ord0)))) Finish.
+               (chain_acc_local dp_j_ord) (rand_mul rr_a (r2_relay ord0)))) Finish.
 { rewrite /dp_j_ord /=. exact: Hbg_s2_0. }
 have Hdp_finish_eq : forall i : nat, (i < dp_j_ord)%N -> bg_s2 i = Finish.
 { move=> i Hi. by rewrite /dp_j_ord /= ltn0 in Hi. }
@@ -2263,7 +2261,7 @@ have Hdp_last_sig : { f | bg_s2 n_relay = Recv n_relay f /\
 have Hdp_between_sig : forall i : nat, (dp_j_ord < i)%N -> (i < n_relay)%N ->
   { f | bg_s2 i = Recv i f /\
     forall m rr0, f (e_loc (@enc AHE (ek (nat_to_party_id i.+1)) m rr0)) =
-      Send i.+2 (e_loc (@Emul AHE (local_alice_enc (inord i.+1))
+      Send i.+2 (e_loc (@Emul AHE (alice_enc_local (inord i.+1))
         (@enc AHE (ek (nat_to_party_id i.+2)) m
           (r2_relay (inord i))))) Finish }.
 { move=> i Hilow Hihigh.
@@ -2276,7 +2274,7 @@ have Hks2_drain := ks2_of_drain_phase dp.
 have Hstep_sd : one_step_procs (ps_procs (send_st j bg_s)) =
   ps_procs (drain_st (dp_j dp) (dp_rr_drain dp) (bg := dp_bg dp) (dp_safe dp)).
 { rewrite /one_step_procs /ps_procs /send_st /drain_st.
-  rewrite /local_send_procs_gen /send_procs_gen /drain_procs_gen.
+  rewrite /send_procs_gen_local /send_procs_gen /drain_procs_gen.
   rewrite /unzip1 -2!map_comp.
   set splist := (Send (alice_send_dest j) _ _ :: _).
   have Hszsp : size splist = n_relay.+2.
@@ -2314,8 +2312,8 @@ have Hstep_sd : one_step_procs (ps_procs (send_st j bg_s)) =
 }
 (* Step E: Hdest for send_has_progress_gen + final KS2_step chain. *)
 have Hdest : exists f, nth (@Finish (std_data AHE))
-    (local_send_procs_gen j bg_s) (alice_send_dest j) = Recv 0 f.
-{ rewrite Hadt /local_send_procs_gen /send_procs_gen /=.
+    (send_procs_gen_local j bg_s) (alice_send_dest j) = Recv 0 f.
+{ rewrite Hadt /send_procs_gen_local /send_procs_gen /=.
   rewrite nth_mkseq /=; last by rewrite Hnr.
   have -> : (0%N == j :> nat) = false by rewrite eq_sym (eqP Hj1).
   rewrite Hbg_s_0 Hbg0.
@@ -2352,7 +2350,7 @@ set j := rp_j rp; set bg := rp_bg rp.
     have Hsj_ord : sp_j sp = rp_j rp :> 'I_n_relay.+1 by exact: val_inj.
     (* Construct Hdest: bg_s' destination is Recv 0 (from sp_active) *)
     have Hdest : exists f, nth (@Finish (std_data AHE))
-        (local_send_procs_gen (rp_j rp) (sp_bg sp))
+        (send_procs_gen_local (rp_j rp) (sp_bg sp))
         (alice_send_dest (rp_j rp)) = Recv 0 f.
       have [[sv0 f0] [_ Hbg_jm1]] := sp_active sp.
       simpl in Hbg_jm1.
@@ -2361,7 +2359,7 @@ set j := rp_j rp; set bg := rp_bg rp.
       have Had : alice_send_dest (rp_j rp) = (rp_j rp : nat).
         rewrite /alice_send_dest /maxn. case: ltnP => H //.
         by apply: anti_leq; rewrite H Hjpos.
-      rewrite Had /local_send_procs_gen /send_procs_gen /=.
+      rewrite Had /send_procs_gen_local /send_procs_gen /=.
       rewrite nth_cons_pos //.
       rewrite nth_mkseq.
       2: { have := ltn_ord (rp_j rp). rewrite -ltnS prednK //.
@@ -2400,14 +2398,14 @@ set j := rp_j rp; set bg := rp_bg rp.
   have Hjn : (j < n_relay)%N.
     by rewrite -(ltn_add2r k.+1) Hjk addnS ltnS leq_addr.
   (* recv → send (unconditional) *)
-  set bg_s := fun i => (smc_interpreter.step (local_recv_procs_gen j bg) [::] i.+1).1.1.
-  have Hstep_rs : one_step_procs (local_recv_procs_gen j bg) =
-    local_send_procs_gen j bg_s by exact: step_ok_recv_send_concrete.
+  set bg_s := fun i => (smc_interpreter.step (recv_procs_gen_local j bg) [::] i.+1).1.1.
+  have Hstep_rs : one_step_procs (recv_procs_gen_local j bg) =
+    send_procs_gen_local j bg_s by exact: step_ok_recv_send_concrete.
   have Hstep_rs' : one_step_procs (ps_procs (recv_st j bg)) =
     ps_procs (send_st j bg_s) by exact Hstep_rs.
   (* send destination has Recv 0 *)
   have Hdest : exists f, nth (@Finish (std_data AHE))
-      (local_send_procs_gen j bg_s) (alice_send_dest j) = Recv 0 f.
+      (send_procs_gen_local j bg_s) (alice_send_dest j) = Recv 0 f.
     apply send_dest_recv0 => //.
     move=> Hj0.
     (* Case split on j = 1 vs j >= 2 *)
@@ -2426,7 +2424,7 @@ set j := rp_j rp; set bg := rp_bg rp.
       rewrite -/bg in Hf.
       exists (oapp f_enc Fail \o @std_from_enc AHE).
       have Hj1' : (j : nat) = 1%N by exact (eqP Hj1).
-      rewrite /bg_s /local_recv_procs_gen /recv_procs_gen /smc_interpreter.step /=.
+      rewrite /bg_s /recv_procs_gen_local /recv_procs_gen /smc_interpreter.step /=.
       rewrite nth_mkseq // Hj_ne /=.
       have -> : j.-1 = 0%N by rewrite Hj1'.
       rewrite Hf /=.
@@ -2434,16 +2432,16 @@ set j := rp_j rp; set bg := rp_bg rp.
     + (* j >= 2: use rp_behind *)
       have [sv0 [f [_ Hf]]] := (rp_behind rp) Hj2.
       rewrite -/bg -/j in Hf.
-      exists f. rewrite /bg_s /local_recv_procs_gen /recv_procs_gen /smc_interpreter.step /=.
+      exists f. rewrite /bg_s /recv_procs_gen_local /recv_procs_gen /smc_interpreter.step /=.
       rewrite nth_mkseq // Hj_ne Hf /=.
       by rewrite Haf.
   have Hprog_s : @has_progress (std_data AHE) (ps_procs (send_st j bg_s))
     by apply send_has_progress_gen.
-  have Hbg_next : bg_s j.+1 = local_relay_body (inord j.+1).
+  have Hbg_next : bg_s j.+1 = relay_body_local (inord j.+1).
     rewrite /bg_s. apply bg_relay_ahead_recv => //.
     exact: (rp_ahead rp (ltnSn j) Hjn).
   (* send → recv(j+1) *)
-  set bg' := fun i => (step (local_send_procs_gen j bg_s) [::] i.+1).1.1.
+  set bg' := fun i => (step (send_procs_gen_local j bg_s) [::] i.+1).1.1.
   have Hstep_sr : one_step_procs (ps_procs (send_st j bg_s)) =
     ps_procs (recv_st (inord j.+1) bg') by apply step_ok_send_recv_explicit.
   have Hinord : (inord j.+1 : 'I_n_relay.+1) = j.+1 :> nat by rewrite inordK.
@@ -2470,8 +2468,8 @@ Qed.
 (* mk_recv_init: initial recv_phase at j=0 — all frontier fields vacuous *)
 Definition mk_recv_init : recv_phase.
 Proof.
-refine (@MkRecvPhase AHE ek n_relay dk_relay u r rand_a v_relay r1_relay r2_relay ord0 (r2_relay ord0) local_bg_init _ _ _ _ _ _ _).
-- move=> i Hi0 Hi. by rewrite /local_bg_init /bg_init.
+refine (@MkRecvPhase AHE ek n_relay dk_relay u r rand_a v_relay r1_relay r2_relay ord0 (r2_relay ord0) bg_init_local _ _ _ _ _ _ _).
+- move=> i Hi0 Hi. by rewrite /bg_init_local /bg_init.
 - by move=> /=.
 - by move=> i.
 - by [].
@@ -2481,7 +2479,7 @@ refine (@MkRecvPhase AHE ek n_relay dk_relay u r rand_a v_relay r1_relay r2_rela
 Defined.
 
 (* ks2_recv0: the initial recv state is in known_state2. *)
-Lemma ks2_recv0 : known_state2 (local_st_recv ord0).
+Lemma ks2_recv0 : known_state2 (st_recv_local ord0).
 Proof.
 exact (@recv_phase_to_known n_relay mk_recv_init (add0n _)).
 Qed.
@@ -2490,7 +2488,7 @@ Qed.
    its process list is that of st_ret *)
 Lemma known_state2_term_ret st :
   known_state2 st -> @all_terminated data (ps_procs st) ->
-  ps_procs st = ps_procs local_st_ret.
+  ps_procs st = ps_procs st_ret_local.
 Proof.
 move=> Hks2 Hat.
 case: Hks2 Hat.
