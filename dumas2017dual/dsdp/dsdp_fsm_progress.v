@@ -92,6 +92,44 @@ Let procs_tup : n_parties.-tuple (proc data) :=
   @Tuple _ _ procs (introT eqP Hsize).
 
 (* ========================================================================== *)
+(* Section-closed aliases mirroring dsdp_fsm.v Section dsdp_fsm_chain.         *)
+(* Required for the Record-based progress proofs migrated from dsdp_fsm.v.    *)
+(* ========================================================================== *)
+
+Let local_st_ret := @st_ret AHE n_relay v0 u r v_relay.
+Let local_st_tail := fun rr =>
+  @st_tail AHE ek n_relay dk relays Hrelays v0 u r rand_a v_relay rr.
+Let local_st_drain_gen := fun j rr bg Hbg =>
+  @st_drain_gen AHE ek n_relay dk relays Hrelays v0 u r rand_a v_relay
+    j rr bg Hbg.
+Let local_st_recv := st_recv_local.  (* alias to match dsdp_fsm_chain naming *)
+
+Local Notation recv_st :=
+  (st_recv_gen ek dk dk_relay Hrelays Hrelays_id
+     v0 u r rand_a v_relay r1_relay r2_relay).
+Local Notation send_st :=
+  (@st_send_gen AHE ek n_relay dk dk_relay relays
+     v0 u r rand_a v_relay r1_relay r2_relay).
+Local Notation drain_st :=
+  (@st_drain_gen AHE ek n_relay dk relays Hrelays
+     v0 u r rand_a v_relay).
+Local Notation tail_st :=
+  (@st_tail AHE ek n_relay dk relays Hrelays
+     v0 u r rand_a v_relay).
+
+Let local_recv_procs_gen := @recv_procs_gen AHE ek n_relay dk dk_relay relays
+    v0 u r rand_a v_relay r1_relay r2_relay.
+Let local_send_procs_gen := @send_procs_gen AHE ek n_relay dk dk_relay relays
+    v0 u r rand_a v_relay r1_relay r2_relay.
+Let local_relay_body := @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
+Let local_bg_init := @bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
+Let local_chain_acc := @chain_acc AHE n_relay u r v_relay.
+Let local_alice_enc := @alice_enc AHE ek n_relay u r rand_a v_relay r1_relay.
+Let local_term := @term AHE n_relay u r v_relay.
+
+Let e_loc := @di_e _ DI.  (* cipher -> std_data wrapper *)
+
+(* ========================================================================== *)
 (* Bridge: osp = tval of res_procs (for rsteps composition)                   *)
 (* ========================================================================== *)
 
