@@ -152,9 +152,41 @@ Qed.
 Lemma known_state2_recv0 :
   known_state2 v0 u r v_relay (st_recv_local ord0).
 Proof.
-exact: (@ks2_recv0 AHE ek n_relay Hn_relay dk dk_relay relays Hrelays
-  Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay dec_total
-  key_alice key_relay).
+exact: ks2_recv0.
+Qed.
+
+Lemma known_state2_to_known st :
+  known_state2 v0 u r v_relay st -> known_state n_relay st.
+Proof.
+move=> Hks; elim: Hks.
+- apply: KS_step.
+  + exact: KS_done.
+  + exact: step_ok_ret_done.
+  + exact: ret_has_progress.
+- move=> st0 st' _ IH Hstep Hprog _.
+  exact: (KS_step IH Hstep Hprog).
+Qed.
+
+Lemma known_state2_has_progress st :
+  known_state2 v0 u r v_relay st -> ~~ @all_terminated data (ps_procs st) ->
+  @has_progress data (ps_procs st).
+Proof.
+move=> Hks Hnt; case: Hks Hnt.
+- rewrite /= /ret_procs /all_terminated /=.
+  by rewrite all_nseq /= orbT.
+- by move=> st0 st' _ _ Hprog _ _.
+Qed.
+
+Lemma known_state2_step st :
+  known_state2 v0 u r v_relay st -> ~~ @all_terminated data (ps_procs st) ->
+  exists st', known_state2 v0 u r v_relay st' /\
+              one_step_procs (ps_procs st) = ps_procs st'.
+Proof.
+move=> Hks Hnt; case: Hks Hnt.
+- rewrite /= /ret_procs /all_terminated /=.
+  by rewrite all_nseq /= orbT.
+- move=> st0 st' Hks' Hstep _ _ _.
+  exists st'; split => //.
 Qed.
 
 Lemma known_state_recv0 :
@@ -347,8 +379,8 @@ case: (boolP (@all_terminated data (tval ps'))) => Hnt'.
   (* known_state2 has no KS2_done — only KS2_ret and KS2_step.
      KS2_step requires ~~ all_terminated, contradiction.
      So st' must be KS2_ret, giving nth 0 = Ret concrete_val. *)
-  rewrite Hps'_st'.
-  exact: (known_state2_term_ret Hks' Hterm_st').
+  rewrite Hps'_st' (known_state2_term_ret Hks' Hterm_st') /=.
+  by [].
 - (* ps' is NOT all_terminated — continue by IH *)
   have Hnt2 : ~~ @all_terminated data (ps_procs st) by rewrite -Heq.
   have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt2.
