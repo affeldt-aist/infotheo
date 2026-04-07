@@ -2262,41 +2262,43 @@ Let local_send_procs_gen := @send_procs_gen AHE ek n_relay dk dk_relay relays
     v0 u r rand_a v_relay r1_relay r2_relay.
 Let local_relay_body := @relay_body AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
 Let local_bg_init := @bg_init AHE ek n_relay dk_relay v_relay r1_relay r2_relay.
-Let local_chain_acc := @chain_acc AHE u r v_relay.
-Let local_alice_enc := @alice_enc AHE ek u r rand_a v_relay r1_relay.
-Let local_term := @term AHE u r v_relay.
+Let local_chain_acc := @chain_acc AHE n_relay u r v_relay.
+Let local_alice_enc := @alice_enc AHE ek n_relay u r rand_a v_relay r1_relay.
+Let local_term := @term AHE n_relay u r v_relay.
 
 (* bg_frontier_inv j bg rr_fw: enriched invariant tracking exact cipher values
    at processed relay positions. Adapted from dsdp_progress.v's Inv_AR A7-A9.
    Index convention: bg[k] = ps[k+1] where ps is the process list. *)
+Let e_loc := @di_e _ DI.  (* cipher -> std_data wrapper *)
+
 Definition bg_frontier_inv (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE))
     (rr_fw : rand AHE) : Prop :=
   (* F1: Finish zone: bg[0..j-4] — from Inv_AR A9 finish *)
   (forall i, (i.+1 < j.-2)%N -> bg i = Finish) /\
   (* F2: Frontier sender at bg[j-3] for j >= 3 — from A9 sender *)
   ((3 <= j)%N ->
-    bg (j - 3) = Send j.-1
-      (e_local (@enc AHE (ek (nat_to_party_id j.-1))
-                    (local_chain_acc (j - 3)) rr_fw)) Finish) /\
+    bg ((j : nat) - 3)%N = Send j.-1
+      (e_loc (@enc AHE (ek (nat_to_party_id j.-1))
+                   (local_chain_acc ((j : nat) - 3)%N) rr_fw)) Finish) /\
   (* F2b: j=2 special case at bg[0] — from A8 *)
   ((j == 2%N :> nat) ->
     bg 0 = Send 2
-      (e_local (@enc AHE (ek (nat_to_party_id 2))
-                    (local_chain_acc 0) rr_fw)) Finish) /\
+      (e_loc (@enc AHE (ek (nat_to_party_id 2))
+                   (local_chain_acc 0) rr_fw)) Finish) /\
   (* F3: Frontier receiver at bg[j-2] for j >= 3 — from A9 receiver *)
   ((3 <= j)%N ->
-    exists f_recv, bg (j - 2) = Recv j.-2 f_recv /\
+    exists f_recv, bg ((j : nat) - 2)%N = Recv j.-2 f_recv /\
     forall m rr,
-      f_recv (e_local (@enc AHE (ek (nat_to_party_id j.-1)) m rr)) =
-      Send j (e_local (@Emul AHE (local_alice_enc (inord j.-1))
-        (@enc AHE (ek (nat_to_party_id j)) m (r2_relay (inord (j - 2))))))
+      f_recv (e_loc (@enc AHE (ek (nat_to_party_id j.-1)) m rr)) =
+      Send j (e_loc (@Emul AHE (local_alice_enc (inord j.-1))
+        (@enc AHE (ek (nat_to_party_id j)) m (r2_relay (inord ((j : nat) - 2)%N)))))
       Finish) /\
   (* F3b: j=1 special case — from H6 *)
   ((j == 1%N :> nat) ->
     exists f_enc, bg 0 = Recv 0 (oapp f_enc Fail \o @std_from_enc AHE) /\
     forall c, f_enc c = Send 2
-      (e_local (@Emul AHE c (@enc AHE (ek (nat_to_party_id 2))
-                                  (local_term ord0) (r2_relay ord0)))) Finish).
+      (e_loc (@Emul AHE c (@enc AHE (ek (nat_to_party_id 2))
+                                 (local_term ord0) (r2_relay ord0)))) Finish).
 
 (* bg_safe_form i p: process p at relay position i has a "safe" form
    that doesn't interfere with active communication and will eventually
