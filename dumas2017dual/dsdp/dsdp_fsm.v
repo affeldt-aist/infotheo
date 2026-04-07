@@ -179,7 +179,7 @@ Local Lemma enc_curry_eq (kk : pub_key AHE) (m : plain AHE) (rr : rand AHE) :
 Proof. by []. Qed.
 
 Lemma alice_enc_value (j : 'I_n_relay.+1) :
-  exists rr, alice_enc j = enc (ek (nat_to_party_id j.+1)) (term j) rr.
+  { rr | alice_enc j = enc (ek (nat_to_party_id j.+1)) (term j) rr }.
 Proof.
 rewrite /alice_enc /term !enc_curry_eq.
 rewrite -(@Epow_scalarM AHE) -(@Emul_addM AHE) GRing.mulrC.
@@ -2675,7 +2675,39 @@ Lemma mk_next_sender2 (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   { rr_fw' : rand AHE | bg'_of rp 0 = Send 2
     (e_loc (@enc AHE (ek (nat_to_party_id 2))
                  (local_chain_acc 0) rr_fw')) Finish }.
-Proof. admit. Admitted.
+Proof.
+move=> Hj1.
+have Hjz : (rp_j rp : nat) = 1%N.
+  apply succn_inj.
+  by rewrite -(eqP Hj1) /next_j inordK //; exact (ltn_trans Hjn (ltnSn _)).
+have [rr_a Halice] := @alice_enc_value AHE ek n_relay u r rand_a v_relay r1_relay (rp_j rp).
+exists (rand_mul rr_a (r2_relay ord0)).
+have Hj_eq : (rp_j rp == 1%N :> nat) by rewrite Hjz.
+have [f_enc [Hbg0 Hf_enc_eq]] := @rp_j1_recv rp Hj_eq.
+rewrite /bg'_of /=. set bgs := bg_s_of rp.
+have Hbgs0 : bgs 0 = rp_bg rp 0.
+  rewrite /bgs /bg_s_of /local_recv_procs_gen /recv_procs_gen /step /=.
+  rewrite nth_mkseq; last by [].
+  have -> : (0 == rp_j rp :> nat) = false by rewrite eq_sym Hjz.
+  rewrite Hbg0 /=.
+  have Halice_recv := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+    Hrelays_id v0 u r rand_a (rp_j rp) (ltn_ord _).
+  have [f_alice Halice_eq] := Halice_recv.
+  by rewrite Halice_eq /=.
+rewrite /local_send_procs_gen /send_procs_gen /step /=.
+rewrite nth_mkseq; last by [].
+have -> : (0 == rp_j rp :> nat) = false by rewrite eq_sym Hjz.
+rewrite Hbgs0 Hbg0 /=.
+have -> : alice_send_dest (rp_j rp) = 1 by rewrite /alice_send_dest /maxn Hjz.
+rewrite eqxx /=.
+rewrite Hf_enc_eq Halice.
+have H2 : (rp_j rp).+1 = 2%N by rewrite Hjz.
+rewrite H2 !enc_curry_eq -(@Emul_addM AHE).
+rewrite /mr_bop /=.
+have Hjeqi : rp_j rp = (inord 1 : 'I_n_relay.+1).
+  apply val_inj => /=. by rewrite Hjz inordK.
+by rewrite /local_term Hjeqi GRing.addrC.
+Qed.
 
 (* H6: rp_receiver — frontier receiver at (j+1)-2 *)
 Lemma mk_next_receiver (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
