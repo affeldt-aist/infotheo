@@ -404,11 +404,11 @@ Definition drain_procs_gen (j : 'I_n_relay.+1) (rr_drain : rand AHE)
 Definition bg_init : nat -> proc data :=
   fun i => relay_body (inord i).
 
-(* recv_procs and send_procs_0 are specializations of the parametric versions *)
+(* recv_procs and send_procs_at_j0 are specializations of the parametric versions *)
 Definition recv_procs (j : 'I_n_relay.+1) : seq (proc data) :=
   recv_procs_gen j bg_init.
 
-Definition send_procs_0 : seq (proc data) :=
+Definition send_procs_at_j0 : seq (proc data) :=
   send_procs_gen ord0 bg_init.
 
 (* For backward compatibility, keep send_procs_general as a Definition
@@ -492,8 +492,8 @@ rewrite /send_procs_gen /step /=.
 set X := nth _ _ _. by case: X => //= n0 f; case: ifP.
 Qed.
 
-Lemma frag_ok_send_0 :
-  (smc_interpreter.step send_procs_0 [::] 0).1.2 = [::].
+Lemma frag_ok_send_at_j0 :
+  (smc_interpreter.step send_procs_at_j0 [::] 0).1.2 = [::].
 Proof. exact: frag_ok_send_gen. Qed.
 
 (* Alice's drain fragment is [::] because Alice is Recv(n_relay.+1) and the
@@ -540,7 +540,7 @@ Definition st_recv (j : 'I_n_relay.+1) : phase_state :=
 Definition st_send_gen (j : 'I_n_relay.+1) (bg : nat -> proc data) : phase_state :=
   PhaseState (frag_ok_send_gen j bg).
 
-Definition st_send_0 : phase_state :=
+Definition st_send_at_j0 : phase_state :=
   st_send_gen ord0 bg_init.
 
 Definition st_drain_gen (j : 'I_n_relay.+1) (rr_drain : rand AHE)
@@ -635,8 +635,8 @@ by rewrite Hnop_step.
 Qed.
 
 (* Special case: recv(0) → send_0 is the parametric lemma with bg_init *)
-Lemma step_ok_recv_send0 :
-  one_step_procs (ps_procs (st_recv ord0)) = ps_procs st_send_0.
+Lemma step_ok_recv_send_at_j0 :
+  one_step_procs (ps_procs (st_recv ord0)) = ps_procs st_send_at_j0.
 Proof.
 apply step_ok_recv_send_gen.
 move=> i Hi Hneq.
@@ -818,10 +818,10 @@ by [].
 Qed.
 
 (* send_0 → recv(1): special case with bg_init *)
-Lemma step_ok_send0_recv1 :
+Lemma step_ok_send_j0_to_recv_j1 :
   (0 < n_relay)%N ->
   exists bg',
-    one_step_procs (ps_procs st_send_0) =
+    one_step_procs (ps_procs st_send_at_j0) =
     ps_procs (st_recv_gen (inord 1) bg').
 Proof.
 move=> Hn1.
@@ -1263,8 +1263,8 @@ Lemma recv_has_progress (j : 'I_n_relay.+1) :
 Proof. exact: recv_has_progress_gen. Qed.
 
 (* send_0: Alice (Send 1) and relay 0 (Recv 0) form a matching pair *)
-Lemma send_0_has_progress :
-  has_progress data (ps_procs st_send_0).
+Lemma send_at_j0_has_progress :
+  has_progress data (ps_procs st_send_at_j0).
 Proof.
 rewrite /has_progress /= /send_procs_gen size_map size_iota.
 set sp := Send 1 _ _ :: _.
@@ -1591,7 +1591,7 @@ by [].
 Qed.
 
 (* After 2 init steps, state matches st_recv ord0 *)
-Lemma init_matches_recv0 :
+Lemma init_matches_recv_at_j0 :
   one_step_procs (one_step_procs procs) = ps_procs (st_recv ord0).
 Proof.
 rewrite /= /st_recv /st_recv_gen /=.
@@ -1673,7 +1673,7 @@ Qed.
 Lemma init_not_terminated :
   ~~ @all_terminated data (one_step_procs (one_step_procs procs)).
 Proof.
-rewrite init_matches_recv0 /= /all_terminated /recv_procs_gen /=.
+rewrite init_matches_recv_at_j0 /= /all_terminated /recv_procs_gen /=.
 have Hord0 := ltn_ord (@ord0 n_relay).
 have [f ->] := alice_body_at_recv Hord0.
 by [].

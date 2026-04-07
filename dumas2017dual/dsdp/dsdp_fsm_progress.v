@@ -218,7 +218,7 @@ Qed.
 
 (* ========================================================================== *)
 (* Init bridge: 2 init steps → st_recv(0), trace = [d v0; priv_key dk]       *)
-(* Uses only dsdp_fsm.v lemmas (init_matches_recv0, initial_has_progress)     *)
+(* Uses only dsdp_fsm.v lemmas (init_matches_recv_at_j0, initial_has_progress)     *)
 (* ========================================================================== *)
 
 Lemma alice_step1_trace_local :
@@ -776,7 +776,7 @@ rewrite !inordK //.
 Qed.
 
 (* H5: rp_sender_at_j2 — j+1=2 special case. New randomness from alice/r2 mix. *)
-Lemma mk_next_sender2 (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
+Lemma mk_next_sender_at_j2 (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   (next_j Hjn == 2%N :> nat) ->
   { rr_fw' : rand AHE | bg'_of rp 0 = Send 2
     (e_loc (@enc AHE (ek (nat_to_party_id 2))
@@ -892,7 +892,7 @@ eexists. split.
 Qed.
 
 (* H7: rp_recv_at_j1 — j+1=1 special case *)
-Lemma mk_next_j1_recv (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
+Lemma mk_next_recv_at_j1 (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   (next_j Hjn == 1%N :> nat) ->
   exists f_enc, bg'_of rp 0 = Recv 0 (oapp f_enc Fail \o @std_from_enc AHE) /\
   forall c, f_enc c = Send 2
@@ -937,8 +937,8 @@ Lemma mk_recv_next_exists (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
 Proof.
 (* Case-split on next_j to choose the right rr_fw' *)
 case: (boolP ((next_j Hjn : nat) == 2%N)) => [Hnj2 | Hnne].
-  (* next_j = 2: use mk_next_sender2 *)
-  have [rr_fw' Hrr] := @mk_next_sender2 rp Hjn Hnj2.
+  (* next_j = 2: use mk_next_sender_at_j2 *)
+  have [rr_fw' Hrr] := @mk_next_sender_at_j2 rp Hjn Hnj2.
   refine (ex_intro _ (@MkRecvPhase AHE ek n_relay dk_relay u r rand_a v_relay r1_relay r2_relay (next_j Hjn) rr_fw' (bg'_of rp)
     _ _ _ _ _ _ _) (conj erefl erefl)).
   - move=> i Hij Hi.
@@ -949,7 +949,7 @@ case: (boolP ((next_j Hjn : nat) == 2%N)) => [Hnj2 | Hnne].
   - move=> Hj3. by rewrite (eqP Hnj2) in Hj3.
   - move=> _. exact Hrr.
   - exact (@mk_next_receiver rp Hjn).
-  - exact (@mk_next_j1_recv rp Hjn).
+  - exact (@mk_next_recv_at_j1 rp Hjn).
 case: (boolP ((3 <= next_j Hjn)%N)) => [Hj3 | Hlt].
   (* next_j >= 3: use mk_next_sender *)
   have [rr_fw' Hrr] := @mk_next_sender rp Hjn Hj3.
@@ -963,7 +963,7 @@ case: (boolP ((3 <= next_j Hjn)%N)) => [Hj3 | Hlt].
   - move=> _. exact Hrr.
   - move=> /eqP H. by rewrite H in Hnne.
   - exact (@mk_next_receiver rp Hjn).
-  - exact (@mk_next_j1_recv rp Hjn).
+  - exact (@mk_next_recv_at_j1 rp Hjn).
 (* next_j = 1 (or 0, but 0 impossible since next_j > 0): use placeholder *)
 refine (ex_intro _ (@MkRecvPhase AHE ek n_relay dk_relay u r rand_a v_relay r1_relay r2_relay (next_j Hjn) (rp_rand_fwd rp) (bg'_of rp)
   _ _ _ _ _ _ _) (conj erefl erefl)).
@@ -975,7 +975,7 @@ refine (ex_intro _ (@MkRecvPhase AHE ek n_relay dk_relay u r rand_a v_relay r1_r
 - move=> Hj3. by rewrite Hj3 in Hlt.
 - move=> /eqP H. by rewrite H in Hnne.
 - exact (@mk_next_receiver rp Hjn).
-- exact (@mk_next_j1_recv rp Hjn).
+- exact (@mk_next_recv_at_j1 rp Hjn).
 Qed.
 
 (* L4: drain_phase_step — wraps step_ok_drain_drain_gen and rebuilds Record fields.
@@ -1454,7 +1454,7 @@ split; first by [].
 exact Hstep.
 Qed.
 
-(* L2: send_phase_to_drain_phase_last
+(* L2: send_phase_to_drain_when_j_eq_nrelay
    At j = n_relay (with n_relay >= 3), the send_phase advances to a drain_phase
    at index n_relay - 2.  The active firing pair is Alice (Send n_relay)
    and bg(n_relay - 1) (Recv 0 f0).  All other positions are NOPs:
@@ -1467,7 +1467,7 @@ Qed.
    - bg'(n_relay - 1) = f0 (e_loc (alice_enc n_relay)) which is the
      decryption Recv (n_relay - 1) producing Send (n_relay + 1) (Emul ...) Finish.
    - all other bg' positions match either bg or relay_after_send0(inord n_relay). *)
-Lemma send_phase_to_drain_phase_last (sp : send_phase) :
+Lemma send_phase_to_drain_when_j_eq_nrelay (sp : send_phase) :
   (sp_j sp : nat) = n_relay ->
   (3 <= n_relay)%N ->
   { dp : drain_phase |
@@ -1764,14 +1764,14 @@ case: k Hk => [|k] Hk.
     * by [].
 Qed.
 
-(* L3: send_phase_to_drain_phase_n2
+(* L3: send_phase_to_drain_when_nrelay_eq_2
    At j = 2 with n_relay = 2, the send_phase advances to a drain_phase
    at index 0. The active firing pair is Alice (Send 2) and bg(1) (Recv 0 f0).
    - bg(0) = Send 2 ... Finish (sp_sender_at_j2 frontier sender, NOP because target
      bg(2) = Recv 2 ..., not a Recv 0).
    - bg(2) is replaced by relay_after_send0(inord 2), a Recv 2 NOP.
    The Finish zone is vacuous (i < 0). *)
-Lemma send_phase_to_drain_phase_n2 (sp : send_phase) :
+Lemma send_phase_to_drain_when_nrelay_eq_2 (sp : send_phase) :
   (sp_j sp : nat) = 2 ->
   n_relay = 2 ->
   { dp : drain_phase |
@@ -2129,8 +2129,8 @@ Qed.
 
    The algebraic core (Hbg_s2_0) is the hardest part and IS proven below; the
    remainder is mechanical position-by-position case work analogous to L3
-   (send_phase_to_drain_phase_n2) but at j=1 instead of j=2. *)
-Lemma tail_phase_from_recv_phase_n1 (rp : recv_phase) :
+   (send_phase_to_drain_when_nrelay_eq_2) but at j=1 instead of j=2. *)
+Lemma tail_phase_from_recv_when_nrelay_eq_1 (rp : recv_phase) :
   n_relay = 1 ->
   (rp_j rp : nat) = 1 ->
   known_ret_state (recv_st (rp_j rp) (rp_relay_bg rp)).
@@ -2341,7 +2341,7 @@ set j := rp_j rp; set bg := rp_relay_bg rp.
   + (* n_relay = 1 *)
     have Hnr1 : n_relay = 1 by apply/eqP; rewrite eqn_leq Hn_relay andbT -ltnS.
     rewrite /j /bg.
-    apply: tail_phase_from_recv_phase_n1 => //.
+    apply: tail_phase_from_recv_when_nrelay_eq_1 => //.
     by rewrite Hjeq Hnr1.
   + (* n_relay >= 2 *)
     have Hj2 : (2 <= rp_j rp)%N by rewrite Hjeq.
@@ -2368,9 +2368,9 @@ set j := rp_j rp; set bg := rp_relay_bg rp.
         by apply/negP; rewrite ltn_eqF // ltn_predL.
       by exists f0.
     case: (leqP 3 n_relay) => Hnr3.
-    * (* n_relay >= 3: use L2 (send_phase_to_drain_phase_last) *)
+    * (* n_relay >= 3: use L2 (send_phase_to_drain_when_j_eq_nrelay) *)
       have [dp [_ Hstep2]] :=
-        send_phase_to_drain_phase_last (sp:=sp) Hsj_eq Hnr3.
+        send_phase_to_drain_when_j_eq_nrelay (sp:=sp) Hsj_eq Hnr3.
       rewrite Hsj_ord in Hstep2.
       have Hks2_drain := known_ret_of_drain_phase dp.
       rewrite /j /bg.
@@ -2380,11 +2380,11 @@ set j := rp_j rp; set bg := rp_relay_bg rp.
                    (send_not_terminated_gen _ _)).
       -- by apply: recv_has_progress_gen.
       -- by apply: recv_not_terminated_gen.
-    * (* n_relay = 2: use L3 (send_phase_to_drain_phase_n2) *)
+    * (* n_relay = 2: use L3 (send_phase_to_drain_when_nrelay_eq_2) *)
       have Hnr_eq2 : n_relay = 2 by apply: anti_leq; rewrite Hnr2 -ltnS Hnr3.
       have Hsj2 : (sp_j sp : nat) = 2 by rewrite Hsj_eq Hnr_eq2.
       have [dp [_ Hstep2]] :=
-        send_phase_to_drain_phase_n2 (sp:=sp) Hsj2 Hnr_eq2.
+        send_phase_to_drain_when_nrelay_eq_2 (sp:=sp) Hsj2 Hnr_eq2.
       rewrite Hsj_ord in Hstep2.
       have Hks2_drain := known_ret_of_drain_phase dp.
       rewrite /j /bg.
@@ -2571,7 +2571,7 @@ have Hps1_eq : tval ps1 = osp procs.
 have Hps2_eq : tval ps2 = osp (osp procs).
   rewrite /ps2 /res2 -(one_step_eq_res_procs_local ps1) Hps1_eq //.
 have Hps2_match : tval ps2 = ps_procs (st_recv_local ord0).
-  rewrite Hps2_eq /osp init_matches_recv0 //.
+  rewrite Hps2_eq /osp init_matches_recv_at_j0 //.
 set tr12 := [tuple (tnth tr2 i ++ tnth tr1 i) | i < n_parties].
 have Hrsteps12 : rsteps procs_tup ps2 tr12.
   exact: (rtrans Hss1' Hss2' erefl).
@@ -2763,7 +2763,7 @@ have [ps_init [tr_init [Hrs_init [Htr_init [Hps_match [Hks_init Hnt_init]]]]]] :
   init_to_recv0.
 have [h' Hterm'] := init_fuel_transfer Hfuel.
 have Hterm_init : @all_terminated data (@interp_comp data (tval ps_init) h').
-  by rewrite Hps_match -init_matches_recv0 /osp.
+  by rewrite Hps_match -init_matches_recv_at_j0 /osp.
 have Hexists_tr : exists tr0, rsteps procs_tup ps_init tr0 /\
   tnth tr0 ord0 = [:: d v0; priv_key_local dk].
   exists tr_init; split; [exact Hrs_init | exact Htr_init].
