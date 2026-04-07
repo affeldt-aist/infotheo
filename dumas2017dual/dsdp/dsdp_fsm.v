@@ -2441,7 +2441,39 @@ Let next_j (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) : 'I_n_relay.+1 :=
 Lemma mk_next_behind (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   (0 < next_j Hjn)%N ->
   exists f, bg'_of rp (next_j Hjn).-1 = Recv 0 f.
-Proof. admit. Admitted.
+Proof.
+set j := rp_j rp.
+have Hinord : (next_j Hjn : nat) = j.+1 by rewrite /next_j inordK.
+rewrite Hinord => _.
+rewrite /bg'_of /bg_s_of /=.
+rewrite /send_procs_gen /step /=.
+rewrite nth_mkseq; last exact (ltn_ord j).
+rewrite eqxx.
+have -> : inord j = j :> 'I_n_relay.+1 by apply val_inj; rewrite /= inordK.
+have [f_ras Hras_eq] := @relay_after_send0_recv0 AHE ek n_relay dk_relay
+  v_relay r1_relay r2_relay j Hjn.
+rewrite Hras_eq /=.
+case: ifP => Hdst.
+- (* Fire case: j = 0, alice_send_dest 0 = 1 = j+1 *)
+  have Hjz : j = 0 :> nat.
+    rewrite /alice_send_dest in Hdst.
+    move/eqP: Hdst. rewrite /maxn.
+    case: ltnP => Hlt Heq.
+    + exfalso. have Habs : (j : nat) = (j : nat).+1.
+        change ((rp_j rp : nat) = j.+1). exact Heq.
+      by move: (neq_succn (esym Habs)).
+    + by move: Heq => /eqP; rewrite eqSS => /eqP.
+  rewrite /relay_after_send0 Hjz /= in Hras_eq.
+  rewrite /std_Recv_dec /Recv_param /= in Hras_eq.
+  move: Hras_eq => [Hf_eq].
+  rewrite -Hf_eq /= /std_from_enc /=.
+  have Hdec := dec_total (dk_relay j) (alice_enc ek u r rand_a v_relay r1_relay j).
+  case Hd: (dec (dk_relay j) (alice_enc ek u r rand_a v_relay r1_relay j)) => [m|].
+  + rewrite /std_Recv_enc /Recv_param /=. eexists; reflexivity.
+  + by move/eqP: Hdec; rewrite Hd.
+- (* NOP case: alice_send_dest j != j+1 *)
+  by exists f_ras.
+Qed.
 
 (* H3: rp_finish — finish zone preserved *)
 Lemma mk_next_finish (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
