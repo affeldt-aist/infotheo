@@ -2400,6 +2400,51 @@ elim: Hbsf => {p Hnth} [i0|i0|i0 v|i0 f Hf IH|i0 f Hf IH].
   case: ifP => Hdst'; [exact: Hf | by apply BSF_recv_i => v'; exact: Hf].
 Qed.
 
+(* bg_s_of rp: bg after recv step (relay j fires with Alice) *)
+Definition bg_s_of (rp : recv_phase) : nat -> proc (std_data AHE) :=
+  fun i => (smc_interpreter.step (local_recv_procs_gen (rp_j rp) (rp_bg rp))
+              [::] i.+1).1.1.
+
+(* bg'_of rp: bg after recv then send step *)
+Definition bg'_of (rp : recv_phase) : nat -> proc (std_data AHE) :=
+  fun i => (step (local_send_procs_gen (rp_j rp) (bg_s_of rp))
+              [::] i.+1).1.1.
+
+(* mk_recv_next_exists: construct recv_phase at j+1 from recv_phase at j.
+   Requires j < n_relay so there is a next relay to step into. *)
+Lemma mk_recv_next_exists (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
+  exists rp' : recv_phase,
+    rp_j rp' = inord (rp_j rp).+1 /\ rp_bg rp' = bg'_of rp.
+Proof.
+set j := rp_j rp; set bg := rp_bg rp.
+have Hinord : (inord j.+1 : 'I_n_relay.+1) = j.+1 :> nat by rewrite inordK.
+refine (ex_intro _ (@MkRecvPhase (inord j.+1) (rp_rr_fw rp) (bg'_of rp)
+  _ _ _ _ _ _ _) (conj erefl erefl)).
+- (* rp_ahead *)
+  move=> i Hij Hi.
+  rewrite Hinord in Hij.
+  have Hji : (j < i)%N by apply (ltn_trans (ltnSn j) Hij).
+  have Hbg_s_i : bg_s_of rp i = local_relay_body (inord i).
+    rewrite /bg_s_of /=. apply bg_relay_ahead_recv => //.
+    exact: (@rp_ahead rp _ Hji Hi).
+  rewrite /bg'_of /=.
+  transitivity (bg_s_of rp i); last exact Hbg_s_i.
+  apply (@bg_relay_ahead_send AHE ek n_relay dk dk_relay relays
+    v0 u r rand_a v_relay r1_relay r2_relay j (bg_s_of rp) i) => //.
+- (* rp_behind *)
+  admit.
+- (* rp_finish *)
+  admit.
+- (* rp_sender *)
+  admit.
+- (* rp_sender2 *)
+  admit.
+- (* rp_receiver *)
+  admit.
+- (* rp_j1_recv *)
+  admit.
+Admitted.
+
 (* recv_phase_to_known: if we have a recv_phase Record, its state is known_state2.
    Proof by induction on n_relay - rp_j, using Record field extraction. *)
 Lemma recv_phase_to_known (k : nat) (rp : recv_phase) :
@@ -2450,40 +2495,15 @@ set j := rp_j rp; set bg := rp_bg rp.
     exact (KS2_step Hks2s Hstep_rs' Hprog_r (recv_not_terminated_gen j bg)).
   suff Hks2_recv' : known_state2 (recv_st (inord j.+1) bg').
     exact (KS2_step Hks2_recv' Hstep_sr Hprog_s (send_not_terminated_gen j bg_s)).
-  (* Build next recv_phase Record and apply IH *)
-  have Hjk' : (j.+1 + k = n_relay)%N.
+  (* Apply IH to next recv_phase via mk_recv_next_exists *)
+  have [rp' [Hrpj Hrpbg]] := mk_recv_next_exists Hjn.
+  have Hjk' : (rp_j rp' + k = n_relay)%N.
+    rewrite Hrpj inordK //.
     by rewrite addSn -addnS; exact Hjk.
-  have [rp' [Hrpj Hrpbg]] : exists rp' : recv_phase,
-    rp_j rp' = inord j.+1 /\ rp_bg rp' = bg'.
-    refine (ex_intro _ (@MkRecvPhase (inord j.+1) (rp_rr_fw rp) bg'
-      _ _ _ _ _ _ _) (conj erefl erefl)).
-    + (* rp_ahead: relays ahead of j+1 untouched by recv/send *)
-      move=> i Hij Hi.
-      rewrite Hinord in Hij.
-      have Hji : (j < i)%N by apply (ltn_trans (ltnSn j) Hij).
-      rewrite /bg'.
-      have Hbg_s_i : bg_s i = local_relay_body (inord i).
-        rewrite /bg_s. apply bg_relay_ahead_recv => //.
-        exact: (@rp_ahead rp _ Hji Hi).
-      transitivity (bg_s i); last exact Hbg_s_i.
-      apply (@bg_relay_ahead_send AHE ek n_relay dk dk_relay relays
-        v0 u r rand_a v_relay r1_relay r2_relay j bg_s i) => //.
-    + (* rp_behind: bg'(j+1-1) = bg'(j) = Recv 0 f *)
-      admit.
-    + (* rp_finish *)
-      admit.
-    + (* rp_sender *)
-      admit.
-    + (* rp_sender2 *)
-      admit.
-    + (* rp_receiver *)
-      admit.
-    + (* rp_j1_recv *)
-      admit.
-  have Hkey : (rp_j rp' + k)%N = n_relay.
-    by rewrite Hrpj Hinord.
-  have := IH rp' Hkey.
-  by rewrite Hrpj Hrpbg.
+  have Hks2' := IH rp' Hjk'.
+  rewrite Hrpj Hrpbg in Hks2'.
+  (* bg'_of rp and bg' are definitionally equal *)
+  by rewrite /bg'_of /bg_s_of /= -/bg -/j /bg_s in Hks2'.
 Admitted.
 
 (* mk_recv_init: initial recv_phase at j=0 — all frontier fields vacuous *)
