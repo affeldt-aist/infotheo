@@ -2417,11 +2417,14 @@ set j := rp_j rp; set bg := rp_bg rp.
   set bg_s := fun i => (smc_interpreter.step (local_recv_procs_gen j bg) [::] i.+1).1.1.
   have Hstep_rs : one_step_procs (local_recv_procs_gen j bg) =
     local_send_procs_gen j bg_s by exact: step_ok_recv_send_concrete.
+  have Hstep_rs' : one_step_procs (ps_procs (recv_st j bg)) =
+    ps_procs (send_st j bg_s) by exact Hstep_rs.
   (* send destination has Recv 0 *)
   have Hdest : exists f, nth (@Finish (std_data AHE))
       (local_send_procs_gen j bg_s) (alice_send_dest j) = Recv 0 f.
     apply send_dest_recv0 => //.
-    move=> Hj0. have [f Hf] := rp_behind rp Hj0.
+    move=> Hj0. have [f Hf] := @rp_behind rp Hj0.
+    rewrite -/bg -/j in Hf.
     exists f. rewrite /bg_s /local_recv_procs_gen /recv_procs_gen /smc_interpreter.step /=.
     rewrite nth_mkseq; last by apply (leq_ltn_trans (leq_pred j) (ltn_ord j)).
     have -> : (j.-1 == j :> nat) = false
@@ -2432,26 +2435,37 @@ set j := rp_j rp; set bg := rp_bg rp.
     by rewrite Haf.
   have Hprog_s : @has_progress (std_data AHE) (ps_procs (send_st j bg_s))
     by apply send_has_progress_gen.
-  have Hbg_next : bg_s j.+1 = local_relay_body (inord j.+1)
-    by rewrite /bg_s; apply bg_relay_ahead_recv => //; exact: (rp_ahead rp) (ltnSn j) Hjn.
+  have Hbg_next : bg_s j.+1 = local_relay_body (inord j.+1).
+    rewrite /bg_s. apply bg_relay_ahead_recv => //.
+    exact: (@rp_ahead rp _ (ltnSn j) Hjn).
   (* send → recv(j+1) *)
   set bg' := fun i => (step (local_send_procs_gen j bg_s) [::] i.+1).1.1.
   have Hstep_sr : one_step_procs (ps_procs (send_st j bg_s)) =
     ps_procs (recv_st (inord j.+1) bg') by apply step_ok_send_recv_explicit.
   have Hinord : (inord j.+1 : 'I_n_relay.+1) = j.+1 :> nat by rewrite inordK.
   (* Chain: recv → send → recv' via KS2_step *)
-  refine (KS2_step _ (Hstep_rs : one_step_procs (ps_procs (recv_st j bg)) = _)
-    (recv_has_progress_gen j bg) (recv_not_terminated_gen j bg)).
-  refine (KS2_step _ Hstep_sr Hprog_s (send_not_terminated_gen j bg_s)).
+  have Hprog_r := @recv_has_progress_gen AHE ek n_relay dk dk_relay relays
+    Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j bg.
+  suff Hks2s : known_state2 (send_st j bg_s).
+    exact (KS2_step Hks2s Hstep_rs' Hprog_r (recv_not_terminated_gen j bg)).
+  suff Hks2_recv' : known_state2 (recv_st (inord j.+1) bg').
+    exact (KS2_step Hks2_recv' Hstep_sr Hprog_s (send_not_terminated_gen j bg_s)).
   (* Build next recv_phase Record and apply IH *)
-  (* TODO: construct rp' : recv_phase at j+1 with bg' and apply IH *)
-  admit.
+  have Hjk' : (j.+1 + k = n_relay)%N.
+    by rewrite addSn -addnS; exact Hjk.
+  have [rp' [Hrpj Hrpbg]] : exists rp' : recv_phase,
+    rp_j rp' = inord j.+1 /\ rp_bg rp' = bg'.
+    admit.
+  have Hkey : (rp_j rp' + k)%N = n_relay.
+    by rewrite Hrpj Hinord.
+  have := IH rp' Hkey.
+  by rewrite Hrpj Hrpbg.
 Admitted.
 
 (* mk_recv_init: initial recv_phase at j=0 — all frontier fields vacuous *)
 Definition mk_recv_init : recv_phase.
 Proof.
-refine (MkRecvPhase ord0 (r2_relay ord0) local_bg_init _ _ _ _ _ _ _).
+refine (@MkRecvPhase ord0 (r2_relay ord0) local_bg_init _ _ _ _ _ _ _).
 - move=> i Hi0 Hi. by rewrite /local_bg_init /bg_init.
 - by move=> /=.
 - by move=> i.
@@ -2464,7 +2478,7 @@ Defined.
 (* ks2_recv0: the initial recv state is in known_state2. *)
 Lemma ks2_recv0 : known_state2 (local_st_recv ord0).
 Proof.
-exact: (recv_phase_to_known (k := n_relay) mk_recv_init (add0n _)).
+exact (@recv_phase_to_known n_relay mk_recv_init (add0n _)).
 Qed.
 
 (* known_state2_term_ret: if a known_state2 is all-terminated,
