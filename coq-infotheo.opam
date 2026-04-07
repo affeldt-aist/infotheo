@@ -32,7 +32,7 @@ depends: [
   ( "rocq-hierarchy-builder" { = "1.9.1" } & "rocq-elpi" { < "3.0.0" }
   | "rocq-hierarchy-builder" { >= "1.10.0"} & "rocq-elpi" { >= "3.0.0"} )
   "coq-mathcomp-algebra-tactics" { >= "1.2.6" }
-  "rocq-interval" { >= "4.10.0"}
+  "coq-interval" { >= "4.10.0"}
 ]
 
 tags: [
