@@ -1020,7 +1020,16 @@ Lemma step_ok_drain_drain_gen (j : 'I_n_relay.+1) (rr : rand AHE)
   exists (rr' : rand AHE) (bg' : nat -> proc data)
          (Hsafe' : forall v k, bg' n_relay <> Send 0 v k),
     one_step_procs (ps_procs (@st_drain_gen j rr bg Hsafe)) =
-    ps_procs (@st_drain_gen (inord j.+1) rr' bg' Hsafe').
+    ps_procs (@st_drain_gen (inord j.+1) rr' bg' Hsafe') /\
+    (* Per-position equations exposing concrete bg' values for downstream
+       Record-based reconstruction (e.g., drain_phase_step). *)
+    bg' j = Finish /\
+    bg' j.+1 = Send j.+3
+      (e_local (enc_local (ek (nat_to_party_id j.+3))
+                           (chain_acc j.+1) rr'))
+      Finish /\
+    (forall i, (i < n_relay.+1)%N -> i != (j : nat) -> i != j.+1 ->
+       bg' i = bg i).
 Proof.
 move=> cipher_j Hjlt [f [rr_next [Hbg1 Hcallback]]] [f_next Hbg2] Hbg_safe_j Hnop.
 set dp := drain_procs_gen j rr bg.
@@ -1099,6 +1108,13 @@ have Hsafe_pf : forall v k, (step dp [::] n_relay.+1).1.1 <> Send 0 v k.
   - by rewrite eq_sym (negbTE Hjn).
   - by rewrite eq_sym (negbTE Hj1n).
 exists Hsafe_pf.
+split; last split; last split; last first.
+- (* Per-position NOP equation: forall i, ... -> bg' i = bg i *)
+  move=> i Hi Hneq Hneq2. exact: Hnop_step.
+- (* bg' (j+1) = Send (j+3) ... Finish (the new active forwarder) *)
+  rewrite /= -/dp Hstepj2 Hcallback. by [].
+- (* bg' j = Finish (the old sender, now consumed) *)
+  rewrite /= -/dp. exact Hstepj.
 (* Main goal: eq_from_nth *)
 rewrite /one_step_procs /ps_procs /st_drain_gen -/dp Hszdp
         /drain_procs_gen /unzip1 -2!map_comp.
@@ -3241,6 +3257,11 @@ Lemma drain_phase_step (dp : drain_phase) :
     ps_procs (drain_st (dp_j dp') (dp_rr_drain dp')
                        (bg := dp_bg dp') (@dp_safe dp')) }.
 Proof.
+(* PARTIAL PROGRESS — Hbg_act_hyp built (needs to be inlined here as a have). *)
+(* Remaining: build Hbg_next (next receiver), Hsafe_j (sender doesn't Send 0),
+   Hnop (NOP discharge for non-active positions), apply step_ok_drain_drain_gen
+   to get rr', bg', Hsafe', step_eq + the per-position equations Hbg'_j,
+   Hbg'_jp1, Hnop_eq, then build dp' Record using these per-position equations. *)
 Admitted.
 
 (* recv_phase_to_known: if we have a recv_phase Record, its state is known_state2.
