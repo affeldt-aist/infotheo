@@ -2841,7 +2841,7 @@ case: (boolP ((next_j Hjn : nat) == 2%N)) => [Hnj2 | Hnne].
   - exact (@mk_next_behind rp Hjn).
   - exact (@mk_next_finish rp Hjn).
   - move=> Hj3. by rewrite (eqP Hnj2) in Hj3.
-  - move=> Hnj2'. by move: Hrr; rewrite (eqP Hnj2).
+  - move=> _. exact Hrr.
   - exact (@mk_next_receiver rp Hjn).
   - exact (@mk_next_j1_recv rp Hjn).
 case: (boolP ((3 <= next_j Hjn)%N)) => [Hj3 | Hlt].
