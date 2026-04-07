@@ -3190,7 +3190,48 @@ Record tail_phase := MkTailPhase {
   tp_finish  : forall j : 'I_n_relay.+1, (j < n_relay)%N -> tp_bg j = Finish
 }.
 
-(* L4: drain_phase_step — wraps step_ok_drain_drain_gen and rebuilds Record fields *)
+(* L4: drain_phase_step — wraps step_ok_drain_drain_gen and rebuilds Record fields.
+   PROOF SKETCH (~150 lines):
+   1. Extract dp.(dp_sender), dp.(dp_finish), dp.(dp_last), dp.(dp_between).
+   2. Get the active receiver f_act from dp_between at i=(dp_j dp).+1.
+   3. Get the next receiver from dp_between at i=(dp_j dp).+2 (or dp_last if = n_relay).
+   4. Discharge the NOP hypothesis: positions in [0..n_relay] except dp_j and (dp_j).+1
+      are NOPs in the drain_procs_gen step. Sub-cases:
+      - i < dp_j: dp_bg i = Finish (from dp_finish) → trivially NOP.
+      - i = dp_j or i = (dp_j).+1: excluded by hypothesis.
+      - (dp_j).+1 < i < n_relay: dp_bg i = Recv i f (from dp_between) — Recv at frm=i
+        checks position i which is also a Recv (or Finish), not a Send → NOP.
+      - i = n_relay: dp_bg n_relay = Recv n_relay f_last (from dp_last) — same NOP reasoning.
+   5. Apply step_ok_drain_drain_gen with the discharged hypotheses to get rr', bg', Hsafe'
+      and Hstep_eq : one_step_procs ... = ps_procs (drain_st (inord (dp_j dp).+1) ...).
+   6. Build the new drain_phase' fields:
+      - dp_j' = inord (dp_j dp).+1
+      - dp_rr_drain' = rr'
+      - dp_bg' = bg'
+      - dp_safe' = Hsafe'
+      - dp_j_lt': follows from Hjlt
+      - dp_sender': bg' (dp_j' = (dp_j dp).+1) is computed from f_act fired with cipher_j;
+        by Emul_addM + chain_acc_shift, equals Send (dp_j' .+2) (chain_acc(dp_j')) rr'
+      - dp_finish': for i < (dp_j).+1, either i < dp_j (was Finish, NOP keeps Finish) or
+        i = dp_j (sender fired to Finish per step_ok_drain_drain_gen's Hstepj proof)
+      - dp_between': for (dp_j).+1 < i < n_relay, NOP keeps the Recv shape from old dp_between
+      - dp_last': position n_relay was NOP, so unchanged from old dp_last
+   7. Return the sig with Hstep_eq.
+
+   OBSTACLES discovered during attempts:
+   - Section-closed implicit args: every section-defined function (drain_procs_gen,
+     step_ok_drain_drain_gen, etc.) takes 11+ section vars after closure. Must use
+     @-form everywhere.
+   - Record projections under `Set Implicit Arguments`: dp_safe has implicit `d`, so
+     `dp_safe dp` parses as `dp_safe (d:=?) dp` putting dp in the wrong slot. Use
+     `@dp_safe dp` or the (d:=dp) named form.
+   - The `is_nop` discharge for the new lemma's NOP hypothesis requires unfolding the
+     drain_procs_gen at non-active positions and showing each Recv has frm pointing
+     to a non-Send. This is ~30-50 lines of manual case analysis.
+   - Reconstructing dp_sender' for the new phase requires knowing that
+     bg' (dp_j).+1 = f_act cipher_j, then applying Hf_act + Emul_addM + chain_acc_shift.
+     But step_ok_drain_drain_gen returns bg' as an OPAQUE (fun i => step ... i.+1).1.1,
+     not exposing the per-position values. Need additional reasoning to extract them. *)
 Lemma drain_phase_step (dp : drain_phase) :
   ((dp_j dp : nat).+1 < n_relay)%N ->
   { dp' : drain_phase |
