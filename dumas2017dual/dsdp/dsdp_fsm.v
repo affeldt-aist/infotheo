@@ -2757,7 +2757,34 @@ Lemma mk_next_j1_recv (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   forall c, f_enc c = Send 2
     (e_loc (@Emul AHE c (@enc AHE (ek (nat_to_party_id 2))
                                (local_term ord0) (r2_relay ord0)))) Finish.
-Proof. admit. Admitted.
+Proof.
+move=> Hj1.
+have Hjz : (rp_j rp : nat) = 0%N.
+  apply succn_inj.
+  by rewrite -(eqP Hj1) /next_j inordK //; exact (ltn_trans Hjn (ltnSn _)).
+have [f_ras Hras] := @relay_after_send0_recv0 AHE ek n_relay dk_relay v_relay
+  r1_relay r2_relay (rp_j rp) Hjn.
+rewrite /bg'_of /=. set bgs := bg_s_of rp.
+rewrite /local_send_procs_gen /send_procs_gen /step /=.
+rewrite nth_mkseq; last by [].
+rewrite Hjz eqxx /=.
+have Hinord_zero : (inord 0 : 'I_n_relay.+1) = rp_j rp.
+  apply val_inj => /=. by rewrite Hjz inordK.
+rewrite Hinord_zero Hras /=.
+move: Hras. rewrite /relay_after_send0 Hjz /=.
+rewrite /std_Recv_dec /Recv_param /=.
+case=> Hf_ras_eq.
+rewrite -Hf_ras_eq /=.
+have [rr_a Halice] := @alice_enc_value AHE ek n_relay u r rand_a v_relay
+  r1_relay (rp_j rp).
+rewrite Halice.
+have Hkey := @key_relay (rp_j rp).
+rewrite Hkey dec_correct /=.
+rewrite /std_Recv_enc /Recv_param /=.
+have Hjord : rp_j rp = (ord0 : 'I_n_relay.+1) by apply val_inj.
+rewrite Hjord.
+eexists. split; first reflexivity. by [].
+Qed.
 
 (* mk_recv_next_exists: construct recv_phase at j+1 from recv_phase at j.
    Requires j < n_relay so there is a next relay to step into. *)
