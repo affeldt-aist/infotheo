@@ -186,6 +186,17 @@ rewrite -(@Epow_scalarM AHE) -(@Emul_addM AHE) GRing.mulrC.
 by eexists.
 Qed.
 
+(* L_shift: extract the chain_acc unfolding step used in mk_next_sender and
+   recv_phase_to_send_phase. Mirrors the recursive equation
+   chain_acc(j-2) = chain_acc(j-3) + term(inord(j-1)) for j >= 3. *)
+Lemma chain_acc_shift (j : 'I_n_relay.+1) :
+  (3 <= j)%N ->
+  chain_acc ((j : nat) - 3)%N + term (inord j.-1) = chain_acc ((j : nat) - 2)%N.
+Proof.
+case: (j : nat) => [|[|[|n']]] // _.
+by rewrite /= !subSS subn0.
+Qed.
+
 (* Concrete return value *)
 Let concrete_val :=
   d (chain_acc n_relay.-1 -
@@ -988,9 +999,12 @@ Lemma step_ok_drain_drain_gen (j : 'I_n_relay.+1) (rr : rand AHE)
   let cipher_j := e_local (enc_local (ek (nat_to_party_id j.+2))
                                       (chain_acc j) rr) in
   (j.+2 < n_relay.+1)%N ->
-  (* bg j.+1 is a Recv whose callback produces a Send *)
+  (* bg j.+1 is a Recv whose callback produces a Send.
+     The frm of this Recv is irrelevant — drain_procs_gen rewrites it to j+1
+     via its inner pattern match. We use frm = j.+1 to match drain_phase's
+     dp_between convention (where dp_bg i = Recv i f). *)
   (exists f rr_next,
-     bg j.+1 = Recv (j : nat) f /\
+     bg j.+1 = Recv j.+1 f /\
      f cipher_j =
        Send j.+3
          (e_local (enc_local (ek (nat_to_party_id j.+3))
@@ -1115,9 +1129,10 @@ Lemma step_ok_drain_tail_gen (j : 'I_n_relay.+1) (rr : rand AHE)
   let cipher_j := e_local (enc_local (ek (nat_to_party_id j.+2))
                                       (chain_acc j) rr) in
   (j.+1 = n_relay)%N ->
-  (* bg j.+1 is a Recv whose callback produces Send to Alice *)
+  (* bg j.+1 is a Recv whose callback produces Send to Alice.
+     Frm of the Recv is irrelevant — drain_procs_gen rewrites it. *)
   (exists f rr_next,
-     bg j.+1 = Recv (j : nat) f /\
+     bg j.+1 = Recv j.+1 f /\
      f cipher_j =
        Send 0 (e_local (enc_local (ek alice_idx)
                                    (chain_acc n_relay.-1) rr_next))
@@ -1671,6 +1686,19 @@ case: ifP => Hjn'.
   by move/eqP: Hjn' => Hjn'; rewrite Hjn' ltnn in Hjn.
 rewrite /pRecvEnc_local /std_Recv_enc /Recv_param /=.
 by eexists.
+Qed.
+
+(* relay_body splits as Send 0 _ (Recv 0 _) for j < n_relay.
+   Composition of relay_body_send0_cont + relay_after_send0_recv0.
+   Used by send_phase fields sp_active and sp_next_behind to share a witness. *)
+Lemma relay_body_split (k : 'I_n_relay.+1) :
+  (k < n_relay)%N ->
+  exists sv f, relay_body k = Send 0 sv (Recv 0 f).
+Proof.
+move=> Hk.
+have [f Hf] := relay_after_send0_recv0 Hk.
+exists (e_local (enc (ek (nat_to_party_id k.+1)) (v_relay k) (r1_relay k))), f.
+by rewrite (relay_body_send0_cont k) Hf.
 Qed.
 
 (* Unconditional recv → send step: no NOP condition needed *)
@@ -3047,6 +3075,136 @@ refine (ex_intro _ (@MkRecvPhase (next_j Hjn) (rp_rr_fw rp) (bg'_of rp)
 - exact (@mk_next_receiver rp Hjn).
 - exact (@mk_next_j1_recv rp Hjn).
 Qed.
+
+(* ======================================================================== *)
+(*  Records for the post-recv phases (mirrors of Inv_ASj/Inv_drain/Inv_tail  *)
+(*  in dsdp_progress.v). Used by the base case of recv_phase_to_known.       *)
+(* ======================================================================== *)
+
+Local Set Primitive Projections.
+
+(* send_phase: state after the recv→send transition at iteration j.
+   The accumulator is "shifted" to chain_acc(j-2) at position j-1, compared
+   to recv_phase which has chain_acc(j-3) at position j-3.
+   Mirrors Inv_ASj in dsdp_progress.v lines 1542-1568. *)
+Record send_phase := MkSendPhase {
+  sp_j     : 'I_n_relay.+1;
+  sp_rr_fw : rand AHE;
+  sp_bg    : nat -> proc (std_data AHE);
+
+  (* B1: j >= 2 *)
+  sp_j_ge2 : (2 <= sp_j)%N;
+
+  (* B5: active relay at position j after relay_body's Send 0 has fired (sig form) *)
+  sp_active : { sv0_f0 : data * (data -> proc data) |
+    local_relay_body (inord sp_j.-1) = Send 0 sv0_f0.1 (Recv 0 sv0_f0.2) /\
+    sp_bg sp_j = Recv 0 sv0_f0.2 };
+
+  (* B6: positions ahead of j carry fresh relay_body *)
+  sp_ahead : forall i, (sp_j < i)%N -> (i < n_relay.+1)%N ->
+    sp_bg i = local_relay_body (inord i);
+
+  (* B7a: intermediate relay (j < n_relay): position j+1 holds Recv 0 from
+     the next relay's relay_body (sig form) *)
+  sp_next_behind : (sp_j < n_relay)%N ->
+    { sv_f : data * (data -> proc data) |
+      local_relay_body (inord sp_j) = Send 0 sv_f.1 (Recv 0 sv_f.2) /\
+      sp_bg sp_j.+1 = Recv 0 sv_f.2 };
+
+  (* B7b: last relay (j = n_relay): position n_relay+1 holds the decryption
+     Recv whose callback produces Send 0 (back to Alice) (sig form) *)
+  sp_last : ((sp_j : nat) = n_relay) ->
+    { f_dec | sp_bg n_relay.+1 = Recv n_relay f_dec /\
+      forall m rr, f_dec (e_loc (@enc AHE (ek (nat_to_party_id n_relay.+1)) m rr)) =
+        Send 0 (e_loc (@enc AHE (ek alice_idx) m
+          (r2_relay (inord n_relay)))) Finish };
+
+  (* B8: j = 2 special case — bg(1) holds the SHIFTED first drain forwarder *)
+  sp_sender2 : (sp_j == 2%N :> nat) ->
+    sp_bg 1 = Send 2
+      (e_loc (@enc AHE (ek (nat_to_party_id 2))
+                   (local_chain_acc 0) sp_rr_fw)) Finish;
+
+  (* B9: j >= 3 — Finish zone before the SHIFTED frontier sender at position
+     j-1 with chain_acc(j-2) *)
+  sp_sender : (3 <= sp_j)%N ->
+    (forall i, (i.+1 <= sp_j.-2)%N -> sp_bg i.+1 = Finish) /\
+    sp_bg sp_j.-1 = Send sp_j
+      (e_loc (@enc AHE (ek (nat_to_party_id sp_j))
+                   (local_chain_acc sp_j.-2) sp_rr_fw)) Finish
+}.
+
+(* drain_phase: state in the drain (forwarding) phase at drain index j.
+   The active drain forwarder is at position j with chain_acc(j); the receiver
+   at position j+1 fires next, propagating the chain forward.
+   Mirrors Inv_drain in dsdp_progress.v lines 1569-1586. We DROP the separate
+   dp_receiver field (it's redundant with dp_between at i = (dp_j).+1).
+   dp_last and dp_between use sig (Type) instead of exists (Prop) so their
+   witnesses can be destructured during construction of the next drain_phase. *)
+Record drain_phase := MkDrainPhase {
+  dp_j        : 'I_n_relay.+1;
+  dp_rr_drain : rand AHE;
+  dp_bg       : nat -> proc (std_data AHE);
+  dp_safe     : forall v k, dp_bg n_relay <> Send 0 v k;
+
+  (* H1 *)
+  dp_j_lt    : (dp_j.+1 < n_relay.+1)%N;
+
+  (* H5: active drain forwarder at bg index j *)
+  dp_sender   : dp_bg dp_j = Send dp_j.+2
+    (e_loc (@enc AHE (ek (nat_to_party_id dp_j.+2))
+                 (local_chain_acc dp_j) dp_rr_drain)) Finish;
+
+  (* H7: Finish zone before the active forwarder *)
+  dp_finish   : forall i, (i < dp_j)%N -> dp_bg i = Finish;
+
+  (* H8a: last relay holds the alice-returning Recv callback (sig form) *)
+  dp_last     : { f | dp_bg n_relay = Recv n_relay f /\
+    forall m rr, f (e_loc (@enc AHE (ek (nat_to_party_id n_relay.+1)) m rr)) =
+      Send 0 (e_loc (@enc AHE (ek alice_idx) m
+        (r2_relay (inord n_relay)))) Finish };
+
+  (* H6 + H8b merged: every position in (dp_j, n_relay) is a Recv with the
+     standard intermediate Emul-forwarding callback. The active receiver
+     at position (dp_j).+1 is recovered as dp_between at i = (dp_j).+1.
+     Returns sig (Type) so the callback can be destructured by drain_phase_step. *)
+  dp_between  : forall i, (dp_j < i)%N -> (i < n_relay)%N ->
+    { f | dp_bg i = Recv i f /\
+      forall m rr, f (e_loc (@enc AHE (ek (nat_to_party_id i.+1)) m rr)) =
+        Send i.+2 (e_loc (@Emul AHE (local_alice_enc (inord i.+1))
+          (@enc AHE (ek (nat_to_party_id i.+2)) m
+            (r2_relay (inord i))))) Finish }
+}.
+
+(* tail_phase: terminal state where the last relay has placed the final
+   decrypted accumulator into a Send 0 to Alice and all other positions are
+   Finish. Mirrors Inv_tail in dsdp_progress.v lines 1587-1594. *)
+Record tail_phase := MkTailPhase {
+  tp_rr_tail : rand AHE;
+  tp_bg      : nat -> proc (std_data AHE);
+
+  (* T3: last relay holds the final Send 0 to Alice with chain_acc(n_relay.-1) *)
+  tp_last    : tp_bg n_relay = Send 0
+    (e_loc (@enc AHE (ek alice_idx) (local_chain_acc n_relay.-1) tp_rr_tail))
+    Finish;
+
+  (* T5: all other relay positions are Finish *)
+  tp_finish  : forall j : 'I_n_relay.+1, (j < n_relay)%N -> tp_bg j = Finish
+}.
+
+Local Unset Primitive Projections.
+
+(* L4: drain_phase_step — wraps step_ok_drain_drain_gen and rebuilds Record fields *)
+Lemma drain_phase_step (dp : drain_phase) :
+  ((dp_j dp : nat).+1 < n_relay)%N ->
+  { dp' : drain_phase |
+    (dp_j dp' : nat) = (dp_j dp).+1 /\
+    one_step_procs (ps_procs (drain_st (dp_j dp) (dp_rr_drain dp)
+                                       (bg := dp_bg dp) dp.(dp_safe))) =
+    ps_procs (drain_st (dp_j dp') (dp_rr_drain dp')
+                       (bg := dp_bg dp') dp'.(dp_safe)) }.
+Proof.
+Admitted.
 
 (* recv_phase_to_known: if we have a recv_phase Record, its state is known_state2.
    Proof by induction on n_relay - rp_j, using Record field extraction. *)
