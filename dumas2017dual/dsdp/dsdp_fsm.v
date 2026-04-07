@@ -2161,7 +2161,7 @@ Qed.
 End dsdp_fsm.
 
 (* ========================================================================== *)
-(* Section dsdp_fsm_chain: known_state2 — post-section chain invariant        *)
+(* Section dsdp_fsm_chain: known_ret_state — post-section chain invariant        *)
 (* Uses fully section-closed lemmas from dsdp_fsm.                            *)
 (* ========================================================================== *)
 
@@ -2203,17 +2203,17 @@ Let st_recv_local := fun j =>
   @st_recv AHE ek n_relay dk dk_relay relays Hrelays Hrelays_id
     v0 u r rand_a v_relay r1_relay r2_relay j.
 
-(* known_state2: chain invariant with st_ret as terminal state.
+(* known_ret_state: chain invariant with st_ret as terminal state.
    Unlike known_state (which uses st_done), this tracks all_terminated
    explicitly and terminates at st_ret (the actual final protocol state). *)
-Inductive known_state2 : phase_state AHE -> Prop :=
-| KS2_ret : known_state2 st_ret_local
-| KS2_step st st' :
-    known_state2 st' ->
+Inductive known_ret_state : phase_state AHE -> Prop :=
+| KnownRetBase : known_ret_state st_ret_local
+| KnownRetStep st st' :
+    known_ret_state st' ->
     one_step_procs (ps_procs st) = ps_procs st' ->
     @has_progress data (ps_procs st) ->
     ~~ @all_terminated data (ps_procs st) ->
-    known_state2 st.
+    known_ret_state st.
 
 (* Local notations for section-closed state constructors *)
 Local Notation recv_st :=
@@ -2293,7 +2293,7 @@ Inductive recv_send_steppable :
     recv_send_steppable j' bg' ->
     recv_send_steppable j bg
 | RSS_known (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE)) :
-    known_state2 (recv_st j bg) ->
+    known_ret_state (recv_st j bg) ->
     recv_send_steppable j bg.
 
 (* Local aliases for section-closed lemmas *)

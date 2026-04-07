@@ -78,8 +78,8 @@ Local Notation bg_s_of :=
   (@bg_s_of AHE ek n_relay dk dk_relay relays v0 u r rand_a v_relay r1_relay r2_relay).
 Local Notation bg'_of :=
   (@bg'_of AHE ek n_relay dk dk_relay relays v0 u r rand_a v_relay r1_relay r2_relay).
-Local Notation known_state2 := (@known_state2 AHE n_relay v0 u r v_relay).
-Local Notation KS2_ret := (@KS2_ret AHE n_relay v0 u r v_relay).
+Local Notation known_ret_state := (@known_ret_state AHE n_relay v0 u r v_relay).
+Local Notation KnownRetBase := (@KnownRetBase AHE n_relay v0 u r v_relay).
 Local Notation drain_steppable :=
   (@drain_steppable AHE ek n_relay dk relays Hrelays v0 u r rand_a v_relay).
 Local Notation recv_send_steppable :=
@@ -254,10 +254,10 @@ rewrite all_cat /= andbF.
 by rewrite andbF.
 Qed.
 
-(* ks2_tail: the tail state is in known_state2 *)
-Lemma ks2_tail (rr : rand AHE) : known_state2 (st_tail_local rr).
+(* known_ret_tail: the tail state is in known_ret_state *)
+Lemma known_ret_tail (rr : rand AHE) : known_ret_state (st_tail_local rr).
 Proof.
-apply (KS2_step KS2_ret).
+apply (KnownRetStep KnownRetBase).
 - exact: (@step_ok_tail_ret AHE ek n_relay Hn_relay dk relays Hrelays
             v0 u r rand_a v_relay key_alice rr).
 - exact: (@tail_has_progress AHE ek n_relay dk relays Hrelays
@@ -341,16 +341,16 @@ have [sk Hsk] := @relay_body_is_send0 AHE ek n_relay dk_relay v_relay r1_relay r
 by eexists; eexists; exact Hsk.
 Qed.
 
-(* interp_chain_ks2: if interp_comp reaches st_ret in fuel+1 steps
+(* interp_chain_known_ret: if interp_comp reaches st_ret in fuel+1 steps
    with progress and non-termination at every intermediate step,
-   then the starting state is known_state2. *)
-Lemma interp_chain_ks2 (fuel : nat) (st : phase_state AHE) :
+   then the starting state is known_ret_state. *)
+Lemma interp_chain_known_ret (fuel : nat) (st : phase_state AHE) :
   @interp_comp (std_data AHE) (ps_procs st) fuel.+1 = ps_procs st_ret_local ->
   (forall k, (k < fuel.+1)%N ->
     @has_progress (std_data AHE) (@interp_comp (std_data AHE) (ps_procs st) k)) ->
   (forall k, (k < fuel.+1)%N ->
     ~~ @all_terminated (std_data AHE) (@interp_comp (std_data AHE) (ps_procs st) k)) ->
-  known_state2 st.
+  known_ret_state st.
 Proof.
 elim: fuel st => [|fuel IH] st Hreach Hprog Hnt.
 - (* fuel = 0 *)
@@ -358,7 +358,7 @@ elim: fuel st => [|fuel IH] st Hreach Hprog Hnt.
   case Hhas : (has_progress (std_data AHE) (ps_procs st)); last first.
     by exfalso; move: (Hprog 0 (ltn0Sn _)); rewrite Hhas.
   rewrite Hhas in Hreach.
-  exact (KS2_step KS2_ret Hreach Hhas (Hnt 0 (ltn0Sn _))).
+  exact (KnownRetStep KnownRetBase Hreach Hhas (Hnt 0 (ltn0Sn _))).
 - (* fuel = n+1 *)
   rewrite interp_comp_unfold_eq in Hreach.
   case Hhas : (has_progress (std_data AHE) (ps_procs st)); last first.
@@ -367,7 +367,7 @@ elim: fuel st => [|fuel IH] st Hreach Hprog Hnt.
   set st' := @PhaseState AHE (one_step_procs (ps_procs st))
     ((smc_interpreter.step (one_step_procs (ps_procs st)) [::] 0).1.2) erefl.
   have Hst' : ps_procs st' = one_step_procs (ps_procs st) by [].
-  refine (KS2_step _ (esym Hst') Hhas (Hnt 0 (ltn0Sn _))).
+  refine (KnownRetStep _ (esym Hst') Hhas (Hnt 0 (ltn0Sn _))).
   apply IH.
   + by rewrite Hst'.
   + move=> k Hk. move: (Hprog k.+1 Hk). by rewrite interp_comp_unfold_eq Hhas.
@@ -479,28 +479,28 @@ rewrite Hf.
 by [].
 Qed.
 
-(* ks2_drain_chain: if drain chain evidence exists, drain is in known_state2 *)
-Lemma ks2_drain_chain (j : 'I_n_relay.+1) (rr : rand AHE)
+(* known_ret_drain_chain: if drain chain evidence exists, drain is in known_ret_state *)
+Lemma known_ret_drain_chain (j : 'I_n_relay.+1) (rr : rand AHE)
     (bg : nat -> proc (std_data AHE))
     (Hbg_safe : forall v k, bg n_relay <> Send 0 v k) :
   drain_steppable j rr bg ->
-  known_state2 (drain_st j rr (bg:=bg) Hbg_safe).
+  known_ret_state (drain_st j rr (bg:=bg) Hbg_safe).
 Proof.
 move=> Hds; induction Hds as
   [j0 rr0 bg0 Hs0 rr0' Hstep0 Hprog0 Hnt0
   |j0 rr0 bg0 Hs0 rr0' bg0' Hs0' Hstep0 Hprog0 Hnt0 _ IH].
 - have Hirr : ps_procs (drain_st j0 rr0 (bg:=bg0) Hs0) =
               ps_procs (drain_st j0 rr0 (bg:=bg0) Hbg_safe) by [].
-  apply (KS2_step (ks2_tail rr0')); rewrite -Hirr //.
+  apply (KnownRetStep (known_ret_tail rr0')); rewrite -Hirr //.
 - have Hirr : ps_procs (drain_st j0 rr0 (bg:=bg0) Hs0) =
               ps_procs (drain_st j0 rr0 (bg:=bg0) Hbg_safe) by [].
-  apply (KS2_step (IH Hs0')); rewrite -Hirr //.
+  apply (KnownRetStep (IH Hs0')); rewrite -Hirr //.
 Qed.
 
-(* ks2_recv_gen: if recv/send chain evidence exists, recv is in known_state2 *)
-Lemma ks2_recv_gen (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE)) :
+(* known_ret_recv_gen: if recv/send chain evidence exists, recv is in known_ret_state *)
+Lemma known_ret_recv_gen (j : 'I_n_relay.+1) (bg : nat -> proc (std_data AHE)) :
   recv_send_steppable j bg ->
-  known_state2 (recv_st j bg).
+  known_ret_state (recv_st j bg).
 Proof.
 move=> Hrss; induction Hrss as
   [j0 bg0 bg_s0 rr_d0 bg_d0 Hs_d0
@@ -510,11 +510,11 @@ move=> Hrss; induction Hrss as
      Hprog_r0 Hnt_r0 Hstep_rs0
      Hprog_s0 Hnt_s0 Hstep_sr0 _ IH
   |j0 bg0 Hks2].
-- refine (KS2_step _ Hstep_rs0 Hprog_r0 Hnt_r0).
-  refine (KS2_step _ Hstep_sd0 Hprog_s0 Hnt_s0).
-  exact (@ks2_drain_chain _ _ _ Hs_d0 Hds0).
-- refine (KS2_step _ Hstep_rs0 Hprog_r0 Hnt_r0).
-  exact (KS2_step IH Hstep_sr0 Hprog_s0 Hnt_s0).
+- refine (KnownRetStep _ Hstep_rs0 Hprog_r0 Hnt_r0).
+  refine (KnownRetStep _ Hstep_sd0 Hprog_s0 Hnt_s0).
+  exact (@known_ret_drain_chain _ _ _ Hs_d0 Hds0).
+- refine (KnownRetStep _ Hstep_rs0 Hprog_r0 Hnt_r0).
+  exact (KnownRetStep IH Hstep_sr0 Hprog_s0 Hnt_s0).
 - exact Hks2.
 Qed.
 
@@ -2000,10 +2000,10 @@ case: k Hk => [|k] Hk.
     * by [].
 Qed.
 
-(* L7: known_state2 of any tail_phase. Trivial — delegates to ks2_tail. *)
-Lemma ks2_of_tail_phase (tp : tail_phase) :
-  known_state2 (tail_st (tp_rr_tail tp)).
-Proof. exact: ks2_tail. Qed.
+(* L7: known_ret_state of any tail_phase. Trivial — delegates to known_ret_tail. *)
+Lemma known_ret_of_tail_phase (tp : tail_phase) :
+  known_ret_state (tail_st (tp_rr_tail tp)).
+Proof. exact: known_ret_tail. Qed.
 
 (* L5: a drain_phase whose active forwarder is the second-to-last relay
    takes one drain step and reaches a tail_phase. Wraps step_ok_drain_tail_gen. *)
@@ -2062,10 +2062,10 @@ exists tp. simpl.
 exact Hstep_eq.
 Qed.
 
-(* L6: every drain_phase is in known_state2.
+(* L6: every drain_phase is in known_ret_state.
    Proof by induction on the measure n_relay.-1 - dp_j dp. *)
-Lemma ks2_of_drain_phase (dp : drain_phase) :
-  known_state2 (drain_st (dp_j dp) (dp_rr_drain dp) (bg := dp_bg dp) (dp_safe dp)).
+Lemma known_ret_of_drain_phase (dp : drain_phase) :
+  known_ret_state (drain_st (dp_j dp) (dp_rr_drain dp) (bg := dp_bg dp) (dp_safe dp)).
 Proof.
 move E : (n_relay.-1 - (dp_j dp : nat))%N => m.
 elim: m dp E => [|m IH] dp Hm.
@@ -2078,7 +2078,7 @@ elim: m dp E => [|m IH] dp Hm.
     rewrite Hjlt /=.
     by rewrite -ltnS (prednK Hn_relay) in Hge.
   have [tp Hstep] := @drain_phase_to_tail_phase dp Hjp1.
-  apply (KS2_step (ks2_of_tail_phase tp) Hstep).
+  apply (KnownRetStep (known_ret_of_tail_phase tp) Hstep).
   + apply: (@drain_has_progress_gen AHE ek n_relay dk relays Hrelays
               v0 u r rand_a v_relay (dp_j dp) (dp_rr_drain dp) (dp_bg dp) (dp_safe dp)).
     * exact: (dp_j_lt dp).
@@ -2095,7 +2095,7 @@ elim: m dp E => [|m IH] dp Hm.
     rewrite Hjeq.
     have Hcopy : (n_relay.-1 - dp_j dp = m.+1)%N := Hm.
     by rewrite subnS Hcopy.
-  apply (KS2_step (IH dp' Hm') Hstep).
+  apply (KnownRetStep (IH dp' Hm') Hstep).
   + apply: (@drain_has_progress_gen AHE ek n_relay dk relays Hrelays
               v0 u r rand_a v_relay (dp_j dp) (dp_rr_drain dp) (dp_bg dp) (dp_safe dp)).
     * exact: (dp_j_lt dp).
@@ -2104,7 +2104,7 @@ elim: m dp E => [|m IH] dp Hm.
   + exact: (@drain_not_terminated_gen (dp_j dp) (dp_rr_drain dp) (dp_bg dp) (dp_safe dp)).
 Qed.
 
-(* L8: known_state2 directly for the n_relay=1 special case.
+(* L8: known_ret_state directly for the n_relay=1 special case.
    At n_relay=1, j=1, the chain from recv_st(1) has 4 op steps:
      recv_st(1) bg
        --[step_ok_recv_send_concrete]-->
@@ -2114,8 +2114,8 @@ Qed.
                               bg_s2(1) = relay_after_send0 1
        --[L5/step_ok_drain_tail_gen]-->
      tail_st rr_t
-       --[KS2_step + ks2_tail]-->
-     known_state2
+       --[KnownRetStep + known_ret_tail]-->
+     known_ret_state
 
    PARTIAL PROGRESS: setup + Hstep_rs + Hbg_s_0 (NOP for bg(0)) + Hbg_s_1
    (post-active-fire shape) + Hbg_s2_0 (the SHIFTED sender at bg_s2(0), which
@@ -2125,7 +2125,7 @@ Qed.
      2. Build drain_phase Record at dp_j=0 with dp_bg := bg_s2 (~50 lines for
         dp_safe and dp_last witnesses)
      3. Prove the send→drain step equation via eq_from_nth at 3 positions (~80 lines)
-     4. Chain via 2 KS2_step calls + ks2_of_drain_phase (~20 lines)
+     4. Chain via 2 KnownRetStep calls + known_ret_of_drain_phase (~20 lines)
 
    The algebraic core (Hbg_s2_0) is the hardest part and IS proven below; the
    remainder is mechanical position-by-position case work analogous to L3
@@ -2133,7 +2133,7 @@ Qed.
 Lemma tail_phase_from_recv_phase_n1 (rp : recv_phase) :
   n_relay = 1 ->
   (rp_j rp : nat) = 1 ->
-  known_state2 (recv_st (rp_j rp) (rp_bg rp)).
+  known_ret_state (recv_st (rp_j rp) (rp_bg rp)).
 Proof.
 move=> Hnr Hjeq.
 set j := rp_j rp; set bg := rp_bg rp.
@@ -2269,7 +2269,7 @@ have Hdp_between_sig : forall i : nat, (dp_j_ord < i)%N -> (i < n_relay)%N ->
   by have := leq_trans Hilow Hihigh. }
 pose dp : drain_phase := @MkDrainPhase AHE ek n_relay u r rand_a v_relay r1_relay r2_relay dp_j_ord (rand_mul rr_a (r2_relay ord0))
   bg_s2 Hsafe Hdp_j_lt Hdp_sender_eq Hdp_finish_eq Hdp_last_sig Hdp_between_sig.
-have Hks2_drain := ks2_of_drain_phase dp.
+have Hks2_drain := known_ret_of_drain_phase dp.
 (* Step D: send→drain step equation via eq_from_nth at 3 positions. *)
 have Hstep_sd : one_step_procs (ps_procs (send_st j bg_s)) =
   ps_procs (drain_st (dp_j dp) (dp_rr_drain dp) (bg := dp_bg dp) (dp_safe dp)).
@@ -2310,7 +2310,7 @@ have Hstep_sd : one_step_procs (ps_procs (send_st j bg_s)) =
         move=> Hkl. exfalso.
         by case: k Heq0 Heq1 Hkl Hk Hbgs2_eq => [|[|k']] // _ _ _ _ _.
 }
-(* Step E: Hdest for send_has_progress_gen + final KS2_step chain. *)
+(* Step E: Hdest for send_has_progress_gen + final KnownRetStep chain. *)
 have Hdest : exists f, nth (@Finish (std_data AHE))
     (send_procs_gen_local j bg_s) (alice_send_dest j) = Recv 0 f.
 { rewrite Hadt /send_procs_gen_local /send_procs_gen /=.
@@ -2318,24 +2318,24 @@ have Hdest : exists f, nth (@Finish (std_data AHE))
   have -> : (0%N == j :> nat) = false by rewrite eq_sym (eqP Hj1).
   rewrite Hbg_s_0 Hbg0.
   by eexists. }
-refine (KS2_step _ Hstep_rs _ _).
-- exact: (KS2_step Hks2_drain Hstep_sd
+refine (KnownRetStep _ Hstep_rs _ _).
+- exact: (KnownRetStep Hks2_drain Hstep_sd
             (send_has_progress_gen Hdest)
             (send_not_terminated_gen _ _)).
 - by apply: recv_has_progress_gen.
 - by apply: recv_not_terminated_gen.
 Qed.
 
-(* recv_phase_to_known: if we have a recv_phase Record, its state is known_state2.
+(* recv_phase_to_known: if we have a recv_phase Record, its state is known_ret_state.
    Proof by induction on n_relay - rp_j, using Record field extraction. *)
 Lemma recv_phase_to_known (k : nat) (rp : recv_phase) :
   (rp_j rp + k = n_relay)%N ->
-  known_state2 (recv_st (rp_j rp) (rp_bg rp)).
+  known_ret_state (recv_st (rp_j rp) (rp_bg rp)).
 Proof.
 elim: k rp => [|k IH] rp Hjk;
 set j := rp_j rp; set bg := rp_bg rp.
 - (* Base case: k=0, j = n_relay. Compose L1 (recv→send) → L2/L3 (send→drain)
-     → L6 (ks2_of_drain_phase) for n_relay >= 2; L8 for n_relay = 1. *)
+     → L6 (known_ret_of_drain_phase) for n_relay >= 2; L8 for n_relay = 1. *)
   have Hjeq : (rp_j rp : nat) = n_relay by move: Hjk; rewrite addn0.
   case: (leqP 2 n_relay) => Hnr2; first last.
   + (* n_relay = 1 *)
@@ -2372,10 +2372,10 @@ set j := rp_j rp; set bg := rp_bg rp.
       have [dp [_ Hstep2]] :=
         send_phase_to_drain_phase_last (sp:=sp) Hsj_eq Hnr3.
       rewrite Hsj_ord in Hstep2.
-      have Hks2_drain := ks2_of_drain_phase dp.
+      have Hks2_drain := known_ret_of_drain_phase dp.
       rewrite /j /bg.
-      refine (KS2_step _ Hstep1 _ _).
-      -- exact: (KS2_step Hks2_drain Hstep2
+      refine (KnownRetStep _ Hstep1 _ _).
+      -- exact: (KnownRetStep Hks2_drain Hstep2
                    (send_has_progress_gen Hdest)
                    (send_not_terminated_gen _ _)).
       -- by apply: recv_has_progress_gen.
@@ -2386,10 +2386,10 @@ set j := rp_j rp; set bg := rp_bg rp.
       have [dp [_ Hstep2]] :=
         send_phase_to_drain_phase_n2 (sp:=sp) Hsj2 Hnr_eq2.
       rewrite Hsj_ord in Hstep2.
-      have Hks2_drain := ks2_of_drain_phase dp.
+      have Hks2_drain := known_ret_of_drain_phase dp.
       rewrite /j /bg.
-      refine (KS2_step _ Hstep1 _ _).
-      -- exact: (KS2_step Hks2_drain Hstep2
+      refine (KnownRetStep _ Hstep1 _ _).
+      -- exact: (KnownRetStep Hks2_drain Hstep2
                    (send_has_progress_gen Hdest)
                    (send_not_terminated_gen _ _)).
       -- by apply: recv_has_progress_gen.
@@ -2445,13 +2445,13 @@ set j := rp_j rp; set bg := rp_bg rp.
   have Hstep_sr : one_step_procs (ps_procs (send_st j bg_s)) =
     ps_procs (recv_st (inord j.+1) bg') by apply step_ok_send_recv_explicit.
   have Hinord : (inord j.+1 : 'I_n_relay.+1) = j.+1 :> nat by rewrite inordK.
-  (* Chain: recv → send → recv' via KS2_step *)
+  (* Chain: recv → send → recv' via KnownRetStep *)
   have Hprog_r := @recv_has_progress_gen AHE ek n_relay dk dk_relay relays
     Hrelays Hrelays_id v0 u r rand_a v_relay r1_relay r2_relay j bg.
-  suff Hks2s : known_state2 (send_st j bg_s).
-    exact (KS2_step Hks2s Hstep_rs' Hprog_r (recv_not_terminated_gen j bg)).
-  suff Hks2_recv' : known_state2 (recv_st (inord j.+1) bg').
-    exact (KS2_step Hks2_recv' Hstep_sr Hprog_s (send_not_terminated_gen j bg_s)).
+  suff Hks2s : known_ret_state (send_st j bg_s).
+    exact (KnownRetStep Hks2s Hstep_rs' Hprog_r (recv_not_terminated_gen j bg)).
+  suff Hks2_recv' : known_ret_state (recv_st (inord j.+1) bg').
+    exact (KnownRetStep Hks2_recv' Hstep_sr Hprog_s (send_not_terminated_gen j bg_s)).
   (* Apply IH to next recv_phase via mk_recv_next_exists *)
   have [rp' [Hrpj Hrpbg]] := mk_recv_next_exists Hjn.
   have Hnj : (next_j Hjn : nat) = j.+1 by rewrite /next_j inordK.
@@ -2478,16 +2478,16 @@ refine (@MkRecvPhase AHE ek n_relay dk_relay u r rand_a v_relay r1_relay r2_rela
 - by move/eqP.
 Defined.
 
-(* ks2_recv0: the initial recv state is in known_state2. *)
-Lemma ks2_recv0 : known_state2 (st_recv_local ord0).
+(* known_ret_recv_at_j0: the initial recv state is in known_ret_state. *)
+Lemma known_ret_recv_at_j0 : known_ret_state (st_recv_local ord0).
 Proof.
 exact (@recv_phase_to_known n_relay mk_recv_init (add0n _)).
 Qed.
 
-(* known_state2_term_ret: if a known_state2 is all-terminated,
+(* known_ret_state_terminal: if a known_ret_state is all-terminated,
    its process list is that of st_ret *)
-Lemma known_state2_term_ret st :
-  known_state2 st -> @all_terminated data (ps_procs st) ->
+Lemma known_ret_state_terminal st :
+  known_ret_state st -> @all_terminated data (ps_procs st) ->
   ps_procs st = ps_procs st_ret_local.
 Proof.
 move=> Hks2 Hat.
@@ -2497,20 +2497,20 @@ case: Hks2 Hat.
   by rewrite Hat in Hnt.
 Qed.
 
-(* Helper: known_state2 for st_recv ord0.
-   Requires chaining KS2_step through the full FSM:
+(* Helper: known_ret_state for st_recv ord0.
+   Requires chaining KnownRetStep through the full FSM:
      recv(0) → send_0 → recv(1) → ... → tail → ret.
-   Each intermediate state is non-terminated (KS2_step),
-   st_ret uses KS2_ret base case.
+   Each intermediate state is non-terminated (KnownRetStep),
+   st_ret uses KnownRetBase base case.
    TODO: prove once full chain lemmas are added to dsdp_fsm.v. *)
-Lemma known_state2_recv0 :
-  known_state2 (st_recv_local ord0).
+Lemma known_ret_state_recv_at_j0 :
+  known_ret_state (st_recv_local ord0).
 Proof.
-exact: ks2_recv0.
+exact: known_ret_recv_at_j0.
 Qed.
 
-Lemma known_state2_to_known st :
-  known_state2 st -> known_state n_relay st.
+Lemma known_ret_state_to_known st :
+  known_ret_state st -> known_state n_relay st.
 Proof.
 move=> Hks; elim: Hks.
 - apply: KS_step.
@@ -2521,8 +2521,8 @@ move=> Hks; elim: Hks.
   exact: (KS_step IH Hstep Hprog).
 Qed.
 
-Lemma known_state2_has_progress st :
-  known_state2 st -> ~~ @all_terminated data (ps_procs st) ->
+Lemma known_ret_state_has_progress st :
+  known_ret_state st -> ~~ @all_terminated data (ps_procs st) ->
   @has_progress data (ps_procs st).
 Proof.
 move=> Hks Hnt; case: Hks Hnt.
@@ -2531,9 +2531,9 @@ move=> Hks Hnt; case: Hks Hnt.
 - by move=> st0 st' _ _ Hprog _ _.
 Qed.
 
-Lemma known_state2_step st :
-  known_state2 st -> ~~ @all_terminated data (ps_procs st) ->
-  exists st', known_state2 st' /\
+Lemma known_ret_state_step st :
+  known_ret_state st -> ~~ @all_terminated data (ps_procs st) ->
+  exists st', known_ret_state st' /\
               one_step_procs (ps_procs st) = ps_procs st'.
 Proof.
 move=> Hks Hnt; case: Hks Hnt.
@@ -2545,7 +2545,7 @@ Qed.
 
 Lemma known_state_recv0 :
   known_state n_relay (st_recv_local ord0).
-Proof. exact: (known_state2_to_known known_state2_recv0). Qed.
+Proof. exact: (known_ret_state_to_known known_ret_state_recv_at_j0). Qed.
 
 Lemma init_to_recv0 :
   exists (ps_init : n_parties.-tuple (proc data))
@@ -2684,14 +2684,14 @@ Qed.
 
 (* ========================================================================== *)
 (* Ret-tracking induction: like fsm_trace_induction but also gives nth 0     *)
-(* Uses known_state2 to distinguish Ret from Finish at termination.          *)
-(* KS2_step only applies to non-terminated states, so the first terminated   *)
-(* successor must be KS2_ret (Alice = Ret concrete_val), not KS2_done.       *)
+(* Uses known_ret_state to distinguish Ret from Finish at termination.          *)
+(* KnownRetStep only applies to non-terminated states, so the first terminated   *)
+(* successor must be KnownRetBase (Alice = Ret concrete_val), not KS2_done.       *)
 (* ========================================================================== *)
 
 Lemma fsm_ret_induction h (ps : n_parties.-tuple (proc data))
     (st : phase_state AHE) :
-  known_state2 st ->
+  known_ret_state st ->
   tval ps = ps_procs st ->
   ~~ @all_terminated data (tval ps) ->
   @all_terminated data (@interp_comp data (tval ps) h) ->
@@ -2705,7 +2705,7 @@ elim: h ps st => [|h IH] ps st Hks Heq Hnt Hterm [tr0 Hrs0].
 - by rewrite /= in Hterm; rewrite Hterm in Hnt.
 have Hprog : @has_progress data (tval ps).
   rewrite Heq.
-  apply (known_state2_has_progress Hks).
+  apply (known_ret_state_has_progress Hks).
   by rewrite -Heq.
 have Hterm' : @all_terminated data (@interp_comp data (osp (tval ps)) h).
   rewrite interp_comp_unfold_eq Hprog in Hterm.
@@ -2721,23 +2721,23 @@ set tr_new := [tuple (tnth tr_step i ++ tnth tr0 i) | i < n_parties].
 have Hrs_new : rsteps procs_tup ps' tr_new.
   exact: (rtrans Hrs0 Hss' erefl).
 case: (boolP (@all_terminated data (tval ps'))) => Hnt'.
-- (* ps' is all_terminated — use known_state2_term_ret *)
+- (* ps' is all_terminated — use known_ret_state_terminal *)
   exists ps', tr_new; split; first exact Hrs_new.
   split; first exact Hnt'.
   have Hnt2 : ~~ @all_terminated data (ps_procs st) by rewrite -Heq.
-  have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt2.
+  have [st' [Hks' Hst'_eq]] := known_ret_state_step Hks Hnt2.
   have Hps'_st' : tval ps' = ps_procs st'.
     rewrite Hps'_eq Heq; exact Hst'_eq.
   have Hterm_st' : @all_terminated data (ps_procs st').
     by rewrite -Hps'_st'.
-  (* known_state2 has no KS2_done — only KS2_ret and KS2_step.
-     KS2_step requires ~~ all_terminated, contradiction.
-     So st' must be KS2_ret, giving nth 0 = Ret concrete_val. *)
-  rewrite Hps'_st' (known_state2_term_ret Hks' Hterm_st') /=.
+  (* known_ret_state has no KS2_done — only KnownRetBase and KnownRetStep.
+     KnownRetStep requires ~~ all_terminated, contradiction.
+     So st' must be KnownRetBase, giving nth 0 = Ret concrete_val. *)
+  rewrite Hps'_st' (known_ret_state_terminal Hks' Hterm_st') /=.
   by [].
 - (* ps' is NOT all_terminated — continue by IH *)
   have Hnt2 : ~~ @all_terminated data (ps_procs st) by rewrite -Heq.
-  have [st' [Hks' Hst'_eq]] := known_state2_step Hks Hnt2.
+  have [st' [Hks' Hst'_eq]] := known_ret_state_step Hks Hnt2.
   have Hps'_st' : tval ps' = ps_procs st'.
     rewrite Hps'_eq Heq; exact Hst'_eq.
   have Hterm'_ps' : @all_terminated data (@interp_comp data (tval ps') h).
