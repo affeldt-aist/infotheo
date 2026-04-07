@@ -1992,6 +1992,49 @@ have -> : ((j : nat) - 3).+1 = (j - 2)%N by rewrite subnS prednK // subn_gt0.
 by [].
 Qed.
 
+(* R5: Frontier receiver fires (in recv step) — at position (j-2)+1 the
+   receiver fires and produces f_r applied to the sender's value. *)
+Lemma bg_frontier_receiver_fires (j : 'I_n_relay.+1)
+    (bg : nat -> proc data) (v_s : data) (f_r : data -> proc data) :
+  (3 <= j)%N ->
+  bg ((j : nat) - 3)%N = Send j.-1 v_s Finish ->
+  bg ((j : nat) - 2)%N = Recv j.-2 f_r ->
+  (step (recv_procs_gen j bg) [::] ((j : nat) - 2).+1).1.1 = f_r v_s.
+Proof.
+move=> Hj3 Hsnd Hrcv.
+rewrite /recv_procs_gen /step /=.
+have Hjm2_bound : ((j : nat) - 2 < n_relay.+1)%N.
+  apply (leq_ltn_trans (leq_subr 2 j) (ltn_ord _)).
+rewrite nth_mkseq; last exact Hjm2_bound.
+have -> : ((j - 2)%N == j) = false.
+  apply /eqP => Heq.
+  have : ((j : nat) - 2 < j)%N by rewrite ltn_subrL /= (ltn_trans _ Hj3).
+  by rewrite Heq ltnn.
+have -> : ((j : nat) - 2)%N = j.-2 by rewrite -subn2.
+have Hrcv' : bg j.-2 = Recv j.-2 f_r by rewrite -subn2 in Hrcv *.
+rewrite Hrcv' /=.
+have Hjm2_pos : (0 < j.-2)%N by rewrite -subn2 subn_gt0.
+rewrite nth_cons_pos //.
+rewrite nth_mkseq; last first.
+  have Hjj : j.-1.-2 = ((j : nat) - 3)%N.
+    case: (j : nat) Hj3 => [|[|[|n']]] // _.
+    by rewrite /= !subSS subn0.
+  rewrite Hjj. exact (leq_ltn_trans (leq_subr 3 j) (ltn_ord _)).
+have Hjj : j.-1.-2 = ((j : nat) - 3)%N.
+  case: (j : nat) Hj3 => [|[|[|n']]] // _.
+  by rewrite /= !subSS subn0.
+have -> : (j.-1.-2 == j) = false.
+  apply /eqP => Heq.
+  rewrite Hjj in Heq.
+  have : (j - 3 < j)%N by rewrite ltn_subrL /= (ltn_trans _ Hj3).
+  by rewrite Heq ltnn.
+rewrite Hjj Hsnd /=.
+have -> : (j.-1 == j.-2.+1) = true.
+  apply /eqP.
+  case: (j : nat) Hj3 => [|[|[|n']]] // _.
+  by [].
+Qed.
+
 (* S1: Finish is NOP in send step *)
 Lemma bg_finish_nop_send (j : 'I_n_relay.+1) (bg : nat -> proc data)
     (i : nat) :
