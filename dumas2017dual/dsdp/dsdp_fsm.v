@@ -2431,8 +2431,29 @@ refine (ex_intro _ (@MkRecvPhase (inord j.+1) (rp_rr_fw rp) (bg'_of rp)
   transitivity (bg_s_of rp i); last exact Hbg_s_i.
   apply (@bg_relay_ahead_send AHE ek n_relay dk dk_relay relays
     v0 u r rand_a v_relay r1_relay r2_relay j (bg_s_of rp) i) => //.
-- (* rp_behind *)
-  admit.
+- (* rp_behind: bg'_of rp j = Recv 0 f *)
+  rewrite Hinord => _.
+  rewrite /bg'_of /bg_s_of /=.
+  rewrite /send_procs_gen /step /=.
+  rewrite nth_mkseq; last exact (ltn_ord j).
+  rewrite eqxx.
+  have -> : inord j = j :> 'I_n_relay.+1 by apply val_inj; rewrite /= inordK.
+  have [f_ras Hras_eq] := @relay_after_send0_recv0 AHE ek n_relay dk_relay
+    v_relay r1_relay r2_relay j Hjn.
+  rewrite Hras_eq /=.
+  case: ifP => Hdst.
+  + (* alice_send_dest j = j.+1: j = 0 fire case *)
+    have Hjz : j = 0 :> nat.
+      rewrite /alice_send_dest in Hdst.
+      move/eqP: Hdst. rewrite /maxn.
+      case: ltnP => Hlt Heq.
+      * exfalso. have Habs : (j : nat) = (j : nat).+1.
+          change ((rp_j rp : nat) = j.+1). exact Heq.
+        by move: (neq_succn (esym Habs)).
+      * by move: Heq => /eqP; rewrite eqSS => /eqP.
+    admit. (* j=0 fire case: relay_after_send0 0 callback produces Recv 0 *)
+  + (* NOP case *)
+    by exists f_ras.
 - (* rp_finish *)
   admit.
 - (* rp_sender *)
