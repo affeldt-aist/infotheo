@@ -2710,7 +2710,140 @@ Lemma mk_next_sender (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
   { rr_fw' : rand AHE | bg'_of rp ((j' : nat) - 3)%N = Send j'.-1
     (e_loc (@enc AHE (ek (nat_to_party_id j'.-1))
                  (local_chain_acc ((j' : nat) - 3)%N) rr_fw')) Finish }.
-Proof. admit. Admitted.
+Proof.
+move=> /=. set j := rp_j rp.
+have Hinord : ((next_j Hjn : nat) = j.+1) by rewrite /next_j inordK.
+rewrite Hinord => Hj3.
+have Hj2 : (2 <= j)%N by exact Hj3.
+case: (boolP ((j : nat) == 2%N)) => [Hj2eq | Hjne].
+  (* j = 2 case: result follows from rp_sender2 via NOPs *)
+  exists (rp_rr_fw rp).
+  have Hjz : (j : nat) = 2%N by exact (eqP Hj2eq).
+  have Hsub : (j.+1 - 3)%N = 0%N by rewrite Hjz.
+  rewrite Hsub.
+  have Hpred : j.+1.-1 = 2%N by rewrite Hjz.
+  rewrite Hpred.
+  have Hbg0 := @rp_sender2 rp Hj2eq.
+  rewrite -/j in Hbg0.
+  have [sv0 [f0 [_ Hbg1]]] := @rp_behind rp Hj2.
+  rewrite -/j in Hbg1.
+  have Hjm1z : (j.-1 = 1%N)%N by rewrite Hjz.
+  rewrite Hjm1z in Hbg1.
+  rewrite /bg'_of /=. set bgs := bg_s_of rp.
+  have Hbgs0 : bgs 0 = rp_bg rp 0.
+    rewrite /bgs /bg_s_of /local_recv_procs_gen /recv_procs_gen /step /=.
+    rewrite nth_mkseq; last by [].
+    have -> : (0 == j :> nat) = false by rewrite eq_sym Hjz.
+    rewrite Hbg0 /=.
+    rewrite (nth_map 0); last by rewrite size_iota.
+    rewrite nth_iota //=.
+    have -> : (1 == j :> nat) = false by rewrite eq_sym Hjz.
+    by rewrite Hbg1.
+  have Hbgs1 : bgs 1 = rp_bg rp 1.
+    rewrite /bgs /bg_s_of /local_recv_procs_gen /recv_procs_gen /step /=.
+    rewrite (nth_map 0); last by rewrite size_iota.
+    rewrite nth_iota //=.
+    have -> : (1 == j :> nat) = false by rewrite eq_sym Hjz.
+    rewrite Hbg1 /=.
+    have [f_alice Halice_eq] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+      Hrelays_id v0 u r rand_a (rp_j rp) (ltn_ord _).
+    by rewrite Halice_eq.
+  rewrite /local_send_procs_gen /send_procs_gen /step /=.
+  rewrite (nth_map 0); last by rewrite size_iota.
+  rewrite nth_iota //=.
+  have -> : (0 == j :> nat) = false by rewrite eq_sym Hjz.
+  rewrite Hbgs0 Hbg0 /=.
+  rewrite (nth_map 0); last by rewrite size_iota.
+  rewrite nth_iota //=.
+  have -> : (1 == j :> nat) = false by rewrite eq_sym Hjz.
+  by rewrite Hbgs1 Hbg1 /=.
+(* j >= 3 case: use rp_sender + rp_receiver + Emul_addM *)
+have Hj3' : (3 <= j)%N.
+  rewrite ltn_neqAle Hj2 andbT eq_sym. exact Hjne.
+have [rr_a Halice] := @alice_enc_value AHE ek n_relay u r rand_a v_relay r1_relay (inord j.-1).
+exists (rand_mul rr_a (r2_relay (inord ((j : nat) - 2)%N))).
+have Hsub : (j.+1 - 3)%N = ((j : nat) - 2)%N.
+  change 3%N with 2.+1. by rewrite subSS.
+rewrite Hsub.
+have Hsnd := @rp_sender rp Hj3'.
+rewrite -/j in Hsnd.
+have [f_recv [Hrcv Hf_recv_eq]] := @rp_receiver rp Hj3'.
+rewrite -/j in Hrcv Hf_recv_eq.
+have Hbgs_jm2 : bg_s_of rp ((j : nat) - 2)%N =
+  f_recv (e_loc (enc (ek j.-1) (local_chain_acc ((j : nat) - 3)) (rp_rr_fw rp))).
+  exact: bg_frontier_receiver_fires Hsnd Hrcv.
+have [sv0 [f0 [_ Hbg_jm1]]] := @rp_behind rp (ltnW Hj3').
+rewrite -/j in Hbg_jm1.
+have Hbgs_jm1 : bg_s_of rp j.-1 = rp_bg rp j.-1.
+  rewrite /bg_s_of /local_recv_procs_gen /recv_procs_gen /step /=.
+  rewrite (nth_map 0); last first.
+    by rewrite size_iota; apply (leq_ltn_trans (leq_pred _) (ltn_ord _)).
+  rewrite nth_iota; last by apply (leq_ltn_trans (leq_pred _) (ltn_ord _)).
+  rewrite add0n.
+  have -> : (j.-1 == j :> nat) = false.
+    apply /eqP => H.
+    have : (j.-1 < j)%N by rewrite ltn_predL (ltn_trans _ Hj3').
+    by rewrite H ltnn.
+  rewrite Hbg_jm1 /=.
+  have [f_alice Halice_eq] := @alice_body_at_recv AHE ek n_relay dk relays Hrelays
+    Hrelays_id v0 u r rand_a (rp_j rp) (ltn_ord _).
+  by rewrite Halice_eq.
+rewrite /bg'_of /=. set bgs := bg_s_of rp.
+rewrite /local_send_procs_gen /send_procs_gen /step /=.
+rewrite (nth_map 0); last first.
+  by rewrite size_iota; apply (leq_ltn_trans (leq_subr 2 j) (ltn_ord _)).
+rewrite nth_iota; last by apply (leq_ltn_trans (leq_subr 2 j) (ltn_ord _)).
+rewrite add0n.
+have -> : ((j - 2)%N == j) = false.
+  apply /eqP => Heq.
+  have : ((j : nat) - 2 < j)%N by rewrite ltn_subrL /= (ltn_trans _ Hj3').
+  by rewrite Heq ltnn.
+have Hbgs_jm2' : bgs ((j : nat) - 2)%N =
+  f_recv (e_loc (enc (ek j.-1) (local_chain_acc ((j : nat) - 3)) (rp_rr_fw rp))).
+  by rewrite /bgs -Hbgs_jm2.
+rewrite Hbgs_jm2' Hf_recv_eq /=.
+rewrite nth_cons_pos; last by exact (ltn_trans (ltn0Sn _) Hj3').
+rewrite (nth_map 0); last first.
+  by rewrite size_iota; apply (leq_ltn_trans (leq_pred _) (ltn_ord _)).
+rewrite nth_iota; last by apply (leq_ltn_trans (leq_pred _) (ltn_ord _)).
+rewrite add0n.
+have -> : (j.-1 == j :> nat) = false.
+  apply /eqP => H.
+  have : (j.-1 < j)%N by rewrite ltn_predL (ltn_trans _ Hj3').
+  by rewrite H ltnn.
+have Hbgs_jm1' : bgs j.-1 = rp_bg rp j.-1 by rewrite /bgs.
+rewrite Hbgs_jm1' Hbg_jm1 /=.
+(* Algebraic identity: Emul + chain_acc *)
+rewrite /local_alice_enc Halice.
+have Hek_eq : ek ((inord j.-1 : 'I_n_relay.+1) : nat).+1 = ek j.
+  congr ek. rewrite inordK; first by rewrite prednK // (ltn_trans _ Hj3').
+  by rewrite (leq_ltn_trans (leq_pred _) (ltn_ord _)).
+rewrite Hek_eq.
+rewrite !enc_curry_eq -(@Emul_addM AHE).
+rewrite /mr_bop /=.
+congr (Send _ _ Finish).
+congr (e_loc _).
+congr (E[ _] _).
+congr ( _, _).
+have Hjm2_pred : ((j : nat) - 2)%N = ((j : nat) - 3).+1.
+  case: (j : nat) Hj3' => [|[|[|n']]] // _.
+  by rewrite subSS subSS subSn // subn0.
+rewrite /local_chain_acc Hjm2_pred /chain_acc -/chain_acc.
+rewrite GRing.addrC.
+congr (_ + _).
+congr (term _ _ _ _).
+apply val_inj => /=.
+have Hjm1_lt : (j.-1 < n_relay.+1)%N := leq_ltn_trans (leq_pred _) (ltn_ord _).
+have Hjm2_pred_lt : ((j - 3).+1 < n_relay.+1)%N.
+  by rewrite -Hjm2_pred (leq_ltn_trans (leq_subr 2 _) (ltn_ord _)).
+rewrite !inordK //.
+- case: (j : nat) Hj3' => [|[|[|n']]] // _.
+  by rewrite /= !subSS subn0.
+- have -> : ((j : nat) - 3).+2 = j.-1.
+    case: (j : nat) Hj3' => [|[|[|n']]] // _.
+    by rewrite /= !subSS subn0.
+  exact Hjm1_lt.
+Qed.
 
 (* H5: rp_sender2 — j+1=2 special case. New randomness from alice/r2 mix. *)
 Lemma mk_next_sender2 (rp : recv_phase) (Hjn : (rp_j rp < n_relay)%N) :
