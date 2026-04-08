@@ -90,6 +90,9 @@ Definition ord_predS {n} (j : 'I_n.+1) : 'I_n.+1 :=
   | _    => ord0
   end.
 
+(* Helper: predecessor commutes with lift-from-zero on the underlying nat.
+   Needed so that [beta_ (ord_predS (lift ord0 j)) (lift ord0 j)] reduces to
+   [beta_ j (lift ord0 j)] when stepping through the intermediate telescope. *)
 Lemma ord_predS_lift n (j : 'I_n) :
   val (ord_predS (lift ord0 j)) = val j.
 Proof.
@@ -362,17 +365,25 @@ Definition v_all (i : 'I_n_relay.+2) : msgT :=
   end.
 
 (* === L1: per-action evaluation lemmas ==================================== *)
+(* L1 bricks: each lemma characterises [sw_step p a g] as a concrete [Some]
+   on a precisely-described updated state, for one action constructor.
+   Downstream phase proofs use these to rewrite [sw_step ...] directly into
+   a [sw_upd ...] call without chasing the internal [obind] plumbing. *)
 
+(* Helper (L1): AInit is unconditional -- seeds the initial plain and priv. *)
 Lemma sw_step_AInit_eq p vi dki g :
   sw_step p (AInit vi dki) g
   = Some (sw_upd g p (sw_set_priv (sw_add_plain (g p) vi) dki)).
 Proof. by []. Qed.
 
+(* Helper (L1): AEnc is unconditional under D21 -- adds a fresh cipher. *)
 Lemma sw_step_AEnc_eq p pk m rd g :
   sw_step p (AEnc pk m rd) g
   = Some (sw_upd g p (sw_add_cipher (g p) (enc pk m rd))).
 Proof. by []. Qed.
 
+(* Helper (L1): ADec fires when the cipher is held, a priv key is installed,
+   and [dec dki c = Some m]; adds [m] to ps_plain. *)
 Lemma sw_step_ADec_eq p c dki g m k :
   c \in ps_cipher (g p) ->
   ps_priv (g p) = Some k ->
@@ -381,6 +392,7 @@ Lemma sw_step_ADec_eq p c dki g m k :
   = Some (sw_upd g p (sw_add_plain (g p) m)).
 Proof. by move=> H1 H2 H3; rewrite /sw_step H1 H2 H3. Qed.
 
+(* Helper (L1): AMul combines two held ciphers via the AHE product [*h]. *)
 Lemma sw_step_AMul_eq p c1 c2 g :
   c1 \in ps_cipher (g p) ->
   c2 \in ps_cipher (g p) ->
@@ -388,30 +400,39 @@ Lemma sw_step_AMul_eq p c1 c2 g :
   = Some (sw_upd g p (sw_add_cipher (g p) (c1 *h c2))).
 Proof. by move=> H1 H2; rewrite /sw_step H1 H2. Qed.
 
+(* Helper (L1): APow exponentiates a held cipher by an in-scope plain. *)
 Lemma sw_step_APow_eq p c x g :
   c \in ps_cipher (g p) ->
   sw_step p (APow c x) g
   = Some (sw_upd g p (sw_add_cipher (g p) (c ^h x))).
 Proof. by move=> H; rewrite /sw_step H. Qed.
 
+(* Helper (L1): AAdd is unconditional under D21 -- adds a fresh plain. *)
 Lemma sw_step_AAdd_eq p a1 b1 g :
   sw_step p (AAdd a1 b1) g
   = Some (sw_upd g p (sw_add_plain (g p) (a1 + b1))).
 Proof. by []. Qed.
 
+(* Helper (L1): ASend fires when the cipher is held at [p]; installs the
+   cipher into the destination party's cipher set. *)
 Lemma sw_step_ASend_eq p dst c g :
   c \in ps_cipher (g p) ->
   sw_step p (ASend dst c) g
   = Some (sw_upd g dst (sw_add_cipher (g dst) c)).
 Proof. by move=> H; rewrite /sw_step H. Qed.
 
+(* Helper (L1): ARet fires at most once per party -- sets ps_ret to Some x. *)
 Lemma sw_step_ARet_eq p x g :
   ps_ret (g p) = None ->
   sw_step p (ARet x) g
   = Some (sw_upd g p (sw_set_ret (g p) x)).
 Proof. by move=> H; rewrite /sw_step /= H. Qed.
 
-(* Generic foldM-with-invariant helper, used for phase existence lemmas *)
+(* Helper: generic foldM-with-invariant induction. If P holds initially and
+   is preserved by every single successful step, then foldM on the whole
+   list succeeds and P holds on the final state. Used throughout phase
+   lemmas to lift per-action facts (cipher monotonicity, ps_ret
+   preservation) to whole phase blocks without re-inducting each time. *)
 Lemma foldM_inv {A B : Type} (f : B -> A -> option B) (P : B -> Prop)
     (l : seq A) (b : B) :
   P b ->
@@ -424,7 +445,9 @@ case: (Hstep a b Pb) => b' [-> Pb'] /=.
 exact: IH.
 Qed.
 
-(* foldM distributes over list concatenation *)
+(* Helper: foldM distributes over list concatenation -- the standard
+   associativity law used to split [phase0 ++ phase1 ++ ...] into per-phase
+   fold computations and pipe the intermediate state between them. *)
 Lemma foldM_cat {A B : Type} (f : B -> A -> option B) (l1 l2 : seq A) (b : B) :
   foldM f b (l1 ++ l2) =
   match foldM f b l1 with Some b' => foldM f b' l2 | None => None end.
@@ -433,8 +456,9 @@ elim: l1 b => [|a l1 IH] b /=; first by case: (foldM _ _ _).
 case: (f b a) => //= b'; exact: IH.
 Qed.
 
-(* Helper: cipher-preservation through a single functional update, under
-   the assumption that the new state [s] at party [p] extends [g p]. *)
+(* Helper: cipher-preservation through a single functional [sw_upd] under
+   the assumption that the new local state [s] extends [g p]'s cipher set.
+   The base brick for monotonicity of ciphers across [sw_step] and foldM. *)
 Lemma sw_upd_cipher_mono g p s q c :
   {subset ps_cipher (g p) <= ps_cipher s} ->
   c \in ps_cipher (g q) ->
@@ -446,9 +470,11 @@ case: eqP => [Heq|_]; last exact: Hc.
 by apply: Hsub; rewrite -Heq.
 Qed.
 
-(* Monotonicity of cipher sets: sw_step never drops ciphers from any party.
-   Used throughout the phase proofs to re-establish preconditions after a
-   sequence of intermediate steps. *)
+(* Helper: monotonicity of cipher sets across a single [sw_step]. Proves
+   that no action ever removes a cipher from any party's cipher set,
+   regardless of which party is acting and what the action is. Used to
+   thread earlier-deposited ciphers (e.g. [sw_c j] at alice from phase1)
+   through subsequent phases where later actions operate on them. *)
 Lemma sw_step_cipher_mono p a g g' q c :
   sw_step p a g = Some g' ->
   c \in ps_cipher (g q) ->
@@ -479,7 +505,9 @@ case: a => /=; intros.
   by apply: sw_upd_cipher_mono => //.
 Qed.
 
-(* Lifted to foldM over a sequence. *)
+(* Helper: cipher monotonicity lifted from a single [sw_step] to foldM on
+   a whole action sequence. Corollary of [sw_step_cipher_mono] by induction
+   on the list. *)
 Lemma foldM_cipher_mono (l : seq (party_id * dsdp_action)) g g' q c :
   foldM (fun g pa => sw_step pa.1 pa.2 g) g l = Some g' ->
   c \in ps_cipher (g q) ->
@@ -493,6 +521,11 @@ Qed.
 
 (* === L2 - L7: phase postconditions ======================================= *)
 
+(* Main (L2): phase0 always succeeds -- foldM of sw_step over the setup
+   block (alice's AInit + every relay's AInit) returns [Some g0]. Phase0
+   is straight-line AInit actions with no preconditions, so the only
+   content is that the fold unfolds cleanly; downstream lemmas consume
+   this as the entry point to phase1. *)
 Lemma dsdp_n_phase0_state :
   exists g0, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    dsdp_n_phase0 = Some g0.
@@ -508,9 +541,10 @@ elim=> [|j l IH] g /=; first by exists g.
 exact: IH.
 Qed.
 
-(* Stronger post-condition: after phase0++phase1, alice's cipher set
-   contains every [sw_c j]. This is needed to discharge phase2's APow and
-   AMul pre-conditions. *)
+(* Helper (L3 strong): stronger phase0++phase1 postcondition carrying the
+   witness that alice's cipher set contains every [sw_c j]. This is exactly
+   the precondition phase2's APow+AMul blocks need to fire; the plain
+   existence version [dsdp_n_phase1_state] below is a weakening. *)
 Lemma dsdp_n_phase01_state :
   exists g1,
     foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
@@ -561,11 +595,18 @@ exists g'; split=> //.
 by move=> j; apply: Halpha; rewrite mem_enum.
 Qed.
 
+(* Main (L3): phase0++phase1 succeeds. Plain-existence corollary of the
+   strengthened [dsdp_n_phase01_state]. *)
 Lemma dsdp_n_phase1_state :
   exists g1, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1) = Some g1.
 Proof. by have [g1 [H _]] := dsdp_n_phase01_state; exists g1. Qed.
 
+(* Main (L4): phase0++phase1++phase2 succeeds. Shows that alice's
+   interleaved Phase-2 loop (AEnc / APow / AMul / ASend at each relay index)
+   never short-circuits to None. The fine-grained version with
+   alpha-at-destination witnesses is [dsdp_n_phase2_state_strong] below;
+   this plain form is enough for external "does phase2 run?" queries. *)
 Lemma dsdp_n_phase2_state :
   exists g2, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2)
@@ -628,15 +669,23 @@ Qed.
 
 (* === D25: fresh-enc helpers ============================================== *)
 
-(* Local curry-eq helper: enc k m r = enc_curry _ k (m, r) is definitional,
-   but morphism rewriting with Emul_addM / Epow_scalarM needs the curry form. *)
+(* Helper: trivial bridge from AHE's [enc k m r] to the curried
+   [enc_curry] form. The morphism laws [Emul_addM] and [Epow_scalarM]
+   are stated on [enc_curry], not on [enc]; without this definitional
+   bridge, the rewrite chains in [sw_alpha_eq_fresh_enc] and
+   [sw_beta_eq_fresh_enc] would not unify. *)
 Local Lemma swe_curry_eq (kk : pub_keyT) (m : msgT) (r0 : randT) :
   enc kk m r0 = ahe_enc.enc_curry AHE kk (m, r0).
 Proof. by []. Qed.
 
-(* sw_alpha j is definitionally a fresh encryption under the next relay's key
-   of (v j * u_{j+1} + r j). Proved by the morphism laws Epow_scalarM +
-   Emul_addM; mirrors alice_a2_value / alice_a3_value at dsdp_program.v:213. *)
+(* Helper (D25): [sw_alpha j] collapses into a single fresh encryption
+   under [dk j] of plaintext [u_{j+1} * v j + r j]. Proved by the AHE
+   morphism laws [Epow_scalarM] and [Emul_addM] -- [sw_c j] is an enc of
+   [v j] under [dk j], raising it to [u_{j+1}] yields an enc of
+   [u_{j+1} * v j], and multiplying with [enc (r j)] yields the sum.
+   This mirrors the [alice_a2_value] pattern at [dsdp_program.v:213].
+   Needed by [dec_sw_alpha] (and transitively by L5) so that
+   [dec_correct] can fire on [sw_alpha j]. *)
 Lemma sw_alpha_eq_fresh_enc (j : 'I_n_relay.+1) : exists rr,
   sw_alpha j = enc (sw_pk_of (lift ord0 j)) (v j * u (lift ord0 j) + r j) rr.
 Proof.
@@ -647,9 +696,12 @@ rewrite -(@Emul_addM AHE).
 by eexists.
 Qed.
 
-(* sw_beta j jnext is a fresh encryption whose plaintext is
-   (v jnext * u_{jnext+1} + r jnext) + sw_Delta j. Proved by substituting
-   sw_alpha_eq_fresh_enc and applying Emul_addM. *)
+(* Helper (D25): [sw_beta j jnext] collapses into a single fresh
+   encryption under [dk jnext] of plaintext [u_{jnext+1} * v jnext +
+   r jnext + sw_Delta j]. Proved by unfolding [sw_beta] to [sw_alpha
+   jnext *h enc_fresh], substituting [sw_alpha_eq_fresh_enc jnext], and
+   applying [Emul_addM]. Needed by [dec_sw_beta] so the intermediate
+   and last relays can extract [sw_Delta j] from their incoming beta. *)
 Lemma sw_beta_eq_fresh_enc (j jnext : 'I_n_relay.+1) : exists rr,
   sw_beta j jnext = enc (sw_pk_of (lift ord0 jnext))
     (v jnext * u (lift ord0 jnext) + r jnext + sw_Delta j) rr.
@@ -660,14 +712,19 @@ rewrite Ha /Emul !swe_curry_eq -(@Emul_addM AHE).
 by eexists.
 Qed.
 
-(* Uniform pub-key for lifted indices. *)
+(* Helper: [sw_pk_of] on a lift-from-zero index reduces to [pub_of_priv]
+   of the corresponding [dk j]. Pure definitional bookkeeping, but
+   stated as a named lemma so [rewrite sw_pk_of_lift] can advance the
+   [dec_correct] application in [dec_sw_alpha] / [dec_sw_beta]. *)
 Lemma sw_pk_of_lift (j : 'I_n_relay.+1) :
   sw_pk_of (lift ord0 j) = pub_of_priv (dk j).
 Proof. by rewrite /sw_pk_of liftK. Qed.
 
-(* Decryption of sw_alpha j under dk j yields u_{j+1} * v j + r j.
-   This is the key firing that lets the first relay extract sw_Delta ord0
-   from sw_alpha ord0 (since sw_Delta ord0 = u (lift ord0 ord0) * v ord0 + r ord0). *)
+(* Helper: decryption of [sw_alpha j] under [dk j] yields [u_{j+1} * v j
+   + r j]. Composes [sw_alpha_eq_fresh_enc] and [dec_correct]. This is
+   the key firing that lets the first relay (L5) extract [sw_Delta ord0]
+   from [sw_alpha ord0] -- note [sw_Delta ord0 = u (lift ord0 ord0) *
+   v ord0 + r ord0] by the single-term unfolding of the big sum. *)
 Lemma dec_sw_alpha (j : 'I_n_relay.+1) :
   dec (dk j) (sw_alpha j) = Some (u (lift ord0 j) * v j + r j).
 Proof.
@@ -676,9 +733,12 @@ rewrite Ha sw_pk_of_lift dec_correct.
 by rewrite GRing.mulrC.
 Qed.
 
-(* Decryption of sw_beta j jnext under dk jnext yields
-   u_{jnext+1} * v jnext + r jnext + sw_Delta j.
-   Used by each intermediate relay and the last relay. *)
+(* Helper: decryption of [sw_beta j jnext] under [dk jnext] yields the
+   running sum [u_{jnext+1} * v jnext + r jnext + sw_Delta j]. Composes
+   [sw_beta_eq_fresh_enc] and [dec_correct]. Consumed by the ADec step
+   of every intermediate relay (L6) and the last relay (L6b). Combined
+   with [big_ord_recr] on [sw_Delta], the output telescopes to
+   [sw_Delta jnext]. *)
 Lemma dec_sw_beta (j jnext : 'I_n_relay.+1) :
   dec (dk jnext) (sw_beta j jnext)
   = Some (u (lift ord0 jnext) * v jnext + r jnext + sw_Delta j).
@@ -729,8 +789,11 @@ Proof. by []. Qed.
 Lemma alice_ne_Charlie : alice <> nat_to_party_id 2.
 Proof. by []. Qed.
 
-(* sw_step preserves ps_priv at any party q if the step is not an AInit at q.
-   Used to track alice's and Bob's private keys across phases 0, 1, 2. *)
+(* Helper: [sw_step] preserves [ps_priv] at any party [q], except when the
+   action is an [AInit] fired at [q] itself (the only action that touches
+   ps_priv). Used to thread alice's [dk_alice] and the first relay's
+   [dk ord0] through all of phase0/phase1/phase2 without re-proving the
+   fact at every individual step. *)
 Lemma sw_step_priv_preserve p a g g' q :
   sw_step p a g = Some g' ->
   (p <> q \/ forall vi dki, a <> AInit vi dki) ->
@@ -759,9 +822,14 @@ case: a => /=; intros.
   rewrite /sw_upd. by case: eqP => // ->.
 Qed.
 
-(* Phase0_tail loop: any sequence of relay AInits starting from a state with
-   alice's priv set preserves alice's priv and, if ord0 ∈ l, sets Bob's priv
-   to (dk ord0). *)
+(* Helper: phase0's inner induction. Runs a list [l] of relay-AInit
+   actions against any starting state where alice's priv is already set,
+   and produces: (a) the fold succeeds; (b) alice's priv is untouched;
+   (c) if [ord0 \in l] then the first relay's slot (Bob) now holds
+   [dk ord0]; (d) cipher sets only grow; (e) Charlie's slot tracking for
+   the [n_relay = 1] case. The Bob/Charlie-specific clauses are the
+   narrow form of ps_priv tracking permitted by [party_id]'s 4-element
+   finiteness -- a forall-j form is provably false at [n_relay >= 3]. *)
 Lemma dsdp_n_phase0_tail_loop (l : seq 'I_n_relay.+1) (g : sw_global_state) :
   ps_priv (g alice) = Some dk_alice ->
   exists g',
@@ -874,10 +942,12 @@ rewrite Ha1j0.
 exact: (Hinv l g1 g' HCharlie_g1 Hfold).
 Qed.
 
-(* Phase1 loop: starting from any state where alice holds dk_alice, Bob holds
-   dk ord0, and each sw_c k (for k ∈ l) is definable, running the flatten of
-   phase1 actions over l produces a state where alice holds every sw_c j (j ∈ l)
-   and the priv invariants are preserved. *)
+(* Helper: phase1's inner induction. Runs the flatten of [AEnc; ASend]
+   pairs over a sub-list [l] of relay indices, starting from a state
+   where alice's and Bob's priv keys are already set. Produces: (a) the
+   fold succeeds; (b) alice's cipher set contains [sw_c j] for every
+   [j \in l]; (c) the priv invariants and [ps_ret] are preserved
+   globally. Consumed by [dsdp_n_phase01_state_strong] below. *)
 Lemma dsdp_n_phase1_loop (l : seq 'I_n_relay.+1) (g : sw_global_state) :
   ps_priv (g alice) = Some dk_alice ->
   ps_priv (g Bob) = Some (dk ord0) ->
@@ -963,7 +1033,12 @@ move=> q.
 by rewrite Hret' Hret_step.
 Qed.
 
-(* Combined phase01 strong postcondition. *)
+(* Helper: combined phase0++phase1 strong postcondition, bundling the
+   six facts downstream lemmas need at the entry point of phase2:
+   fold succeeds, alice holds every [sw_c j], alice's and Bob's priv
+   are set, alice's [ps_ret] is still None, and (for [n_relay = 1])
+   Charlie's slot holds [dk (Ordinal 1)]. Feeds
+   [dsdp_n_phase2_state_strong]. *)
 Lemma dsdp_n_phase01_state_strong :
   exists g1,
     foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
@@ -1002,6 +1077,13 @@ Qed.
 (* Phase2 loop: given a state where alice has all sw_c, her priv and Bob's
    priv, running phase2 produces a state where every sw_alpha j lives in its
    designated destination, and the priv invariants are preserved. *)
+(* Helper: phase2's inner induction. For each relay index [j0] in the
+   sub-list, alice executes 4 actions (AEnc the fresh randomness, APow
+   [sw_c j0] by [u_{j0+1}], AMul to form [sw_alpha j0], ASend to the
+   destination). The invariant carried through the loop is that alice's
+   [sw_c] witnesses remain available for the remaining indices, plus
+   the priv/ret preservation facts. This is the engine of
+   [dsdp_n_phase2_state_strong]. *)
 Lemma dsdp_n_phase2_loop (l : seq 'I_n_relay.+1) (g : sw_global_state) :
   (forall j : 'I_n_relay.+1, j \in l -> sw_c j \in ps_cipher (g alice)) ->
   ps_priv (g alice) = Some dk_alice ->
@@ -1101,6 +1183,16 @@ move=> q.
 by rewrite Hret' Hret_gf.
 Qed.
 
+(* Main (L4-strong): the post-state of phase0++phase1++phase2 carries the
+   witnesses the β-chain needs:
+     - For every [j : 'I_n_relay.+1], [sw_alpha j] is in the cipher set
+       of the destination party [nat_to_party_id (alice_send_dest j)].
+     - Alice still holds [dk_alice] with [ps_ret alice = None].
+     - The relay-0 slot (Bob) still holds [dk ord0].
+     - For [n_relay = 1], the relay-1 slot (Charlie) holds [dk (Ordinal 1)].
+   The forall-j priv form is intentionally weakened to these specific
+   slots because [party_id]'s 4-constructor finiteness would otherwise
+   make the forall false. Consumed by L5 and (transitively) L7. *)
 Lemma dsdp_n_phase2_state_strong :
   exists g2,
     foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
@@ -1130,6 +1222,13 @@ rewrite Hpriv2.
 by apply: HCharlie1.
 Qed.
 
+(* Main (L5): phase0..phase2 ++ first_relay block succeeds, and in the
+   [n_relay = 1] regime the post-state carries four facts needed by the
+   β-chain and the last-relay step: [sw_beta ord0 a1] is at Charlie
+   (= nat_to_party_id 2), Charlie's priv is [dk a1], alice still holds
+   [dk_alice] untouched, and alice's [ps_ret] is still None. The
+   first-relay block is the four actions ADec (extract [sw_Delta ord0]),
+   AEnc (fresh enc under [dk a1]), AMul (form [sw_beta ord0 a1]), ASend. *)
 Lemma dsdp_n_first_relay_eq :
   exists gf, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
@@ -1207,11 +1306,14 @@ rewrite /sw_upd /=.
 by rewrite HgAMul_alice.
 Qed.
 
-(* L6: Straight-line telescoping step for one intermediate relay.
-   Given a state [g] where party pj := R j holds sw_beta (ord_predS j) j
-   and sw_alpha (lift ord0 j) on its cipher set and the right private key,
-   running dsdp_n_intermediate j drives [g] to some [g'] where the next
-   party pnext := R (j+1) holds sw_beta j (lift ord0 j). *)
+(* Main (L6): straight-line telescoping step for one intermediate relay.
+   Given a state [g] where party [pj := R j] already holds the incoming
+   [sw_beta (ord_predS j) j] and the pre-fetched [sw_alpha (lift ord0 j)]
+   in its cipher set and holds [dk j] as its priv, the four actions in
+   [dsdp_n_intermediate j] drive [g] to some [g'] where the next party
+   [pnext := R (j+1)] holds [sw_beta j (lift ord0 j)]. This is the
+   inductive step of the β-chain: the old [sw_Delta (j-1)] carried by
+   the incoming beta telescopes to [sw_Delta j] at the outgoing beta. *)
 Lemma dsdp_n_intermediate_telescope
     (j : 'I_n_relay.+1) (jnext : 'I_n_relay.+1) (g : sw_global_state) :
   (0 < val j < n_relay)%N ->
@@ -1270,9 +1372,13 @@ rewrite /= eqxx.
 by case: ifP => _ /=; apply/fset1UP; left.
 Qed.
 
-(* L6b: Last-relay straight-line step.  Given a state holding
-   sw_beta (ord_predS ord_max) ord_max on party R n_relay with the
-   right key, running dsdp_n_last_relay yields sw_gamma on alice's ciphers. *)
+(* Main (L6b): straight-line terminator step for the last relay. Given a
+   state holding [sw_beta (ord_predS ord_max) ord_max] on party [R
+   n_relay] with the matching private key [dk ord_max], running the
+   three-action [dsdp_n_last_relay] block yields [sw_gamma] (= a fresh
+   encryption under alice's key of [sw_Delta ord_max]) in alice's cipher
+   set. This is the last step of the β-chain: the terminal relay
+   decrypts, re-encrypts under alice's key, and forwards [sw_gamma]. *)
 Lemma dsdp_n_last_relay_eq (g : sw_global_state) :
   let pn : party_id := R n_relay in
   sw_beta (ord_predS ord_max) (@ord_max n_relay) \in ps_cipher (g pn) ->
@@ -1297,21 +1403,21 @@ rewrite eqxx.
 by case: ifP => _ /=; apply/fset1UP; left.
 Qed.
 
-(* L7 (strong): End-of-phase-3 state.  Exposes the three post-conditions
-   that phase4 consumes: sw_gamma \in alice.cipher, ps_priv alice = dk_alice,
-   and ps_ret alice = None so the terminal ARet fires.
+(* Main (L7): end-of-phase-3 state. Exposes the four post-conditions
+   that [dsdp_n_phase4_state] (L8) consumes: the fold of phase0++phase1
+   ++phase2++phase3 succeeds, [sw_gamma] is in alice's cipher set,
+   [ps_priv alice = Some dk_alice] is still held, and [ps_ret alice =
+   None] so the terminal ARet fires.
 
-   RESTRICTION: This lemma (and hence TH1) is proved only for [n_relay = 1],
-   i.e. the 3-party case (alice, Bob, Charlie).  The obstacle for [n_relay >= 3]
-   is that [party_id] has only 4 inhabitants (Alice, Bob, Charlie, NoParty),
-   so [R j = nat_to_party_id j.+1] collapses multiple relays onto NoParty for
-   [j >= 2], and the [ps_priv] invariant needed by intermediate-relay steps
-   cannot be maintained for both collapsed relays.
-
-   For [n_relay = 2] the argument also goes through (3 relays: Bob, Charlie,
-   NoParty, each distinct), but requires explicit intermediate handling that
-   we leave as future work.  DSDP's original 3-party case of Dumas et al. 2017
-   corresponds exactly to [n_relay = 1]. *)
+   RESTRICTION: proved for [n_relay = 1] only, i.e. the 3-party case
+   (alice, Bob, Charlie) from Dumas et al. 2017. The obstacle for
+   [n_relay >= 3] is that [party_id] has only 4 inhabitants
+   (Alice/Bob/Charlie/NoParty); [R j = nat_to_party_id j.+1] collapses
+   multiple relays to NoParty for [j >= 2], and the [ps_priv] invariant
+   the intermediate-relay steps need cannot be maintained for both
+   collapsed relays. For [n_relay = 2] the argument goes through too
+   (Bob, Charlie, NoParty are all distinct) but needs explicit
+   intermediate handling left as future work. *)
 Lemma dsdp_n_beta_chain_eq (Hnr : n_relay = 1%N) :
   exists g3,
     foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
@@ -1362,6 +1468,11 @@ Qed.
 
 (* === L8: phase 4 postcondition =========================================== *)
 
+(* Main (L8): after phase0..phase4, alice's [ps_ret] is [Some sw_S].
+   Composes [dsdp_n_beta_chain_eq] (which puts [sw_gamma] in alice's
+   cipher set) with the four phase4 actions: ADec [sw_gamma] to extract
+   [sw_Delta ord_max], two AAdds to form [sw_S = sw_Delta ord_max + u_1
+   * v_1 - \sum r], and ARet. *)
 Lemma dsdp_n_phase4_state (Hnr : n_relay = 1%N) :
   exists gf, dsdp_n_final = Some gf /\ ps_ret (gf alice) = Some sw_S.
 Proof.
@@ -1379,6 +1490,11 @@ Qed.
 
 (* === L9: algebraic identity ============================================== *)
 
+(* Main (L9): the algebraic identity at the heart of DSDP correctness.
+   [sw_S] is defined as [sw_Delta ord_max - \sum r + u ord0 * v_alice];
+   [sw_Delta ord_max = \sum_k (u_{k+1} * v_k + r_k)]; so [sw_S] telescopes
+   to [\sum_(i < n_relay.+2) u i * v_all i], which is the dot product.
+   Pure ring algebra; independent of [sw_step] and of [n_relay = 1]. *)
 Lemma sw_S_eq_dot_product :
   sw_S = \sum_(i < n_relay.+2) u i * v_all i.
 Proof.
@@ -1402,6 +1518,13 @@ Qed.
 
 (* === TH1: headline correctness =========================================== *)
 
+(* Main (TH1, headline theorem): running the whole [dsdp_n_program]
+   from [sw_init_state] via [foldM sw_step] succeeds, and the return
+   value alice emits is exactly the dot product [\sum_i u_i * v_i].
+   One-line corollary composing [dsdp_n_phase4_state] (final state has
+   [ps_ret alice = Some sw_S]) with [sw_S_eq_dot_product]. Restricted
+   to [n_relay = 1] by the same [party_id] 4-constructor finiteness
+   argument flagged in L7's comment. *)
 Theorem dsdp_n_correct (Hnr : n_relay = 1%N) :
   exists gf, dsdp_n_final = Some gf
            /\ ret_of gf alice = Some (\sum_(i < n_relay.+2) u i * v_all i).
