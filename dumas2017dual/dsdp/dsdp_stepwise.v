@@ -642,6 +642,34 @@ rewrite Ha /Emul !swe_curry_eq -(@Emul_addM AHE).
 by eexists.
 Qed.
 
+(* Uniform pub-key for lifted indices. *)
+Lemma sw_pk_of_lift (j : 'I_n_relay.+1) :
+  sw_pk_of (lift ord0 j) = pub_of_priv (dk j).
+Proof. by rewrite /sw_pk_of liftK. Qed.
+
+(* Decryption of sw_alpha j under dk j yields u_{j+1} * v j + r j.
+   This is the key firing that lets the first relay extract sw_Delta ord0
+   from sw_alpha ord0 (since sw_Delta ord0 = u (lift ord0 ord0) * v ord0 + r ord0). *)
+Lemma dec_sw_alpha (j : 'I_n_relay.+1) :
+  dec (dk j) (sw_alpha j) = Some (u (lift ord0 j) * v j + r j).
+Proof.
+have [rr Ha] := sw_alpha_eq_fresh_enc j.
+rewrite Ha sw_pk_of_lift dec_correct.
+by rewrite GRing.mulrC.
+Qed.
+
+(* Decryption of sw_beta j jnext under dk jnext yields
+   u_{jnext+1} * v jnext + r jnext + sw_Delta j.
+   Used by each intermediate relay and the last relay. *)
+Lemma dec_sw_beta (j jnext : 'I_n_relay.+1) :
+  dec (dk jnext) (sw_beta j jnext)
+  = Some (u (lift ord0 jnext) * v jnext + r jnext + sw_Delta j).
+Proof.
+have [rr Hb] := sw_beta_eq_fresh_enc j jnext.
+rewrite Hb sw_pk_of_lift dec_correct.
+by rewrite [v jnext * _]GRing.mulrC.
+Qed.
+
 Lemma dsdp_n_first_relay_eq :
   exists gf, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
