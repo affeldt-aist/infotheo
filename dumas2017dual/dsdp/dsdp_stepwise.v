@@ -695,6 +695,22 @@ split; last by move=> ->.
 by case: j => // -[//|j'].
 Qed.
 
+(* Helper: R j = Charlie iff j = 1%N. *)
+Lemma R_eq_Charlie_iff_one j : R j = nat_to_party_id 2 <-> j = 1%N.
+Proof.
+rewrite /R /nat_to_party_id /=.
+split; last by move=> ->.
+by case: j => [//|[//|[//|j']]].
+Qed.
+
+(* Helper: Bob <> nat_to_party_id 2 (Charlie). *)
+Lemma Bob_ne_Charlie : Bob <> nat_to_party_id 2.
+Proof. by []. Qed.
+
+(* Helper: alice <> nat_to_party_id 2. *)
+Lemma alice_ne_Charlie : alice <> nat_to_party_id 2.
+Proof. by []. Qed.
+
 (* sw_step preserves ps_priv at any party q if the step is not an AInit at q.
    Used to track alice's and Bob's private keys across phases 0, 1, 2. *)
 Lemma sw_step_priv_preserve p a g g' q :
@@ -735,17 +751,30 @@ Lemma dsdp_n_phase0_tail_loop (l : seq 'I_n_relay.+1) (g : sw_global_state) :
       [seq (R (val j), AInit (v j) (dk j)) | j <- l] = Some g'
     /\ ps_priv (g' alice) = Some dk_alice
     /\ (ord0 \in l -> ps_priv (g' Bob) = Some (dk ord0))
-    /\ (forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g' p)).
+    /\ (forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g' p))
+    /\ (n_relay = 1%N -> forall a1 : 'I_n_relay.+1, val a1 = 1%N -> a1 \in l ->
+        ps_priv (g' (nat_to_party_id 2)) = Some (dk a1))
+    /\ (forall q, ps_ret (g' q) = ps_ret (g q)).
 Proof.
 move=> Halice.
 elim: l g Halice => [|j0 l IH] g Halice /=.
-  by exists g; do !split=> //; rewrite in_nil.
+  exists g; split; first by [].
+  split; first by [].
+  split; first by rewrite in_nil.
+  split; first by [].
+  split; first by move=> _ a1 _; rewrite in_nil.
+  by [].
 set g1 := sw_upd g (R _) _.
 have Hne : R (val j0) <> alice by exact: R_ne_alice.
 have Halice1 : ps_priv (g1 alice) = Some dk_alice.
   rewrite /g1 /sw_upd.
   by case: eqP => [Heq|//]; move: Hne; rewrite Heq.
-have [g' [Hfold [Halice' [HBob Hmono]]]] := IH g1 Halice1.
+have Hret_step : forall q, ps_ret (g1 q) = ps_ret (g q).
+  move=> q.
+  rewrite /g1 /sw_upd.
+  case: eqP => [Heq|_] //.
+  by rewrite /sw_set_priv /sw_add_plain /= Heq.
+have [g' [Hfold [Halice' [HBob [Hmono [HCharlie Hret']]]]]] := IH g1 Halice1.
 exists g'; split; first exact: Hfold.
 split; first exact: Halice'.
 split.
@@ -777,12 +806,54 @@ split.
     have : k = ord0 by apply: val_inj.
     by move=> ->.
   exact: (Hinv l g1 g' HBob_g1 Hfold).
-move=> p c Hc.
-apply: Hmono.
-rewrite /g1 /sw_upd.
-case: eqP => [Heq|_]; last exact: Hc.
-rewrite /sw_set_priv /sw_add_plain /=.
-rewrite -Heq. exact: Hc.
+split.
+  move=> p c Hc.
+  apply: Hmono.
+  rewrite /g1 /sw_upd.
+  case: eqP => [Heq|_]; last exact: Hc.
+  rewrite /sw_set_priv /sw_add_plain /=.
+  rewrite -Heq. exact: Hc.
+split; last first.
+  move=> q.
+  by rewrite Hret' Hret_step.
+(* Charlie invariant: if a1 ∈ (j0 :: l) with val a1 = 1, then g' Charlie
+   holds dk a1. Either a1 = j0 (step fires at this iter) or a1 ∈ l (IH). *)
+move=> Hnr a1 Ha1val.
+rewrite in_cons => /orP [/eqP Ha1j0|Hin]; last first.
+  (* a1 ∈ l: use IH's Charlie clause applied at state g1. We need to show
+     the extra AInit step at j0 doesn't overwrite Charlie's priv,
+     AND that the IH clause holds at g1 from the start — which it does
+     for the tail, so we just apply HCharlie. But HCharlie talks about g',
+     taking the g1 as its input state. *)
+  exact: (HCharlie Hnr a1 Ha1val Hin).
+(* a1 = j0 case: the step sets R (val j0) = Charlie's priv = Some (dk j0),
+   and we need to show the remaining tail preserves it. *)
+have Hj0_one : val j0 = 1%N by rewrite -Ha1val Ha1j0.
+have HCharlie_g1 : ps_priv (g1 (nat_to_party_id 2)) = Some (dk j0).
+  rewrite /g1 /sw_upd.
+  have HCeq : nat_to_party_id 2 == R (val j0).
+    by apply/eqP; rewrite Hj0_one.
+  by rewrite HCeq /= /sw_set_priv /=.
+(* Now invariant: if g0 Charlie = Some (dk j0) and j0 ∈ 'I_n_relay.+1 with
+   val j0 = 1, and n_relay = 1, then any further AInit-tail preserves this.
+   Reason: at n_relay = 1, every k ∈ 'I_2 with R (val k) = Charlie has
+   val k = 1, hence k = j0 by val_inj, hence dk k = dk j0. *)
+have Hinv : forall (l0 : seq 'I_n_relay.+1) (g0 g0' : sw_global_state),
+  ps_priv (g0 (nat_to_party_id 2)) = Some (dk j0) ->
+  foldM (fun g pa => sw_step pa.1 pa.2 g) g0
+    [seq (R (val j), AInit (v j) (dk j)) | j <- l0] = Some g0' ->
+  ps_priv (g0' (nat_to_party_id 2)) = Some (dk j0).
+  elim=> [|k l0 IHl0] g0 g0' Hg0 /=; first by case=> <-.
+  move=> Hf.
+  apply: (IHl0 _ _ _ Hf).
+  rewrite /sw_upd.
+  case: eqP => [Heq|_]; last exact: Hg0.
+  have /R_eq_Charlie_iff_one Hkone : R (val k) = nat_to_party_id 2 by rewrite -Heq.
+  have Hk_eq_j0 : k = j0 by apply: val_inj; rewrite Hkone Hj0_one.
+  rewrite /sw_set_priv /=.
+  congr Some; congr dk; exact: Hk_eq_j0.
+rewrite Ha1j0.
+exact: (Hinv l g1 g' HCharlie_g1 Hfold).
 Qed.
 
 (* Phase1 loop: starting from any state where alice holds dk_alice, Bob holds
@@ -799,11 +870,15 @@ Lemma dsdp_n_phase1_loop (l : seq 'I_n_relay.+1) (g : sw_global_state) :
     /\ (forall j : 'I_n_relay.+1, j \in l -> sw_c j \in ps_cipher (g' alice))
     /\ ps_priv (g' alice) = Some dk_alice
     /\ ps_priv (g' Bob) = Some (dk ord0)
-    /\ (forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g' p)).
+    /\ (forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g' p))
+    /\ (forall q, ps_priv (g' q) = ps_priv (g q))
+    /\ (forall q, ps_ret (g' q) = ps_ret (g q)).
 Proof.
 move=> Halice HBob.
 elim: l g Halice HBob => [|j0 l IH] g Halice HBob /=.
-  by exists g; do !split=> //; move=> j; rewrite in_nil.
+  exists g; split; first by [].
+  split; first by move=> j; rewrite in_nil.
+  by split=> //.
 set g1 := sw_upd g (R j0) (sw_add_cipher (g (R j0)) _).
 have Hsc1 : sw_c j0 \in ps_cipher (g1 (R j0)).
   rewrite /g1 /sw_upd eqxx /sw_add_cipher /= /sw_c.
@@ -823,22 +898,51 @@ have HBob2 : ps_priv (g2 Bob) = Some (dk ord0).
   case: eqP => [Heq|_]; last exact: HBob.
   rewrite /sw_add_cipher /=.
   by rewrite -Heq.
-have [g' [Hfold [Hcs [Halice' [HBob' Hmono']]]]] := IH g2 Halice2 HBob2.
+have Hpa : forall s c, ps_priv (sw_add_cipher s c) = ps_priv s by [].
+have Hpu : forall g0 p0 s q0,
+    ps_priv ((sw_upd g0 p0 s) q0)
+  = if q0 == p0 then ps_priv s else ps_priv (g0 q0).
+  by move=> g0 p0 s q0; rewrite /sw_upd; case: ifP.
+have Hpriv_step : forall q, ps_priv (g2 q) = ps_priv (g q).
+  move=> q.
+  rewrite /g2 Hpu Hpa /g1 !Hpu !Hpa.
+  have Hne_aR : (alice == R j0) = false by apply/eqP => /esym /R_ne_alice.
+  rewrite Hne_aR.
+  case: ifP => [/eqP Heqa|_]; first by rewrite Heqa.
+  by case: ifP => [/eqP ->|_].
+have Hra : forall s c, ps_ret (sw_add_cipher s c) = ps_ret s by [].
+have Hru : forall g0 p0 s q0,
+    ps_ret ((sw_upd g0 p0 s) q0)
+  = if q0 == p0 then ps_ret s else ps_ret (g0 q0).
+  by move=> g0 p0 s q0; rewrite /sw_upd; case: ifP.
+have Hret_step : forall q, ps_ret (g2 q) = ps_ret (g q).
+  move=> q.
+  rewrite /g2 Hru Hra /g1 !Hru !Hra.
+  have Hne_aR : (alice == R j0) = false by apply/eqP => /esym /R_ne_alice.
+  rewrite Hne_aR.
+  case: ifP => [/eqP Heqa|_]; first by rewrite Heqa.
+  by case: ifP => [/eqP ->|_].
+have [g' [Hfold [Hcs [Halice' [HBob' [Hmono' [Hpriv' Hret']]]]]]] := IH g2 Halice2 HBob2.
 exists g'; split; first exact: Hfold.
 split.
   move=> j; rewrite in_cons => /orP [/eqP ->|Hj]; last exact: Hcs.
   apply: Hmono'.
   rewrite /g2 /sw_upd eqxx /sw_add_cipher /=.
   by apply/fset1UP; left.
-split=> //; split=> //.
-move=> p c Hc.
-apply: Hmono'.
-rewrite /g2.
-apply: sw_upd_cipher_mono; last first.
-  rewrite /g1.
-  apply: sw_upd_cipher_mono; last exact: Hc.
+split=> //; split=> //; split.
+  move=> p c Hc.
+  apply: Hmono'.
+  rewrite /g2.
+  apply: sw_upd_cipher_mono; last first.
+    rewrite /g1.
+    apply: sw_upd_cipher_mono; last exact: Hc.
+    by move=> c0 Hc0; rewrite /sw_add_cipher /= inE Hc0 orbT.
   by move=> c0 Hc0; rewrite /sw_add_cipher /= inE Hc0 orbT.
-by move=> c0 Hc0; rewrite /sw_add_cipher /= inE Hc0 orbT.
+split.
+  move=> q.
+  by rewrite Hpriv' Hpriv_step.
+move=> q.
+by rewrite Hret' Hret_step.
 Qed.
 
 (* Combined phase01 strong postcondition. *)
@@ -848,23 +952,33 @@ Lemma dsdp_n_phase01_state_strong :
           (dsdp_n_phase0 ++ dsdp_n_phase1) = Some g1
     /\ (forall j : 'I_n_relay.+1, sw_c j \in ps_cipher (g1 alice))
     /\ ps_priv (g1 alice) = Some dk_alice
-    /\ ps_priv (g1 Bob) = Some (dk ord0).
+    /\ ps_priv (g1 Bob) = Some (dk ord0)
+    /\ ps_ret (g1 alice) = None
+    /\ (n_relay = 1%N -> forall a1 : 'I_n_relay.+1, val a1 = 1%N ->
+        ps_priv (g1 (nat_to_party_id 2)) = Some (dk a1)).
 Proof.
 rewrite /dsdp_n_phase0 /dsdp_n_phase1 /=.
 set g_a := sw_upd sw_init_state alice _.
 have Halice_ga : ps_priv (g_a alice) = Some dk_alice.
   by rewrite /g_a /sw_upd eqxx.
+have Hret_ga : ps_ret (g_a alice) = None.
+  by rewrite /g_a /sw_upd eqxx /sw_set_priv /sw_add_plain /=.
 rewrite foldM_cat.
-have [g0 [Hfold0 [Halice0 [HBob0 _]]]] :=
+have [g0 [Hfold0 [Halice0 [HBob0 [_ [HCharlie0 Hret0]]]]]] :=
   dsdp_n_phase0_tail_loop (enum 'I_n_relay.+1) Halice_ga.
 rewrite Hfold0.
 have HBob0' : ps_priv (g0 Bob) = Some (dk ord0).
   by apply: HBob0; rewrite mem_enum.
-have [g1 [Hfold1 [Hcs [Halice1 [HBob1 _]]]]] :=
+have [g1 [Hfold1 [Hcs [Halice1 [HBob1 [_ [Hpriv1 Hret1]]]]]]] :=
   dsdp_n_phase1_loop (enum 'I_n_relay.+1) Halice0 HBob0'.
 rewrite Hfold1.
 exists g1; split=> //.
-by split=> // j; apply: Hcs; rewrite mem_enum.
+split; first by move=> j; apply: Hcs; rewrite mem_enum.
+split=> //; split=> //; split.
+  by rewrite Hret1 Hret0.
+move=> Hnr a1 Ha1val.
+rewrite Hpriv1.
+by apply: HCharlie0 => //; rewrite mem_enum.
 Qed.
 
 (* Phase2 loop: given a state where alice has all sw_c, her priv and Bob's
@@ -887,10 +1001,14 @@ Lemma dsdp_n_phase2_loop (l : seq 'I_n_relay.+1) (g : sw_global_state) :
           sw_alpha j \in ps_cipher (g' (nat_to_party_id (alice_send_dest (val j)))))
     /\ ps_priv (g' alice) = Some dk_alice
     /\ ps_priv (g' Bob) = Some (dk ord0)
-    /\ (forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g' p)).
+    /\ (forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g' p))
+    /\ (forall q, ps_priv (g' q) = ps_priv (g q))
+    /\ (forall q, ps_ret (g' q) = ps_ret (g q)).
 Proof.
 elim: l g => [|j0 l IH] g Hall Halice HBob /=.
-  by exists g; do !split=> //; move=> j; rewrite in_nil.
+  exists g; split; first by [].
+  split; first by move=> j; rewrite in_nil.
+  by split=> //.
 have Hsc_g : sw_c j0 \in ps_cipher (g alice) by apply: Hall; rewrite mem_head.
 have Hsc1 : sw_c j0 \in enc (sw_pk_of (lift ord0 j0)) (r j0) (ra j0)
                           |` ps_cipher (g alice).
@@ -919,9 +1037,16 @@ have Hupd_add : forall (g0 : sw_global_state) p c q,
   move=> g0 p0 c0 q0.
   rewrite /sw_upd.
   by case: eqP => [->|_] //.
+have Hupd_add_ret : forall (g0 : sw_global_state) p c q,
+  ps_ret ((sw_upd g0 p (sw_add_cipher (g0 p) c)) q) = ps_ret (g0 q).
+  move=> g0 p0 c0 q0.
+  rewrite /sw_upd.
+  by case: eqP => [->|_] //.
 (* gf is four nested sw_upd+sw_add_cipher, so priv is preserved. *)
 have Hpriv_gf : forall q, ps_priv (gf q) = ps_priv (g q).
   by move=> q; rewrite /gf Hupd_add Hupd_add Hupd_add Hupd_add.
+have Hret_gf : forall q, ps_ret (gf q) = ps_ret (g q).
+  by move=> q; rewrite /gf Hupd_add_ret Hupd_add_ret Hupd_add_ret Hupd_add_ret.
 have Halice_f : ps_priv (gf alice) = Some dk_alice by rewrite Hpriv_gf.
 have HBob_f : ps_priv (gf Bob) = Some (dk ord0) by rewrite Hpriv_gf.
 (* Cipher monotonicity: all 4 updates only add, never remove. *)
@@ -940,17 +1065,22 @@ have Hall_f : forall k : 'I_n_relay.+1, k \in l -> sw_c k \in ps_cipher (gf alic
   move=> k Hk.
   apply: Hmono0.
   by apply: Hall; rewrite in_cons Hk orbT.
-have [g' [Hfold [Hal [Halice' [HBob' Hmono']]]]] := IH gf Hall_f Halice_f HBob_f.
+have [g' [Hfold [Hal [Halice' [HBob' [Hmono' [Hpriv' Hret']]]]]]] := IH gf Hall_f Halice_f HBob_f.
 exists g'; split; first exact: Hfold.
 split.
   move=> j; rewrite in_cons => /orP [/eqP ->|Hj]; last exact: Hal.
   apply: Hmono'.
   rewrite /gf /sw_upd eqxx /sw_add_cipher /=.
   by apply/fset1UP; left.
-split=> //; split=> //.
-move=> p c Hc.
-apply: Hmono'.
-exact: Hmono0.
+split=> //; split=> //; split.
+  move=> p c Hc.
+  apply: Hmono'.
+  exact: Hmono0.
+split.
+  move=> q.
+  by rewrite Hpriv' Hpriv_gf.
+move=> q.
+by rewrite Hret' Hret_gf.
 Qed.
 
 Lemma dsdp_n_phase2_state_strong :
@@ -960,30 +1090,49 @@ Lemma dsdp_n_phase2_state_strong :
     /\ (forall j : 'I_n_relay.+1,
          sw_alpha j \in ps_cipher (g2 (nat_to_party_id (alice_send_dest (val j)))))
     /\ ps_priv (g2 (nat_to_party_id 1)) = Some (dk ord0)
-    /\ ps_priv (g2 alice) = Some dk_alice.
+    /\ ps_priv (g2 alice) = Some dk_alice
+    /\ ps_ret (g2 alice) = None
+    /\ (n_relay = 1%N -> forall a1 : 'I_n_relay.+1, val a1 = 1%N ->
+        ps_priv (g2 (nat_to_party_id 2)) = Some (dk a1)).
 Proof.
 rewrite catA foldM_cat.
-have [g1 [Hg1 [Hcs [Halice1 HBob1]]]] := dsdp_n_phase01_state_strong.
+have [g1 [Hg1 [Hcs [Halice1 [HBob1 [Hret1 HCharlie1]]]]]] := dsdp_n_phase01_state_strong.
 rewrite Hg1.
 rewrite /dsdp_n_phase2.
-have [g2 [Hfold2 [Halpha [Halice2 [HBob2 _]]]]] :=
+have [g2 [Hfold2 [Halpha [Halice2 [HBob2 [_ [Hpriv2 Hret2]]]]]]] :=
   @dsdp_n_phase2_loop (enum 'I_n_relay.+1) g1 (fun j _ => Hcs j) Halice1 HBob1.
 rewrite Hfold2.
 exists g2; split=> //.
 split.
   by move=> j; apply: Halpha; rewrite mem_enum.
-by split.
+split=> //; split=> //; split.
+  by rewrite Hret2.
+move=> Hnr a1 Ha1val.
+rewrite Hpriv2.
+by apply: HCharlie1.
 Qed.
 
 Lemma dsdp_n_first_relay_eq :
   exists gf, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
-                                  ++ dsdp_n_first_relay) = Some gf.
+                                  ++ dsdp_n_first_relay) = Some gf
+    /\ (n_relay = 1%N -> forall a1 : 'I_n_relay.+1, val a1 = 1%N ->
+          sw_beta ord0 a1 \in ps_cipher (gf (nat_to_party_id 2))
+          /\ ps_priv (gf (nat_to_party_id 2)) = Some (dk a1)
+          /\ ps_priv (gf alice) = Some dk_alice
+          /\ ps_ret (gf alice) = None).
 Proof.
-have [g2 [Hg2 [Halpha [Hpriv1 Halice]]]] := dsdp_n_phase2_state_strong.
+have [g2 [Hg2 [Halpha [Hpriv1 [Halice [Hret2 HCpriv2]]]]]] := dsdp_n_phase2_state_strong.
 rewrite !catA foldM_cat -catA Hg2.
 rewrite /dsdp_n_first_relay.
-case Hi1: (insub 1 : option 'I_n_relay.+1) => [a1|] /=; last by exists g2.
+case Hi1: (insub 1 : option 'I_n_relay.+1) => [a1|] /=; last first.
+  exists g2; split=> //.
+  move=> Hnr acur Hacur_val.
+  (* Contradiction: insub 1 = None but n_relay = 1 so 1 < 2. *)
+  exfalso.
+  move: Hi1 Hnr.
+  case: insubP => //= Hbound _ Hnr.
+  by rewrite Hnr in Hbound.
 (* Step 1: ADec sw_alpha ord0 under dk ord0 at party Bob (= nat_to_party_id 1). *)
 have Ha0 : sw_alpha ord0 \in ps_cipher (g2 Bob).
   have := Halpha ord0.
@@ -1013,7 +1162,33 @@ have Hsend : sw_beta ord0 a1 \in ps_cipher (gAMul Bob).
   rewrite /gAMul /sw_upd eqxx /sw_add_cipher /=.
   by apply/fset1UP; left.
 rewrite Hsend /=.
-by eexists.
+eexists; split; first by reflexivity.
+(* Now prove the post-condition package for n_relay = 1. *)
+move=> Hnr acur Hacur_val.
+(* Charlie's priv comes from HCpriv2 applied to acur. Note a1 is the specific
+   ordinal from Hi1, and acur is whatever the caller supplies. By val_inj,
+   val a1 = val acur = 1 so a1 = acur. *)
+have Hacur_eq_a1 : acur = a1 by apply: val_inj; rewrite /= Hacur_val Ha1_val.
+rewrite -Hacur_eq_a1.
+(* Helpers for sw_upd / sw_add_cipher projections. *)
+have HgAMul_Charlie : gAMul (nat_to_party_id 2) = g2 (nat_to_party_id 2).
+  by rewrite /gAMul /sw_upd /=.
+have HgAMul_alice : gAMul alice = g2 alice.
+  by rewrite /gAMul /sw_upd /=.
+split.
+  rewrite /sw_upd eqxx /sw_add_cipher /=.
+  by apply/fset1UP; left.
+split.
+  rewrite /sw_upd eqxx /=.
+  rewrite HgAMul_Charlie.
+  by apply: HCpriv2.
+split.
+  rewrite /sw_upd /=.
+  have -> : (alice == nat_to_party_id 2) = false by [].
+  by rewrite HgAMul_alice.
+rewrite /sw_upd /=.
+have -> : (alice == nat_to_party_id 2) = false by [].
+by rewrite HgAMul_alice.
 Qed.
 
 (* L6: Straight-line telescoping step for one intermediate relay.
