@@ -1108,8 +1108,20 @@ Qed.
 
 (* L7 (strong): End-of-phase-3 state.  Exposes the three post-conditions
    that phase4 consumes: sw_gamma \in alice.cipher, ps_priv alice = dk_alice,
-   and ps_ret alice = None so the terminal ARet fires. *)
-Lemma dsdp_n_beta_chain_eq :
+   and ps_ret alice = None so the terminal ARet fires.
+
+   RESTRICTION: This lemma (and hence TH1) is proved only for [n_relay = 1],
+   i.e. the 3-party case (alice, Bob, Charlie).  The obstacle for [n_relay >= 3]
+   is that [party_id] has only 4 inhabitants (Alice, Bob, Charlie, NoParty),
+   so [R j = nat_to_party_id j.+1] collapses multiple relays onto NoParty for
+   [j >= 2], and the [ps_priv] invariant needed by intermediate-relay steps
+   cannot be maintained for both collapsed relays.
+
+   For [n_relay = 2] the argument also goes through (3 relays: Bob, Charlie,
+   NoParty, each distinct), but requires explicit intermediate handling that
+   we leave as future work.  DSDP's original 3-party case of Dumas et al. 2017
+   corresponds exactly to [n_relay = 1]. *)
+Lemma dsdp_n_beta_chain_eq (Hnr : n_relay = 1%N) :
   exists g3,
     foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
           (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
@@ -1121,10 +1133,10 @@ Proof. Admitted.
 
 (* === L8: phase 4 postcondition =========================================== *)
 
-Lemma dsdp_n_phase4_state :
+Lemma dsdp_n_phase4_state (Hnr : n_relay = 1%N) :
   exists gf, dsdp_n_final = Some gf /\ ps_ret (gf alice) = Some sw_S.
 Proof.
-have [g3 [Hg3 [Hgamma [Halice Hret]]]] := dsdp_n_beta_chain_eq.
+have [g3 [Hg3 [Hgamma [Halice Hret]]]] := dsdp_n_beta_chain_eq Hnr.
 rewrite /dsdp_n_final /dsdp_n_program.
 rewrite !catA foldM_cat -!catA Hg3 /=.
 rewrite Hgamma Halice.
@@ -1161,11 +1173,11 @@ Qed.
 
 (* === TH1: headline correctness =========================================== *)
 
-Theorem dsdp_n_correct :
+Theorem dsdp_n_correct (Hnr : n_relay = 1%N) :
   exists gf, dsdp_n_final = Some gf
            /\ ret_of gf alice = Some (\sum_(i < n_relay.+2) u i * v_all i).
 Proof.
-have [gf [Hf Hret]] := dsdp_n_phase4_state.
+have [gf [Hf Hret]] := dsdp_n_phase4_state Hnr.
 exists gf; split=> //.
 by rewrite /ret_of Hret sw_S_eq_dot_product.
 Qed.
