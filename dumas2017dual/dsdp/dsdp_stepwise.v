@@ -1302,7 +1302,45 @@ Lemma dsdp_n_beta_chain_eq (Hnr : n_relay = 1%N) :
     /\ sw_gamma \in ps_cipher (g3 alice)
     /\ ps_priv (g3 alice) = Some dk_alice
     /\ ps_ret (g3 alice) = None.
-Proof. Admitted.
+Proof.
+rewrite /dsdp_n_phase3.
+have [gf [Hgf Hpack]] := dsdp_n_first_relay_eq.
+have Hint : dsdp_n_intermediate_indices = [::].
+  rewrite /dsdp_n_intermediate_indices.
+  apply/eqP; rewrite -size_eq0 size_filter.
+  rewrite Hnr.
+  by rewrite enum_ordSl enum_ordSl enum_ord0 /=.
+have -> : flatten [seq dsdp_n_intermediate j | j <- dsdp_n_intermediate_indices]
+        = [::] by rewrite Hint.
+rewrite cat0s.
+rewrite [in X in foldM _ _ X]catA [in X in foldM _ _ X]catA
+        [in X in foldM _ _ X]catA.
+rewrite foldM_cat.
+rewrite !catA in Hgf.
+rewrite Hgf /=.
+have Hmax_val : val (@ord_max n_relay) = 1%N by rewrite /= Hnr.
+have [Hbeta [Hpriv [Halice Hret]]] := Hpack Hnr ord_max Hmax_val.
+have HRn : R n_relay = nat_to_party_id 2 by rewrite /R Hnr.
+have Hpred : ord_predS (@ord_max n_relay) = ord0.
+  by apply: val_inj; rewrite /ord_predS /= Hnr /= inordK // Hnr.
+rewrite HRn Hpred Hbeta Hpriv /= dec_sw_beta /=.
+have Hgamma_eq : sw_gamma = enc (sw_pk_of ord0) (sw_Delta ord_max) r_tail by [].
+rewrite -Hgamma_eq.
+have HgammaIn : sw_gamma \in sw_gamma |` ps_cipher (gf Charlie)
+  by apply/fset1UP; left.
+rewrite HgammaIn /=.
+eexists; split; first by reflexivity.
+split.
+  rewrite /sw_upd eqxx /sw_add_cipher /=.
+  by apply/fset1UP; left.
+split.
+  rewrite /sw_upd eqxx /sw_add_cipher /=.
+  rewrite /sw_upd /=.
+  by rewrite Halice.
+rewrite /sw_upd eqxx /sw_add_cipher /=.
+rewrite /sw_upd /=.
+by rewrite Hret.
+Qed.
 
 (* === L8: phase 4 postcondition =========================================== *)
 
