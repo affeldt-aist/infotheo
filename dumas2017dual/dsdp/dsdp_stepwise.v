@@ -670,6 +670,28 @@ rewrite Hb sw_pk_of_lift dec_correct.
 by rewrite [v jnext * _]GRing.mulrC.
 Qed.
 
+(* === L4-strong: phase2 post-state with alpha witnesses and ps_priv ======== *)
+
+(* L4_strong extends dsdp_n_phase2_state with three facts needed by L5/L6/L7:
+   - For every relay index j, sw_alpha j lives in the cipher set of its
+     designated send destination party (alice_send_dest collapses j=0/j=1 to
+     the same party 1 so the first relay will find both).
+   - The specific relay-0 party (nat_to_party_id 1 = Bob) still holds dk ord0
+     as its private key.  This is the key fact used by the first-relay ADec.
+   - Alice still holds dk_alice.  Note: a fully forall-j statement on ps_priv
+     would be provably false once n_relay >= 3 because party_id has only four
+     inhabitants and later AInits overwrite earlier ones; we only assert the
+     specific indices L5 consumes. *)
+Lemma dsdp_n_phase2_state_strong :
+  exists g2,
+    foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
+          (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2) = Some g2
+    /\ (forall j : 'I_n_relay.+1,
+         sw_alpha j \in ps_cipher (g2 (nat_to_party_id (alice_send_dest (val j)))))
+    /\ ps_priv (g2 (nat_to_party_id 1)) = Some (dk ord0)
+    /\ ps_priv (g2 alice) = Some dk_alice.
+Proof. Admitted.
+
 Lemma dsdp_n_first_relay_eq :
   exists gf, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
