@@ -154,6 +154,10 @@ Definition sw_set_ret (s : sw_party_state) (x : msgT) : sw_party_state :=
 
 (* === T3, A2: sw_step ====================================================== *)
 
+(* D21: cipher-tracking semantics. Plaintext-side preconditions removed
+   (AEnc, APow, AAdd, ARet); only cipher provenance and the return-once
+   invariant are enforced. See plan decision D21 for the full rationale and
+   D14-note for the security-layering caveat. *)
 Definition sw_step (p : party_id) (a : dsdp_action) (g : sw_global_state)
     : option sw_global_state :=
   let s := g p in
@@ -161,9 +165,7 @@ Definition sw_step (p : party_id) (a : dsdp_action) (g : sw_global_state)
   | AInit vi dki =>
       Some (sw_upd g p (sw_set_priv (sw_add_plain s vi) dki))
   | AEnc pk m rd =>
-      if m \in ps_plain s
-      then Some (sw_upd g p (sw_add_cipher s (enc pk m rd)))
-      else None
+      Some (sw_upd g p (sw_add_cipher s (enc pk m rd)))
   | ADec c dki =>
       (* We cannot compare priv_key values (priv_key : Type, no eqType),
          so we only require that the party holds *some* private key, and
@@ -183,19 +185,17 @@ Definition sw_step (p : party_id) (a : dsdp_action) (g : sw_global_state)
       then Some (sw_upd g p (sw_add_cipher s (c1 *h c2)))
       else None
   | APow c x =>
-      if (c \in ps_cipher s) && (x \in ps_plain s)
+      if c \in ps_cipher s
       then Some (sw_upd g p (sw_add_cipher s (c ^h x)))
       else None
   | AAdd a1 b1 =>
-      if (a1 \in ps_plain s) && (b1 \in ps_plain s)
-      then Some (sw_upd g p (sw_add_plain s (a1 + b1)))
-      else None
+      Some (sw_upd g p (sw_add_plain s (a1 + b1)))
   | ASend dst c =>
       if c \in ps_cipher s
       then Some (sw_upd g dst (sw_add_cipher (g dst) c))
       else None
   | ARet x =>
-      if (ps_ret s == None) && (x \in ps_plain s)
+      if ps_ret s == None
       then Some (sw_upd g p (sw_set_ret s x))
       else None
   end.
@@ -338,10 +338,9 @@ Lemma sw_step_AInit_eq p vi dki g :
 Proof. by []. Qed.
 
 Lemma sw_step_AEnc_eq p pk m rd g :
-  m \in ps_plain (g p) ->
   sw_step p (AEnc pk m rd) g
   = Some (sw_upd g p (sw_add_cipher (g p) (enc pk m rd))).
-Proof. by move=> H; rewrite /sw_step H. Qed.
+Proof. by []. Qed.
 
 Lemma sw_step_ADec_eq p c dki g m k :
   c \in ps_cipher (g p) ->
@@ -360,17 +359,14 @@ Proof. by move=> H1 H2; rewrite /sw_step H1 H2. Qed.
 
 Lemma sw_step_APow_eq p c x g :
   c \in ps_cipher (g p) ->
-  x \in ps_plain (g p) ->
   sw_step p (APow c x) g
   = Some (sw_upd g p (sw_add_cipher (g p) (c ^h x))).
-Proof. by move=> H1 H2; rewrite /sw_step H1 H2. Qed.
+Proof. by move=> H; rewrite /sw_step H. Qed.
 
 Lemma sw_step_AAdd_eq p a1 b1 g :
-  a1 \in ps_plain (g p) ->
-  b1 \in ps_plain (g p) ->
   sw_step p (AAdd a1 b1) g
   = Some (sw_upd g p (sw_add_plain (g p) (a1 + b1))).
-Proof. by move=> H1 H2; rewrite /sw_step H1 H2. Qed.
+Proof. by []. Qed.
 
 Lemma sw_step_ASend_eq p dst c g :
   c \in ps_cipher (g p) ->
@@ -380,10 +376,9 @@ Proof. by move=> H; rewrite /sw_step H. Qed.
 
 Lemma sw_step_ARet_eq p x g :
   ps_ret (g p) = None ->
-  x \in ps_plain (g p) ->
   sw_step p (ARet x) g
   = Some (sw_upd g p (sw_set_ret (g p) x)).
-Proof. by move=> H1 H2; rewrite /sw_step /= H1 /= H2. Qed.
+Proof. by move=> H; rewrite /sw_step /= H. Qed.
 
 (* Generic foldM-with-invariant helper, used for phase existence lemmas *)
 Lemma foldM_inv {A B : Type} (f : B -> A -> option B) (P : B -> Prop)
@@ -407,6 +402,64 @@ elim: l1 b => [|a l1 IH] b /=; first by case: (foldM _ _ _).
 case: (f b a) => //= b'; exact: IH.
 Qed.
 
+(* Helper: cipher-preservation through a single functional update, under
+   the assumption that the new state [s] at party [p] extends [g p]. *)
+Lemma sw_upd_cipher_mono g p s q c :
+  {subset ps_cipher (g p) <= ps_cipher s} ->
+  c \in ps_cipher (g q) ->
+  c \in ps_cipher (sw_upd g p s q).
+Proof.
+move=> Hsub Hc.
+rewrite {1}/sw_upd.
+case: eqP => [Heq|_]; last exact: Hc.
+by apply: Hsub; rewrite -Heq.
+Qed.
+
+(* Monotonicity of cipher sets: sw_step never drops ciphers from any party.
+   Used throughout the phase proofs to re-establish preconditions after a
+   sequence of intermediate steps. *)
+Lemma sw_step_cipher_mono p a g g' q c :
+  sw_step p a g = Some g' ->
+  c \in ps_cipher (g q) ->
+  c \in ps_cipher (g' q).
+Proof.
+rewrite /sw_step.
+case: a => /=; intros.
+- case: H => <-.
+  by apply: sw_upd_cipher_mono => //.
+- case: H => <-.
+  apply: sw_upd_cipher_mono => // c0 Hc0.
+  by rewrite /sw_add_cipher /= inE Hc0 orbT.
+- move: H; case: ifP => // Hc0; case: (ps_priv (g p)) => [k|] //.
+  case: (dec dki c0) => [m|] //; case => <-.
+  by apply: sw_upd_cipher_mono => //.
+- move: H; case: ifP => // _; case => <-.
+  apply: sw_upd_cipher_mono => // c3 Hc3.
+  by rewrite /sw_add_cipher /= inE Hc3 orbT.
+- move: H; case: ifP => // _; case => <-.
+  apply: sw_upd_cipher_mono => // c3 Hc3.
+  by rewrite /sw_add_cipher /= inE Hc3 orbT.
+- case: H => <-.
+  by apply: sw_upd_cipher_mono => //.
+- move: H; case: ifP => // _; case => <-.
+  apply: sw_upd_cipher_mono => // c3 Hc3.
+  by rewrite /sw_add_cipher /= inE Hc3 orbT.
+- move: H; case: ifP => // _; case => <-.
+  by apply: sw_upd_cipher_mono => //.
+Qed.
+
+(* Lifted to foldM over a sequence. *)
+Lemma foldM_cipher_mono (l : seq (party_id * dsdp_action)) g g' q c :
+  foldM (fun g pa => sw_step pa.1 pa.2 g) g l = Some g' ->
+  c \in ps_cipher (g q) ->
+  c \in ps_cipher (g' q).
+Proof.
+elim: l g => [|[p a] l IH] g /=; first by case=> <-.
+case E: (sw_step p a g) => [g1|] //= Hf Hc.
+apply: (IH g1) => //.
+exact: (sw_step_cipher_mono E Hc).
+Qed.
+
 (* === L2 - L7: phase postconditions (Admitted) ============================ *)
 
 Lemma dsdp_n_phase0_state :
@@ -424,76 +477,123 @@ elim=> [|j l IH] g /=; first by exists g.
 exact: IH.
 Qed.
 
-Lemma dsdp_n_phase1_state :
-  exists g1, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
-                   (dsdp_n_phase0 ++ dsdp_n_phase1) = Some g1.
+(* Stronger post-condition: after phase0++phase1, alice's cipher set
+   contains every [sw_c j]. This is needed to discharge phase2's APow and
+   AMul pre-conditions. *)
+Lemma dsdp_n_phase01_state :
+  exists g1,
+    foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
+          (dsdp_n_phase0 ++ dsdp_n_phase1) = Some g1 /\
+    (forall j : 'I_n_relay.+1, sw_c j \in ps_cipher (g1 alice)).
 Proof.
-(* phase0 produces a state where each v j is in ps_plain of R (val j), and
-   phase1 then advances through AEnc/ASend pairs, each of whose preconditions
-   is maintained by the invariant. *)
 have phase0_loop : forall (l : seq 'I_n_relay.+1) (g : sw_global_state),
   exists g', foldM (fun g pa => sw_step pa.1 pa.2 g) g
-    [seq (R (val j), AInit (v j) (dk j)) | j <- l] = Some g' /\
-    (forall j, j \in l -> v j \in ps_plain (g' (R (val j)))) /\
-    (forall p m, m \in ps_plain (g p) -> m \in ps_plain (g' p)).
-  elim=> [|j l IH] g /=; first by exists g; split=> //; split=> // j0; rewrite in_nil.
-  set g1 := sw_upd g (R (val j)) _.
-  have {IH} [g' [-> [Hin Hmg]]] := IH g1.
-  exists g'; split=> //; split.
-    move=> k; rewrite in_cons => /orP [/eqP ->|Hk]; last exact: Hin.
-    apply: Hmg; rewrite /g1 /sw_upd eqxx /= /sw_set_priv /sw_add_plain /=.
-    exact: fset1U1.
-  move=> p m Hm; apply: Hmg.
-  rewrite /g1 /sw_upd.
-  case E: (p == R (val j)); last exact: Hm.
-  have {Hm} : m \in ps_plain (g (R (val j))) by move/eqP: E => <-.
-  move=> Hm; rewrite /sw_set_priv /sw_add_plain /=.
-  by rewrite inE Hm orbT.
+    [seq (R (val j), AInit (v j) (dk j)) | j <- l] = Some g'.
+  elim=> [|j l IH] g /=; first by exists g.
+  exact: IH.
 have phase1_loop : forall (l : seq 'I_n_relay.+1) (g : sw_global_state),
-  (forall j, j \in l -> v j \in ps_plain (g (R (val j)))) ->
   exists g', foldM (fun g pa => sw_step pa.1 pa.2 g) g
     (flatten [seq [:: (R (val j), AEnc (sw_pk_of (lift ord0 j)) (v j) (rb1 j))
-                   ; (R (val j), ASend alice (sw_c j))] | j <- l]) = Some g'.
-  elim=> [|j l IH] g Hall /=; first by exists g.
-  have Hj : v j \in ps_plain (g (R (val j))) by apply: Hall; rewrite mem_head.
-  rewrite /sw_step Hj /=.
+                   ; (R (val j), ASend alice (sw_c j))] | j <- l]) = Some g' /\
+    (forall j, j \in l -> sw_c j \in ps_cipher (g' alice)) /\
+    (forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g' p)).
+  elim=> [|j l IH] g /=.
+    by exists g; split=> //; split=> // j0; rewrite in_nil.
+  rewrite /sw_step /=.
   set g1 := sw_upd g (R (val j)) _.
   have Hc : sw_c j \in ps_cipher (g1 (R (val j))).
     rewrite /g1 /sw_upd eqxx /sw_add_cipher /sw_c /=.
     by apply/fset1UP; left.
   rewrite Hc /=.
   set g2 := sw_upd g1 alice _.
-  apply: IH => k Hk.
-  rewrite /g2 /sw_upd.
-  case E1: (R (val k) == alice).
-    rewrite /sw_add_cipher /=.
-    move/eqP: E1 => <-.
-    rewrite /g1 /sw_upd.
-    case E3: (R (val k) == R (val j)).
-      rewrite /sw_add_cipher /=.
-      have Hv : v k \in ps_plain (g (R (val k)))
-        by apply: Hall; rewrite in_cons Hk orbT.
-      by rewrite -(eqP E3).
-    by apply: Hall; rewrite in_cons Hk orbT.
-  rewrite /g1 /sw_upd.
-  case E2: (R (val k) == R (val j)).
-    rewrite /sw_add_cipher /=.
-    rewrite -(eqP E2).
-    by apply: Hall; rewrite in_cons Hk orbT.
-  by apply: Hall; rewrite in_cons Hk orbT.
+  have Hg2c : sw_c j \in ps_cipher (g2 alice).
+    rewrite /g2 /sw_upd eqxx /sw_add_cipher /=.
+    by apply/fset1UP; left.
+  have Hmono12 : forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g2 p).
+    move=> p c Hcp.
+    apply: (sw_step_cipher_mono (a := ASend alice (sw_c j)) (p := R (val j))).
+      by rewrite /sw_step Hc.
+    apply: (sw_step_cipher_mono
+              (a := AEnc (sw_pk_of (lift ord0 j)) (v j) (rb1 j))
+              (p := R (val j)) (g := g)) => //.
+  have {IH} [g' [-> [Halpha Hmono']]] := IH g2.
+  exists g'; split=> //; split; last first.
+    move=> p c Hcp; exact: (Hmono' _ _ (Hmono12 _ _ Hcp)).
+  move=> k; rewrite in_cons => /orP [/eqP ->|Hk]; last exact: Halpha.
+  exact: (Hmono' _ _ Hg2c).
 rewrite foldM_cat /dsdp_n_phase0 /=.
 set g_a := sw_upd sw_init_state alice _.
-have [g0' [-> [Hin _]]] := phase0_loop (enum 'I_n_relay.+1) g_a.
+have [g0' ->] := phase0_loop (enum 'I_n_relay.+1) g_a.
 rewrite /dsdp_n_phase1.
-apply: phase1_loop => k _.
-by apply: Hin; rewrite mem_enum.
+have [g' [-> [Halpha _]]] := phase1_loop (enum 'I_n_relay.+1) g0'.
+exists g'; split=> //.
+by move=> j; apply: Halpha; rewrite mem_enum.
 Qed.
+
+Lemma dsdp_n_phase1_state :
+  exists g1, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
+                   (dsdp_n_phase0 ++ dsdp_n_phase1) = Some g1.
+Proof. by have [g1 [H _]] := dsdp_n_phase01_state; exists g1. Qed.
 
 Lemma dsdp_n_phase2_state :
   exists g2, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2)
              = Some g2.
-Proof. Admitted.
+Proof.
+have [g1 [Hg1 Halpha]] := dsdp_n_phase01_state.
+rewrite catA foldM_cat Hg1.
+(* We prove a stronger statement: for any sub-list [l] and any state [g]
+   where alice already holds [sw_c k] for every [k ∈ l], the phase2 slice
+   over [l] drives [g] forward to some [g']. *)
+suff H : forall (l : seq 'I_n_relay.+1) (g : sw_global_state),
+  (forall j, j \in l -> sw_c j \in ps_cipher (g alice)) ->
+  exists g', foldM (fun g pa => sw_step pa.1 pa.2 g) g
+    (flatten [seq let dest := R (alice_send_dest (val j)) in
+                  [:: (alice, AEnc (sw_pk_of (lift ord0 j)) (r j) (ra j))
+                    ; (alice, APow (sw_c j) (u (lift ord0 j)))
+                    ; (alice, AMul (sw_c j ^h u (lift ord0 j))
+                                   (enc (sw_pk_of (lift ord0 j)) (r j) (ra j)))
+                    ; (alice, ASend dest (sw_alpha j))]
+              | j <- l]) = Some g'.
+  rewrite /dsdp_n_phase2.
+  by apply: H => j _; apply: Halpha.
+elim=> [|j l IH] g Hall /=; first by exists g.
+have Hsc_g : sw_c j \in ps_cipher (g alice) by apply: Hall; rewrite mem_head.
+(* Step 1: AEnc (unconditional under D21) -- [enc ... (r j) (ra j)] added. *)
+have Hsc1 : sw_c j \in enc (sw_pk_of (lift ord0 j)) (r j) (ra j)
+                         |` ps_cipher (g alice).
+  by rewrite inE Hsc_g orbT.
+rewrite Hsc1 /=.
+(* Step 2: APow (needs c in cipher, done). Adds [sw_c j ^h u ...]. *)
+have Hm1 : sw_c j ^h u (lift ord0 j)
+           \in sw_c j ^h u (lift ord0 j)
+               |` (enc (sw_pk_of (lift ord0 j)) (r j) (ra j)
+                   |` ps_cipher (g alice)).
+  by apply/fset1UP; left.
+have Hm2 : enc (sw_pk_of (lift ord0 j)) (r j) (ra j)
+           \in sw_c j ^h u (lift ord0 j)
+               |` (enc (sw_pk_of (lift ord0 j)) (r j) (ra j)
+                   |` ps_cipher (g alice)).
+  by apply/fset1UP; right; apply/fset1UP; left.
+rewrite Hm1 Hm2 /=.
+(* Step 3: AMul (done).  Step 4: ASend sw_alpha j. *)
+have Hsend : sw_alpha j
+             \in (sw_c j ^h u (lift ord0 j)) *h
+                 enc (sw_pk_of (lift ord0 j)) (r j) (ra j)
+                 |` (sw_c j ^h u (lift ord0 j)
+                     |` (enc (sw_pk_of (lift ord0 j)) (r j) (ra j)
+                         |` ps_cipher (g alice))).
+  by apply/fset1UP; left; rewrite /sw_alpha.
+rewrite Hsend /=.
+(* Apply induction hypothesis; must re-derive [sw_c k] in the post-state. *)
+set gf := sw_upd _ _ _.
+apply: IH => k Hk.
+have Hck : sw_c k \in ps_cipher (g alice) by apply: Hall; rewrite in_cons Hk orbT.
+rewrite /gf.
+do 4 (apply: sw_upd_cipher_mono;
+      [by move=> c0 Hc0; rewrite /sw_add_cipher /= inE Hc0 orbT|]).
+exact: Hck.
+Qed.
 
 Lemma dsdp_n_first_relay_eq :
   exists gf, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
@@ -523,7 +623,23 @@ Proof. Admitted.
 
 Lemma sw_S_eq_dot_product :
   sw_S = \sum_(i < n_relay.+2) u i * v_all i.
-Proof. Admitted.
+Proof.
+rewrite /sw_S /sw_Delta.
+rewrite big_split /=.
+have Hwiden : forall i : 'I_n_relay.+1,
+    widen_ord (ltn_ord (@ord_max n_relay)) i = i.
+  by move=> i; apply: val_inj.
+under eq_bigr do rewrite Hwiden.
+under [\sum_(_ < _) r _]eq_bigr do rewrite Hwiden.
+have HrEq : \sum_i r i = \sum_(k < n_relay.+1) r k by [].
+rewrite HrEq GRing.addrK big_ord_recl /=.
+have Ha : v_all ord0 = v_alice by rewrite /v_all unlift_none.
+have Hl : forall i : 'I_n_relay.+1, v_all (lift ord0 i) = v i.
+  by move=> i; rewrite /v_all liftK.
+rewrite Ha.
+under eq_bigr do rewrite Hl.
+by rewrite GRing.addrC.
+Qed.
 
 (* === TH1: headline correctness =========================================== *)
 
