@@ -733,23 +733,67 @@ rewrite Hsend /=.
 by eexists.
 Qed.
 
-Lemma dsdp_n_intermediate_telescope (j : 'I_n_relay.+1) :
+(* L6: Straight-line telescoping step for one intermediate relay.
+   Given a state [g] where party pj := R j holds sw_beta (ord_predS j) j
+   and sw_alpha (lift ord0 j) on its cipher set and the right private key,
+   running dsdp_n_intermediate j drives [g] to some [g'] where the next
+   party pnext := R (j+1) holds sw_beta j (lift ord0 j). *)
+Lemma dsdp_n_intermediate_telescope
+    (j : 'I_n_relay.+1) (g : sw_global_state) :
   (0 < val j < n_relay)%N ->
-  True.  (* Placeholder: real statement requires the pre-state predicate
-            from the inductive hypothesis; spelled out in Phase 4. *)
+  let pj : party_id := nat_to_party_id (val j).+1 in
+  let jnext : 'I_n_relay.+1 := lift ord0 j in
+  let pnext : party_id := nat_to_party_id (val j).+2 in
+  sw_beta (ord_predS j) j \in ps_cipher (g pj) ->
+  sw_alpha jnext \in ps_cipher (g pj) ->
+  ps_priv (g pj) = Some (dk j) ->
+  exists g',
+    foldM (fun gg pa => sw_step pa.1 pa.2 gg) g (dsdp_n_intermediate j)
+    = Some g'
+    /\ sw_beta j jnext \in ps_cipher (g' pnext).
 Proof. Admitted.
 
+(* L6b: Last-relay straight-line step.  Given a state holding
+   sw_beta (ord_predS ord_max) ord_max on party R n_relay with the
+   right key, running dsdp_n_last_relay yields sw_gamma on alice's ciphers. *)
+Lemma dsdp_n_last_relay_eq (g : sw_global_state) :
+  let pn : party_id := R n_relay in
+  sw_beta (ord_predS ord_max) (@ord_max n_relay) \in ps_cipher (g pn) ->
+  ps_priv (g pn) = Some (dk (@ord_max n_relay)) ->
+  exists g',
+    foldM (fun gg pa => sw_step pa.1 pa.2 gg) g dsdp_n_last_relay = Some g'
+    /\ sw_gamma \in ps_cipher (g' alice).
+Proof. Admitted.
+
+(* L7 (strong): End-of-phase-3 state.  Exposes the three post-conditions
+   that phase4 consumes: sw_gamma \in alice.cipher, ps_priv alice = dk_alice,
+   and ps_ret alice = None so the terminal ARet fires. *)
 Lemma dsdp_n_beta_chain_eq :
-  exists g3, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
-                   (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
-                                  ++ dsdp_n_phase3) = Some g3.
+  exists g3,
+    foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
+          (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
+                         ++ dsdp_n_phase3) = Some g3
+    /\ sw_gamma \in ps_cipher (g3 alice)
+    /\ ps_priv (g3 alice) = Some dk_alice
+    /\ ps_ret (g3 alice) = None.
 Proof. Admitted.
 
 (* === L8: phase 4 postcondition =========================================== *)
 
 Lemma dsdp_n_phase4_state :
   exists gf, dsdp_n_final = Some gf /\ ps_ret (gf alice) = Some sw_S.
-Proof. Admitted.
+Proof.
+have [g3 [Hg3 [Hgamma [Halice Hret]]]] := dsdp_n_beta_chain_eq.
+rewrite /dsdp_n_final /dsdp_n_program.
+rewrite !catA foldM_cat -!catA Hg3 /=.
+rewrite Hgamma Halice.
+have Hdec : dec dk_alice sw_gamma = Some (sw_Delta ord_max).
+  rewrite /sw_gamma /sw_pk_of unlift_none.
+  exact: dec_correct.
+rewrite Hdec /= Hret /=.
+eexists; split; first by reflexivity.
+by rewrite /sw_upd eqxx.
+Qed.
 
 (* === L9: algebraic identity ============================================== *)
 
@@ -779,6 +823,10 @@ Qed.
 Theorem dsdp_n_correct :
   exists gf, dsdp_n_final = Some gf
            /\ ret_of gf alice = Some (\sum_(i < n_relay.+2) u i * v_all i).
-Proof. Admitted.
+Proof.
+have [gf [Hf Hret]] := dsdp_n_phase4_state.
+exists gf; split=> //.
+by rewrite /ret_of Hret sw_S_eq_dot_product.
+Qed.
 
 End dsdp_stepwise.
