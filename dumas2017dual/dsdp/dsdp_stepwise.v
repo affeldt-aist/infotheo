@@ -252,7 +252,7 @@ Definition dsdp_n_phase1 : seq (party_id * dsdp_action) :=
 
 Definition dsdp_n_phase2 : seq (party_id * dsdp_action) :=
   flatten
-    [seq let dest := R (alice_send_dest (val j)) in
+    [seq let dest : party_id := nat_to_party_id (alice_send_dest (val j)) in
          [:: (alice, AEnc (sw_pk_of (lift ord0 j)) (r j) (ra j))
            ; (alice, APow (sw_c j) (u (lift ord0 j)))
            ; (alice, AMul (sw_c j ^h u (lift ord0 j))
@@ -265,27 +265,40 @@ Definition dsdp_n_phase2 : seq (party_id * dsdp_action) :=
    (lift ord0 ord0), and forwards it to the next relay. Concretely, with
    our naming: party 1 = R 0 holds sw_alpha ord0 + sw_alpha (lift ord0 ord0),
    adds them homomorphically + decrypts + re-encrypts to next. *)
+(* D23: first relay action list.
+   Mirrors DParty_first at dsdp_pismc.v:221-229:
+   1. ADec sw_alpha ord0 under dk ord0   → learns sw_Delta ord0 = u_1 * v_1 + r_1
+   2. AEnc sw_Delta ord0 under dk a1     → fresh enc under the next relay's key
+   3. AMul sw_alpha a1 with fresh enc    → yields sw_beta ord0 a1
+   4. ASend a_next's party the sw_beta   *)
 Definition dsdp_n_first_relay : seq (party_id * dsdp_action) :=
-  let p1 := R 0 in
+  let p1 : party_id := nat_to_party_id 1 in
   match (insub 1 : option 'I_n_relay.+1) with
-  | Some j1 =>
-    [:: (p1, AMul (sw_alpha ord0) (sw_alpha j1))
-      ; (p1, ADec (sw_alpha ord0 *h sw_alpha j1) (dk ord0))
-      ; (p1, AEnc (sw_pk_of (lift ord0 j1)) (sw_Delta ord0) (rb2 ord0))
-      ; (p1, ASend (R 1) (sw_beta ord0 j1))]
+  | Some a1 =>
+    let fresh_enc := enc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0) in
+    [:: (p1, ADec (sw_alpha ord0) (dk ord0))
+      ; (p1, AEnc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0))
+      ; (p1, AMul (sw_alpha a1) fresh_enc)
+      ; (p1, ASend (nat_to_party_id 2) (sw_beta ord0 a1))]
   | None => [::]
   end.
 
 (* For an intermediate relay j (with 0 < j < n_relay), it receives
    sw_beta (ord_predS j) j on its cipher set, decrypts, and produces
    sw_Delta j and sw_beta j (lift ord0 j) which it forwards. *)
+(* D24: intermediate relay action list.
+   Mirrors DParty_intermediate/DParty_relay at dsdp_pismc.v:231-244.
+   Expects sw_beta (ord_predS j) j and sw_alpha (lift ord0 j) to be present
+   in ps_cipher at party R (val j). *)
 Definition dsdp_n_intermediate (j : 'I_n_relay.+1) : seq (party_id * dsdp_action) :=
   match (insub (val j).+1 : option 'I_n_relay.+1) with
   | Some jnext =>
-    [:: (R (val j), AMul (sw_beta (ord_predS j) j) (sw_alpha j))
-      ; (R (val j), ADec (sw_beta (ord_predS j) j *h sw_alpha j) (dk j))
-      ; (R (val j), AEnc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j))
-      ; (R (val j), ASend (R (val j).+1) (sw_beta j jnext))]
+    let pj : party_id := nat_to_party_id (val j).+1 in
+    let fresh_enc := enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j) in
+    [:: (pj, ADec (sw_beta (ord_predS j) j) (dk j))
+      ; (pj, AEnc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j))
+      ; (pj, AMul (sw_alpha jnext) fresh_enc)
+      ; (pj, ASend (nat_to_party_id (val j).+2) (sw_beta j jnext))]
   | None => [::]
   end.
 
@@ -511,8 +524,8 @@ have phase1_loop : forall (l : seq 'I_n_relay.+1) (g : sw_global_state),
     by apply/fset1UP; left.
   have Hmono12 : forall p c, c \in ps_cipher (g p) -> c \in ps_cipher (g2 p).
     move=> p c Hcp.
-    apply: (sw_step_cipher_mono (a := ASend alice (sw_c j)) (p := R (val j))).
-      by rewrite /sw_step Hc.
+    apply: (sw_step_cipher_mono (a := ASend alice (sw_c j)) (p := R (val j)) (g := g1)).
+      by rewrite /sw_step /= Hc.
     apply: (sw_step_cipher_mono
               (a := AEnc (sw_pk_of (lift ord0 j)) (v j) (rb1 j))
               (p := R (val j)) (g := g)) => //.
@@ -548,7 +561,7 @@ rewrite catA foldM_cat Hg1.
 suff H : forall (l : seq 'I_n_relay.+1) (g : sw_global_state),
   (forall j, j \in l -> sw_c j \in ps_cipher (g alice)) ->
   exists g', foldM (fun g pa => sw_step pa.1 pa.2 g) g
-    (flatten [seq let dest := R (alice_send_dest (val j)) in
+    (flatten [seq let dest : party_id := nat_to_party_id (alice_send_dest (val j)) in
                   [:: (alice, AEnc (sw_pk_of (lift ord0 j)) (r j) (ra j))
                     ; (alice, APow (sw_c j) (u (lift ord0 j)))
                     ; (alice, AMul (sw_c j ^h u (lift ord0 j))
@@ -633,12 +646,13 @@ under eq_bigr do rewrite Hwiden.
 under [\sum_(_ < _) r _]eq_bigr do rewrite Hwiden.
 have HrEq : \sum_i r i = \sum_(k < n_relay.+1) r k by [].
 rewrite HrEq GRing.addrK big_ord_recl /=.
+rewrite big_ord_recl /=.
 have Ha : v_all ord0 = v_alice by rewrite /v_all unlift_none.
 have Hl : forall i : 'I_n_relay.+1, v_all (lift ord0 i) = v i.
   by move=> i; rewrite /v_all liftK.
 rewrite Ha.
-under eq_bigr do rewrite Hl.
-by rewrite GRing.addrC.
+under [\sum_(i < n_relay.+1) _]eq_bigr=> i _ do rewrite Hl.
+by rewrite [RHS]GRing.addrC [\sum_(i < n_relay.+1) _]big_ord_recl /=.
 Qed.
 
 (* === TH1: headline correctness =========================================== *)
