@@ -157,7 +157,20 @@ Definition sw_set_ret (s : sw_party_state) (x : msgT) : sw_party_state :=
 (* D21: cipher-tracking semantics. Plaintext-side preconditions removed
    (AEnc, APow, AAdd, ARet); only cipher provenance and the return-once
    invariant are enforced. See plan decision D21 for the full rationale and
-   D14-note for the security-layering caveat. *)
+   D14-note for the security-layering caveat.
+
+   This is deliberately *weaker* than a Dolev--Yao symbolic derivability
+   model [Dolev & Yao, "On the security of public key protocols",
+   IEEE Trans. Inf. Theory 29(2):198--208, 1983], which tracks the full
+   deductive closure of an adversary's knowledge (decryption with held
+   keys, homomorphic composition, ring operations on plaintexts).  A
+   Dolev--Yao-style judgement is appropriate for *security* claims about
+   what a corrupted relay can learn; for the *correctness* claims in this
+   file (Alice's return equals the dot product), cipher provenance alone
+   is sufficient, and the Dolev--Yao closure would only add proof
+   obligations without strengthening the headline theorem.  Any future
+   security layer should introduce a separate [sw_knows_plain] predicate
+   rather than re-strengthening [sw_step]. *)
 Definition sw_step (p : party_id) (a : dsdp_action) (g : sw_global_state)
     : option sw_global_state :=
   let s := g p in
