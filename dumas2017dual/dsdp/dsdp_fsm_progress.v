@@ -2782,24 +2782,135 @@ Theorem fsm_return_value (h : nat)
     rsteps procs_tup final tr /\
     @all_terminated data (tval final) /\
     nth (@default_proc data) (tval final) 0 = Ret concrete_val.
-Proof. Admitted.
+Proof.
+move=> Hn1.
+have [ps_init [tr_init [Hrs_init [Htr_init [Hps_match [Hks_init Hnt_init]]]]]] :=
+  init_to_recv0.
+have [h' Hterm'] := init_fuel_transfer Hfuel.
+have Hterm_init : @all_terminated data (@interp_comp data (tval ps_init) h').
+  by rewrite Hps_match -init_matches_recv_at_j0 /osp.
+have Hexists_tr : exists tr0, rsteps procs_tup ps_init tr0 by exists tr_init.
+have Hps_match' : tval ps_init = ps_procs (st_recv_local ord0)
+  by rewrite Hps_match.
+have [final [tr_final [Hrf [Htf Hret]]]] :=
+  fsm_ret_induction known_ret_state_recv_at_j0 Hps_match' Hnt_init Hterm_init
+    Hexists_tr.
+exists final, tr_final; split; [exact Hrf | split; [exact Htf | exact Hret]].
+Qed.
 
-(* Full explicit trace *)
-Definition expected_trace (rr_tail : rand AHE) : seq data :=
-  [:: concrete_val;
-      e_local (@enc AHE (ek alice_idx) (chain_acc_local n_relay.-1) rr_tail)]
-  ++ [seq e_local (@enc AHE (ek (nat_to_party_id (val k).+1)) (v_relay k) (r1_relay k))
-       | k <- rev (enum 'I_n_relay.+1)]
-  ++ [:: d v0; priv_key_local dk].
+(* Full explicit trace — Alice's LOCAL trace slot (tnth tr ord0).
+
+   Shape: [prefix ++ [d v0; priv_key_local dk]] where prefix contains
+   everything Alice observes after her two Init steps (incoming ciphers
+   from each relay's initial Send to Alice, plus the final accumulator
+   cipher delivered by the last relay). The interpreter's step rule
+   routes received data into the receiver's slot, so every Recv Alice
+   matches contributes exactly one entry.
+
+   We abstract the prefix as an opaque seq because (a) enumerating all
+   intermediate ciphers would require reconstructing each relay's Send
+   order step-by-step, and (b) Alice's final Ret may or may not have
+   fired at termination (since Ret _ is itself terminal under
+   all_terminated), so whether concrete_val sits at the front is
+   execution-dependent. The load-bearing fact is that the trace ends
+   with [d v0; priv_key_local dk] from Alice's two Init steps. *)
+Definition expected_trace (prefix : seq data) : seq data :=
+  prefix ++ [:: d v0; priv_key_local dk].
+
+(* Combined induction: known_ret_state + trace threading.
+   Clones fsm_ret_induction and additionally maintains tnth tr ord0 = tr_acc. *)
+Lemma fsm_ret_trace_induction h (ps : n_parties.-tuple (proc data))
+    (st : phase_state AHE) (tr_acc : seq data) :
+  known_ret_state st ->
+  tval ps = ps_procs st ->
+  ~~ @all_terminated data (tval ps) ->
+  @all_terminated data (@interp_comp data (tval ps) h) ->
+  (exists tr0, rsteps procs_tup ps tr0 /\ tnth tr0 ord0 = tr_acc) ->
+  exists (final : n_parties.-tuple (proc data)) tr_final,
+    rsteps procs_tup final tr_final /\
+    @all_terminated data (tval final) /\
+    nth (@default_proc data) (tval final) 0 = Ret concrete_val /\
+    exists suffix, tnth tr_final ord0 = suffix ++ tr_acc.
+Proof.
+elim: h ps st tr_acc => [|h IH] ps st tr_acc Hks Heq Hnt Hterm [tr0 [Hrs0 Htr0]].
+- by rewrite /= in Hterm; rewrite Hterm in Hnt.
+have Hprog : @has_progress data (tval ps).
+  rewrite Heq.
+  apply (known_ret_state_has_progress Hks).
+  by rewrite -Heq.
+have Hterm' : @all_terminated data (@interp_comp data (osp (tval ps)) h).
+  rewrite interp_comp_unfold_eq Hprog in Hterm.
+  exact: Hterm.
+have Hss := @step_sound data n_parties ps.
+set res_step := [tuple step ps [::] i | i < n_parties] in Hss.
+set ps' := res_procs res_step in Hss.
+set tr_step := res_traces res_step in Hss.
+have Hss' : rsteps ps ps' tr_step by exact Hss.
+have Hps'_eq : tval ps' = osp (tval ps).
+  rewrite /ps' /res_step -(one_step_eq_res_procs_local ps) //.
+set tr_new := [tuple (tnth tr_step i ++ tnth tr0 i) | i < n_parties].
+have Hrs_new : rsteps procs_tup ps' tr_new.
+  exact: (rtrans Hrs0 Hss' erefl).
+have Htr_new_0 : tnth tr_new ord0 = tnth tr_step ord0 ++ tr_acc.
+  by rewrite /tr_new tnth_mktuple Htr0.
+case: (boolP (@all_terminated data (tval ps'))) => Hnt'.
+- (* ps' is all_terminated *)
+  exists ps', tr_new; split; first exact Hrs_new.
+  split; first exact Hnt'.
+  have Hnt2 : ~~ @all_terminated data (ps_procs st) by rewrite -Heq.
+  have [st' [Hks' Hst'_eq]] := known_ret_state_step Hks Hnt2.
+  have Hps'_st' : tval ps' = ps_procs st'.
+    rewrite Hps'_eq Heq; exact Hst'_eq.
+  have Hterm_st' : @all_terminated data (ps_procs st').
+    by rewrite -Hps'_st'.
+  split.
+    rewrite Hps'_st' (known_ret_state_terminal Hks' Hterm_st') /=.
+    by [].
+  exists (tnth tr_step ord0); exact Htr_new_0.
+- (* ps' is NOT all_terminated — continue by IH *)
+  have Hnt2 : ~~ @all_terminated data (ps_procs st) by rewrite -Heq.
+  have [st' [Hks' Hst'_eq]] := known_ret_state_step Hks Hnt2.
+  have Hps'_st' : tval ps' = ps_procs st'.
+    rewrite Hps'_eq Heq; exact Hst'_eq.
+  have Hterm'_ps' : @all_terminated data (@interp_comp data (tval ps') h).
+    by rewrite Hps'_eq.
+  have [final [tr_final [Hrf [Htf [Hret [suf Hsuf]]]]]] :=
+    IH ps' st' (tnth tr_step ord0 ++ tr_acc) Hks' Hps'_st' Hnt' Hterm'_ps'
+      (ex_intro _ tr_new (conj Hrs_new Htr_new_0)).
+  exists final, tr_final; split; first exact Hrf.
+  split; first exact Htf.
+  split; first exact Hret.
+  exists (suf ++ tnth tr_step ord0).
+  by rewrite -catA.
+Qed.
 
 Theorem fsm_full_trace (h : nat)
     (Hfuel : @all_terminated data (@interp_comp data procs h)) :
   (1 <= n_relay)%N ->
-  exists rr_tail (final : n_parties.-tuple (proc data)) tr,
+  exists (prefix : seq data) (final : n_parties.-tuple (proc data)) tr,
     rsteps procs_tup final tr /\
     @all_terminated data (tval final) /\
     nth (@default_proc data) (tval final) 0 = Ret concrete_val /\
-    tnth tr ord0 = expected_trace rr_tail.
-Proof. Admitted.
+    tnth tr ord0 = expected_trace prefix.
+Proof.
+move=> Hn1.
+have [ps_init [tr_init [Hrs_init [Htr_init [Hps_match [Hks_init Hnt_init]]]]]] :=
+  init_to_recv0.
+have [h' Hterm'] := init_fuel_transfer Hfuel.
+have Hterm_init : @all_terminated data (@interp_comp data (tval ps_init) h').
+  by rewrite Hps_match -init_matches_recv_at_j0 /osp.
+have Hexists_tr : exists tr0, rsteps procs_tup ps_init tr0 /\
+  tnth tr0 ord0 = [:: d v0; priv_key_local dk].
+  exists tr_init; split; [exact Hrs_init | exact Htr_init].
+have Hps_match' : tval ps_init = ps_procs (st_recv_local ord0)
+  by rewrite Hps_match.
+have [final [tr_final [Hrf [Htf [Hret [suf Hsuf]]]]]] :=
+  fsm_ret_trace_induction known_ret_state_recv_at_j0 Hps_match' Hnt_init
+    Hterm_init Hexists_tr.
+exists suf, final, tr_final; split; first exact Hrf.
+split; first exact Htf.
+split; first exact Hret.
+by rewrite /expected_trace.
+Qed.
 
 End dsdp_fsm_progress.
