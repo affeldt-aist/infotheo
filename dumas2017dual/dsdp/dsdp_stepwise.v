@@ -608,6 +608,40 @@ do 4 (apply: sw_upd_cipher_mono;
 exact: Hck.
 Qed.
 
+(* === D25: fresh-enc helpers ============================================== *)
+
+(* Local curry-eq helper: enc k m r = enc_curry _ k (m, r) is definitional,
+   but morphism rewriting with Emul_addM / Epow_scalarM needs the curry form. *)
+Local Lemma swe_curry_eq (kk : pub_keyT) (m : msgT) (r0 : randT) :
+  enc kk m r0 = ahe_enc.enc_curry AHE kk (m, r0).
+Proof. by []. Qed.
+
+(* sw_alpha j is definitionally a fresh encryption under the next relay's key
+   of (v j * u_{j+1} + r j). Proved by the morphism laws Epow_scalarM +
+   Emul_addM; mirrors alice_a2_value / alice_a3_value at dsdp_program.v:213. *)
+Lemma sw_alpha_eq_fresh_enc (j : 'I_n_relay.+1) : exists rr,
+  sw_alpha j = enc (sw_pk_of (lift ord0 j)) (v j * u (lift ord0 j) + r j) rr.
+Proof.
+rewrite /sw_alpha /sw_c /Epow /Emul.
+rewrite !swe_curry_eq.
+rewrite -(@Epow_scalarM AHE).
+rewrite -(@Emul_addM AHE).
+by eexists.
+Qed.
+
+(* sw_beta j jnext is a fresh encryption whose plaintext is
+   (v jnext * u_{jnext+1} + r jnext) + sw_Delta j. Proved by substituting
+   sw_alpha_eq_fresh_enc and applying Emul_addM. *)
+Lemma sw_beta_eq_fresh_enc (j jnext : 'I_n_relay.+1) : exists rr,
+  sw_beta j jnext = enc (sw_pk_of (lift ord0 jnext))
+    (v jnext * u (lift ord0 jnext) + r jnext + sw_Delta j) rr.
+Proof.
+rewrite /sw_beta.
+have [rr0 Ha] := sw_alpha_eq_fresh_enc jnext.
+rewrite Ha /Emul !swe_curry_eq -(@Emul_addM AHE).
+by eexists.
+Qed.
+
 Lemma dsdp_n_first_relay_eq :
   exists gf, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
