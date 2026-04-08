@@ -1184,10 +1184,8 @@ split.
   by apply: HCpriv2.
 split.
   rewrite /sw_upd /=.
-  have -> : (alice == nat_to_party_id 2) = false by [].
   by rewrite HgAMul_alice.
 rewrite /sw_upd /=.
-have -> : (alice == nat_to_party_id 2) = false by [].
 by rewrite HgAMul_alice.
 Qed.
 
