@@ -739,10 +739,10 @@ Qed.
    running dsdp_n_intermediate j drives [g] to some [g'] where the next
    party pnext := R (j+1) holds sw_beta j (lift ord0 j). *)
 Lemma dsdp_n_intermediate_telescope
-    (j : 'I_n_relay.+1) (g : sw_global_state) :
+    (j : 'I_n_relay.+1) (jnext : 'I_n_relay.+1) (g : sw_global_state) :
   (0 < val j < n_relay)%N ->
+  val jnext = (val j).+1 ->
   let pj : party_id := nat_to_party_id (val j).+1 in
-  let jnext : 'I_n_relay.+1 := lift ord0 j in
   let pnext : party_id := nat_to_party_id (val j).+2 in
   sw_beta (ord_predS j) j \in ps_cipher (g pj) ->
   sw_alpha jnext \in ps_cipher (g pj) ->
@@ -751,7 +751,62 @@ Lemma dsdp_n_intermediate_telescope
     foldM (fun gg pa => sw_step pa.1 pa.2 gg) g (dsdp_n_intermediate j)
     = Some g'
     /\ sw_beta j jnext \in ps_cipher (g' pnext).
-Proof. Admitted.
+Proof.
+move=> Hj Hjnext pj pnext Hbeta Halpha Hpriv.
+rewrite /dsdp_n_intermediate.
+case/andP: Hj => _ Hlt.
+have Hbound : ((val j).+1 < n_relay.+1)%N by rewrite ltnS.
+rewrite (insubT (fun x => x < n_relay.+1)%N Hbound) /=.
+set jnext' := Sub j.+1 Hbound.
+have Heq : jnext' = jnext by apply: val_inj => /=; rewrite Hjnext.
+rewrite Heq /=.
+rewrite Hbeta Hpriv /= dec_sw_beta /=.
+set P := (match nat_of_ord j with
+          | 0%N => Bob | 1%N => Charlie | _.+2 => NoParty end).
+have HPeq : P = pj.
+  by rewrite /P /pj /nat_to_party_id /=; case: (val j) => //=; case.
+rewrite HPeq.
+set Q := (match nat_of_ord j with 0%N => Charlie | _.+1 => NoParty end).
+have HQeq : Q = pnext.
+  by rewrite /Q /pnext /nat_to_party_id /=; case: (val j) => //=; case.
+rewrite HQeq.
+have Hm1 : sw_alpha jnext
+  \in enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+      |` ps_cipher (g pj).
+  by rewrite inE Halpha orbT.
+have Hm2 : enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+  \in enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+      |` ps_cipher (g pj).
+  by apply/fset1UP; left.
+rewrite /sw_upd !eqxx /sw_add_cipher /sw_add_plain /=.
+rewrite Hm1 Hm2 /= !eqxx /=.
+have Halpha_big : sw_alpha jnext
+  \in sw_alpha jnext *h enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+      |` (enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+          |` ps_cipher (g pj)).
+  by rewrite !inE Halpha !orbT.
+have Hmulin : sw_alpha jnext
+  *h enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+  \in sw_alpha jnext
+      *h enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+      |` (enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+          |` ps_cipher (g pj)).
+  by apply/fset1UP; left.
+rewrite Halpha_big Hmulin /=.
+have Hbeta_eq : sw_beta j jnext
+  = sw_alpha jnext *h enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j).
+  by rewrite /sw_beta.
+rewrite -Hbeta_eq.
+have HbetaIn : sw_beta j jnext
+  \in sw_beta j jnext
+      |` (enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
+          |` ps_cipher (g pj)).
+  by apply/fset1UP; left.
+rewrite HbetaIn /=.
+eexists; split; first by reflexivity.
+rewrite /= eqxx.
+by case: ifP => _ /=; apply/fset1UP; left.
+Qed.
 
 (* L6b: Last-relay straight-line step.  Given a state holding
    sw_beta (ord_predS ord_max) ord_max on party R n_relay with the
@@ -763,7 +818,22 @@ Lemma dsdp_n_last_relay_eq (g : sw_global_state) :
   exists g',
     foldM (fun gg pa => sw_step pa.1 pa.2 gg) g dsdp_n_last_relay = Some g'
     /\ sw_gamma \in ps_cipher (g' alice).
-Proof. Admitted.
+Proof.
+move=> pn Hbeta Hpriv.
+rewrite /dsdp_n_last_relay /=.
+rewrite -/pn Hbeta Hpriv /= dec_sw_beta /=.
+rewrite /sw_upd !eqxx /sw_add_cipher /sw_add_plain /=.
+have Hgamma_eq : sw_gamma
+  = enc (sw_pk_of ord0) (sw_Delta ord_max) r_tail by [].
+rewrite -Hgamma_eq.
+have HgammaIn : sw_gamma \in sw_gamma |` ps_cipher (g pn).
+  by apply/fset1UP; left.
+rewrite HgammaIn /=.
+eexists; split; first by reflexivity.
+cbv beta.
+rewrite eqxx.
+by case: ifP => _ /=; apply/fset1UP; left.
+Qed.
 
 (* L7 (strong): End-of-phase-3 state.  Exposes the three post-conditions
    that phase4 consumes: sw_gamma \in alice.cipher, ps_priv alice = dk_alice,
