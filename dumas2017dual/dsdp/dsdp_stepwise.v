@@ -696,7 +696,42 @@ Lemma dsdp_n_first_relay_eq :
   exists gf, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
                                   ++ dsdp_n_first_relay) = Some gf.
-Proof. Admitted.
+Proof.
+have [g2 [Hg2 [Halpha [Hpriv1 Halice]]]] := dsdp_n_phase2_state_strong.
+rewrite !catA foldM_cat -catA Hg2.
+rewrite /dsdp_n_first_relay.
+case Hi1: (insub 1 : option 'I_n_relay.+1) => [a1|] /=; last by exists g2.
+(* Step 1: ADec sw_alpha ord0 under dk ord0 at party Bob (= nat_to_party_id 1). *)
+have Ha0 : sw_alpha ord0 \in ps_cipher (g2 Bob).
+  have := Halpha ord0.
+  by rewrite /alice_send_dest /= /nat_to_party_id.
+rewrite Ha0 /= Hpriv1 /= dec_sw_alpha /=.
+(* Derive val a1 = 1 from Hi1 : insub 1 = Some a1 *)
+have Ha1_val : val a1 = 1.
+  move: Hi1; case: insubP => [a1' Hlt Hval|] //= Heq.
+  by move: Heq => [<-]; exact: Hval.
+(* Step 2+3: AEnc + AMul; need sw_alpha a1 in Bob's cipher set after AEnc. *)
+have Ha1 : sw_alpha a1 \in ps_cipher (g2 Bob).
+  have := Halpha a1.
+  by rewrite Ha1_val /alice_send_dest /= /nat_to_party_id.
+have Hin1 : sw_alpha a1 \in enc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0)
+                             |` ps_cipher (g2 Bob).
+  by rewrite inE Ha1 orbT.
+have Hin2 : enc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0)
+              \in enc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0)
+                  |` ps_cipher (g2 Bob).
+  by apply/fset1UP; left.
+rewrite Hin1 Hin2 /=.
+(* Step 4: ASend sw_beta ord0 a1 to Charlie (= nat_to_party_id 2). *)
+have -> : sw_alpha a1 *h enc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0)
+       = sw_beta ord0 a1 by rewrite /sw_beta.
+set gAMul := sw_upd _ Bob (sw_add_cipher _ _).
+have Hsend : sw_beta ord0 a1 \in ps_cipher (gAMul Bob).
+  rewrite /gAMul /sw_upd eqxx /sw_add_cipher /=.
+  by apply/fset1UP; left.
+rewrite Hsend /=.
+by eexists.
+Qed.
 
 Lemma dsdp_n_intermediate_telescope (j : 'I_n_relay.+1) :
   (0 < val j < n_relay)%N ->
