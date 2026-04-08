@@ -779,20 +779,8 @@ have Hm2 : enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
       |` ps_cipher (g pj).
   by apply/fset1UP; left.
 rewrite /sw_upd !eqxx /sw_add_cipher /sw_add_plain /=.
-rewrite Hm1 Hm2 /= !eqxx /=.
-have Halpha_big : sw_alpha jnext
-  \in sw_alpha jnext *h enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
-      |` (enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
-          |` ps_cipher (g pj)).
-  by rewrite !inE Halpha !orbT.
-have Hmulin : sw_alpha jnext
-  *h enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
-  \in sw_alpha jnext
-      *h enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
-      |` (enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
-          |` ps_cipher (g pj)).
-  by apply/fset1UP; left.
-rewrite Halpha_big Hmulin /=.
+rewrite Hm1 Hm2 /=.
+rewrite !eqxx /=.
 have Hbeta_eq : sw_beta j jnext
   = sw_alpha jnext *h enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j).
   by rewrite /sw_beta.
