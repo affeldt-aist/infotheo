@@ -1,6 +1,6 @@
 (******************************************************************************)
 (*                                                                            *)
-(*   DSDP_n as a stepwise transition list (Phase 1 skeleton)                  *)
+(*   DSDP_n as a stepwise transition list                                     *)
 (*                                                                            *)
 (*   This file presents the N-party DSDP protocol as a single list of         *)
 (*     (party_id * dsdp_action)                                               *)
@@ -9,11 +9,16 @@
 (*   the state (three sets of plain / cipher values + a private key slot)     *)
 (*   rather than a separate `dsdp_inv` predicate.                             *)
 (*                                                                            *)
-(*   This file is the Phase-1 skeleton: it contains all definitions and       *)
-(*   action items A1-A4 from the plan. All lemmas and theorems (L1-L9, L17,   *)
-(*   TH1) are stated and `Admitted`. The proofs are delivered in subsequent   *)
-(*   phases. The bridge to the imperative `dsdp_pismc.v` programs lives in    *)
-(*   the sibling file `dsdp_stepwise_bridge.v`.                               *)
+(*   Status: all lemmas and theorems (L1-L9, L17, TH1) are Qed'd. The         *)
+(*   headline theorem `dsdp_n_correct` is proved conditional on               *)
+(*   `n_relay = 1%N` (the 3-party case of Dumas et al. 2017) because          *)
+(*   `party_id` has only four constructors (Alice/Bob/Charlie/NoParty) and    *)
+(*   `nat_to_party_id k` collapses for `k >= 3`, which prevents maintaining   *)
+(*   distinct `ps_priv` slots for more than two relays.                       *)
+(*                                                                            *)
+(*   The bridge to the imperative `dsdp_pismc.v` programs (TH2                *)
+(*   `dsdp_n_program_sound`) is out of scope and planned for a sibling file   *)
+(*   `dsdp_stepwise_bridge.v`.                                                *)
 (*                                                                            *)
 (*   Naming follows the post-audit convention: `sw_` prefix for stepwise      *)
 (*   helpers, `dsdp_n_` prefix for protocol-level objects.                    *)
@@ -356,7 +361,7 @@ Definition v_all (i : 'I_n_relay.+2) : msgT :=
   | None   => v_alice
   end.
 
-(* === L1: per-action evaluation lemmas (Admitted) ========================= *)
+(* === L1: per-action evaluation lemmas ==================================== *)
 
 Lemma sw_step_AInit_eq p vi dki g :
   sw_step p (AInit vi dki) g
@@ -486,7 +491,7 @@ apply: (IH g1) => //.
 exact: (sw_step_cipher_mono E Hc).
 Qed.
 
-(* === L2 - L7: phase postconditions (Admitted) ============================ *)
+(* === L2 - L7: phase postconditions ======================================= *)
 
 Lemma dsdp_n_phase0_state :
   exists g0, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
