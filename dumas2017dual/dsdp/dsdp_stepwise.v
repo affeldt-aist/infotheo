@@ -1167,13 +1167,15 @@ Qed.
        preserved);
      - alice still holds [dk_alice] and [ps_ret alice = None].
    The forall-k clause is what L7 consumes at every intermediate relay. *)
-Lemma dsdp_n_first_relay_eq (H1 : (1 < n_relay.+1)%N) :
-  let a1 : 'I_n_relay.+1 := Ordinal H1 in
+Lemma dsdp_n_first_relay_eq (H1 : (1 <= n_relay)%N) :
+  let a1 : 'I_n_relay.+1 := Ordinal (H1 : (1 < n_relay.+1)%N) in
   exists gf, foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
                    (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
                                   ++ dsdp_n_first_relay) = Some gf
     /\ sw_beta ord0 a1 \in ps_cipher (gf (R (val a1)))
     /\ (forall k : 'I_n_relay.+1, ps_priv (gf (R (val k))) = Some (dk k))
+    /\ (forall k' : 'I_n_relay.+1, (1 < val k')%N ->
+         sw_alpha k' \in ps_cipher (gf (val k')))
     /\ ps_priv (gf alice) = Some dk_alice
     /\ ps_ret (gf alice) = None.
 Proof.
@@ -1247,6 +1249,11 @@ have HgAMul_ret : forall q, ps_ret (gAMul q) = ps_ret (g2 q).
   by rewrite /gAMul Hupd_add_ret Hupd_add_ret Hupd_plain_ret.
 have HR1 : R 1 = 2 by [].
 rewrite HR1.
+have HgAMul_cipher_1other : forall q, q != 1%N ->
+    ps_cipher (gAMul q) = ps_cipher (g2 q).
+  move=> q Hq.
+  rewrite /gAMul /sw_upd.
+  by case: eqP => [Heq|_] //; first by move: Hq; rewrite Heq eqxx.
 split.
   rewrite /sw_upd eqxx /sw_add_cipher /=.
   by apply/fset1UP; left.
@@ -1254,6 +1261,29 @@ split.
   move=> k.
   rewrite Hupd_add_priv HgAMul_priv.
   exact: Hforall2.
+split.
+  (* sw_alpha preservation for k' >= 2. The send is to party 2, so party 2
+     gets an sw_add_cipher (which preserves existing ciphers), and parties
+     != 1, 2 are unchanged. *)
+  move=> k' Hk'.
+  rewrite /sw_upd.
+  case: eqP => [Heq|Hne].
+    (* val k' = 2: party 2 is touched by send with sw_add_cipher *)
+    rewrite /sw_add_cipher /= inE.
+    apply/orP; right.
+    rewrite -Heq HgAMul_cipher_1other; last by rewrite Heq.
+    have := Halpha k'.
+    rewrite /alice_send_dest.
+    have -> : maxn 1 (val k') = val k' by apply/maxn_idPr; exact: ltnW.
+    by [].
+  (* val k' != 2: party val k' is untouched after the final sw_upd at 2 *)
+  rewrite HgAMul_cipher_1other; last first.
+    apply/eqP=> Hv1.
+    by move: Hk'; rewrite Hv1.
+  have := Halpha k'.
+  rewrite /alice_send_dest.
+  have -> : maxn 1 (val k') = val k' by apply/maxn_idPr; exact: ltnW.
+  by [].
 split.
   by rewrite Hupd_add_priv HgAMul_priv.
 by rewrite Hupd_add_ret HgAMul_ret.
@@ -1279,7 +1309,11 @@ Lemma dsdp_n_intermediate_telescope
   exists g',
     foldM (fun gg pa => sw_step pa.1 pa.2 gg) g (dsdp_n_intermediate j)
     = Some g'
-    /\ sw_beta j jnext \in ps_cipher (g' pnext).
+    /\ sw_beta j jnext \in ps_cipher (g' pnext)
+    /\ (forall q : nat, q != pj -> q != pnext -> g' q = g q)
+    /\ g' pnext = sw_add_cipher (g pnext) (sw_beta j jnext)
+    /\ (forall q : nat, ps_priv (g' q) = ps_priv (g q))
+    /\ (forall q : nat, ps_ret (g' q) = ps_ret (g q)).
 Proof.
 move=> Hj Hjnext pj pnext Hbeta Halpha Hpriv.
 rewrite /dsdp_n_intermediate.
@@ -1315,7 +1349,24 @@ have HbetaIn : sw_beta j jnext
 rewrite HbetaIn /=.
 eexists; split; first by reflexivity.
 rewrite /= eqxx.
-by case: ifP => _ /=; apply/fset1UP; left.
+have Hjne : (j.+2 == j.+1) = false by rewrite gtn_eqF ?ltnSn.
+rewrite Hjne /=.
+split.
+  by apply/fset1UP; left.
+split.
+  move=> q Hq1 Hq2.
+  have Hqn2 : (q == j.+2) = false by apply/negbTE.
+  have Hqn1 : (q == j.+1) = false by apply/negbTE.
+  by rewrite Hqn2 Hqn1.
+split.
+  by [].
+split.
+  move=> q.
+  case: (eqVneq q j.+2) => [->|Hq2] /=; first by [].
+  by case: (eqVneq q j.+1) => [->|Hq1] /=.
+move=> q.
+case: (eqVneq q j.+2) => [->|Hq2] /=; first by [].
+by case: (eqVneq q j.+1) => [->|Hq1] /=.
 Qed.
 
 (* Main (L6b): straight-line terminator step for the last relay. Given a
@@ -1372,8 +1423,8 @@ Lemma dsdp_n_beta_chain_eq (Hnr : n_relay = 1%N) :
     /\ ps_ret (g3 alice) = None.
 Proof.
 rewrite /dsdp_n_phase3.
-have H1 : (1 < n_relay.+1)%N by rewrite Hnr.
-have [gf [Hgf [Hbeta [Hforall [Halice Hret]]]]] := dsdp_n_first_relay_eq H1.
+have H1le : (1 <= n_relay)%N by rewrite Hnr.
+have [gf [Hgf [Hbeta [Hforall [Halpha_pres [Halice Hret]]]]]] := dsdp_n_first_relay_eq H1le.
 have Hint : dsdp_n_intermediate_indices = [::].
   rewrite /dsdp_n_intermediate_indices.
   apply/eqP; rewrite -size_eq0 size_filter.
@@ -1387,12 +1438,12 @@ rewrite [in X in foldM _ _ X]catA [in X in foldM _ _ X]catA
 rewrite foldM_cat.
 rewrite !catA in Hgf.
 rewrite Hgf /=.
-(* At n_relay = 1, the concrete ordinal a1 := Ordinal H1 (from the let in
-   dsdp_n_first_relay_eq's statement) coincides with ord_max. We rewrite
-   Hbeta to refer to ord_max so it matches the phase3 last-relay block. *)
+(* At n_relay = 1, the concrete ordinal (Ordinal H1le) coincides with
+   ord_max. We rewrite Hbeta to refer to ord_max so it matches the
+   phase3 last-relay block. *)
 have Hmax_val : val (@ord_max n_relay) = 1%N by rewrite /= Hnr.
 have HRn : R n_relay = 2 by rewrite /R Hnr.
-have Ha1_ordmax : Ordinal H1 = @ord_max n_relay.
+have Ha1_ordmax : Ordinal (H1le : (1 < n_relay.+1)%N) = @ord_max n_relay.
   by apply: val_inj; rewrite /= Hnr.
 rewrite Ha1_ordmax in Hbeta.
 have Hp_Rn : ps_priv (gf (R n_relay)) = Some (dk ord_max).
