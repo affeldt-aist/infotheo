@@ -352,8 +352,6 @@ Definition dsdp_n_program : seq (nat * dsdp_action) :=
   dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
                 ++ dsdp_n_phase3 ++ dsdp_n_phase4.
 
-Definition dsdp_n_final : option sw_global_state :=
-  foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state dsdp_n_program.
 
 (* === Section variables for the correctness statement ===================== *)
 
@@ -1671,10 +1669,13 @@ Qed.
    [sw_Delta ord_max], two AAdds to form [sw_S = sw_Delta ord_max + u_1
    * v_1 - \sum r], and ARet. N-generic: holds for any [1 <= n_relay]. *)
 Lemma dsdp_n_phase4_state (H1 : (1 <= n_relay)%N) :
-  exists gf, dsdp_n_final = Some gf /\ ps_ret (gf alice) = Some sw_S.
+  exists gf,
+    foldM (fun g pa => sw_step pa.1 pa.2 g)
+          sw_init_state dsdp_n_program = Some gf
+    /\ ps_ret (gf alice) = Some sw_S.
 Proof.
 have [g3 [Hg3 [Hgamma [Halice Hret]]]] := dsdp_n_beta_chain_eq H1.
-rewrite /dsdp_n_final /dsdp_n_program.
+rewrite /dsdp_n_program.
 rewrite !catA foldM_cat -!catA Hg3 /=.
 rewrite Hgamma Halice.
 have Hdec : dec dk_alice sw_gamma = Some (sw_Delta ord_max).
@@ -1715,16 +1716,17 @@ Qed.
 
 (* === TH1: headline correctness =========================================== *)
 
-(* Main (TH1, headline theorem): running the whole [dsdp_n_program]
-   from [sw_init_state] via [foldM sw_step] succeeds, and the return
-   value alice emits is exactly the dot product [\sum_i u_i * v_i].
-   One-line corollary composing [dsdp_n_phase4_state] (final state has
-   [ps_ret alice = Some sw_S]) with [sw_S_eq_dot_product]. N-generic:
-   holds for any [1 <= n_relay], i.e., any N ≥ 3 parties (Alice + at
-   least one first relay + at least one last relay). *)
+(* Main (TH1, headline theorem): executing the program [dsdp_n_program]
+   from the initial state [sw_init_state] via [foldM sw_step] succeeds,
+   producing a final state [g_final] whose return value at alice
+   ([ret_of g_final alice]) is exactly the dot product
+   [\sum_(i < n_relay.+2) u i * v_all i]. N-generic: holds for any
+   [1 <= n_relay], i.e., any N >= 3 parties. *)
 Theorem dsdp_n_correct (H1 : (1 <= n_relay)%N) :
-  exists gf, dsdp_n_final = Some gf
-           /\ ret_of gf alice = Some (\sum_(i < n_relay.+2) u i * v_all i).
+  exists g_final,
+    foldM (fun g pa => sw_step pa.1 pa.2 g)
+          sw_init_state dsdp_n_program = Some g_final
+    /\ ret_of g_final alice = Some (\sum_(i < n_relay.+2) u i * v_all i).
 Proof.
 have [gf [Hf Hret]] := dsdp_n_phase4_state H1.
 exists gf; split=> //.
