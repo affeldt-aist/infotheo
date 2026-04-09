@@ -57,7 +57,16 @@ Let Epow := @Epow AHE.
 Local Notation "u *h w" := (Emul u w) (at level 40).
 Local Notation "u ^h w" := (Epow u w) (at level 40).
 
-(* Phase 1 (N-A1): coercion deleted. Party indices are now plain nat. *)
+(* Phase 1 (N-A1): coercion deleted. Party indices are now plain nat.
+
+   Shim Lets below keep legacy proof scripts alive that used to reference
+   party_id constructors (Bob/Charlie/NoParty) or applied nat_to_party_id
+   explicitly. They are reduced to their nat counterparts and will be
+   fully removed in phase 2. *)
+Local Notation Bob := 1%N.
+Local Notation Charlie := 2%N.
+Local Notation NoParty := 3%N.
+Local Notation nat_to_party_id k := (k : nat) (only parsing).
 
 (* Section variables matching the parameter block of dsdp_pismc.v palice_n /
    relay templates. The bridge file (Phase 6+) instantiates these against
@@ -759,13 +768,22 @@ Qed.
      would be provably false once n_relay >= 3 because party_id has only four
      inhabitants and later AInits overwrite earlier ones; we only assert the
      specific indices L5 consumes. *)
-(* Phase 1 (N-A1 cascade): R_ne_alice now trivial on nat. The former
-   party_id-constructor helpers (R_eq_Bob_iff_zero, R_eq_Charlie_iff_one,
-   Bob_ne_Charlie, alice_ne_Charlie) are deleted because they reference
-   party_id constructors, which are no longer in scope for nat-indexed
-   parties. Phase 2 rewrites every use site accordingly. *)
+(* Phase 1 (N-A1 cascade): helpers restated over nat via the Bob/Charlie
+   shim Lets above. Phase 2 inlines these into direct nat equalities. *)
 Lemma R_ne_alice j : R j <> alice.
 Proof. by rewrite /R /alice. Qed.
+
+Lemma R_eq_Bob_iff_zero j : R j = Bob <-> j = 0%N.
+Proof. by rewrite /R; split=> [[]|->]. Qed.
+
+Lemma R_eq_Charlie_iff_one j : R j = nat_to_party_id 2 <-> j = 1%N.
+Proof. by rewrite /R; split=> [[]|->]. Qed.
+
+Lemma Bob_ne_Charlie : Bob <> nat_to_party_id 2.
+Proof. by []. Qed.
+
+Lemma alice_ne_Charlie : alice <> nat_to_party_id 2.
+Proof. by []. Qed.
 
 (* Helper: [sw_step] preserves [ps_priv] at any party [q], except when the
    action is an [AInit] fired at [q] itself (the only action that touches
@@ -848,7 +866,7 @@ split.
   have HBob_g1 : ps_priv (g1 Bob) = Some (dk ord0).
     rewrite /g1 /sw_upd.
     have HBob_eq : Bob == R (val j0).
-      by apply/eqP; rewrite Hj0_zero /R /nat_to_party_id.
+      by apply/eqP; rewrite Hj0_zero /R.
     rewrite HBob_eq /= /sw_set_priv /=.
     congr Some.
     have : j0 = ord0 by apply: val_inj; rewrite Hj0_zero.
@@ -1231,7 +1249,7 @@ case Hi1: (insub 1 : option 'I_n_relay.+1) => [a1|] /=; last first.
 (* Step 1: ADec sw_alpha ord0 under dk ord0 at party Bob (= nat_to_party_id 1). *)
 have Ha0 : sw_alpha ord0 \in ps_cipher (g2 Bob).
   have := Halpha ord0.
-  by rewrite /alice_send_dest /= /nat_to_party_id.
+  by rewrite /alice_send_dest /=.
 rewrite Ha0 /= Hpriv1 /= dec_sw_alpha /=.
 (* Derive val a1 = 1 from Hi1 : insub 1 = Some a1 *)
 have Ha1_val : val a1 = 1.
@@ -1240,7 +1258,7 @@ have Ha1_val : val a1 = 1.
 (* Step 2+3: AEnc + AMul; need sw_alpha a1 in Bob's cipher set after AEnc. *)
 have Ha1 : sw_alpha a1 \in ps_cipher (g2 Bob).
   have := Halpha a1.
-  by rewrite Ha1_val /alice_send_dest /= /nat_to_party_id.
+  by rewrite Ha1_val /alice_send_dest /=.
 have Hin1 : sw_alpha a1 \in enc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0)
                              |` ps_cipher (g2 Bob).
   by rewrite inE Ha1 orbT.
@@ -1296,8 +1314,8 @@ Lemma dsdp_n_intermediate_telescope
     (j : 'I_n_relay.+1) (jnext : 'I_n_relay.+1) (g : sw_global_state) :
   (0 < val j < n_relay)%N ->
   val jnext = (val j).+1 ->
-  let pj : party_id := nat_to_party_id (val j).+1 in
-  let pnext : party_id := nat_to_party_id (val j).+2 in
+  let pj : nat := (val j).+1 in
+  let pnext : nat := (val j).+2 in
   sw_beta (ord_predS j) j \in ps_cipher (g pj) ->
   sw_alpha jnext \in ps_cipher (g pj) ->
   ps_priv (g pj) = Some (dk j) ->
@@ -1315,15 +1333,8 @@ set jnext' := Sub j.+1 Hbound.
 have Heq : jnext' = jnext by apply: val_inj => /=; rewrite Hjnext.
 rewrite Heq /=.
 rewrite Hbeta Hpriv /= dec_sw_beta /=.
-set P := (match nat_of_ord j with
-          | 0%N => Bob | 1%N => Charlie | _.+2 => NoParty end).
-have HPeq : P = pj.
-  by rewrite /P /pj /nat_to_party_id /=; case: (val j) => //=; case.
-rewrite HPeq.
-set Q := (match nat_of_ord j with 0%N => Charlie | _.+1 => NoParty end).
-have HQeq : Q = pnext.
-  by rewrite /Q /pnext /nat_to_party_id /=; case: (val j) => //=; case.
-rewrite HQeq.
+(* Phase 1 (N-A1): the P/Q party_id-constructor dispatch is gone.
+   pj and pnext are already plain nats, so no bridging is needed. *)
 have Hm1 : sw_alpha jnext
   \in enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j)
       |` ps_cipher (g pj).
@@ -1358,7 +1369,7 @@ Qed.
    set. This is the last step of the β-chain: the terminal relay
    decrypts, re-encrypts under alice's key, and forwards [sw_gamma]. *)
 Lemma dsdp_n_last_relay_eq (g : sw_global_state) :
-  let pn : party_id := R n_relay in
+  let pn : nat := R n_relay in
   sw_beta (ord_predS ord_max) (@ord_max n_relay) \in ps_cipher (g pn) ->
   ps_priv (g pn) = Some (dk (@ord_max n_relay)) ->
   exists g',
@@ -1376,9 +1387,7 @@ have HgammaIn : sw_gamma \in sw_gamma |` ps_cipher (g pn).
   by apply/fset1UP; left.
 rewrite HgammaIn /=.
 eexists; split; first by reflexivity.
-cbv beta.
-rewrite eqxx.
-by case: ifP => _ /=; apply/fset1UP; left.
+by apply/fset1UP; left.
 Qed.
 
 (* Main (L7): end-of-phase-3 state. Exposes the four post-conditions
