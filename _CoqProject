@@ -141,5 +141,6 @@ dumas2017dual/dsdp/dsdp_fsm.v
 dumas2017dual/dsdp/dsdp_fsm_progress.v
 dumas2017dual/dsdp/dsdp_rsteps.v
 dumas2017dual/dsdp/dsdp_stepwise.v
+dumas2017dual/dsdp/dsdp_stepwise_bridge.v
 
 -R . infotheo
