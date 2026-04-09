@@ -1560,7 +1560,67 @@ elim: d => [|d IH] k g Hd Hk Hbeta Halpha Hpriv Halice Hret.
     by rewrite Hpriv_pres.
   + (* Hret' *)
     by rewrite Hret_pres.
-Admitted.
+Qed.
+
+(* Helper (iota lemma): filter of iota 0 m.+1 by (0 < v < m) equals
+   iota 1 (m - 1). Proved via irr_sorted_eq (both sides sorted by ltn
+   with matching membership). *)
+Lemma iota_filter_0m (m : nat) :
+  [seq v <- iota 0 m.+1 | (0 < v < m)%N] = iota 1 (m - 1).
+Proof.
+apply: (irr_sorted_eq (leT := ltn)).
+- exact: ltn_trans.
+- exact: ltnn.
+- apply: sorted_filter; first exact: ltn_trans.
+  exact: iota_ltn_sorted.
+- exact: iota_ltn_sorted.
+- move=> x.
+  rewrite mem_filter !mem_iota !add0n add1n.
+  case: (ltnP 0 x) => H1 //=.
+  case: (ltnP x m) => H2 //=.
+  + case: m H2 => [//|m'] H2.
+    rewrite subn1 /=.
+    apply/idP/idP => _.
+    * exact: H2.
+    * exact: (leq_trans H2 (leqnSn _)).
+  + apply/esym/negbTE; rewrite -leqNgt.
+    case: m H2 => [_|m' H2] //=.
+    rewrite subn1 /=.
+    exact: H2.
+Qed.
+
+(* Helper (iota ≤ lemma): pmap insub is identity (under val) when all
+   elements are in range [0, n_relay.+1). For iota 1 (n_relay - 1), all
+   elements are ≤ n_relay - 1 < n_relay < n_relay.+1. *)
+Lemma val_intermediate_tail :
+  [seq val j | j <- intermediate_tail 1] = iota 1 (n_relay - 1).
+Proof.
+rewrite /intermediate_tail.
+rewrite pmap_filter; last by move=> x /=; case: insubP.
+apply/all_filterP/allP => x Hx.
+rewrite mem_iota in Hx.
+case/andP: Hx => H1 H2.
+have Hbound : (x < n_relay.+1)%N.
+  apply: (leq_ltn_trans _ (ltnSn _)).
+  rewrite -ltnS.
+  apply: (leq_trans H2).
+  by rewrite add1n ltnS leq_subr.
+by rewrite insubT.
+Qed.
+
+(* Helper: dsdp_n_intermediate_indices = intermediate_tail 1. Bridges the
+   filter form (used by phase3's definition) to the pmap+iota form (used
+   by the prefix lemma's induction). *)
+Lemma dsdp_n_intermediate_indices_eq :
+  dsdp_n_intermediate_indices = intermediate_tail 1.
+Proof.
+apply: (inj_map val_inj).
+rewrite /dsdp_n_intermediate_indices.
+have HLHS : [seq val j | j <- [seq j0 <- enum 'I_n_relay.+1 | (0 < val j0 < n_relay)%N]]
+          = [seq v <- iota 0 n_relay.+1 | (0 < v < n_relay)%N].
+  by rewrite -val_enum_ord filter_map.
+rewrite HLHS iota_filter_0m val_intermediate_tail //.
+Qed.
 
 (* Main (L7): end-of-phase-3 state. Exposes the four post-conditions
    that [dsdp_n_phase4_state] (L8) consumes: the fold of phase0++phase1
