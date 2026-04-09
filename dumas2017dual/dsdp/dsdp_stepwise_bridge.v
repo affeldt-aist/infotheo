@@ -8,7 +8,7 @@
 (*   `proc data` templates via a deterministic, structural translator        *)
 (*   `translate_raw`. The translator acts like a manual interpreter that      *)
 (*   walks each party's raw proc tree and emits the corresponding             *)
-(*   `(party_id * dsdp_action)` actions in the same phase order as            *)
+(*   `(nat * dsdp_action)` actions in the same phase order as            *)
 (*   `dsdp_n_program`.                                                        *)
 (*                                                                            *)
 (*   Scope (locked):                                                          *)
@@ -65,7 +65,7 @@ Let Epow := @Epow AHE.
 Local Notation "u *h w" := (Emul u w) (at level 40).
 Local Notation "u ^h w" := (Epow u w) (at level 40).
 
-(* nat_to_party_id is already a coercion (declared in dsdp_pismc.v / dsdp_stepwise.v). *)
+(* id is already a coercion (declared in dsdp_pismc.v / dsdp_stepwise.v). *)
 
 (* Section variables — same shape as dsdp_stepwise.v so the bridge file
    instantiates one-to-one against the existing phase lemmas. *)
@@ -204,8 +204,8 @@ Definition dsdp_raw_procs : seq (proc data) :=
    expected-value arguments, which the lemmas R-L1..R-L8 supply from the
    ambient section context. *)
 
-Definition init_slice (p : party_id) (vinit : msgT) (dki : priv_keyT)
-    (pr : proc data) : seq (party_id * dsdp_action AHE) :=
+Definition init_slice (p : nat) (vinit : msgT) (dki : priv_keyT)
+    (pr : proc data) : seq (nat * dsdp_action AHE) :=
   match pr with
   | Init _ (Init _ _) => [:: (p, AInit vinit dki)]
   | _ => [::]
@@ -213,12 +213,12 @@ Definition init_slice (p : party_id) (vinit : msgT) (dki : priv_keyT)
 
 (* Phase1 first-send slice. We strip the two outer Inits and the Send,
    then emit the [AEnc; ASend] pair from the expected pk/v/r/c. *)
-Definition first_send_slice (p : party_id) (pk : pub_keyT) (vj : msgT)
+Definition first_send_slice (p : nat) (pk : pub_keyT) (vj : msgT)
     (rj : randT) (cj : encT) (pr : proc data)
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   match pr with
   | Init _ (Init _ (Send _ _ _)) =>
-      [:: (p, AEnc pk vj rj); (p, ASend (alice : party_id) cj)]
+      [:: (p, AEnc pk vj rj); (p, ASend (alice : nat) cj)]
   | _ => [::]
   end.
 
@@ -231,12 +231,12 @@ Definition first_send_slice (p : party_id) (pk : pub_keyT) (vj : msgT)
    per-relay block list; otherwise [::]. The list of blocks is computed by
    pure recursion over the relay list. *)
 Fixpoint alice_loop_blocks (relays : seq 'I_n_relay.+1)
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   match relays with
   | [::] => [::]
   | j :: rest =>
-      let dest : party_id :=
-        nat_to_party_id (alice_send_dest (val j)) in
+      let dest : nat :=
+        id (alice_send_dest (val j)) in
       [:: (alice, AEnc (sw_pk_of dk_alice dk (lift ord0 j)) (r j) (ra j))
         ; (alice, APow (sw_c dk_alice dk v rb1 j) (u (lift ord0 j)))
         ; (alice, AMul (sw_c dk_alice dk v rb1 j ^h u (lift ord0 j))
@@ -249,7 +249,7 @@ Fixpoint alice_loop_blocks (relays : seq 'I_n_relay.+1)
 
 Definition alice_loop_slice (relays : seq 'I_n_relay.+1)
     (body : proc data) (idx : nat)
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   match body with
   | Recv _ _ => alice_loop_blocks relays
   | _ => [::]
@@ -264,10 +264,10 @@ Definition alice_loop_slice (relays : seq 'I_n_relay.+1)
    expected pj, dk_j, sw_alpha ord0, sw_Delta, fresh_enc, sw_alpha a1,
    sw_beta values supplied by the caller. *)
 Definition first_relay_beta_slice
-    (pj : party_id) (dk_j : priv_keyT) (alpha0 : encT)
+    (pj : nat) (dk_j : priv_keyT) (alpha0 : encT)
     (pk_next : pub_keyT) (delta0 : msgT) (rb2_0 : randT)
-    (alpha_next : encT) (beta_val : encT) (next_pid : party_id)
-    (pr : proc data) : seq (party_id * dsdp_action AHE) :=
+    (alpha_next : encT) (beta_val : encT) (next_pid : nat)
+    (pr : proc data) : seq (nat * dsdp_action AHE) :=
   let fresh_enc := enc pk_next delta0 rb2_0 in
   match pr with
   | Init _ (Init _ (Send _ _ _)) =>
@@ -279,10 +279,10 @@ Definition first_relay_beta_slice
   end.
 
 Definition intermediate_beta_slice (j : 'I_n_relay.+1)
-    (pj : party_id) (dk_j : priv_keyT) (beta_in : encT)
+    (pj : nat) (dk_j : priv_keyT) (beta_in : encT)
     (pk_next : pub_keyT) (delta_j : msgT) (rb2_j : randT)
-    (alpha_next : encT) (beta_out : encT) (next_pid : party_id)
-    (pr : proc data) : seq (party_id * dsdp_action AHE) :=
+    (alpha_next : encT) (beta_out : encT) (next_pid : nat)
+    (pr : proc data) : seq (nat * dsdp_action AHE) :=
   let fresh_enc := enc pk_next delta_j rb2_j in
   match pr with
   | Init _ (Init _ (Send _ _ _)) =>
@@ -294,14 +294,14 @@ Definition intermediate_beta_slice (j : 'I_n_relay.+1)
   end.
 
 Definition last_relay_beta_slice
-    (pn : party_id) (dk_n : priv_keyT) (beta_in : encT)
+    (pn : nat) (dk_n : priv_keyT) (beta_in : encT)
     (pk_alice : pub_keyT) (delta_max : msgT) (r_t : randT) (gamma : encT)
-    (pr : proc data) : seq (party_id * dsdp_action AHE) :=
+    (pr : proc data) : seq (nat * dsdp_action AHE) :=
   match pr with
   | Init _ (Init _ (Send _ _ _)) =>
       [:: (pn, ADec beta_in dk_n)
         ; (pn, AEnc pk_alice delta_max r_t)
-        ; (pn, ASend (alice : party_id) gamma)]
+        ; (pn, ASend (alice : nat) gamma)]
   | _ => [::]
   end.
 
@@ -311,13 +311,13 @@ Definition last_relay_beta_slice
    four-action list from the expected sw_gamma / sw_Delta / sums / sw_S. *)
 Definition alice_tail_slice (gamma : encT) (dk_a : priv_keyT)
     (delta_max : msgT) (uv : msgT) (sum_r : msgT) (s_val : msgT)
-    (tail : proc data) : seq (party_id * dsdp_action AHE) :=
+    (tail : proc data) : seq (nat * dsdp_action AHE) :=
   match tail with
   | Recv _ _ =>
-      [:: (alice : party_id, ADec gamma dk_a)
-        ; (alice : party_id, AAdd delta_max uv)
-        ; (alice : party_id, AAdd (delta_max + uv) (- sum_r))
-        ; (alice : party_id, ARet s_val)]
+      [:: (alice : nat, ADec gamma dk_a)
+        ; (alice : nat, AAdd delta_max uv)
+        ; (alice : nat, AAdd (delta_max + uv) (- sum_r))
+        ; (alice : nat, ARet s_val)]
   | _ => [::]
   end.
 
@@ -339,7 +339,7 @@ Definition alice_tail_of (pr : proc data) : proc data :=
    without a phaseK_of projection (audit point 6). *)
 
 Definition translate_raw_phase0 (ps : seq (proc data))
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   let alice_pr := nth Fail ps 0 in
   let relay_prs := behead ps in
   init_slice alice v_alice dk_alice alice_pr
@@ -348,7 +348,7 @@ Definition translate_raw_phase0 (ps : seq (proc data))
                | j : 'I_n_relay.+1].
 
 Definition translate_raw_phase1 (ps : seq (proc data))
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   let relay_prs := behead ps in
   flatten [seq first_send_slice (R (val j))
                 (sw_pk_of dk_alice dk (lift ord0 j))
@@ -357,15 +357,15 @@ Definition translate_raw_phase1 (ps : seq (proc data))
           | j : 'I_n_relay.+1].
 
 Definition translate_raw_phase2 (ps : seq (proc data))
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   let alice_pr := nth Fail ps 0 in
   alice_loop_slice (enum 'I_n_relay.+1) (alice_body_of alice_pr) 0.
 
 Definition translate_raw_phase3 (ps : seq (proc data))
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   let relay_prs := behead ps in
-  let p1 : party_id := nat_to_party_id 1 in
-  let pn : party_id := R n_relay in
+  let p1 : nat := id 1 in
+  let pn : nat := R n_relay in
   let jmax : 'I_n_relay.+1 := ord_max in
   (match (insub 1 : option 'I_n_relay.+1) with
    | Some a1 =>
@@ -375,21 +375,21 @@ Definition translate_raw_phase3 (ps : seq (proc data))
        (sw_Delta v u r ord0) (rb2 ord0)
        (sw_alpha dk_alice dk v u r ra rb1 a1)
        (sw_beta dk_alice dk v u r ra rb1 rb2 ord0 a1)
-       (nat_to_party_id 2)
+       (id 2)
        (nth Fail relay_prs 0)
    | None => [::]
    end)
     ++ flatten [seq match (insub (val j).+1 : option 'I_n_relay.+1) with
                     | Some jnext =>
                       intermediate_beta_slice j
-                        (nat_to_party_id (val j).+1) (dk j)
+                        (id (val j).+1) (dk j)
                         (sw_beta dk_alice dk v u r ra rb1 rb2
                                  (ord_predS j) j)
                         (sw_pk_of dk_alice dk (lift ord0 jnext))
                         (sw_Delta v u r j) (rb2 j)
                         (sw_alpha dk_alice dk v u r ra rb1 jnext)
                         (sw_beta dk_alice dk v u r ra rb1 rb2 j jnext)
-                        (nat_to_party_id (val j).+2)
+                        (id (val j).+2)
                         (nth Fail relay_prs (val j))
                     | None => [::]
                     end
@@ -402,7 +402,7 @@ Definition translate_raw_phase3 (ps : seq (proc data))
          (nth Fail relay_prs n_relay).
 
 Definition translate_raw_phase4 (ps : seq (proc data))
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   let alice_pr := nth Fail ps 0 in
   alice_tail_slice (sw_gamma dk_alice dk v u r r_tail) dk_alice
     (sw_Delta v u r (ord_max : 'I_n_relay.+1))
@@ -412,7 +412,7 @@ Definition translate_raw_phase4 (ps : seq (proc data))
     (alice_tail_of alice_pr).
 
 Definition translate_raw (ps : seq (proc data))
-    : seq (party_id * dsdp_action AHE) :=
+    : seq (nat * dsdp_action AHE) :=
   translate_raw_phase0 ps
     ++ translate_raw_phase1 ps
     ++ translate_raw_phase2 ps
@@ -463,7 +463,7 @@ Qed.
 Lemma alice_loop_blocks_flatten (relays : seq 'I_n_relay.+1) :
   alice_loop_blocks relays
   = flatten
-      [seq let dest : party_id := nat_to_party_id (alice_send_dest (val j)) in
+      [seq let dest : nat := id (alice_send_dest (val j)) in
            [:: (alice, AEnc (sw_pk_of dk_alice dk (lift ord0 j)) (r j) (ra j))
              ; (alice, APow (sw_c dk_alice dk v rb1 j) (u (lift ord0 j)))
              ; (alice, AMul (sw_c dk_alice dk v rb1 j ^h u (lift ord0 j))
@@ -501,22 +501,22 @@ Qed.
 
 (* R-L5. Phase3 first-relay slice. *)
 Lemma first_relay_beta_slice_eq (j : 'I_n_relay.+1) (Hj : val j = 0) (a1 : 'I_n_relay.+1) :
-  first_relay_beta_slice (nat_to_party_id 1) (dk ord0)
+  first_relay_beta_slice (id 1) (dk ord0)
     (sw_alpha dk_alice dk v u r ra rb1 ord0)
     (sw_pk_of dk_alice dk (lift ord0 a1))
     (sw_Delta v u r ord0) (rb2 ord0)
     (sw_alpha dk_alice dk v u r ra rb1 a1)
     (sw_beta dk_alice dk v u r ra rb1 rb2 ord0 a1)
-    (nat_to_party_id 2)
+    (id 2)
     (relay_raw j)
-  = let p1 : party_id := nat_to_party_id 1 in
+  = let p1 : nat := id 1 in
     let fresh_enc := enc (sw_pk_of dk_alice dk (lift ord0 a1))
                          (sw_Delta v u r ord0) (rb2 ord0) in
     [:: (p1, ADec (sw_alpha dk_alice dk v u r ra rb1 ord0) (dk ord0))
       ; (p1, AEnc (sw_pk_of dk_alice dk (lift ord0 a1))
                   (sw_Delta v u r ord0) (rb2 ord0))
       ; (p1, AMul (sw_alpha dk_alice dk v u r ra rb1 a1) fresh_enc)
-      ; (p1, ASend (nat_to_party_id 2)
+      ; (p1, ASend (id 2)
                    (sw_beta dk_alice dk v u r ra rb1 rb2 ord0 a1))].
 Proof.
 rewrite /relay_raw Hj eqxx.
@@ -526,15 +526,15 @@ Qed.
 (* R-L6. Phase3 intermediate-relay slice. *)
 Lemma intermediate_beta_slice_eq (j : 'I_n_relay.+1) (jnext : 'I_n_relay.+1) :
   (0 < val j < n_relay)%N ->
-  intermediate_beta_slice j (nat_to_party_id (val j).+1) (dk j)
+  intermediate_beta_slice j (id (val j).+1) (dk j)
     (sw_beta dk_alice dk v u r ra rb1 rb2 (ord_predS j) j)
     (sw_pk_of dk_alice dk (lift ord0 jnext))
     (sw_Delta v u r j) (rb2 j)
     (sw_alpha dk_alice dk v u r ra rb1 jnext)
     (sw_beta dk_alice dk v u r ra rb1 rb2 j jnext)
-    (nat_to_party_id (val j).+2)
+    (id (val j).+2)
     (relay_raw j)
-  = let pj : party_id := nat_to_party_id (val j).+1 in
+  = let pj : nat := id (val j).+1 in
     let fresh_enc := enc (sw_pk_of dk_alice dk (lift ord0 jnext))
                          (sw_Delta v u r j) (rb2 j) in
     [:: (pj, ADec (sw_beta dk_alice dk v u r ra rb1 rb2 (ord_predS j) j)
@@ -542,7 +542,7 @@ Lemma intermediate_beta_slice_eq (j : 'I_n_relay.+1) (jnext : 'I_n_relay.+1) :
       ; (pj, AEnc (sw_pk_of dk_alice dk (lift ord0 jnext))
                   (sw_Delta v u r j) (rb2 j))
       ; (pj, AMul (sw_alpha dk_alice dk v u r ra rb1 jnext) fresh_enc)
-      ; (pj, ASend (nat_to_party_id (val j).+2)
+      ; (pj, ASend (id (val j).+2)
                    (sw_beta dk_alice dk v u r ra rb1 rb2 j jnext))].
 Proof.
 move=> /andP [Hpos Hlt].
@@ -562,7 +562,7 @@ Lemma last_relay_beta_slice_eq (j : 'I_n_relay.+1) (Hj : val j = n_relay) :
     (sw_Delta v u r (ord_max : 'I_n_relay.+1)) r_tail
     (sw_gamma dk_alice dk v u r r_tail)
     (relay_raw j)
-  = let pn : party_id := R n_relay in
+  = let pn : nat := R n_relay in
     let jmax : 'I_n_relay.+1 := ord_max in
     [:: (pn, ADec (sw_beta dk_alice dk v u r ra rb1 rb2
                             (ord_predS jmax) jmax) (dk jmax))
