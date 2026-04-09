@@ -365,39 +365,39 @@ Definition translate_raw_phase3 (ps : seq (proc data))
   let p1 : party_id := nat_to_party_id 1 in
   let pn : party_id := R n_relay in
   let jmax : 'I_n_relay.+1 := ord_max in
-  match (insub 1 : option 'I_n_relay.+1) with
-  | Some a1 =>
-    first_relay_beta_slice p1 (dk ord0)
-      (sw_alpha dk_alice dk v u r ra rb1 ord0)
-      (sw_pk_of dk_alice dk (lift ord0 a1))
-      (sw_Delta v u r ord0) (rb2 ord0)
-      (sw_alpha dk_alice dk v u r ra rb1 a1)
-      (sw_beta dk_alice dk v u r ra rb1 rb2 ord0 a1)
-      (nat_to_party_id 2)
-      (nth Fail relay_prs 0)
-      ++ flatten [seq match (insub (val j).+1 : option 'I_n_relay.+1) with
-                      | Some jnext =>
-                        intermediate_beta_slice j
-                          (nat_to_party_id (val j).+1) (dk j)
-                          (sw_beta dk_alice dk v u r ra rb1 rb2
-                                   (ord_predS j) j)
-                          (sw_pk_of dk_alice dk (lift ord0 jnext))
-                          (sw_Delta v u r j) (rb2 j)
-                          (sw_alpha dk_alice dk v u r ra rb1 jnext)
-                          (sw_beta dk_alice dk v u r ra rb1 rb2 j jnext)
-                          (nat_to_party_id (val j).+2)
-                          (nth Fail relay_prs (val j))
-                      | None => [::]
-                      end
-                 | j <- enum 'I_n_relay.+1 & (0 < val j < n_relay)%N]
-      ++ last_relay_beta_slice pn (dk jmax)
-           (sw_beta dk_alice dk v u r ra rb1 rb2 (ord_predS jmax) jmax)
-           (sw_pk_of dk_alice dk ord0)
-           (sw_Delta v u r jmax) r_tail
-           (sw_gamma dk_alice dk v u r r_tail)
-           (nth Fail relay_prs n_relay)
-  | None => [::]
-  end.
+  (match (insub 1 : option 'I_n_relay.+1) with
+   | Some a1 =>
+     first_relay_beta_slice p1 (dk ord0)
+       (sw_alpha dk_alice dk v u r ra rb1 ord0)
+       (sw_pk_of dk_alice dk (lift ord0 a1))
+       (sw_Delta v u r ord0) (rb2 ord0)
+       (sw_alpha dk_alice dk v u r ra rb1 a1)
+       (sw_beta dk_alice dk v u r ra rb1 rb2 ord0 a1)
+       (nat_to_party_id 2)
+       (nth Fail relay_prs 0)
+   | None => [::]
+   end)
+    ++ flatten [seq match (insub (val j).+1 : option 'I_n_relay.+1) with
+                    | Some jnext =>
+                      intermediate_beta_slice j
+                        (nat_to_party_id (val j).+1) (dk j)
+                        (sw_beta dk_alice dk v u r ra rb1 rb2
+                                 (ord_predS j) j)
+                        (sw_pk_of dk_alice dk (lift ord0 jnext))
+                        (sw_Delta v u r j) (rb2 j)
+                        (sw_alpha dk_alice dk v u r ra rb1 jnext)
+                        (sw_beta dk_alice dk v u r ra rb1 rb2 j jnext)
+                        (nat_to_party_id (val j).+2)
+                        (nth Fail relay_prs (val j))
+                    | None => [::]
+                    end
+               | j <- enum 'I_n_relay.+1 & (0 < val j < n_relay)%N]
+    ++ last_relay_beta_slice pn (dk jmax)
+         (sw_beta dk_alice dk v u r ra rb1 rb2 (ord_predS jmax) jmax)
+         (sw_pk_of dk_alice dk ord0)
+         (sw_Delta v u r jmax) r_tail
+         (sw_gamma dk_alice dk v u r r_tail)
+         (nth Fail relay_prs n_relay).
 
 Definition translate_raw_phase4 (ps : seq (proc data))
     : seq (party_id * dsdp_action AHE) :=
@@ -595,27 +595,101 @@ Qed.
 Lemma translate_raw_phase0_eq :
   translate_raw_phase0 dsdp_raw_procs
   = dsdp_n_phase0 dk_alice v_alice dk v.
-Proof. Admitted.
+Proof.
+rewrite /translate_raw_phase0 /dsdp_raw_procs /dsdp_n_phase0 /=.
+congr (_ :: _).
+transitivity (flatten [seq [:: (R (val j), AInit (v j) (dk j))]
+                      | j : 'I_n_relay.+1]);
+  last by rewrite /image_mem; elim: (enum _) => //= a l ->.
+congr flatten.
+rewrite /image_mem.
+apply: eq_map => k.
+rewrite (nth_map k) ?size_enum_ord ?ltn_ord //.
+by rewrite nth_ord_enum init_slice_relay_eq.
+Qed.
 
 Lemma translate_raw_phase1_eq :
   translate_raw_phase1 dsdp_raw_procs
   = dsdp_n_phase1 dk_alice dk v rb1.
-Proof. Admitted.
+Proof.
+rewrite /translate_raw_phase1 /dsdp_raw_procs /dsdp_n_phase1 /=.
+congr flatten.
+rewrite /image_mem.
+apply: eq_map => k.
+rewrite (nth_map k) ?size_enum_ord ?ltn_ord //.
+by rewrite nth_ord_enum first_send_slice_relay_eq.
+Qed.
 
 Lemma translate_raw_phase2_eq :
   translate_raw_phase2 dsdp_raw_procs
   = dsdp_n_phase2 dk_alice dk v u r ra rb1.
-Proof. Admitted.
+Proof.
+rewrite /translate_raw_phase2 /dsdp_raw_procs /=.
+rewrite /alice_body_of /palice_raw.
+exact: alice_loop_slice_eq.
+Qed.
 
 Lemma translate_raw_phase3_eq :
   translate_raw_phase3 dsdp_raw_procs
   = dsdp_n_phase3 dk_alice dk v u r ra rb1 rb2 r_tail.
-Proof. Admitted.
+Proof.
+rewrite /translate_raw_phase3 /dsdp_raw_procs /dsdp_n_phase3 /=.
+rewrite /dsdp_n_first_relay /dsdp_n_last_relay /=.
+congr (_ ++ _ ++ _).
+- (* first relay block *)
+  case: (insub 1 : option 'I_n_relay.+1) => [a1|//].
+  have H0 : (0 : nat) = val (ord0 : 'I_n_relay.+1) by [].
+  rewrite [in LHS]H0 (nth_map (ord0 : 'I_n_relay.+1))
+          ?size_enum_ord ?ltn_ord //.
+  rewrite nth_ord_enum.
+  exact: (first_relay_beta_slice_eq (j := ord0) erefl).
+- (* intermediate flatten *)
+  rewrite /dsdp_n_intermediate_indices /=.
+  congr flatten.
+  set L := filter _ _.
+  have HL : all (fun k : 'I_n_relay.+1 => (0 < val k < n_relay)%N) L
+    by rewrite /L; apply/allP => k; rewrite mem_filter => /andP[].
+  move: HL.
+  elim: L => [|k L IH] //=.
+  move=> /andP[Hk HL].
+  rewrite IH // {IH}.
+  congr (_ :: _).
+  have Hkrange : (val k < n_relay)%N by case/andP: Hk.
+  case Hjnext : (insub (val k).+1 : option 'I_n_relay.+1) => [jnext|];
+    last first.
+  + by rewrite /dsdp_n_intermediate Hjnext.
+  have Hkn : nth Fail [seq relay_raw j | j : 'I_n_relay.+1] (val k)
+             = relay_raw k.
+  { rewrite (nth_map k) ?size_enum_ord ?ltn_ord //.
+    by rewrite nth_ord_enum. }
+  rewrite Hkn /intermediate_beta_slice /relay_raw.
+  case Hk0 : (val k == 0).
+  { by move/eqP: Hk0 => Hk0; rewrite Hk0 in Hk; case/andP: Hk. }
+  case Hkn0 : (val k == n_relay).
+  { by move/eqP: Hkn0 => Hkn0; rewrite Hkn0 ltnn andbF in Hk. }
+  rewrite /intermediate_relay_raw /dsdp_n_intermediate Hjnext /=.
+  by [].
+- (* last relay block *)
+  have -> : nth Fail [seq relay_raw j | j : 'I_n_relay.+1] n_relay
+            = relay_raw (ord_max : 'I_n_relay.+1).
+  { rewrite (nth_map (ord_max : 'I_n_relay.+1))
+            ?size_enum_ord ?ltn_ord //.
+    congr relay_raw.
+    apply: val_inj.
+    by rewrite -[n_relay in nth _ _ n_relay]
+                (_ : val (ord_max : 'I_n_relay.+1) = n_relay) //
+               nth_ord_enum. }
+  exact: (last_relay_beta_slice_eq (j := ord_max) erefl).
+Qed.
 
 Lemma translate_raw_phase4_eq :
   translate_raw_phase4 dsdp_raw_procs
   = dsdp_n_phase4 dk_alice v_alice dk v u r r_tail.
-Proof. Admitted.
+Proof.
+rewrite /translate_raw_phase4 /dsdp_raw_procs /=.
+rewrite /alice_tail_of /palice_raw.
+exact: alice_tail_slice_eq.
+Qed.
 
 (* ========================================================================== *)
 (* R-TH1: Headline list equality                                              *)
@@ -624,6 +698,11 @@ Proof. Admitted.
 Lemma dsdp_raw_translate_eq :
   translate_raw dsdp_raw_procs
   = dsdp_n_program dk_alice v_alice dk v u r ra rb1 rb2 r_tail.
-Proof. Admitted.
+Proof.
+rewrite /translate_raw /dsdp_n_program.
+by rewrite translate_raw_phase0_eq translate_raw_phase1_eq
+           translate_raw_phase2_eq translate_raw_phase3_eq
+           translate_raw_phase4_eq.
+Qed.
 
 End dsdp_stepwise_bridge.
