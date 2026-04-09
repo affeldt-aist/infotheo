@@ -1628,7 +1628,7 @@ Qed.
    [ps_priv alice = Some dk_alice] is still held, and [ps_ret alice =
    None] so the terminal ARet fires. N-generic: holds for any
    [1 <= n_relay]. *)
-Lemma dsdp_n_beta_chain_eq (Hnr : n_relay = 1%N) :
+Lemma dsdp_n_beta_chain_eq (H1 : (1 <= n_relay)%N) :
   exists g3,
     foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
           (dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
@@ -1638,68 +1638,29 @@ Lemma dsdp_n_beta_chain_eq (Hnr : n_relay = 1%N) :
     /\ ps_ret (g3 alice) = None.
 Proof.
 rewrite /dsdp_n_phase3.
-have H1le : (1 <= n_relay)%N by rewrite Hnr.
-have [gf [Hgf [Hbeta [Hforall [Halpha_pres [Halice Hret]]]]]] := dsdp_n_first_relay_eq H1le.
-have Hint : dsdp_n_intermediate_indices = [::].
-  rewrite /dsdp_n_intermediate_indices.
-  apply/eqP; rewrite -size_eq0 size_filter.
-  rewrite Hnr.
-  by rewrite enum_ordSl enum_ordSl enum_ord0 /=.
-have -> : flatten [seq dsdp_n_intermediate j | j <- dsdp_n_intermediate_indices]
-        = [::] by rewrite Hint.
-rewrite cat0s.
-rewrite [in X in foldM _ _ X]catA [in X in foldM _ _ X]catA
-        [in X in foldM _ _ X]catA.
-rewrite foldM_cat.
+have [gf [Hgf [Hbeta [Hforall [Halpha_pres [Halice Hret]]]]]] := dsdp_n_first_relay_eq H1.
+rewrite !catA.
+rewrite -catA foldM_cat.
 rewrite !catA in Hgf.
 rewrite Hgf /=.
-(* At n_relay = 1, the concrete ordinal (Ordinal H1le) coincides with
-   ord_max. We rewrite Hbeta to refer to ord_max so it matches the
-   phase3 last-relay block. *)
-have Hmax_val : val (@ord_max n_relay) = 1%N by rewrite /= Hnr.
-have HRn : R n_relay = 2 by rewrite /R Hnr.
-have Ha1_ordmax : Ordinal (H1le : (1 < n_relay.+1)%N) = @ord_max n_relay.
-  by apply: val_inj; rewrite /= Hnr.
-rewrite Ha1_ordmax in Hbeta.
-have Hp_Rn : ps_priv (gf (R n_relay)) = Some (dk ord_max).
-  have := Hforall ord_max.
-  by rewrite /=.
-have Hbeta' : sw_beta ord0 ord_max \in ps_cipher (gf (R n_relay)).
-  by move: Hbeta; rewrite /=.
-have Hpred_om : ord_predS (@ord_max n_relay) = ord0.
-  by apply: val_inj; rewrite /ord_predS /= Hnr /= inordK // Hnr.
-rewrite Hpred_om Hbeta' Hp_Rn /= dec_sw_beta /=.
-have Hgamma_eq : sw_gamma = enc (sw_pk_of ord0) (sw_Delta ord_max) r_tail by [].
-rewrite -Hgamma_eq.
-have HgammaIn : sw_gamma \in sw_gamma |` ps_cipher (gf (R n_relay))
-  by apply/fset1UP; left.
-(* The inner check fires at (R n_relay) on the sw_upd'd state after the ASend;
-   we supply Hin directly. *)
-have Hin : sw_gamma \in ps_cipher
-  (sw_upd
-     (sw_upd gf (R n_relay)
-        (sw_add_plain (gf (R n_relay))
-           (u (lift ord0 ord_max) * v ord_max + r ord_max + sw_Delta ord0)))
-     (R n_relay)
-     (sw_add_cipher
-        (sw_upd gf (R n_relay)
-           (sw_add_plain (gf (R n_relay))
-              (u (lift ord0 ord_max) * v ord_max + r ord_max + sw_Delta ord0))
-           (R n_relay)) sw_gamma) (R n_relay)).
-  rewrite /sw_upd eqxx /sw_add_cipher /=.
-  by apply/fset1UP; left.
-rewrite Hin /=.
-eexists; split; first by reflexivity.
-split.
-  rewrite /sw_upd eqxx /sw_add_cipher /=.
-  by apply/fset1UP; left.
-split.
-  rewrite /sw_upd eqxx /sw_add_cipher /=.
-  rewrite /sw_upd /=.
-  by rewrite Halice.
-rewrite /sw_upd eqxx /sw_add_cipher /=.
-rewrite /sw_upd /=.
-by rewrite Hret.
+rewrite dsdp_n_intermediate_indices_eq.
+apply: (dsdp_n_beta_chain_aux (d := n_relay - 1) (k := 1)).
+- apply/esym; rewrite add1n subn1; exact: prednK.
+- by [].
+- (* Hbeta at k=1: use Ordinal(H1) = "a1" with val = 1 *)
+  exists (Ordinal (H1 : (1 < n_relay.+1)%N)); split; first by [].
+  have Hpred : ord_predS (Ordinal (H1 : (1 < n_relay.+1)%N)) = ord0.
+    apply: val_inj.
+    rewrite /ord_predS /=.
+    by rewrite inordK //.
+  rewrite Hpred.
+  by rewrite -[2%N]/(R (val (Ordinal (H1 : (1 < n_relay.+1)%N)))).
+- (* Halpha *)
+  move=> j' /andP[Hj1 _]; exact: Halpha_pres Hj1.
+- (* Hpriv *)
+  move=> j' _; exact: Hforall.
+- exact: Halice.
+- exact: Hret.
 Qed.
 
 (* === L8: phase 4 postcondition =========================================== *)
@@ -1708,11 +1669,11 @@ Qed.
    Composes [dsdp_n_beta_chain_eq] (which puts [sw_gamma] in alice's
    cipher set) with the four phase4 actions: ADec [sw_gamma] to extract
    [sw_Delta ord_max], two AAdds to form [sw_S = sw_Delta ord_max + u_1
-   * v_1 - \sum r], and ARet. *)
-Lemma dsdp_n_phase4_state (Hnr : n_relay = 1%N) :
+   * v_1 - \sum r], and ARet. N-generic: holds for any [1 <= n_relay]. *)
+Lemma dsdp_n_phase4_state (H1 : (1 <= n_relay)%N) :
   exists gf, dsdp_n_final = Some gf /\ ps_ret (gf alice) = Some sw_S.
 Proof.
-have [g3 [Hg3 [Hgamma [Halice Hret]]]] := dsdp_n_beta_chain_eq Hnr.
+have [g3 [Hg3 [Hgamma [Halice Hret]]]] := dsdp_n_beta_chain_eq H1.
 rewrite /dsdp_n_final /dsdp_n_program.
 rewrite !catA foldM_cat -!catA Hg3 /=.
 rewrite Hgamma Halice.
@@ -1758,14 +1719,14 @@ Qed.
    from [sw_init_state] via [foldM sw_step] succeeds, and the return
    value alice emits is exactly the dot product [\sum_i u_i * v_i].
    One-line corollary composing [dsdp_n_phase4_state] (final state has
-   [ps_ret alice = Some sw_S]) with [sw_S_eq_dot_product]. Restricted
-   to [n_relay = 1] by the same [party_id] 4-constructor finiteness
-   argument flagged in L7's comment. *)
-Theorem dsdp_n_correct (Hnr : n_relay = 1%N) :
+   [ps_ret alice = Some sw_S]) with [sw_S_eq_dot_product]. N-generic:
+   holds for any [1 <= n_relay], i.e., any N ≥ 3 parties (Alice + at
+   least one first relay + at least one last relay). *)
+Theorem dsdp_n_correct (H1 : (1 <= n_relay)%N) :
   exists gf, dsdp_n_final = Some gf
            /\ ret_of gf alice = Some (\sum_(i < n_relay.+2) u i * v_all i).
 Proof.
-have [gf [Hf Hret]] := dsdp_n_phase4_state Hnr.
+have [gf [Hf Hret]] := dsdp_n_phase4_state H1.
 exists gf; split=> //.
 by rewrite /ret_of Hret sw_S_eq_dot_product.
 Qed.
