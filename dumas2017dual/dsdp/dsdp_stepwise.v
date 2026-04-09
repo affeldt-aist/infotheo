@@ -57,8 +57,7 @@ Let Epow := @Epow AHE.
 Local Notation "u *h w" := (Emul u w) (at level 40).
 Local Notation "u ^h w" := (Epow u w) (at level 40).
 
-(* party_id coercion (matches dsdp_pismc.v:52) *)
-Coercion nat_to_party_id : nat >-> party_id.
+(* Phase 1 (N-A1): coercion deleted. Party indices are now plain nat. *)
 
 (* Section variables matching the parameter block of dsdp_pismc.v palice_n /
    relay templates. The bridge file (Phase 6+) instantiates these against
@@ -76,8 +75,8 @@ Variable rb2 : 'I_n_relay.+1 -> randT.
 Variable r_tail : randT.
 
 (* Party indices matching dsdp_pismc.v *)
-Definition alice : party_id := nat_to_party_id 0.
-Definition R (j : nat) : party_id := nat_to_party_id j.+1.
+Definition alice : nat := 0.
+Definition R (j : nat) : nat := j.+1.
 
 (* Destination for Alice's i-th send: relays 0 and 1 both go to party 1 *)
 Definition alice_send_dest (j : nat) : nat := maxn 1 j.
@@ -119,7 +118,7 @@ Inductive dsdp_action : Type :=
 | AMul   (c1 c2 : encT)
 | APow   (c : encT) (x : msgT)
 | AAdd   (a b : msgT)
-| ASend  (dst : party_id) (c : encT)
+| ASend  (dst : nat) (c : encT)
 | ARet   (x : msgT).
 
 (* === T2, A2: sw_party_state, sw_global_state, sw_init_state =============== *)
@@ -135,7 +134,7 @@ Record sw_party_state : Type := MkPS {
   ps_ret    : option msgT
 }.
 
-Definition sw_global_state := party_id -> sw_party_state.
+Definition sw_global_state := nat -> sw_party_state.
 
 Definition sw_empty_party : sw_party_state :=
   MkPS fset0 fset0 None None.
@@ -143,7 +142,7 @@ Definition sw_empty_party : sw_party_state :=
 Definition sw_init_state : sw_global_state := fun _ => sw_empty_party.
 
 (* Functional update of a global state at one party *)
-Definition sw_upd (g : sw_global_state) (p : party_id) (s : sw_party_state)
+Definition sw_upd (g : sw_global_state) (p : nat) (s : sw_party_state)
     : sw_global_state :=
   fun q => if q == p then s else g q.
 
@@ -179,7 +178,7 @@ Definition sw_set_ret (s : sw_party_state) (x : msgT) : sw_party_state :=
    obligations without strengthening the headline theorem.  Any future
    security layer should introduce a separate [sw_knows_plain] predicate
    rather than re-strengthening [sw_step]. *)
-Definition sw_step (p : party_id) (a : dsdp_action) (g : sw_global_state)
+Definition sw_step (p : nat) (a : dsdp_action) (g : sw_global_state)
     : option sw_global_state :=
   let s := g p in
   match a with
@@ -222,7 +221,7 @@ Definition sw_step (p : party_id) (a : dsdp_action) (g : sw_global_state)
   end.
 
 (* Convenience: read the return slot *)
-Definition ret_of (g : sw_global_state) (p : party_id) : option msgT :=
+Definition ret_of (g : sw_global_state) (p : nat) : option msgT :=
   ps_ret (g p).
 
 (* === T4, A3: sw_pk_of ===================================================== *)
@@ -261,19 +260,19 @@ Definition sw_S : msgT :=
 
 (* === T6, A4: phase definitions ============================================ *)
 
-Definition dsdp_n_phase0 : seq (party_id * dsdp_action) :=
+Definition dsdp_n_phase0 : seq (nat * dsdp_action) :=
   (alice, AInit v_alice dk_alice)
     :: [seq (R (val j), AInit (v j) (dk j)) | j : 'I_n_relay.+1].
 
-Definition dsdp_n_phase1 : seq (party_id * dsdp_action) :=
+Definition dsdp_n_phase1 : seq (nat * dsdp_action) :=
   flatten
     [seq [:: (R (val j), AEnc (sw_pk_of (lift ord0 j)) (v j) (rb1 j))
            ; (R (val j), ASend alice (sw_c j))]
     | j : 'I_n_relay.+1].
 
-Definition dsdp_n_phase2 : seq (party_id * dsdp_action) :=
+Definition dsdp_n_phase2 : seq (nat * dsdp_action) :=
   flatten
-    [seq let dest : party_id := nat_to_party_id (alice_send_dest (val j)) in
+    [seq let dest : nat := alice_send_dest (val j) in
          [:: (alice, AEnc (sw_pk_of (lift ord0 j)) (r j) (ra j))
            ; (alice, APow (sw_c j) (u (lift ord0 j)))
            ; (alice, AMul (sw_c j ^h u (lift ord0 j))
@@ -292,15 +291,15 @@ Definition dsdp_n_phase2 : seq (party_id * dsdp_action) :=
    2. AEnc sw_Delta ord0 under dk a1     → fresh enc under the next relay's key
    3. AMul sw_alpha a1 with fresh enc    → yields sw_beta ord0 a1
    4. ASend a_next's party the sw_beta   *)
-Definition dsdp_n_first_relay : seq (party_id * dsdp_action) :=
-  let p1 : party_id := nat_to_party_id 1 in
+Definition dsdp_n_first_relay : seq (nat * dsdp_action) :=
+  let p1 : nat := 1 in
   match (insub 1 : option 'I_n_relay.+1) with
   | Some a1 =>
     let fresh_enc := enc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0) in
     [:: (p1, ADec (sw_alpha ord0) (dk ord0))
       ; (p1, AEnc (sw_pk_of (lift ord0 a1)) (sw_Delta ord0) (rb2 ord0))
       ; (p1, AMul (sw_alpha a1) fresh_enc)
-      ; (p1, ASend (nat_to_party_id 2) (sw_beta ord0 a1))]
+      ; (p1, ASend 2 (sw_beta ord0 a1))]
   | None => [::]
   end.
 
@@ -311,22 +310,22 @@ Definition dsdp_n_first_relay : seq (party_id * dsdp_action) :=
    Mirrors DParty_intermediate/DParty_relay at dsdp_pismc.v:231-244.
    Expects sw_beta (ord_predS j) j and sw_alpha (lift ord0 j) to be present
    in ps_cipher at party R (val j). *)
-Definition dsdp_n_intermediate (j : 'I_n_relay.+1) : seq (party_id * dsdp_action) :=
+Definition dsdp_n_intermediate (j : 'I_n_relay.+1) : seq (nat * dsdp_action) :=
   match (insub (val j).+1 : option 'I_n_relay.+1) with
   | Some jnext =>
-    let pj : party_id := nat_to_party_id (val j).+1 in
+    let pj : nat := (val j).+1 in
     let fresh_enc := enc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j) in
     [:: (pj, ADec (sw_beta (ord_predS j) j) (dk j))
       ; (pj, AEnc (sw_pk_of (lift ord0 jnext)) (sw_Delta j) (rb2 j))
       ; (pj, AMul (sw_alpha jnext) fresh_enc)
-      ; (pj, ASend (nat_to_party_id (val j).+2) (sw_beta j jnext))]
+      ; (pj, ASend (val j).+2 (sw_beta j jnext))]
   | None => [::]
   end.
 
 (* The last relay receives sw_beta (ord_predS ord_max) ord_max, decrypts to
    sw_Delta ord_max, then encrypts under alice's pub key to produce
    sw_gamma, and sends it back to alice. *)
-Definition dsdp_n_last_relay : seq (party_id * dsdp_action) :=
+Definition dsdp_n_last_relay : seq (nat * dsdp_action) :=
   let pn := R n_relay in
   let jmax : 'I_n_relay.+1 := ord_max in
   [:: (pn, ADec (sw_beta (ord_predS jmax) jmax) (dk jmax))
@@ -336,19 +335,19 @@ Definition dsdp_n_last_relay : seq (party_id * dsdp_action) :=
 Definition dsdp_n_intermediate_indices : seq 'I_n_relay.+1 :=
   [seq j <- enum 'I_n_relay.+1 | (0 < val j < n_relay)%N].
 
-Definition dsdp_n_phase3 : seq (party_id * dsdp_action) :=
+Definition dsdp_n_phase3 : seq (nat * dsdp_action) :=
   dsdp_n_first_relay
     ++ flatten [seq dsdp_n_intermediate j | j <- dsdp_n_intermediate_indices]
     ++ dsdp_n_last_relay.
 
-Definition dsdp_n_phase4 : seq (party_id * dsdp_action) :=
+Definition dsdp_n_phase4 : seq (nat * dsdp_action) :=
   [:: (alice, ADec sw_gamma dk_alice)
     ; (alice, AAdd (sw_Delta ord_max) (u ord0 * v_alice))
     ; (alice, AAdd (sw_Delta ord_max + u ord0 * v_alice)
                    (- \sum_(k < n_relay.+1) r k))
     ; (alice, ARet sw_S)].
 
-Definition dsdp_n_program : seq (party_id * dsdp_action) :=
+Definition dsdp_n_program : seq (nat * dsdp_action) :=
   dsdp_n_phase0 ++ dsdp_n_phase1 ++ dsdp_n_phase2
                 ++ dsdp_n_phase3 ++ dsdp_n_phase4.
 
@@ -508,7 +507,7 @@ Qed.
 (* Helper: cipher monotonicity lifted from a single [sw_step] to foldM on
    a whole action sequence. Corollary of [sw_step_cipher_mono] by induction
    on the list. *)
-Lemma foldM_cipher_mono (l : seq (party_id * dsdp_action)) g g' q c :
+Lemma foldM_cipher_mono (l : seq (nat * dsdp_action)) g g' q c :
   foldM (fun g pa => sw_step pa.1 pa.2 g) g l = Some g' ->
   c \in ps_cipher (g q) ->
   c \in ps_cipher (g' q).
@@ -620,7 +619,7 @@ rewrite catA foldM_cat Hg1.
 suff H : forall (l : seq 'I_n_relay.+1) (g : sw_global_state),
   (forall j, j \in l -> sw_c j \in ps_cipher (g alice)) ->
   exists g', foldM (fun g pa => sw_step pa.1 pa.2 g) g
-    (flatten [seq let dest : party_id := nat_to_party_id (alice_send_dest (val j)) in
+    (flatten [seq let dest : nat := alice_send_dest (val j) in
                   [:: (alice, AEnc (sw_pk_of (lift ord0 j)) (r j) (ra j))
                     ; (alice, APow (sw_c j) (u (lift ord0 j)))
                     ; (alice, AMul (sw_c j ^h u (lift ord0 j))
@@ -760,34 +759,13 @@ Qed.
      would be provably false once n_relay >= 3 because party_id has only four
      inhabitants and later AInits overwrite earlier ones; we only assert the
      specific indices L5 consumes. *)
-(* Helper: R j is never alice (R = nat_to_party_id . S, alice = 0). *)
+(* Phase 1 (N-A1 cascade): R_ne_alice now trivial on nat. The former
+   party_id-constructor helpers (R_eq_Bob_iff_zero, R_eq_Charlie_iff_one,
+   Bob_ne_Charlie, alice_ne_Charlie) are deleted because they reference
+   party_id constructors, which are no longer in scope for nat-indexed
+   parties. Phase 2 rewrites every use site accordingly. *)
 Lemma R_ne_alice j : R j <> alice.
-Proof. rewrite /R /alice /nat_to_party_id /=; case: j => [|j']; first by [].
-by case: j'. Qed.
-
-(* Helper: R j = Bob iff j = 0%N (R 0 = nat_to_party_id 1 = Bob). *)
-Lemma R_eq_Bob_iff_zero j : R j = Bob <-> j = 0%N.
-Proof.
-rewrite /R /nat_to_party_id /=.
-split; last by move=> ->.
-by case: j => // -[//|j'].
-Qed.
-
-(* Helper: R j = Charlie iff j = 1%N. *)
-Lemma R_eq_Charlie_iff_one j : R j = nat_to_party_id 2 <-> j = 1%N.
-Proof.
-rewrite /R /nat_to_party_id /=.
-split; last by move=> ->.
-by case: j => [//|[//|[//|j']]].
-Qed.
-
-(* Helper: Bob <> nat_to_party_id 2 (Charlie). *)
-Lemma Bob_ne_Charlie : Bob <> nat_to_party_id 2.
-Proof. by []. Qed.
-
-(* Helper: alice <> nat_to_party_id 2. *)
-Lemma alice_ne_Charlie : alice <> nat_to_party_id 2.
-Proof. by []. Qed.
+Proof. by rewrite /R /alice. Qed.
 
 (* Helper: [sw_step] preserves [ps_priv] at any party [q], except when the
    action is an [AInit] fired at [q] itself (the only action that touches
@@ -1090,7 +1068,7 @@ Lemma dsdp_n_phase2_loop (l : seq 'I_n_relay.+1) (g : sw_global_state) :
   ps_priv (g Bob) = Some (dk ord0) ->
   exists g',
     foldM (fun g pa => sw_step pa.1 pa.2 g) g
-      (flatten [seq let dest : party_id := nat_to_party_id (alice_send_dest (val j)) in
+      (flatten [seq let dest : nat := alice_send_dest (val j) in
                     [:: (alice, AEnc (sw_pk_of (lift ord0 j)) (r j) (ra j));
                       (alice, APow (sw_c j) (u (lift ord0 j)));
                       (alice, AMul (sw_c j ^h u (lift ord0 j))
