@@ -1418,26 +1418,28 @@ split.
 by rewrite Halice_ne_pn.
 Qed.
 
-(* Helper: the filter ranging over intermediate positions starting at k.
-   Used by the N-generic prefix lemma below. *)
+(* Helper: the list of intermediate positions starting at k, defined via
+   pmap+iota for easy structural induction. Used by the N-generic prefix
+   lemma below. Equivalent to the filter `(k <= val j < n_relay)` on
+   `enum 'I_n_relay.+1` when (k <= n_relay). *)
 Definition intermediate_tail (k : nat) : seq 'I_n_relay.+1 :=
-  [seq j <- enum 'I_n_relay.+1 | (k <= val j < n_relay)%N].
+  pmap insub (iota k (n_relay - k)).
 
-(* Helper (filter cons): when k < n_relay, the tail starting at k has head
-   = the ordinal with val = k and rest = tail starting at k.+1. *)
+(* Helper (cons): when k < n_relay, the tail starting at k has head
+   = ordinal with val = k and rest = tail starting at k.+1. *)
 Lemma intermediate_tail_cons (k : nat) (Hk : (k < n_relay)%N) :
   let j_k : 'I_n_relay.+1 := Ordinal (leq_trans Hk (leqnSn n_relay)) in
   intermediate_tail k = j_k :: intermediate_tail k.+1.
 Proof.
 move=> j_k.
-(* enum 'I_n_relay.+1 is sorted in order of val; filter preserves order. *)
-(* Direct proof via [enum_rank] would be long; use val-based characterisation. *)
 rewrite /intermediate_tail.
-apply: (@eq_from_nth _ ord0); last first.
-  move=> i Hi.
-  admit.
-admit.
-Admitted.
+have Hd : (n_relay - k = (n_relay - k.+1).+1)%N.
+  by rewrite subnS prednK // subn_gt0.
+rewrite Hd /=.
+have Hbound : (k < n_relay.+1)%N by exact: (leq_trans Hk (leqnSn _)).
+rewrite insubT /=.
+by congr (_ :: _); apply: val_inj => /=.
+Qed.
 
 (* Helper (prefix lemma): N-generic induction over the remaining intermediate
    relays. Inducted on d = n_relay - k. *)
@@ -1462,15 +1464,11 @@ Lemma dsdp_n_beta_chain_aux (d : nat) :
       /\ ps_ret (g' alice) = None.
 Proof.
 elim: d => [|d IH] k g Hd Hk Hbeta Halpha Hpriv Halice Hret.
-- (* Base case: d = 0, so k = n_relay. Filter is empty, chain collapses to
+- (* Base case: d = 0, so k = n_relay. List is empty, chain collapses to
      just the last-relay block; apply L6b. *)
   have Hkn : k = n_relay by rewrite Hd addn0.
   have Hfilt : intermediate_tail k = [::].
-    rewrite /intermediate_tail Hkn.
-    rewrite (eq_in_filter (a2 := pred0)); first exact: filter_pred0.
-    move=> j _ /=.
-    apply/negP => /andP [H1 H2].
-    by move: (leq_ltn_trans H1 H2); rewrite ltnn.
+    by rewrite /intermediate_tail Hkn subnn /=.
   rewrite Hfilt.
   have -> : (flatten [seq dsdp_n_intermediate j | j <- [::]]) = [::] by [].
   rewrite cat0s.
@@ -1495,10 +1493,73 @@ elim: d => [|d IH] k g Hd Hk Hbeta Halpha Hpriv Halice Hret.
   split; first exact: Hgamma.
   split; first by rewrite Halice' Halice.
   by rewrite Hret' Hret.
-- (* Inductive step: d = d'.+1, so k < n_relay *)
+- (* Inductive step: d = d'.+1, so k < n_relay.
+     Extract the head ordinal j_k (val = k), apply L6 at j_k, recurse at k+1. *)
   have Hkn : (k < n_relay)%N by rewrite Hd -[k in (k < _)%N]addn0 ltn_add2l.
-  (* TODO: unfold filter head via intermediate_tail_cons, apply L6, recurse *)
-  admit.
+  rewrite (intermediate_tail_cons Hkn) /=.
+  set j_k : 'I_n_relay.+1 := Ordinal (leq_trans Hkn (leqnSn n_relay)).
+  have Hvjk : val j_k = k by [].
+  have Hjnext_bound : (k.+1 < n_relay.+1)%N by rewrite ltnS.
+  set j_next : 'I_n_relay.+1 := Ordinal Hjnext_bound.
+  have Hvjnext : val j_next = (val j_k).+1 by rewrite Hvjk.
+  rewrite -catA foldM_cat.
+  have Hj_range : (0 < val j_k < n_relay)%N.
+    by apply/andP; split; rewrite Hvjk.
+  have Hbeta_j : sw_beta (ord_predS j_k) j_k \in ps_cipher (g (val j_k).+1).
+    rewrite Hvjk.
+    have [j_k' [Hvj_k' Hbeta_k]] := Hbeta.
+    have -> : j_k = j_k' by apply: val_inj; rewrite Hvjk Hvj_k'.
+    exact: Hbeta_k.
+  have Halpha_j : sw_alpha j_next \in ps_cipher (g (val j_k).+1).
+    have := Halpha j_next.
+    rewrite Hvjnext Hvjk => H.
+    apply: H.
+    by apply/andP; split; [exact: ltnSn|exact: Hkn].
+  have Hpriv_j : ps_priv (g (val j_k).+1) = Some (dk j_k).
+    by apply: Hpriv; rewrite Hvjk.
+  have [g1 [Hg1 [Hbeta1 [Huntouched [Hpnext [Hpriv_pres Hret_pres]]]]]] :=
+    dsdp_n_intermediate_telescope Hj_range Hvjnext Hbeta_j Halpha_j Hpriv_j.
+  rewrite Hg1.
+  (* Apply IH at k.+1, g1 *)
+  apply: (IH k.+1 g1).
+  + by rewrite Hd addnS.
+  + by [].
+  + (* Hbeta' at k.+1: use j_next (val = k.+1), and ord_predS j_next = j_k *)
+    exists j_next; split; first by rewrite Hvjnext Hvjk.
+    rewrite Hvjk in Hbeta1.
+    have Hpred_jnext : ord_predS j_next = j_k.
+      apply: val_inj; rewrite /ord_predS /=.
+      rewrite inordK; last exact: (leq_trans Hkn (leqnSn _)).
+      by [].
+    rewrite Hpred_jnext.
+    exact: Hbeta1.
+  + (* Halpha' at k.+1 *)
+    move=> j' /andP[H1 H2].
+    have Halpha_g : sw_alpha j' \in ps_cipher (g (val j')).
+      apply: Halpha; apply/andP; split; last exact: H2.
+      exact: (ltn_trans (ltnSn _) H1).
+    case: (ltngtP (val j') (val j_k).+2) => Hcmp.
+    * exfalso.
+      have Hlt : (val j' < k.+2)%N by rewrite -Hvjk.
+      by move: (leq_trans Hlt H1); rewrite ltnn.
+    * rewrite Huntouched //.
+      -- apply/eqP => Heq.
+         rewrite Heq in Hcmp.
+         by move: Hcmp => /=; rewrite ltnNge leqW // leqnSn.
+      -- apply/eqP => Heq.
+         rewrite Heq in Hcmp.
+         by rewrite ltnn in Hcmp.
+    * rewrite Hcmp Hpnext /sw_add_cipher /= inE.
+      apply/orP; right.
+      by rewrite -Hcmp.
+  + (* Hpriv' at k.+1 *)
+    move=> j' Hk1j.
+    rewrite Hpriv_pres.
+    exact: Hpriv (ltnW Hk1j).
+  + (* Halice' *)
+    by rewrite Hpriv_pres.
+  + (* Hret' *)
+    by rewrite Hret_pres.
 Admitted.
 
 (* Main (L7): end-of-phase-3 state. Exposes the four post-conditions
