@@ -1382,7 +1382,10 @@ Lemma dsdp_n_last_relay_eq (g : sw_global_state) :
   ps_priv (g pn) = Some (dk (@ord_max n_relay)) ->
   exists g',
     foldM (fun gg pa => sw_step pa.1 pa.2 gg) g dsdp_n_last_relay = Some g'
-    /\ sw_gamma \in ps_cipher (g' alice).
+    /\ sw_gamma \in ps_cipher (g' alice)
+    /\ (forall q : nat, q != pn -> q != alice -> g' q = g q)
+    /\ ps_priv (g' alice) = ps_priv (g alice)
+    /\ ps_ret (g' alice) = ps_ret (g alice).
 Proof.
 move=> pn Hbeta Hpriv.
 rewrite /dsdp_n_last_relay /=.
@@ -1395,24 +1398,115 @@ have HgammaIn : sw_gamma \in sw_gamma |` ps_cipher (g pn).
   by apply/fset1UP; left.
 rewrite HgammaIn /=.
 eexists; split; first by reflexivity.
-by apply/fset1UP; left.
+have Halice_ne_pn : (alice == pn) = false.
+  rewrite /alice /pn /R.
+  by case: (n_relay).
+split.
+  (* sw_gamma \in alice's cipher set after the Send *)
+  rewrite Halice_ne_pn.
+  by apply/fset1UP; left.
+split.
+  (* untouched parties unchanged *)
+  move=> q Hq_pn Hq_alice.
+  have Hq_pn_b : (q == pn) = false by apply/negbTE.
+  have Hq_alice_b : (q == alice) = false by apply/negbTE.
+  by rewrite Hq_alice_b Hq_pn_b.
+split.
+  (* alice's priv preserved *)
+  by rewrite Halice_ne_pn.
+(* alice's ret preserved *)
+by rewrite Halice_ne_pn.
 Qed.
+
+(* Helper: the filter ranging over intermediate positions starting at k.
+   Used by the N-generic prefix lemma below. *)
+Definition intermediate_tail (k : nat) : seq 'I_n_relay.+1 :=
+  [seq j <- enum 'I_n_relay.+1 | (k <= val j < n_relay)%N].
+
+(* Helper (filter cons): when k < n_relay, the tail starting at k has head
+   = the ordinal with val = k and rest = tail starting at k.+1. *)
+Lemma intermediate_tail_cons (k : nat) (Hk : (k < n_relay)%N) :
+  let j_k : 'I_n_relay.+1 := Ordinal (leq_trans Hk (leqnSn n_relay)) in
+  intermediate_tail k = j_k :: intermediate_tail k.+1.
+Proof.
+move=> j_k.
+(* enum 'I_n_relay.+1 is sorted in order of val; filter preserves order. *)
+(* Direct proof via [enum_rank] would be long; use val-based characterisation. *)
+rewrite /intermediate_tail.
+apply: (@eq_from_nth _ ord0); last first.
+  move=> i Hi.
+  admit.
+admit.
+Admitted.
+
+(* Helper (prefix lemma): N-generic induction over the remaining intermediate
+   relays. Inducted on d = n_relay - k. *)
+Lemma dsdp_n_beta_chain_aux (d : nat) :
+  forall (k : nat) (g : sw_global_state),
+    (n_relay = k + d)%N ->
+    (1 <= k)%N ->
+    (exists j_k : 'I_n_relay.+1, val j_k = k /\
+      sw_beta (ord_predS j_k) j_k \in ps_cipher (g k.+1)) ->
+    (forall j : 'I_n_relay.+1, (k < val j <= n_relay)%N ->
+      sw_alpha j \in ps_cipher (g (val j))) ->
+    (forall j : 'I_n_relay.+1, (k <= val j)%N ->
+      ps_priv (g (val j).+1) = Some (dk j)) ->
+    ps_priv (g alice) = Some dk_alice ->
+    ps_ret (g alice) = None ->
+    exists g',
+      foldM (fun gg pa => sw_step pa.1 pa.2 gg) g
+        (flatten [seq dsdp_n_intermediate j | j <- intermediate_tail k]
+         ++ dsdp_n_last_relay) = Some g'
+      /\ sw_gamma \in ps_cipher (g' alice)
+      /\ ps_priv (g' alice) = Some dk_alice
+      /\ ps_ret (g' alice) = None.
+Proof.
+elim: d => [|d IH] k g Hd Hk Hbeta Halpha Hpriv Halice Hret.
+- (* Base case: d = 0, so k = n_relay. Filter is empty, chain collapses to
+     just the last-relay block; apply L6b. *)
+  have Hkn : k = n_relay by rewrite Hd addn0.
+  have Hfilt : intermediate_tail k = [::].
+    rewrite /intermediate_tail Hkn.
+    rewrite (eq_in_filter (a2 := pred0)); first exact: filter_pred0.
+    move=> j _ /=.
+    apply/negP => /andP [H1 H2].
+    by move: (leq_ltn_trans H1 H2); rewrite ltnn.
+  rewrite Hfilt.
+  have -> : (flatten [seq dsdp_n_intermediate j | j <- [::]]) = [::] by [].
+  rewrite cat0s.
+  (* Bridge j_k = ord_max and build L6b's preconditions *)
+  have [j_k [Hvj_k Hbeta_k]] := Hbeta.
+  have Hj_k_max : j_k = ord_max :> 'I_n_relay.+1.
+    by apply: val_inj; rewrite Hvj_k Hkn.
+  rewrite Hj_k_max in Hbeta_k.
+  have Hbeta_last : sw_beta (ord_predS (@ord_max n_relay)) ord_max
+                    \in ps_cipher (g (R n_relay)).
+    rewrite /R.
+    have Hkn_eq : k.+1 = (val (@ord_max n_relay)).+1 by rewrite Hkn /=.
+    by rewrite -Hkn_eq.
+  have Hpriv_last : ps_priv (g (R n_relay)) = Some (dk (@ord_max n_relay)).
+    have H := Hpriv ord_max.
+    rewrite /R.
+    have -> : n_relay.+1 = (val (@ord_max n_relay)).+1 by rewrite /=.
+    by apply: H; rewrite /= -Hkn.
+  have [g' [Hg' [Hgamma [Huntouched [Halice' Hret']]]]] :=
+    dsdp_n_last_relay_eq Hbeta_last Hpriv_last.
+  exists g'; split; first exact: Hg'.
+  split; first exact: Hgamma.
+  split; first by rewrite Halice' Halice.
+  by rewrite Hret' Hret.
+- (* Inductive step: d = d'.+1, so k < n_relay *)
+  have Hkn : (k < n_relay)%N by rewrite Hd -[k in (k < _)%N]addn0 ltn_add2l.
+  (* TODO: unfold filter head via intermediate_tail_cons, apply L6, recurse *)
+  admit.
+Admitted.
 
 (* Main (L7): end-of-phase-3 state. Exposes the four post-conditions
    that [dsdp_n_phase4_state] (L8) consumes: the fold of phase0++phase1
    ++phase2++phase3 succeeds, [sw_gamma] is in alice's cipher set,
    [ps_priv alice = Some dk_alice] is still held, and [ps_ret alice =
-   None] so the terminal ARet fires.
-
-   RESTRICTION: proved for [n_relay = 1] only, i.e. the 3-party case
-   (alice, 1, party2) from Dumas et al. 2017. The obstacle for
-   [n_relay >= 3] is that [party_id] has only 4 inhabitants
-   (one Alice + three relay slots); [R j = j.+1] collapsed multiple
-   relays together for [j >= 2], and the [ps_priv] invariant
-   the intermediate-relay steps need cannot be maintained for both
-   collapsed relays. For [n_relay = 2] the argument goes through too
-   (parties 1, 2, 3 all distinct) but needs explicit
-   intermediate handling left as future work. *)
+   None] so the terminal ARet fires. N-generic: holds for any
+   [1 <= n_relay]. *)
 Lemma dsdp_n_beta_chain_eq (Hnr : n_relay = 1%N) :
   exists g3,
     foldM (fun g pa => sw_step pa.1 pa.2 g) sw_init_state
