@@ -220,9 +220,38 @@ Definition first_send_slice (p : party_id) (pk : pub_keyT) (vj : msgT)
   | _ => [::]
   end.
 
-(* Phase2 alice loop slice — stub (R-L4 is Phase 3, not Phase 2). *)
-Definition alice_loop_slice (body : proc data) (idx : nat)
-    : seq (party_id * dsdp_action AHE) := [::].
+(* Phase2 alice loop slice. The canonical 4-action block per iteration
+   (AEnc, APow, AMul, ASend) is built from the section variables, mirroring
+   `dsdp_n_phase2`. The slice does NOT walk the proc structure (because
+   `std_Recv_enc`'s continuation is wrapped in `oapp _ Fail \o std_from_enc`
+   and we cannot peel it by pattern match). Instead, the slice does a single
+   top-level shape check on the body — if it's a `Recv`, we emit the
+   per-relay block list; otherwise [::]. The list of blocks is computed by
+   pure recursion over the relay list. *)
+Fixpoint alice_loop_blocks (relays : seq 'I_n_relay.+1)
+    : seq (party_id * dsdp_action AHE) :=
+  match relays with
+  | [::] => [::]
+  | j :: rest =>
+      let dest : party_id :=
+        nat_to_party_id (alice_send_dest (val j)) in
+      [:: (alice, AEnc (sw_pk_of dk_alice dk (lift ord0 j)) (r j) (ra j))
+        ; (alice, APow (sw_c dk_alice dk v rb1 j) (u (lift ord0 j)))
+        ; (alice, AMul (sw_c dk_alice dk v rb1 j ^h u (lift ord0 j))
+                        (enc (sw_pk_of dk_alice dk (lift ord0 j))
+                             (r j) (ra j)))
+        ; (alice, ASend dest
+                        (sw_alpha dk_alice dk v u r ra rb1 j))]
+        ++ alice_loop_blocks rest
+  end.
+
+Definition alice_loop_slice (relays : seq 'I_n_relay.+1)
+    (body : proc data) (idx : nat)
+    : seq (party_id * dsdp_action AHE) :=
+  match body with
+  | Recv _ _ => alice_loop_blocks relays
+  | _ => [::]
+  end.
 
 (* First relay β-slice. The first relay's body is:
      Send 0 _ (std_Recv_dec 0 dk_j (fun _ =>
@@ -328,7 +357,7 @@ Definition translate_raw_phase1 (ps : seq (proc data))
 Definition translate_raw_phase2 (ps : seq (proc data))
     : seq (party_id * dsdp_action AHE) :=
   let alice_pr := nth Fail ps 0 in
-  alice_loop_slice (alice_body_of alice_pr) 0.
+  alice_loop_slice (enum 'I_n_relay.+1) (alice_body_of alice_pr) 0.
 
 Definition translate_raw_phase3 (ps : seq (proc data))
     : seq (party_id * dsdp_action AHE) :=
@@ -427,11 +456,46 @@ Qed.
    over `enum 'I_n_relay.+1`. This lemma states the loop slice on the full
    palice_raw_body matches dsdp_n_phase2. The proof in Phase 3 will be by
    induction on the relay list with the F1 strengthened invariant. *)
+(* Auxiliary: alice_loop_blocks computes exactly the flatten in dsdp_n_phase2.
+   Proof by induction on the relay list. *)
+Lemma alice_loop_blocks_flatten (relays : seq 'I_n_relay.+1) :
+  alice_loop_blocks relays
+  = flatten
+      [seq let dest : party_id := nat_to_party_id (alice_send_dest (val j)) in
+           [:: (alice, AEnc (sw_pk_of dk_alice dk (lift ord0 j)) (r j) (ra j))
+             ; (alice, APow (sw_c dk_alice dk v rb1 j) (u (lift ord0 j)))
+             ; (alice, AMul (sw_c dk_alice dk v rb1 j ^h u (lift ord0 j))
+                            (enc (sw_pk_of dk_alice dk (lift ord0 j))
+                                 (r j) (ra j)))
+             ; (alice, ASend dest (sw_alpha dk_alice dk v u r ra rb1 j))]
+      | j <- relays].
+Proof.
+elim: relays => [|j rest IH] //=.
+by rewrite IH.
+Qed.
+
+(* R-L4. Phase2 alice loop slice — N-generic.
+   The slice on `palice_raw_body relays 0 palice_raw_tail` (which has shape
+   `Recv ...` whenever `relays` is non-empty) returns
+   `alice_loop_blocks relays`. To match `dsdp_n_phase2` (which uses an
+   `'I_n_relay.+1`-comprehension), we instantiate at `enum 'I_n_relay.+1`
+   and use the fact that `[seq f j | j : 'I_n_relay.+1]` unfolds to
+   `[seq f j | j <- enum 'I_n_relay.+1]`. *)
 Lemma alice_loop_slice_eq :
-  alice_loop_slice
+  alice_loop_slice (enum 'I_n_relay.+1)
     (palice_raw_body (enum 'I_n_relay.+1) 0 palice_raw_tail) 0
   = dsdp_n_phase2 dk_alice dk v u r ra rb1.
-Proof. Admitted.
+Proof.
+case E : (enum 'I_n_relay.+1) => [|x s].
+- have : size (enum 'I_n_relay.+1) = n_relay.+1 by rewrite size_enum_ord.
+  by rewrite E.
+rewrite /alice_loop_slice /palice_raw_body -/palice_raw_body.
+rewrite /std_Recv_enc /Recv_param /=.
+rewrite -[LHS]/(alice_loop_blocks (x :: s)).
+rewrite -E.
+rewrite alice_loop_blocks_flatten.
+by rewrite /dsdp_n_phase2.
+Qed.
 
 (* R-L5. Phase3 first-relay slice. *)
 Lemma first_relay_beta_slice_eq (j : 'I_n_relay.+1) (Hj : val j = 0) (a1 : 'I_n_relay.+1) :
