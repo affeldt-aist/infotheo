@@ -542,10 +542,9 @@ congr (_ <| _ |> _).
   rewrite fdistI_permE permE /= p_of_rsE /= r_of_pqE /=.
   rewrite s_of_pqE /= /onem.
   rewrite (_ : Ordinal _ = lift ord0 ord0); last exact/val_inj.
-  set tmp1 := d _.
-  set tmp2 := d _.
-  field; rewrite ?oned0//=.
-  rewrite opprB opprB addrC addrA subrK.
+  set tmp1 := d _; set tmp2 := d _.
+  suff ? : 1 - (1 - tmp1 - tmp2) != 0 by field; do ?[apply/andP; split].  (* Remove "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
+  rewrite ?oned0//= opprB opprB addrC addrA subrK.
   by rewrite gt_eqF// addrC.
 - by rewrite /= /S3.p01 permE /=; congr g; exact/val_inj.
 - congr (_ <| _ |> _).
@@ -557,8 +556,8 @@ congr (_ <| _ |> _).
     set tmp2 := d _.
     have tmp12_neq0 : 1 - (1 - tmp1 - tmp2) != 0.
       by rewrite !opprB addrC addrA subrK gt_eqF// addrC.
-    field; do 1?[apply/andP; split]; rewrite ?oned0//.
-    rewrite subr_eq0 eq_sym.
+    suff ? : 1 - tmp2 != 0 by field; do ?[apply/andP; split].  (* Remove "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
+    rewrite ?oned0// subr_eq0 eq_sym.
     apply: contra ds01.
     rewrite /S3.p01 permE /= (_ : Ordinal _ = lift ord0 ord0) //.
     exact/val_inj.

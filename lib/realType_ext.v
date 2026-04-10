@@ -668,7 +668,7 @@ Proof.
 move=> H.
 apply/val_inj; rewrite /= s_of_pqE p_of_rsE q_of_rsE p_of_rsE /=.
 rewrite /onem.
-field.
+suff ? : 1 - r%:num * s%:num != 0 by field.
 rewrite subr_eq0; apply: contra H => /eqP rs1.
 by apply/eqP/val_inj; rewrite /= p_of_rsE.
 Qed.
@@ -680,7 +680,7 @@ Proof.
 move=> H1 s0; apply/val_inj => /=.
 rewrite !(r_of_pqE,s_of_pqE,q_of_rsE,p_of_rsE) /onem.
 suff rs_neq1 : 1 - r%:num * s%:num != 0.
-  (field; do ?[apply/andP; split]) => //.
+  suff ? : 1 - (1 - r%:num * s%:num - (1 - r%:num) * s%:num) != 0 by field; do ?[apply/andP; split].  (* Remove "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
   by rewrite mulrBl mul1r !opprB -!addrA addrC !addrA !subrK ?subrr ?add0r.
 rewrite subr_eq0.
 apply: contra H1 => /eqP H1.
@@ -718,7 +718,8 @@ Lemma r_of_rpos_probA {R : realType} (p q r : {posnum R}) :
   divrposxxy p q.
 Proof.
 apply/val_inj; rewrite /= r_of_pqE s_of_pqE /onem /=.
-field; do ?[apply/andP; split]; do ?[by []].
+suff ? : (p%:num + (q%:num + r%:num)) * (q%:num + r%:num) -
+    (p%:num + (q%:num + r%:num) - p%:num) * (q%:num + r%:num - q%:num) != 0 by field; do ?[apply/andP; split].  (* Remove "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
 rewrite (addrC p%:num (q%:num + r%:num)%:pos%:num) addrK {4}[in q%:num + r%:num]addrC addrK.
 by rewrite mulrC -mulrBr (addrC _ p%:num) addrA addrK mulf_neq0//.
 Qed.
