@@ -2399,7 +2399,7 @@ Variables (A : finType) (P : R.-fdist A).
 *)
 Lemma inde_RV_comp (TA TB UA UB : finType) (X : {RV P -> TA}) (Y : {RV P -> TB})
     (f : TA -> UA) (g : TB -> UB) :
-  P |= X _|_ Y -> P|= (f `o X) _|_ (g `o Y).
+  P |= X _|_ Y -> P |= (f `o X) _|_ (g `o Y).
 Proof.
 move=> /inde_RVP inde_XY; apply/inde_RVP => E F.
 by rewrite (pr_in_comp' f) (pr_in_comp' g) -inde_XY -preimsetX -pr_in_comp'.
@@ -2416,6 +2416,32 @@ Lemma inde_RV_sym : P |= X _|_ Y <-> P |= Y _|_ X.
 Proof. by split => /cinde_RV_unit/cinde_RV_sym/cinde_RV_unit. Qed.
 
 End inde_RV_sym.
+
+Section inde_const_RV.
+Context {R : realType}.
+Variables (U : finType) (P1 P2 P3 : R.-fdist U) (T : eqType) (X : {RV P1 -> T}).
+Variables (c : T).
+
+Lemma inde_const_RV : P3 |= X _|_ const_RV P2 c.
+Proof.
+move=> x y.
+have [<-|cy]:= eqVneq c y.
+  set Pry := (Z in _ * Z).
+  have -> : Pry = 1.
+    rewrite /Pry pfwd1E (_ : finset _ = [set: U]) ?Pr_setT//.
+    by apply: eq_finset => u/=; rewrite eqxx.
+  rewrite mulr1 !pfwd1E /Pr.
+  apply: eq_bigl => u.
+  by rewrite !inE xpair_eqE eqxx andbT.
+set Pry := (Z in _ * Z).
+have -> : Pry = 0.
+  rewrite /Pry pfwd1E; apply: big1 => u.
+  by rewrite !inE (negPf cy).
+rewrite mulr0 !pfwd1E /Pr big1// => u.
+by rewrite !inE xpair_eqE (negPf cy) andbF.
+Qed.
+
+End inde_const_RV.
 
 (* We put the following section here because it uses reasoning_by_cases and
    the independence notation. *)
