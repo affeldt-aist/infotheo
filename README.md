@@ -25,7 +25,7 @@ information theory, and linear error-correcting codes.
   - Naruomi Obata, Titech (M2)
   - Alessandro Bruni, IT-University of Copenhagen
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Coq/Rocq versions: Coq 8.20--9.1
+- Compatible Rocq versions: Rocq 9.0--9.1
 - Additional dependencies:
   - [MathComp ssreflect](https://math-comp.github.io)
   - [MathComp fingroup](https://math-comp.github.io)
@@ -37,7 +37,7 @@ information theory, and linear error-correcting codes.
   - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
   - [MathComp algebra tactics](https://github.com/math-comp/algebra-tactics)
   - [CoqInterval](https://gitlab.inria.fr/coqinterval)
-- Coq namespace: `infotheo`
+- Rocq namespace: `infotheo`
 - Related publication(s):
   - [An Approach to Formalize Information-Theoretic Security of Multiparty Computation Protocols](https://link.springer.com/chapter/10.1007/978-3-031-95497-9_11) doi:[10.1007/978-3-031-95497-9_11](https://doi.org/10.1007/978-3-031-95497-9_11)
   - [Robust Mean Estimation by All Means (short paper)](https://drops.dagstuhl.de/storage/00lipics/lipics-vol309-itp2024/LIPIcs.ITP.2024.39/LIPIcs.ITP.2024.39.pdf) doi:[10.4230/LIPIcs.ITP.2024.39](https://doi.org/10.4230/LIPIcs.ITP.2024.39)
