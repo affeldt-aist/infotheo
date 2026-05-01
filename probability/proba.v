@@ -4,7 +4,7 @@ From Stdlib Require Peano_dec.
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup lra.
 From mathcomp Require boolp.
-From mathcomp Require Import unstable mathcomp_extra functions reals exp.
+From mathcomp Require Import unstable mathcomp_extra contra functions reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
 (**md**************************************************************************)
@@ -160,7 +160,7 @@ Local Open Scope proba_scope.
 Delimit Scope set_scope with set.
 Delimit Scope proba_scope with proba.
 
-Import Order.POrderTheory GRing.Theory Num.Theory.
+Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
 (* NB: to get rid of ^o in R^o *)
 From mathcomp Require Import normedtype.
@@ -674,6 +674,23 @@ Definition comp_RV (TA TB : eqType) (f : TA -> TB) (X : {RV P -> TA}) : {RV P ->
 End random_variable_basic_constructions.
 
 Notation "f `o X" := (comp_RV f X).
+
+Lemma dirac_const_RV {R : realType} (U T : finType) (P : R.-fdist U)
+  (X : {RV P -> T}) (a : T) :
+  `Pr[X = a] = 1 -> {in [set u | P u != 0], X =1 const_RV P a}.
+Proof.
+move=> Xa1 u; rewrite inE => Pu0.
+rewrite /const_RV /cst/=; absurd_not => Xua.
+have uP1 : \sum_(i in [set: U] | i != u) P i < 1.
+  rewrite -(Pr_setT P)// /Pr [in ltRHS](bigD1 u)//=.
+  by rewrite ltrDr lt_neqAle eq_sym Pu0/=.
+have : `Pr[ X = a ] <= \sum_(i in [set: U] | i != u) P i.
+  rewrite pfwd1EfinType /Pr; apply: ler_suml => // i.
+  rewrite !inE/= => /eqP Xia.
+  absurd_not => iu.
+  by move: Xua; rewrite -iu Xia eqxx.
+by rewrite Xa1 leNgt => /negP; exact.
+Qed.
 
 Section nmod_random_variables.
 Context {R : realType} {U : finType} {P : R.-fdist U} {V : nmodType}.
