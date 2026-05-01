@@ -1,10 +1,19 @@
 -------------------
-from 0.9.6 to 0.9.7
+from 0.9.7 to 0.9.8
 -------------------
 
 * added
 - in proba.v
+  + pfwd1_const_RV
   + inde_const_RV
+
+* renamed
+- in proba.v
+  + pr_eq_unit -> pfwd1_unit_RV
+
+-------------------
+from 0.9.6 to 0.9.7
+-------------------
 
 * changed
 - in realType_ext.v

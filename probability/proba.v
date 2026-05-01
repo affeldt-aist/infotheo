@@ -969,9 +969,27 @@ Proof. by rewrite /fdistC12 /dist_of_RV /fdistA fdistmap_comp. Qed.
 
 End RV3_prop.
 
-Lemma pr_eq_unit {R : realType} (U : finType) (P : R.-fdist U) :
+Lemma pfwd1_unit_RV {R : realType} (U : finType) (P : R.-fdist U) :
   `Pr[ (unit_RV P) = tt ] = 1.
 Proof. by rewrite -dist_of_RVE; apply/eqP/fdist1P => -[]. Qed.
+#[deprecated(since="infotheo 0.9.8", use=pfwd1_unit_RV)]
+Notation pr_eq_unit := pfwd1_unit_RV (only parsing).
+
+Lemma pfwd1_const_RV {R : realType} (U : finType) (P : R.-fdist U)
+    (T : eqType) (c d : T) :
+  `Pr[ (const_RV P c) = d ] = (c == d)%:R.
+Proof.
+have [->|cd] := eqVneq c d.
+  rewrite pfwd1E (_ : finset _ = [set: U]) ?Pr_setT//.
+  by apply: eq_finset => u/=; rewrite eqxx.
+by rewrite pfwd1E; apply: big1 => u; rewrite !inE/= (negPf cd).
+Qed.
+
+Lemma pfwd1_diag {R : realType} (T : finType) (U : eqType) (P : R.-fdist T)
+  (X : {RV P -> U}) (x : U) : `Pr[ [% X, X] = (x, x) ] = `Pr[ X = x ].
+Proof.
+by rewrite !pfwd1E /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
+Qed.
 
 Lemma Pr_fdistmap_RV2 {R : realType} (U : finType) (P : R.-fdist U) (A B : finType)
   (E : {set A}) (F : {set B}) (X : {RV P -> A}) (Z : {RV P -> B}) :
@@ -984,12 +1002,6 @@ transitivity (\sum_(a in ([% X, Z] @^-1: (E `* F)%set)) P a); last first.
 rewrite [in RHS]partition_big_preimset /=.
 apply: eq_big => // -[a c]; rewrite inE => /andP[/= aE cF].
 by rewrite fdistmapE.
-Qed.
-
-Lemma pfwd1_diag {R : realType} (T : finType) (U : eqType) (P : R.-fdist T)
-  (X : {RV P -> U}) (x : U) : `Pr[ [% X, X] = (x, x) ] = `Pr[ X = x ].
-Proof.
-by rewrite !pfwd1E /Pr; apply: eq_bigl=> a; rewrite !inE xpair_eqE andbb.
 Qed.
 
 Section pr_pair.
@@ -2424,21 +2436,11 @@ Variables (c : T).
 
 Lemma inde_const_RV : P3 |= X _|_ const_RV P2 c.
 Proof.
-move=> x y.
-have [<-|cy]:= eqVneq c y.
-  set Pry := (Z in _ * Z).
-  have -> : Pry = 1.
-    rewrite /Pry pfwd1E (_ : finset _ = [set: U]) ?Pr_setT//.
-    by apply: eq_finset => u/=; rewrite eqxx.
-  rewrite mulr1 !pfwd1E /Pr.
-  apply: eq_bigl => u.
+move=> x y; rewrite pfwd1_const_RV; have [->|cy] := eqVneq c y.
+- rewrite mulr1 !pfwd1E /Pr; apply: eq_bigl => u.
   by rewrite !inE xpair_eqE eqxx andbT.
-set Pry := (Z in _ * Z).
-have -> : Pry = 0.
-  rewrite /Pry pfwd1E; apply: big1 => u.
-  by rewrite !inE (negPf cy).
-rewrite mulr0 !pfwd1E /Pr big1// => u.
-by rewrite !inE xpair_eqE (negPf cy) andbF.
+- rewrite mulr0 !pfwd1E /Pr big1// => u.
+  by rewrite !inE xpair_eqE (negPf cy) andbF.
 Qed.
 
 End inde_const_RV.
