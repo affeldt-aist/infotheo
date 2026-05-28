@@ -164,7 +164,6 @@ Reserved Notation "{ 'affine' T '->' R }"
 Reserved Notation "p *: a" (at level 40).
 
 Declare Scope convex_scope.
-Declare Scope ordered_convex_scope.
 
 Set Implicit Arguments.
 Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
@@ -2206,7 +2205,6 @@ HB.instance Definition _  :=
 End fdist_convex_space.
 
 Section scaled_convex_lemmas_depending_on_T_convType.
-Import RConvex.
 Context {R : realType}.
 Lemma scalept_conv (T : convType R) (x y : R^o) (s : scaled T) (p : {prob R}):
   0 <= x -> 0 <= y ->
@@ -2325,8 +2323,7 @@ End S1_proj_Convn_finType.
 HB.structure Definition NoLawPOrderConvexSpace d (R : realType) :=
   {T of Order.isPOrder d T & ConvexSpace R T}.
 
-#[deprecated(since="infotheo 0.7.2",
-  note="renamed to `noLawPOrderConvType`; also consider using `porderConvType` instead")]
+#[deprecated(since="infotheo 0.7.2", note="renamed to `noLawPOrderConvType`")]
 Notation orderedConvType := noLawPOrderConvType.
 
 (*
@@ -2338,7 +2335,7 @@ Module OrderedConvexSpace := NoLawPOrderConvexSpace.
 HB.mixin Record NoLawPOrderConvexSpace_hasMonotoneConv d {R : realType} T of
   NoLawPOrderConvexSpace d R T:= {
     le_convl (p : {prob R}) (b : T) :
-    {homo (fun (a : T) => conv p a b) : a a'  / (a <= a')%O} }.
+    {homo (fun (a : T) => conv p a b) : a a' / (a <= a')%O} }.
 
 #[short(type=porderConvType)]
 HB.structure Definition POrderConvexSpace d {R : realType} :=
@@ -2349,7 +2346,7 @@ Local Open Scope order_scope.
 Variables (d : Order.disp_t) (R : realType) (T : porderConvType d R).
 Implicit Types (p : {prob R}) (a b : T).
 
-Lemma le_convr p a : {homo conv p a : b b'  / b <= b'}.
+Lemma le_convr p a : {homo conv p a : b b' / b <= b'}.
 Proof. by move=> ? ? ?; rewrite 2!(convC _ a) le_convl. Qed.
 
 Lemma conv_itv a b p : a <= b -> conv p a b \in `[a, b].
@@ -2372,7 +2369,7 @@ HB.instance Definition _ := Order.POrder.on R^o.
 Succeed Definition test := R^o : noLawPOrderConvType ring_display R.
 
 Let le_convl (p : {prob R}) (b : R) :
-    {homo (fun (a : R^o) => conv p a b) : a a'  / (a <= a')%O}.
+    {homo (fun (a : R^o) => conv p a b) : a a' / (a <= a')%O}.
 Proof. by move=> a a' aa'; rewrite !avgRE lerD2r ler_wpM2l. Qed.
 
 HB.instance Definition _ :=
@@ -2396,7 +2393,7 @@ Context {R : realType}.
 Variables (T : convType R) (d : Order.disp_t) (U : porderConvType d R).
 
 Let le_convl (p : {prob R}) (b : T -> U) :
-    {homo (fun (a : T -> U) => conv p a b) : a a'  / (a <= a')%O}.
+    {homo (fun (a : T -> U) => conv p a b) : a a' / (a <= a')%O}.
 Proof. by move=> a a' /lefP aa'; apply/lefP => x; rewrite le_convl. Qed.
 
 HB.instance Definition _ :=
@@ -2405,108 +2402,54 @@ Succeed Definition test := T -> U : porderConvType d R.
 
 End fun_pordered_convex_space.
 
-Module OppositeNoLawPOrderConvexSpace.
-Section def.
+Section opposite_nolaw_pordered_convex_space.
 Context {R : realType} {d : Order.disp_t}.
 Variable A : noLawPOrderConvType d R.
 
-Variant oppT := mkOpp : A -> oppT.
+Fail Definition test := A^d : noLawPOrderConvType (Order.dual_display d) R.
+HB.instance Definition _ := ConvexSpace.on A^d.
+Succeed Definition test := A^d : noLawPOrderConvType (Order.dual_display d) R.
 
-Local Lemma A_of_TK : cancel (fun t => let: mkOpp a := t in a) mkOpp.
-Proof. by case. Qed.
+End opposite_nolaw_pordered_convex_space.
 
-HB.instance Definition _ := Choice.copy oppT (can_type A_of_TK).
-
-End def.
-
-Section leopp.
-Local Open Scope ordered_convex_scope.
+Section opposite_pordered_convex_space.
 Context {R : realType} {d : Order.disp_t}.
-Variable A : noLawPOrderConvType d R.
-Notation T := (oppT A).
-Definition leopp (x y : T) :=
-  match (x, y) with (mkOpp x', mkOpp y') => (y' <= x')%O end.
+Variable A : porderConvType d R.
 
-Lemma leoppR x : leopp x x.
-Proof. by case x => // s; apply/lexx. Qed.
-
-Lemma leopp_trans y x z : leopp x y -> leopp y z -> leopp x z.
-Proof. by move: x y z => [x] [y] [z] ? yz; apply: (le_trans yz). Qed.
-
-Lemma eqopp_le : antisymmetric leopp.
-Proof.
-move=> [x] [y]; rewrite /leopp => /andP[xy yx].
-congr mkOpp.
-apply/eqP.
-by rewrite eq_le xy yx.
-Qed.
-
-End leopp.
-
-Section convtype.
-Local Open Scope convex_scope.
-Context {R : realType} {d : Order.disp_t}.
-Variable A : noLawPOrderConvType d R.
-Notation T := (oppT A).
-Implicit Types p q : {prob R}.
-
-Definition unbox_oppT (x : T)  := match x with mkOpp x' => x' end.
-
-Local Definition avg p a b := mkOpp (unbox_oppT a <| p |> unbox_oppT b).
-
-Local Lemma avg1 a b : avg 1%:i01 a b = a.
-Proof. by case a;case b=>b' a';rewrite/avg/unbox_oppT/=conv1. Qed.
-
-Local Lemma avgI p x : avg p x x = x.
-Proof. by case x=>x';rewrite/avg/unbox_oppT/=convmm. Qed.
-
-Local Lemma avgC p x y : avg p x y = avg p%:num.~%:i01 y x.
-Proof. by case x;case y=>y' x'; rewrite/avg/unbox_oppT/=convC. Qed.
-
-Local Lemma avgA p q d0 d1 d2 :
-  avg p d0 (avg q d1 d2) = avg [s_of p, q] (avg [r_of p, q] d0 d1) d2.
-Proof. by case d0;case d1;case d2=>d2' d1' d0';rewrite/avg/unbox_oppT/=convA. Qed.
-
-#[export]
-HB.instance Definition _ := isConvexSpace.Build R T avg1 avgI avgC avgA.
-
-End convtype.
-End OppositeNoLawPOrderConvexSpace.
-HB.export OppositeNoLawPOrderConvexSpace.
-
-Section opposite_ordered_convex_space.
-Import OppositeNoLawPOrderConvexSpace.
-Context {R : realType} {d : Order.disp_t}.
-Variable A : noLawPOrderConvType d R.
+Let le_convl (p : {prob R}) (b : A^d) :
+    {homo (fun (a : A^d) => conv p a b) : a a' / (a <= a')%O}.
+Proof. by move=> a a' aa'; rewrite leEdual le_convl. Qed.
 
 HB.instance Definition _ :=
-  Order.Le_isPOrder.Build d (@oppT R d A) (@leoppR R d A) (@eqopp_le R d A) (@leopp_trans R d A).
+  NoLawPOrderConvexSpace_hasMonotoneConv.Build _ R A^d le_convl.
+Succeed Definition test := A^d : porderConvType (Order.dual_display d) R.
 
-End opposite_ordered_convex_space.
+End opposite_pordered_convex_space.
 
-Notation "'\opp{' a '}'" := (OppositeNoLawPOrderConvexSpace.mkOpp a)
+#[deprecated(since="infotheo 0.7.2", note="use Order.dual instead")]
+Notation oppT := Order.dual.
+#[deprecated(since="infotheo 0.7.2", note="use the type suffix `_ ^d` for the opposite order")]
+Notation "'\opp{' a '}'" := a
   (at level 10, format "\opp{ a }") : ordered_convex_scope.
+#[deprecated(since="infotheo 0.7.2", note="use leEdual instead")]
+Notation leoppP := leEdual.
 
-Section opposite_ordered_convex_space_prop.
+Section deprecated_opposite_ordered_convex_space_prop.
 Local Open Scope ordered_convex_scope.
-Import OppositeNoLawPOrderConvexSpace.
 Context {R : realType} {d : Order.disp_t}.
 Variable A : noLawPOrderConvType d R.
 
+#[deprecated(since="infotheo 0.7.2", note="no-op; use `/=` instead")]
 Lemma conv_leoppD (a b : A) t : \opp{a} <|t|> \opp{b} = \opp{a <|t|> b}.
 Proof. by []. Qed.
 
-Lemma unbox_oppTK (a : A) : unbox_oppT (\opp{a}) = a.
-Proof. reflexivity. Qed.
+#[deprecated(since="infotheo 0.7.2", note="no-op; use `/=` instead")]
+Definition unbox_oppT (x : A^d) : A := x.
 
-Lemma leoppP (a b : oppT A) : (a <= b)%O <-> (unbox_oppT b <= unbox_oppT a)%O.
-Proof. by case a;case b=>*;rewrite !unbox_oppTK. Qed.
-
-End opposite_ordered_convex_space_prop.
-
+End deprecated_opposite_ordered_convex_space_prop.
 
 Section convex_function_def.
-Local Open Scope ordered_convex_scope.
+Local Open Scope order_scope.
 Context {R : realType} {d : Order.disp_t} .
 Variables (T : convType R) (U : noLawPOrderConvType d R).
 Implicit Types f : T -> U.
@@ -2526,15 +2469,17 @@ Proof. rewrite /convex_function_at !convmm; exact/lexx. Qed.
 
 End convex_function_def.
 
-Definition convex_function {R : realType} {d : Order.disp_t} (U : convType R) (V : noLawPOrderConvType d R) (f : U -> V) :=
- forall a b (t : {prob R}), convex_function_at f a b t.
+Definition convex_function {R : realType} {d : Order.disp_t}
+  (U : convType R) (V : noLawPOrderConvType d R) (f : U -> V) :=
+  forall a b (t : {prob R}), convex_function_at f a b t.
 
 (* see Additive in ssralg *)
 HB.mixin Record isConvexFunction {R : realType} {d : Order.disp_t}
-    (U : convType R) (V : noLawPOrderConvType d R) (f : U -> V) := {
-  convex_functionP : convex_function f }.
+    (U : convType R) (V : noLawPOrderConvType d R) (f : U -> V) :=
+  { convex_functionP : convex_function f }.
 
-HB.structure Definition ConvexFunction {R : realType} {d : Order.disp_t} (U : convType R) (V : noLawPOrderConvType d R) :=
+HB.structure Definition ConvexFunction {R : realType} {d : Order.disp_t}
+  (U : convType R) (V : noLawPOrderConvType d R) :=
   { f of isConvexFunction R d U V f }.
 
 Arguments convex_functionP {R d U V} s.
@@ -2544,7 +2489,7 @@ Notation "{ 'convex' T '->' R }" :=
     format "{ 'convex'  T  '->'  R }") : convex_scope.
 
 Section convex_function_prop'.
-Local Open Scope ordered_convex_scope.
+Local Open Scope order_scope.
 Context {R : realType} {d1 d2 : Order.disp_t}.
 Variable (T : convType R) (U : noLawPOrderConvType d1 R) (V : noLawPOrderConvType d2 R).
 
@@ -2579,7 +2524,7 @@ Proof. by apply: convex_function_comp => // *; exact: g_monotone. Qed.
 End convex_function_prop'.
 
 Section convex_in_both.
-Local Open Scope ordered_convex_scope.
+Local Open Scope order_scope.
 Context {R : realType} {d : Order.disp_t}.
 Variables (T U : convType R) (V : noLawPOrderConvType d R) (f : T -> U -> V).
 
@@ -2597,40 +2542,36 @@ Qed.
 End convex_in_both.
 
 Section biconvex_function.
-Local Open Scope ordered_convex_scope.
+Local Open Scope order_scope.
 
 Section definition.
 Context {R : realType} {d : Order.disp_t}.
 Variables (T U : convType R) (V : noLawPOrderConvType d R) (f : T -> U -> V).
 Definition biconvex_function :=
   (forall a, convex_function (f a)) /\ (forall b, convex_function (f^~ b)).
-(*
-Lemma biconvex_functionP : biconvex_function <->
-  convex_function f /\ @convex_function B (fun_noLawPOrderConvType A C) (fun b a => f a b).
+
+Local Open Scope order_scope.
+
+Local Fact biconvex_function_pointfreeP : biconvex_function <->
+  convex_function f /\ convex_function (fun b a => f a b).
 Proof.
-change ((forall (a : A) (a0 b : B) (t : prob),
-   f a (a0 <|t|> b) <= f a a0 <|t|> f a b) /\
-  (forall (b : B) (a b0 : A) (t : prob),
-   f (a <|t|> b0) b <= f a b <|t|> f b0 b) <->
-  (forall (a b : A) (t : prob) (a0 : B),
-   f (a <|t|> b) a0 <= f a a0 <|t|> f b a0) /\
-  (forall (a b : B) (t : prob) (a0 : A),
-   f a0 (a <|t|> b) <= f a0 a <|t|> f a0 b)).
-by split; case => [H0 H1]; split => *; try apply: H0; try apply: H1.
+split.
+  case=> cf cCf.
+  split => ? ? ?; apply/lefP => ?; [exact: cCf | exact: cf].
+case=> cf cCf; split => a b b' t.
+  by have /lefP /(_ a) := cCf b b' t.
+by have /lefP /(_ a) := cf b b' t.
 Qed.
- *)
+
 End definition.
 
 Section counterexample.
-Import RConvex.
 
 Context {R : realType}.
 
-HB.instance Definition _ := Order.POrder.on R^o.
-HB.instance Definition _ := NoLawPOrderConvexSpace.on R^o.
-
 Example biconvex_is_not_convex_in_both :
-  exists f : R -> R -> R, @biconvex_function R _ R^o R^o R^o f /\ ~ @convex_in_both R _ R^o R^o R^o f.
+  exists f : R -> R -> R,
+    @biconvex_function R _ R^o R^o R^o f /\ ~ @convex_in_both R _ R^o R^o R^o f.
 Proof.
 exists GRing.mul; split.
   by split => [a b0 b1 t | b a0 a1 t];
@@ -2650,29 +2591,29 @@ End counterexample.
 End biconvex_function.
 
 Section concave_function_def.
-Local Open Scope ordered_convex_scope.
+Local Open Scope order_scope.
 Context {R : realType} {d : Order.disp_t}.
 Variables (A : convType R) (B : noLawPOrderConvType d R).
 Implicit Types f : A -> B.
-Definition concave_function_at f a b t := @convex_function_at R d A _
-  (fun a => \opp{f a}) a b t.
+
+Definition concave_function_at f a b t :=
+  @convex_function_at R (Order.dual_display d) A B^d f a b t.
+
 Definition concave_function_at' f a b t := (f a <| t |> f b <= f (a <| t |> b))%O.
 Definition strictly_concavef_at f := forall a b (t : {prob R}),
   a <> b -> 0 < t%:num < 1 -> concave_function_at f a b t.
 Lemma concave_function_at'P f a b t :
   concave_function_at' f a b t <-> concave_function_at f a b t.
-Proof.
-rewrite /concave_function_at'/concave_function_at/convex_function_at.
-by rewrite conv_leoppD leoppP.
-Qed.
+Proof. by rewrite /concave_function_at /convex_function_at leEdual. Qed.
 End concave_function_def.
 
-Definition concave_function {R : realType} {d : Order.disp_t} (U : convType R) (V : noLawPOrderConvType d R) (f : U -> V) :=
- forall a b (t : {prob R}), concave_function_at f a b t.
+Definition concave_function {R : realType} {d : Order.disp_t}
+  (U : convType R) (V : noLawPOrderConvType d R) (f : U -> V) :=
+  forall a b (t : {prob R}), concave_function_at f a b t.
 
 HB.mixin Record isConcaveFunction {R : realType} {d : Order.disp_t}
-    (U : convType R) (V : noLawPOrderConvType d R) (f : U -> V) := {
-  concave_functionP : concave_function f }.
+    (U : convType R) (V : noLawPOrderConvType d R) (f : U -> V) :=
+  { concave_functionP : concave_function f }.
 
 HB.structure Definition ConcaveFunction {R : realType} {d : Order.disp_t}
     (U : convType R) (V : noLawPOrderConvType d R) :=
@@ -2681,11 +2622,11 @@ HB.structure Definition ConcaveFunction {R : realType} {d : Order.disp_t}
 Arguments concave_functionP {R d U V} s.
 
 Notation "{ 'concave' T '->' R }" :=
-  (ConvexFunction.type T R) (at level 0, T, R at next level,
+  (ConcaveFunction.type T R) (at level 0, T, R at next level,
     format "{ 'concave'  T  '->'  R }") : convex_scope.
 
 Section concave_function_prop.
-Local Open Scope ordered_convex_scope.
+Local Open Scope order_scope.
 Context {R : realType} {d : Order.disp_t}.
 Variable (T : convType R) (V : noLawPOrderConvType d R).
 
@@ -2703,10 +2644,8 @@ Proof. by rewrite /convex_function_at /= avgR_oppD lerNl opprK. Qed.
 Lemma R_concave_function_atN f a b t :
   convex_function_at f a b t -> concave_function_at (fun x => - f x) a b t.
 Proof.
-rewrite /concave_function_at /convex_function_at.
-rewrite /=.
-rewrite /Order.le/= /leopp/=. (* TODO: clean*)
-rewrite avgR_oppD.
+rewrite /concave_function_at /convex_function_at /=.
+rewrite leEdual avgR_oppD.
 by rewrite lerNl opprK.
 Qed.
 
@@ -3021,7 +2960,7 @@ Lemma concave_function_atN f x y t : concave_function_at f x y t ->
   forall k, 0 <= k -> concave_function_at (fun x => f x * k) x y t.
 Proof.
 move=> H k k0; rewrite /concave_function_at /convex_function_at.
-rewrite conv_leoppD leoppP avgRE.
+rewrite leEdual avgRE.
 rewrite /= -avgR_mulDl.
 exact: ler_wpM2r.
 Qed.
@@ -3045,7 +2984,7 @@ Lemma concavef_at_onem x y (t : {prob R}) f :
   concave_function_at f y x t%:num.~%:i01.
 Proof.
 move=>x0 y0 xy; rewrite/concave_function_at/convex_function_at.
-rewrite !conv_leoppD !leoppP/=.
+rewrite !leEdual.
 rewrite !avgRE /= onemK.
 by rewrite addrC [in X in _ <= X -> _]addrC.
 Qed.

@@ -14,13 +14,20 @@ from 0.9.7 to 0.9.8
 
 * removed
 - in convex.v
+  + ordered_convex_scope
   + FunLe (internal module)
+  + OppositeNoLawPOrderConvexSpace (internal module)
+  + leopp, unbox_oppTK
 
 * changed
 - in convex.v
   + noLawPOrderConvType instance on functions
-    (use the pointwise function order provided by mathcomp.order
+    (now using the pointwise function order provided by mathcomp.order
      instead of FunLe)
+
+* deprecated
+- in convex.v
+  + oppT, `\opp{ _ }`, conv_leoppD, leoppP
 
 * added
 - in proba.v
