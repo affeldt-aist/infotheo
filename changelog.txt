@@ -3,6 +3,26 @@ from 0.9.7 to 0.9.8
 -------------------
 
 * added
+- in convex.v
+  + porderConvType, POrderConvexSpace,
+    le_convl, le_convr, conv_itv, conv_ge_le
+
+* renamed
+- in convex.v
+  + orderedConvType -> noLawPOrderConvType (deprecated)
+    OrderedConvexSpace -> NoLawPOrderConvexSpace
+
+* removed
+- in convex.v
+  + FunLe (internal module)
+
+* changed
+- in convex.v
+  + noLawPOrderConvType instance on functions
+    (use the pointwise function order provided by mathcomp.order
+     instead of FunLe)
+
+* added
 - in proba.v
   + pfwd1_const_RV
   + inde_const_RV

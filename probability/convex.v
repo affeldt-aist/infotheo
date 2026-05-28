@@ -86,8 +86,8 @@ From mathcomp.analysis Require Import (canonicals)convex.
 (*     finite distributions;  in Section fdist_convex_space                   *)
 (* scaled A with A : convType R;                                              *)
 (*                            in Section convpt_convex_space                  *)
-(* oppT A with A : orderedConvType d R;                                       *)
-(*                            in Module OppositeOrderedConvexSpace (exported) *)
+(* oppT A with A : porderConvType d R;                                        *)
+(*                            in Module OppositePOrderConvexSpace (exported)  *)
 (* functions of type A -> B with A : choiceType and B : convType R;           *)
 (*                            in Module FunConvexSpace (exported)             *)
 (* functions of type forall (a:A), B a with A : choiceType                    *)
@@ -2381,42 +2381,29 @@ Succeed Definition test := R^o : porderConvType ring_display R.
 
 End RConvex_pordered.
 
-Module FunLe.
-Section lefun.
-Local Open Scope ordered_convex_scope.
+Section fun_nolaw_pordered_convex_space.
 Context {R : realType}.
 Variables (T : convType R) (d : Order.disp_t) (U : noLawPOrderConvType d R).
 
-Definition lefun (f g : T -> U) := `[< forall a, (f a <= g a)%O >].
+Fail Definition test :=  (T -> U) : noLawPOrderConvType _ _.
+HB.instance Definition _ := Order.POrder.on (T -> U).
+Succeed Definition test :=  (T -> U) : noLawPOrderConvType _ _.
 
-Lemma lefunR f : lefun f f.
-Proof. by move => *; apply/asboolP. Qed.
+End fun_nolaw_pordered_convex_space.
 
-Lemma lefun_trans g f h : lefun f g -> lefun g h -> lefun f h.
-Proof.
-move=> /asboolP Hfg /asboolP Hgh.
-apply/asboolP => a.
-move : (Hfg a) (Hgh a); exact: le_trans.
-Qed.
-
-Lemma eqfun_le : antisymmetric lefun.
-Proof.
-move=> f g /andP[/asboolP fg /asboolP gf].
-by apply/funext => x; apply/eqP; rewrite eq_le fg gf.
-Qed.
-
-End lefun.
-End FunLe.
-
-Section fun_ordered_convex_space.
+Section fun_pordered_convex_space.
 Context {R : realType}.
-Variables (T : convType R) (d : Order.disp_t) (U : noLawPOrderConvType d R).
-Import FunLe.
+Variables (T : convType R) (d : Order.disp_t) (U : porderConvType d R).
 
-HB.instance Definition _ := Order.Le_isPOrder.Build d (T -> U)
-  (@lefunR R T d U) (@eqfun_le R T d U) (@lefun_trans R T d U).
+Let le_convl (p : {prob R}) (b : T -> U) :
+    {homo (fun (a : T -> U) => conv p a b) : a a'  / (a <= a')%O}.
+Proof. by move=> a a' /lefP aa'; apply/lefP => x; rewrite le_convl. Qed.
 
-End fun_ordered_convex_space.
+HB.instance Definition _ :=
+  NoLawPOrderConvexSpace_hasMonotoneConv.Build _ R (T -> U) le_convl.
+Succeed Definition test := T -> U : porderConvType d R.
+
+End fun_pordered_convex_space.
 
 Module OppositeNoLawPOrderConvexSpace.
 Section def.
