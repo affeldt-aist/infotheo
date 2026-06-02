@@ -4,24 +4,24 @@ from 0.9.7 to 0.9.8
 
 * added
 - in convex.v
-  + porderConvType, POrderConvexSpace,
+  + porderedConvType, POrderedConvexSpace,
     le_convl, le_convr, conv_itv, conv_ge_le
 
 * renamed
 - in convex.v
-  + orderedConvType -> noLawPOrderConvType (deprecated)
-    OrderedConvexSpace -> NoLawPOrderConvexSpace
+  + orderedConvType -> porderConvType (orderedConvType deprecated)
+    OrderedConvexSpace -> POrderConvexSpace
 
 * removed
 - in convex.v
-  + ordered_convex_scope
+  + Declare Scope ordered_convex_scope
   + FunLe (internal module)
-  + OppositeNoLawPOrderConvexSpace (internal module)
+  + OppositeOrderedConvexSpace (internal module)
   + leopp, unbox_oppTK
 
 * changed
 - in convex.v
-  + noLawPOrderConvType instance on functions
+  + POrderConvType instance on functions
     (now using the pointwise function order provided by mathcomp.order
      instead of FunLe)
 
