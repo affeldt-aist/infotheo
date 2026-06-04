@@ -4,7 +4,7 @@ From Stdlib Require Peano_dec.
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect all_algebra fingroup lra.
 From mathcomp Require boolp.
-From mathcomp Require Import unstable mathcomp_extra contra functions reals exp.
+From mathcomp Require Import unstable mathcomp_extra functions reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
 (**md**************************************************************************)
