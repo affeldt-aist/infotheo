@@ -697,7 +697,9 @@ split.
   have -> : rate r *+ n = log k.+1%:R.
     rewrite -Hk -[LHS]mulr_natr -mulrA mulVr ?mulr1 //.
     by case: Hn; rewrite -(ltr_nat R) => /unitf_gt0.
-  rewrite LogK // card_ord (floor_def (m:=k.+1)) // -{1}natz mulrz_nat lexx.
+  rewrite LogK // card_ord.
+  rewrite (_ : Num.Def.floor k.+1%:R = k.+1)//; apply: floor_def.
+  rewrite -{1}natz mulrz_nat lexx.
   by rewrite addrC -intS -natz mulrz_nat ltr_nat leqnn.
 move=> Jtdec.
 rewrite /CodeErrRate.
