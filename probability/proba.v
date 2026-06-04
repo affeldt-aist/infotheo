@@ -677,19 +677,17 @@ Notation "f `o X" := (comp_RV f X).
 
 Lemma dirac_const_RV {R : realType} (U T : finType) (P : R.-fdist U)
   (X : {RV P -> T}) (a : T) :
-  `Pr[X = a] = 1 -> {in [set u | P u != 0], X =1 const_RV P a}.
+  `Pr[X = a] = 1 <-> {in [set u | P u != 0], X =1 const_RV P a}.
 Proof.
-move=> Xa1 u; rewrite inE => Pu0.
-rewrite /const_RV /cst/=; absurd_not => Xua.
-have uP1 : \sum_(i in [set: U] | i != u) P i < 1.
-  rewrite -(Pr_setT P)// /Pr [in ltRHS](bigD1 u)//=.
-  by rewrite ltrDr lt_neqAle eq_sym Pu0/=.
-have : `Pr[ X = a ] <= \sum_(i in [set: U] | i != u) P i.
-  rewrite pfwd1EfinType /Pr; apply: ler_suml => // i.
-  rewrite !inE/= => /eqP Xia.
-  absurd_not => iu.
-  by move: Xua; rewrite -iu Xia eqxx.
-by rewrite Xa1 leNgt => /negP; exact.
+rewrite pfwd1E Pr_to_cplt (rwP eqP) -eqr_opp opprB subr_eq addrC subrr.
+split.
+  move=> /eqP + u; rewrite inE => + Pu0.
+  have [->//|Xua] := eqVneq (X u) a.
+  move/eqP; rewrite psumr_eq0// => /allP /(_ u).
+  by rewrite mem_index_enum !inE Xua/= (negPf Pu0) => /(_ erefl).
+move=> H; apply/eqP/Pr_set0P => u; have := H u; rewrite !inE/=.
+have [//|?] := eqVneq (P u) 0.
+by move/(_ erefl) ->; rewrite /const_RV/cst/= eqxx.
 Qed.
 
 Section nmod_random_variables.
