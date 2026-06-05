@@ -209,7 +209,6 @@ HB.mixin Record isConvexSpace0 {R : realType} T of Choice T := {
   convA : forall (p q : {prob R}) (a b c : T),
       conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
 
-
 #[short(type=convType)]
 HB.structure Definition ConvexSpace {R : realType} := {T of isConvexSpace0 R T & }.
 Arguments convn {R s n}.
@@ -2370,11 +2369,10 @@ HB.instance Definition _ := Order.POrder.on R^o.
 Succeed Definition test := R^o : porderConvType ring_display R.
 
 Let le_convl (p : {prob R}) (b : R) :
-    {homo (fun (a : R^o) => a <| p |> b) : a a' / (a <= a')%O}.
+  {homo (fun a : R^o => a <| p |> b) : a a' / (a <= a')%O}.
 Proof. by move=> a a' aa'; rewrite !avgRE lerD2r ler_wpM2l. Qed.
 
-HB.instance Definition _ :=
-  Conv_IsHomo.Build _ R R^o le_convl.
+HB.instance Definition _ := Conv_IsHomo.Build _ R R^o le_convl.
 Succeed Definition test := R^o : porderedConvType ring_display R.
 
 End RConvex_pordered.
@@ -2383,9 +2381,9 @@ Section fun_porder_convex_space.
 Context {R : realType}.
 Variables (T : convType R) (d : Order.disp_t) (U : porderConvType d R).
 
-Fail Definition test :=  (T -> U) : porderConvType _ _.
+Fail Definition __ := (T -> U) : porderConvType _ _.
 HB.instance Definition _ := Order.POrder.on (T -> U).
-Succeed Definition test :=  (T -> U) : porderConvType _ _.
+Succeed Definition __ := (T -> U) : porderConvType _ _.
 
 End fun_porder_convex_space.
 
@@ -2394,11 +2392,10 @@ Context {R : realType}.
 Variables (T : convType R) (d : Order.disp_t) (U : porderedConvType d R).
 
 Let le_convl (p : {prob R}) (b : T -> U) :
-    {homo (fun a : T -> U => a <| p |> b) : a a' / (a <= a')%O}.
+  {homo (fun a : T -> U => a <| p |> b) : a a' / (a <= a')%O}.
 Proof. by move=> a a' /lefP aa'; apply/lefP => x; rewrite le_convl. Qed.
 
-HB.instance Definition _ :=
-  Conv_IsHomo.Build _ R (T -> U) le_convl.
+HB.instance Definition _ := Conv_IsHomo.Build _ R (T -> U) le_convl.
 Succeed Definition test := T -> U : porderedConvType d R.
 
 End fun_pordered_convex_space.
@@ -2407,9 +2404,9 @@ Section opposite_porder_convex_space.
 Context {R : realType} {d : Order.disp_t}.
 Variable A : porderConvType d R.
 
-Fail Definition test := A^d : porderConvType (Order.dual_display d) R.
+Fail Definition __ := A^d : porderConvType (Order.dual_display d) R.
 HB.instance Definition _ := ConvexSpace.on A^d.
-Succeed Definition test := A^d : porderConvType (Order.dual_display d) R.
+Succeed Definition __ := A^d : porderConvType (Order.dual_display d) R.
 
 End opposite_porder_convex_space.
 
@@ -2418,11 +2415,10 @@ Context {R : realType} {d : Order.disp_t}.
 Variable A : porderedConvType d R.
 
 Let le_convl (p : {prob R}) (b : A^d) :
-    {homo (fun a : A^d => a <| p |> b) : a a' / (a <= a')%O}.
+  {homo (fun a : A^d => a <| p |> b) : a a' / (a <= a')%O}.
 Proof. by move=> a a' aa'; rewrite leEdual le_convl. Qed.
 
-HB.instance Definition _ :=
-  Conv_IsHomo.Build _ R A^d le_convl.
+HB.instance Definition _ := Conv_IsHomo.Build _ R A^d le_convl.
 Succeed Definition test := A^d : porderedConvType (Order.dual_display d) R.
 
 End opposite_pordered_convex_space.
@@ -2455,8 +2451,7 @@ Context {R : realType} {d : Order.disp_t} .
 Variables (T : convType R) (U : porderConvType d R).
 Implicit Types f : T -> U.
 
-Definition convex_function_at f a b p :=
-  (f (a <| p |> b) <= f a <| p |> f b)%O.
+Definition convex_function_at f a b p := (f (a <| p |> b) <= f a <| p |> f b)%O.
 
 (* NB(rei): move from 'I_n -> A to 'rV[A]_n? *)
 Definition convex_function_at_Convn f n (a : 'I_n -> T) (d : {fdist 'I_n}) :=
@@ -2514,7 +2509,7 @@ Lemma convex_function_comp (f : {convex T -> U}) (g : {convex U -> V}) :
   convex_function (g \o f).
 Proof.
 move=> fg a b t; have := convex_functionP g (f a) (f b) t.
-by move=> Hg; apply/(le_trans _ Hg)/fg/convex_functionP.
+by move=> Hg; exact/(le_trans _ Hg)/fg/convex_functionP.
 Qed.
 
 Lemma convex_function_comp' (f : {convex T -> U}) (g : {convex U -> V})
@@ -2545,9 +2540,10 @@ End convex_in_both.
 Section biconvex_function.
 Local Open Scope order_scope.
 
-Section definition.
+Section biconvex_definition.
 Context {R : realType} {d : Order.disp_t}.
 Variables (T U : convType R) (V : porderConvType d R) (f : T -> U -> V).
+
 Definition biconvex_function :=
   (forall a, convex_function (f a)) /\ (forall b, convex_function (f^~ b)).
 
@@ -2556,15 +2552,14 @@ Local Open Scope order_scope.
 Local Fact biconvex_function_pointfreeP : biconvex_function <->
   convex_function f /\ convex_function (fun b a => f a b).
 Proof.
-split.
-  case=> cf cCf.
-  split => ? ? ?; apply/lefP => ?; [exact: cCf | exact: cf].
-case=> cf cCf; split => a b b' t.
-  by have /lefP /(_ a) := cCf b b' t.
-by have /lefP /(_ a) := cf b b' t.
+split=> -[cf cCf].
+  by split=> ? ? ?; apply/lefP => ?; [exact: cCf | exact: cf].
+split => a b b' t.
+- by have /lefP/(_ a) := cCf b b' t.
+- by have /lefP/(_ a) := cf b b' t.
 Qed.
 
-End definition.
+End biconvex_definition.
 
 Section counterexample.
 
@@ -2600,12 +2595,16 @@ Implicit Types f : A -> B.
 Definition concave_function_at f a b t :=
   @convex_function_at R (Order.dual_display d) A B^d f a b t.
 
-Definition concave_function_at' f a b t := (f a <| t |> f b <= f (a <| t |> b))%O.
+Definition concave_function_at' f a b t :=
+  (f a <| t |> f b <= f (a <| t |> b))%O.
+
 Definition strictly_concavef_at f := forall a b (t : {prob R}),
   a <> b -> 0 < t%:num < 1 -> concave_function_at f a b t.
+
 Lemma concave_function_at'P f a b t :
   concave_function_at' f a b t <-> concave_function_at f a b t.
 Proof. by rewrite /concave_function_at /convex_function_at leEdual. Qed.
+
 End concave_function_def.
 
 Definition concave_function {R : realType} {d : Order.disp_t}
@@ -2866,10 +2865,12 @@ End R_affine_function_prop.
 
 Section convex_function_in_def.
 Context {R : realType} {d : Order.disp_t}.
-Variables (T : convType R) (U : porderConvType d R) (D : {convex_set T}) (f : T -> U).
+Variables (T : convType R) (U : porderConvType d R) (D : {convex_set T})
+  (f : T -> U).
 
 Definition convex_function_in :=
   forall a b p, a \in D -> b \in D -> convex_function_at f a b p.
+  {in D &, forall a b p, convex_function_at f a b p}.
 
 Definition concave_function_in :=
   forall a b p, a \in D -> b \in D -> concave_function_at f a b p.
