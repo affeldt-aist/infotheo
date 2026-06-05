@@ -6,6 +6,7 @@ from 0.9.7 to 0.9.8
 - in proba.v
   + pfwd1_const_RV
   + inde_const_RV
+  + dirac_const_RV
 
 * renamed
 - in proba.v

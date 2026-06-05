@@ -160,7 +160,7 @@ Local Open Scope proba_scope.
 Delimit Scope set_scope with set.
 Delimit Scope proba_scope with proba.
 
-Import Order.POrderTheory GRing.Theory Num.Theory.
+Import Order.POrderTheory Order.TotalTheory GRing.Theory Num.Theory.
 
 (* NB: to get rid of ^o in R^o *)
 From mathcomp Require Import normedtype.
@@ -674,6 +674,21 @@ Definition comp_RV (TA TB : eqType) (f : TA -> TB) (X : {RV P -> TA}) : {RV P ->
 End random_variable_basic_constructions.
 
 Notation "f `o X" := (comp_RV f X).
+
+Lemma dirac_const_RV {R : realType} (U T : finType) (P : R.-fdist U)
+  (X : {RV P -> T}) (a : T) :
+  `Pr[X = a] = 1 <-> {in [set u | P u != 0], X =1 const_RV P a}.
+Proof.
+rewrite pfwd1E Pr_to_cplt (rwP eqP) -eqr_opp opprB subr_eq addrC subrr.
+split.
+  move=> /eqP + u; rewrite inE => + Pu0.
+  have [->//|Xua] := eqVneq (X u) a.
+  move/eqP; rewrite psumr_eq0// => /allP /(_ u).
+  by rewrite mem_index_enum !inE Xua/= (negPf Pu0) => /(_ erefl).
+move=> H; apply/eqP/Pr_set0P => u; have := H u; rewrite !inE/=.
+have [//|?] := eqVneq (P u) 0.
+by move/(_ erefl) ->; rewrite /const_RV/cst/= eqxx.
+Qed.
 
 Section nmod_random_variables.
 Context {R : realType} {U : finType} {P : R.-fdist U} {V : nmodType}.
