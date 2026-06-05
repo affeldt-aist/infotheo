@@ -2349,14 +2349,15 @@ Implicit Types (p : {prob R}) (a b : T).
 Lemma le_convr p a : {homo conv p a : b b' / b <= b'}.
 Proof. by move=> ? ? ?; rewrite 2!(convC _ a) le_convl. Qed.
 
-Lemma conv_itv a b p : a <= b -> conv p a b \in `[a, b].
+
+Lemma conv_itv a b p : a <= b -> a <| p |> b \in `[a, b].
 Proof.
 move=> ab; rewrite in_itv/=.
 rewrite -[X in X <= _ <= _](convmm p a) -[X in _ <= _ <= X](convmm p b).
 by rewrite le_convl// le_convr.
 Qed.
 
-Lemma conv_ge_le a b p : a <= b -> a <= conv p a b <= b.
+Lemma conv_ge_le a b p : a <= b -> a <= a <| p |> b <= b.
 Proof. by move/(conv_itv p). Qed.
 
 End porderedConvType_lemmas.
@@ -2369,7 +2370,7 @@ HB.instance Definition _ := Order.POrder.on R^o.
 Succeed Definition test := R^o : porderConvType ring_display R.
 
 Let le_convl (p : {prob R}) (b : R) :
-    {homo (fun (a : R^o) => conv p a b) : a a' / (a <= a')%O}.
+    {homo (fun (a : R^o) => a <| p |> b) : a a' / (a <= a')%O}.
 Proof. by move=> a a' aa'; rewrite !avgRE lerD2r ler_wpM2l. Qed.
 
 HB.instance Definition _ :=
@@ -2393,7 +2394,7 @@ Context {R : realType}.
 Variables (T : convType R) (d : Order.disp_t) (U : porderedConvType d R).
 
 Let le_convl (p : {prob R}) (b : T -> U) :
-    {homo (fun (a : T -> U) => conv p a b) : a a' / (a <= a')%O}.
+    {homo (fun a : T -> U => a <| p |> b) : a a' / (a <= a')%O}.
 Proof. by move=> a a' /lefP aa'; apply/lefP => x; rewrite le_convl. Qed.
 
 HB.instance Definition _ :=
@@ -2417,7 +2418,7 @@ Context {R : realType} {d : Order.disp_t}.
 Variable A : porderedConvType d R.
 
 Let le_convl (p : {prob R}) (b : A^d) :
-    {homo (fun (a : A^d) => conv p a b) : a a' / (a <= a')%O}.
+    {homo (fun a : A^d => a <| p |> b) : a a' / (a <= a')%O}.
 Proof. by move=> a a' aa'; rewrite leEdual le_convl. Qed.
 
 HB.instance Definition _ :=
@@ -2823,7 +2824,8 @@ set xx := [set a + b | a in hull A & b in hull B].
        by move: (hull_is_convex A)=>/asboolP; apply.
     exists (bx <|p|> by')=>//.
     by move: (hull_is_convex B)=>/asboolP; apply.
-  pose xx' : {convex_set T} := @ConvexSet.Pack R T xx (@ConvexSet.Class R _ _ (isConvexSet.Build R _ _ conv)).
+  pose xx' : {convex_set T} := @ConvexSet.Pack R T xx
+    (@ConvexSet.Class R _ _ (isConvexSet.Build R _ _ conv)).
   apply: (@hull_sub_convex R _ _ xx').
   by apply/image2_subset; exact: (@subset_hull R _ _).
 move=>x [a [na [ga [da [gaA ->]]]]] [b [nb [gb [db [gbB ->]]]]] <-.
@@ -3309,7 +3311,7 @@ Import (canonicals) analysis.convex.
 Variable R : realType.
 
 Lemma mc_convRE (a b : R^o) (p : {prob R}) :
-  mathcomp.analysis.convex.conv p a b = conv p a b :> R^o.
+  mathcomp.analysis.convex.conv p a b = a <| p |> b :> R^o.
 Proof. by []. Qed.
 
 End mc_conv.
