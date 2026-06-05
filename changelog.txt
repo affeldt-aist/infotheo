@@ -4,6 +4,7 @@ from 0.9.7 to 0.9.8
 
 * added
 - in convex.v
+  + Conv_IsHomo
   + porderedConvType, POrderedConvexSpace,
     le_convl, le_convr, conv_itv, conv_ge_le
 
