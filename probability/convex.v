@@ -2521,14 +2521,14 @@ Proof. by apply: convex_function_comp => // *; exact: g_monotone. Qed.
 
 End convex_function_prop'.
 
-Section convex_in_both.
+Section convex2.
 Local Open Scope order_scope.
 Context {R : realType} {d : Order.disp_t}.
 Variables (T U : convType R) (V : porderConvType d R) (f : T -> U -> V).
 
-Definition convex_in_both := convex_function (uncurry f).
+Definition convex2 := convex_function (uncurry f).
 
-Lemma convex_in_bothP : convex_in_both <->
+Lemma convex2P : convex2 <->
   forall a0 a1 b0 b1 t,
     (f (a0 <| t |> a1) (b0 <| t |> b1) <= f a0 b0 <| t |> f a1 b1)%O.
 Proof.
@@ -2537,7 +2537,7 @@ split => [H a0 a1 b0 b1 t | H];
 by case => a0 b0 [a1 b1] t; move:(H a0 a1 b0 b1 t).
 Qed.
 
-End convex_in_both.
+End convex2.
 
 Section biconvex_function.
 Local Open Scope order_scope.
@@ -2567,15 +2567,15 @@ Section counterexample.
 
 Context {R : realType}.
 
-Example biconvex_is_not_convex_in_both :
+Example biconvex_is_not_convex2 :
   exists f : R -> R -> R,
-    @biconvex_function R _ R^o R^o R^o f /\ ~ @convex_in_both R _ R^o R^o R^o f.
+    @biconvex_function R _ R^o R^o R^o f /\ ~ @convex2 R _ R^o R^o R^o f.
 Proof.
 exists GRing.mul; split.
   by split => [a b0 b1 t | b a0 a1 t];
     rewrite /convex_function_at /=; rewrite avgRE;
     [rewrite avgR_mulDr|rewrite avgR_mulDl]; rewrite lexx.
-move/convex_in_bothP/(_ (-1) 1 1 (-1)).
+move/convex2P/(_ (-1) 1 1 (-1)).
 move=> /(_ (probinvn 1)).
 rewrite /probinvn /= 3!avgRE /=.
 set a := (1 + 1)%:R^-1.
@@ -2871,11 +2871,10 @@ Variables (T : convType R) (U : porderConvType d R) (D : {convex_set T})
   (f : T -> U).
 
 Definition convex_function_in :=
-  forall a b p, a \in D -> b \in D -> convex_function_at f a b p.
   {in D &, forall a b p, convex_function_at f a b p}.
 
 Definition concave_function_in :=
-  forall a b p, a \in D -> b \in D -> concave_function_at f a b p.
+  {in D &, forall a b p, concave_function_at f a b p}.
 
 End convex_function_in_def.
 
@@ -2904,6 +2903,7 @@ TODO: see convex_type.v
 Section convex_set_R.
 Context {R : realType}.
 
+(* TODO: use Itv.def *)
 Definition Rpos_interval : set R^o := (fun x => 0 < x).
 
 Lemma Rpos_convex : is_convex_set Rpos_interval.

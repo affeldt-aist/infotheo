@@ -12,6 +12,7 @@ from 0.9.7 to 0.9.8
 - in convex.v
   + orderedConvType -> porderConvType (orderedConvType deprecated)
     OrderedConvexSpace -> POrderConvexSpace
+    convex_in_both -> convex2
 
 * removed
 - in convex.v
