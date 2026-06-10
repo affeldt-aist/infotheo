@@ -40,7 +40,7 @@ Variable R : realType.
 (* TODO: move to convex_analysis.v *)
 Lemma log_concave : concave_function_in Rpos_interval (log : R^o -> R^o).
 Proof.
-move=> /= x y p Hx Hy.
+move=> /= x y Hx Hy p.
 rewrite /concave_function_at /convex_function_at.
 rewrite !inE in Hx Hy.
 have Hln := concave_ln p Hx Hy.

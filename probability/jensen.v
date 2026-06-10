@@ -72,7 +72,7 @@ split; last first.
   move/asboolP: (convex_setP D).
   move/(_ (r b) (\sum_(a in fdist_supp d) d a * r a) (probfdist X b)).
   by rewrite classical_sets.in_setE; apply; rewrite -classical_sets.in_setE.
-have:= (convex_f (probfdist X b) (HDr b) HDd).
+have := convex_f (HDr b) HDd (probfdist X b).
 move/le_trans; apply.
 by rewrite lerD2l; apply: ler_wpM2l => //; rewrite onem_ge0.
 Qed.
