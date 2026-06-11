@@ -99,59 +99,7 @@
 
   bundles =
     let
-      common-bundle = { };
-    in {
-      "9.0" = {
-        rocqPackages = {
-          rocq-core.override.version = "9.0";
-          mathcomp.override.version = "2.4.0";
-          mathcomp.job = false;
-        };
-        coqPackages = common-bundle // {
-          coq.override.version = "9.0";
-          mathcomp.override.version = "2.4.0";
-        };
-      };
-
-      "9.1" = {
-        rocqPackages = {
-          rocq-core.override.version = "9.1";
-          mathcomp.override.version = "2.4.0";
-          mathcomp.job = false;
-        };
-        coqPackages = common-bundle // {
-          coq.override.version = "9.1";
-          mathcomp.override.version = "2.4.0";
-        };
-      };
-
-      "9.1-mcmaster" = {
-        rocqPackages = {
-          rocq-core.override.version = "9.1";
-          stdlib.override.version = "9.1";
-          rocq-elpi.override.version = "master";
-          hierarchy-builder.override.version = "master";
-          micromega-plugin.override.version = "master";
-          micromega-plugin.job = false;
-          mathcomp.override.version = "master";
-          mathcomp.job = false;
-          mathcomp-bigenough.override.version = "master";
-          mathcomp-bigenough.job = false;
-          mathcomp-finmap.override.version = "master";
-          mathcomp-finmap.job = false;
-          mathcomp-classical.override.version = "master";
-          mathcomp-classical.job = false;
-          mathcomp-reals.override.version = "master";
-          mathcomp-reals.job = false;
-          mathcomp-analysis.override.version = "master";
-          mathcomp-analysis.job = false;
-          mathcomp-reals-stdlib.override.version = "master";
-          mathcomp-reals-stdlib.job = false;
-        };
-        coqPackages = common-bundle // {
-          coq.override.version = "9.1";
-          stdlib.override.version = "9.1";
-          coq-elpi.override.version = "master";
+      common-bundle = {
           hierarchy-builder.override.version = "master";
           mathcomp.override.version = "master";
           mathcomp-bigenough.override.version = "master";
@@ -166,15 +114,50 @@
           mathcomp-analysis.job = false;
           mathcomp-reals-stdlib.override.version = "master";
           mathcomp-reals-stdlib.job = false;
-#          mathcomp-zify.override.version = "master";
-#          mathcomp-zify.job = false;
-#          mathcomp-algebra-tactics.override.version = "master";
-#          mathcomp-algebra-tactics.job = false;
           coquelicot.override.version = "master";
           coquelicot.job = false;
           interval.override.version = "master";
           interval.job = false;
-        };
+          micromega-plugin.override.version = "master";
+          micromega-plugin.job = false;
+      };
+    in {
+      "9.0" = {
+        rocqPackages = common-bundle // {
+          rocq-core.override.version = "9.0";
+          rocq-core.job = false;
+          stdlib.override.version = "9.0";
+	  stdlib.job = false;
+          rocq-elpi.override.version = "master";
+	  rocq-elpi.job = false;
+        } ;
+        coqPackages = common-bundle // {
+          coq.override.version = "9.0";
+          coq.job = false;
+          stdlib.override.version = "9.0";
+	  stdlib.job = false;
+          coq-elpi.override.version = "master";
+	  coq-elpi.job = false;
+        } ;
+      };
+
+      "9.1" = {
+        rocqPackages = common-bundle // {
+          rocq-core.override.version = "9.1";
+          rocq-core.job = false;
+          stdlib.override.version = "9.1";
+	  stdlib.job = false;
+          rocq-elpi.override.version = "master";
+	  rocq-elpi.job = false;
+        } ;
+        coqPackages = common-bundle // {
+          coq.override.version = "9.1";
+          coq.job = false;
+          stdlib.override.version = "9.1";
+	  stdlib.job = false;
+          coq-elpi.override.version = "master";
+	  coq-elpi.job = false;
+        } ;
       };
     };
 
