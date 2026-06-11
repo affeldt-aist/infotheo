@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect all_algebra lra.
+From mathcomp Require Import all_boot all_order all_algebra lra.
 From mathcomp Require Import unstable mathcomp_extra classical_sets reals.
 From mathcomp Require Import topology normedtype derive exp realfun.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln derive_ext.

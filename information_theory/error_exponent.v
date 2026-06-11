@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum lra ring.
+From mathcomp Require Import all_boot all_order ssralg ssrnum lra ring.
 From mathcomp Require Import Rstruct reals classical_sets topology normedtype.
 From mathcomp Require Import sequences exp.
 Require Import ssr_ext bigop_ext realType_ext realType_ln fdist.

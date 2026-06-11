@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg ssrnum.
+From mathcomp Require Import all_boot all_order ssralg ssrnum.
 From Coq Require Reals.
 From mathcomp Require Import lra.
 From mathcomp Require Import Rstruct.

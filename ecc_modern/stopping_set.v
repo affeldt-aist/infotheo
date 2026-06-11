@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import all_boot ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import f2 ssr_ext ssralg_ext max_subset.
 Require Import num_occ hamming ldpc_erasure tanner linearcode.

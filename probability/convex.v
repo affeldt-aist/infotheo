@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg fingroup perm matrix interval.
+From mathcomp Require Import all_boot all_order ssralg fingroup perm matrix interval.
 From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
 From mathcomp Require Import ssrnum archimedean ereal interval_inference.
 From mathcomp Require Import realfun.

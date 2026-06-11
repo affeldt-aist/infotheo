@@ -1,6 +1,6 @@
 #COQBIN?=$(dir $(shell command -v coqtop || command -v rocq))
 #COQMAKEFILE?=$(shell command -v coq_makefile || echo "$(COQBIN)rocq makefile")
-COQMAKEFILE=coq_makefile
+COQMAKEFILE=rocq makefile
 
 all: Makefile.coq
 	$(MAKE) -f Makefile.coq all

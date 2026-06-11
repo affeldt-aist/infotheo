@@ -2,7 +2,7 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From Coq Require Import Wf_nat Init.Wf Recdef.
-From mathcomp Require Import all_ssreflect perm zmodp matrix ssralg ssrnum.
+From mathcomp Require Import all_boot perm zmodp matrix ssralg ssrnum.
 From mathcomp Require Import Rstruct reals ring lra.
 Require Import ssr_ext ssralg_ext bigop_ext f2.
 Require Import fdist channel pproba linearcode subgraph_partition tanner.

@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg finalg poly polydiv.
+From mathcomp Require Import all_boot ssralg finalg poly polydiv.
 From mathcomp Require Import cyclic perm matrix mxpoly vector mxalgebra zmodp.
 From mathcomp Require Import finfield falgebra fieldext.
 Require Import ssr_ext ssralg_ext linearcode.
