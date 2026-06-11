@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect all_algebra.
+From mathcomp Require Import all_boot all_algebra.
 From mathcomp Require Import Rstruct reals classical_sets.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 Require Import proba entropy jfdist_cond.

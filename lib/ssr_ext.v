@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From Coq Require Import NArith.
-From mathcomp Require Import all_ssreflect fingroup perm.
+From Stdlib Require Import NArith.
+From mathcomp Require Import all_boot all_order fingroup perm.
 From mathcomp Require Import unstable mathcomp_extra.
 Require Import Coq.NArith.BinNatDef.
 

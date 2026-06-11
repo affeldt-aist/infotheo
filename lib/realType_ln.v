@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum ssrint archimedean.
+From mathcomp Require Import all_boot all_order ssralg ssrnum ssrint archimedean.
 From mathcomp Require Import interval.
-From mathcomp Require Import unstable mathcomp_extra boolp classical_sets functions.
-From mathcomp Require Import reals interval_inference topology normedtype.
-From mathcomp Require Import derive sequences exp realfun.
+From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
+From mathcomp Require Import functions reals interval_inference topology.
+From mathcomp Require Import normedtype derive sequences exp realfun.
 Require Import ssralg_ext realType_ext derive_ext.
 
 (**md**************************************************************************)

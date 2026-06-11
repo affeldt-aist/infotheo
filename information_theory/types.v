@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg ssrnum perm matrix.
+From mathcomp Require Import all_boot all_order ssralg ssrnum perm matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct exp.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln.

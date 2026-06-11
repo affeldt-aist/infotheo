@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix interval.
+From mathcomp Require Import all_boot all_order ssralg ssrnum matrix interval.
 From mathcomp Require Import ring.
 From mathcomp Require boolp.
 From mathcomp Require Import unstable mathcomp_extra reals.
@@ -262,7 +262,7 @@ Qed.
 
 Lemma concavity_of_entropy : concave_function_in uniti H2.
 Proof.
-rewrite /concave_function_in => x y t Hx Hy.
+rewrite /concave_function_in => x y Hx Hy t.
 apply: RNconcave_function_at.
 (* wlogをつかう. convex_function_symのためにtを戻し, *)
 move: t.
@@ -272,7 +272,7 @@ wlog : x y Hx Hy / x < y.
   (* 全順序性で場合分け *)
   have [xy|] := ltrP x y; first exact: H.
   (* x = y の場合はかんたん*)
-  rewrite le_eqVlt=> /orP [/eqP ->|yx]; first exact: convex_function_atxx.
+  rewrite le_eqVlt => /predU1P [-> |yx]; first exact: convex_function_atxx.
   (* 逆の場合は対称性を使う *)
   apply: convex_function_sym => // t0.
   exact: H.

@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect fingroup perm ssralg zmodp.
+From mathcomp Require Import all_boot fingroup perm ssralg zmodp.
 From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 Require Import ssralg_ext.
 

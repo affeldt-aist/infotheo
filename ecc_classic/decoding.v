@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum fingroup finalg perm.
+From mathcomp Require Import all_boot ssralg ssrnum fingroup finalg perm.
 From mathcomp Require Import zmodp matrix vector order interval_inference.
 From mathcomp Require Import lra ring mathcomp_extra Rstruct reals.
 Require Import realType_ext ssr_ext ssralg_ext f2 bigop_ext fdist proba.

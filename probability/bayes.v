@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From Coq Require Import PeanoNat.
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix reals.
+From mathcomp Require Import all_boot ssralg ssrnum matrix reals.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 Require Import fdist proba.

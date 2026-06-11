@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_ssreflect ssralg ssrnum matrix.
+From mathcomp Require Import all_boot all_order ssralg ssrnum matrix.
 From mathcomp Require Import unstable mathcomp_extra boolp reals.
 Require Import ssr_ext ssralg_ext realType_ext.
 Require Import fdist proba convex.
@@ -72,7 +72,7 @@ split; last first.
   move/asboolP: (convex_setP D).
   move/(_ (r b) (\sum_(a in fdist_supp d) d a * r a) (probfdist X b)).
   by rewrite classical_sets.in_setE; apply; rewrite -classical_sets.in_setE.
-have:= (convex_f (probfdist X b) (HDr b) HDd).
+have := convex_f (HDr b) HDd (probfdist X b).
 move/le_trans; apply.
 by rewrite lerD2l; apply: ler_wpM2l => //; rewrite onem_ge0.
 Qed.
