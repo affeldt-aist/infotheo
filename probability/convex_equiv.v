@@ -1,10 +1,16 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot ssralg ssrnum fingroup perm matrix.
+From mathcomp Require Import all_boot ssralg ssrnum perm matrix.
 From mathcomp Require Import interval_inference.
-From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem *)
+From mathcomp Require Import mathcomp_extra boolp classical_sets.
+(* ssrfun and functions are defining incompatible notations [fun ... ]*)
+#[warning="-notation-incompatible-prefix"]
 From mathcomp Require Import functions reals.
+(* finmap has some conflicting notations (with finset?) *)
+#[warning="-notation-incompatible-prefix"]
 From mathcomp Require Import finmap.
 Require Import ssr_ext ssralg_ext realType_ext fdist jfdist_cond fsdist convex.
 
@@ -596,14 +602,18 @@ HB.end.
    First prove mutual definability between convType and naryConvType *)
 
 Module BinToNary.
+(* Instances in this module are used to prove mutual definability,
+   and therefore intentionally non-forgetful. *)
 Section instances.
 Variables (R : realType) (C : convType R).
 
+#[non_forgetful_inheritance]
 HB.instance Definition _ := @hasNaryConvOp.Build R C (@Convn R C conv).
 
 Definition axbary := @Convn_fdist_convn R C.
 Definition axproj := @Convn_fdist1 R C.
 
+#[non_forgetful_inheritance]
 HB.instance Definition  _ := @isNaryConvexSpace.Build R C axbary axproj.
 
 End instances.
@@ -717,6 +727,8 @@ End proof.
 End BinToNaryToBin.
 
 Module NaryToBinToNary.
+(* Instances in this module are used to prove mutual definability,
+   and therefore intentionally non-forgetful. *)
 Section proof.
 Variables (R : realType) (T : naryConvType R).
 Import NaryToBin.
@@ -725,6 +737,7 @@ Import NaryToBin.
    handy notation <|>_ d g *)
 
 (* On Rocq 9.0, this instantiation can be done in Module NaryToBin *)
+#[non_forgetful_inheritance]
 HB.instance Definition _ := binconv_mixin T.
 
 (* The LHS is native to T; the RHS is obtained through NaryToBin *)

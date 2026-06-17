@@ -20,6 +20,8 @@ Require Import realType_ext realType_ln fdist proba.
 (* ```                                                                        *)
 (******************************************************************************)
 
+(* putting this notation at level 0 breaks compilation *)
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,
   format "'D(' P  '||'  Q ')'").
 

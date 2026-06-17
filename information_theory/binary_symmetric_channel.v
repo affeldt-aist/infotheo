@@ -2,7 +2,9 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_boot all_order ssralg ssrnum zmodp matrix lra.
 From mathcomp Require Import interval_inference.
-From mathcomp Require Import unstable mathcomp_extra classical_sets Rstruct.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem *)
+From mathcomp Require Import mathcomp_extra classical_sets Rstruct.
 From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist entropy binary_entropy_function channel hamming.

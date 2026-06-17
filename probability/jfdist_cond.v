@@ -25,10 +25,18 @@ Require Import fdist proba.
 (*                                                                            *)
 (******************************************************************************)
 
+(* NB: the following two notations can be safely put at level 0, instead of
+   turning off the warning. *)
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "\Pr_ P [ A | B ]" (at level 6, P, A, B at next level,
   format "\Pr_ P [ A  |  B ]").
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "\Pr_[ A | B ]" (at level 6, A, B at next level,
   format "\Pr_[ A  |  B ]").
+(* putting the next notation at level 1 breaks compilation;
+   see also an issue on this turned-off warning
+   https://github.com/rocq-prover/rocq/issues/21916 *)
+#[warning="-postfix-notation-not-level-1"]
 Reserved Notation "P `(| a ')'" (at level 6, a at next level, format "P `(| a )").
 
 Set Implicit Arguments.

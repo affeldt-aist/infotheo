@@ -45,7 +45,7 @@ rewrite /concave_function_at /convex_function_at.
 rewrite !inE in Hx Hy.
 have Hln := concave_ln p Hx Hy.
 rewrite !mc_convRE in Hln.
-rewrite conv_leoppD leoppP /= /log /Log /=.
+rewrite leEdual /= /log /Log /=.
 rewrite [in X in X <= _]avgRE !mulrA -mulrDl -avgRE.
 by rewrite ler_wpM2r // invr_ge0 ln2_ge0.
 Qed.

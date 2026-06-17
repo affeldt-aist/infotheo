@@ -3,7 +3,7 @@
 From mathcomp Require Import all_boot all_order ssralg ssrnum ssrint matrix.
 From mathcomp Require Import archimedean lra ring.
 From mathcomp Require Import mathcomp_extra.
-From mathcomp Require Import unstable contra reals normedtype sequences exp.
+From mathcomp Require Import contra reals normedtype sequences exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy divergence log_sum source_code.
 
@@ -750,7 +750,7 @@ have xpos : 0 < x.
   apply: (@leq_trans (m'' eps)); last exact: leq_maxr.
   by apply: (@leq_trans 1); last exact: leq_maxr.
 have mpos': (0 < floor (expR x)).
-  rewrite lt_neqAle floor_ge_int_tmp exp.expR_ge0 andbT.
+  rewrite lt_neqAle floor_ge_int exp.expR_ge0 andbT.
   rewrite eq_sym floor_neq0.
   apply/orP; right.
   by rewrite -exp.expR0 exp.ler_expR//.
@@ -792,7 +792,7 @@ apply: (@le_trans _ _ (x + ln alp)).
   rewrite lerD2r ?mulr1 -(expRK x).
   rewrite ler_ln ?posrE ?expR_gt0//; last exact: mpos.
   rewrite /m /x.
-  rewrite (le_trans _ (floor_le_tmp _))//.
+  rewrite (le_trans _ (floor_le _))//.
   rewrite natr_absz ler_int.
   by rewrite ger0_norm// floor_ge0// expR_ge0.
 apply: (@le_trans _ _ (2 * x - (eps * n%:R * ln 2))).

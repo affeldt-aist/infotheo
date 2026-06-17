@@ -1,10 +1,12 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg fingroup perm matrix.
+From mathcomp Require Import all_boot all_order ssralg perm matrix.
 From mathcomp Require Import interval_inference.
 From mathcomp Require Import all_algebra vector reals normedtype.
-From mathcomp Require Import unstable mathcomp_extra boolp.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem and swap *)
+From mathcomp Require Import mathcomp_extra boolp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 
 (**md**************************************************************************)

@@ -12,6 +12,9 @@ Require Import jfdist_cond.
 
 Reserved Notation "P '|-' V '<<' W" (at level 5, V, W at next level).
 Reserved Notation "P '|-' V '<<b' W" (at level 5, V, W at next level).
+
+(* putting this notation at level 0 breaks compilation *)
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "'D(' V '||' W '|' P ')'" (at level 50, V, W, P at next level).
 
 Set Implicit Arguments.

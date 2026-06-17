@@ -2,8 +2,10 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From Stdlib Require Import NArith.
 From mathcomp Require Import all_boot all_order fingroup perm.
-From mathcomp Require Import unstable mathcomp_extra.
-Require Import Coq.NArith.BinNatDef.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for swap *)
+From mathcomp Require Import mathcomp_extra.
+Import NArith.BinNatDef.
 
 (**md**************************************************************************)
 (* # Additional lemmas about ssrnat, seq, eqType, finType, finset, tuple, etc.*)

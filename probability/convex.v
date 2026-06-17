@@ -1,8 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg fingroup perm matrix interval.
-From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
+From mathcomp Require Import all_boot all_order ssralg perm matrix interval.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem *)
+From mathcomp Require Import mathcomp_extra boolp classical_sets.
 From mathcomp Require Import ssrnum archimedean ereal interval_inference.
 From mathcomp Require Import realfun.
 From mathcomp Require Import ring lra reals.
@@ -320,6 +322,7 @@ Context {R : realType}.
 Variables (U V W : convType R) (f : {affine V -> W}) (h : {affine U -> V}).
 
 Let affine_idfun : affine (@idfun U). Proof. by []. Qed.
+
 HB.instance Definition _ := isAffine.Build _ _ _ idfun affine_idfun.
 
 Let affine_comp : affine (f \o h).
@@ -765,9 +768,9 @@ Section adjunction.
 Lemma affine_S1 : affine (@S1 R A).
 Proof.
 move=> p x y.
-have := prob_ge0 p; rewrite le_eqVlt => /predU1P[p0|p0].
+have : 0 <= p%:num by []; rewrite le_eqVlt => /predU1P[p0|p0].
   by rewrite (_ : p = 0%:i01) ?conv0 //; exact/val_inj.
-have := prob_le1 p; rewrite le_eqVlt => /predU1P[p1|p1].
+have : p%:num <= 1 by []; rewrite le_eqVlt => /predU1P[p1|p1].
   by rewrite (_ : p = 1%:i01) ?conv1 //; exact/val_inj.
 rewrite convptE (scalept_gt0 _ _ p0) (@scalept_gt0 p%:num.~).
   exact/onem_gt0.
@@ -1996,7 +1999,10 @@ Import LmoduleConvex.
 Let linear_is_affine: affine f.
 Proof. by move=>p x y; rewrite linearD 2!linearZZ. Qed.
 
-#[export] HB.instance Definition _ := isAffine.Build R _ _ _ linear_is_affine.
+(* since the mixin isAffine is adding only a law and no operators,
+   it should be safe to do a non-forgetful inheritance (?) *)
+#[export,non_forgetful_inheritance]
+HB.instance Definition _ := isAffine.Build R _ _ _ linear_is_affine.
 
 End linear_affine.
 End LinearAffine.
@@ -2429,16 +2435,16 @@ End opposite_pordered_convex_space.
 Notation oppT := Order.dual.
 #[deprecated(since="infotheo 0.7.2", note="use the type suffix `_ ^d` for the opposite order")]
 Notation "'\opp{' a '}'" := a
-  (at level 10, format "\opp{ a }") : ordered_convex_scope.
+  (at level 10, format "\opp{ a }") : convex_scope.
 #[deprecated(since="infotheo 0.7.2", note="use leEdual instead")]
 Notation leoppP := leEdual.
 
 Section deprecated_opposite_ordered_convex_space_prop.
-Local Open Scope ordered_convex_scope.
 Context {R : realType} {d : Order.disp_t}.
 Variable A : porderConvType d R.
 
-#[deprecated(since="infotheo 0.7.2", note="no-op; use `/=` instead")]
+#[deprecated(since="infotheo 0.7.2", note="no-op; use `/=` instead"),
+  warning="-deprecated-notation-since-infotheo-0.7.2"]
 Lemma conv_leoppD (a b : A) t : \opp{a} <|t|> \opp{b} = \opp{a <|t|> b}.
 Proof. by []. Qed.
 

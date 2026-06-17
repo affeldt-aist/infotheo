@@ -2,8 +2,13 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_boot all_order ssralg ssrnum interval.
 From mathcomp Require Import ring lra.
-From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
-From mathcomp Require Import functions set_interval.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for inv_fun *)
+From mathcomp Require Import mathcomp_extra boolp classical_sets.
+(* ssrfun and functions are defining incompatible notations [fun ... ]*)
+#[warning="-notation-incompatible-prefix"]
+From mathcomp Require Import functions.
+From mathcomp Require Import set_interval.
 From mathcomp Require Import reals topology normedtype.
 From mathcomp Require Import realfun derive exp.
 Require Import realType_ext ssralg_ext.

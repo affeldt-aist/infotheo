@@ -4,8 +4,12 @@ From HB Require Import structures.
 From mathcomp Require Import all_boot all_order ssralg ssrnum matrix interval.
 From mathcomp Require Import ring.
 From mathcomp Require boolp.
-From mathcomp Require Import unstable mathcomp_extra reals.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem *)
+From mathcomp Require Import mathcomp_extra reals.
 From mathcomp Require Import interval_inference set_interval.
+(* ssrfun and functions are defining incompatible notations [fun ... ]*)
+#[warning="-notation-incompatible-prefix"]
 From mathcomp Require Import functions topology normedtype realfun derive exp.
 From mathcomp Require Import -(notations)convex.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.

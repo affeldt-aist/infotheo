@@ -41,7 +41,13 @@ Local Open Scope ring_scope.
 
 Notation "u '``_' i" := (u ord0 i) (at level 3,
   i at level 2, left associativity, format "u '``_' i") : vec_ext_scope.
+
+(* setting this to level 1 breaks compilation;
+   see also an issue on this turned-off warning
+   https://github.com/rocq-prover/rocq/issues/21916 *)
+#[warning="-postfix-notation-not-level-1"]
 Reserved Notation "v `[ i := x ]" (at level 20).
+
 Reserved Notation "t \# V" (at level 55, V at next level).
 
 Section AboutRingType.
@@ -588,7 +594,7 @@ Definition GF2 : finFieldType := @GF 2 m.-1 isT.
 
 Definition GF2_of_F2 : 'F_2 -> GF2 := [eta \0 with 0 |-> 0, 1 |-> 1].
 
-Definition additive_GF2_of_F2 : additive GF2_of_F2.
+Definition additive_GF2_of_F2 : zmod_morphism GF2_of_F2.
 Proof.
 move=> x y; apply/esym; rewrite /GF2_of_F2 /=; case: ifPn=> [/eqP ->|].
 - rewrite !add0r; case: ifPn => [/eqP -> /=|]; first by rewrite oppr0.
@@ -600,7 +606,7 @@ move=> x y; apply/esym; rewrite /GF2_of_F2 /=; case: ifPn=> [/eqP ->|].
   rewrite -F2_eq1 => /eqP -> /=; by rewrite subrr.
 Qed.
 
-Definition multiplicative_GF2_of_F2 : multiplicative GF2_of_F2.
+Definition multiplicative_GF2_of_F2 : monoid_morphism GF2_of_F2.
 Proof.
 split => // x y; rewrite /GF2_of_F2 /=; apply/esym.
 case: ifPn => [/eqP -> /=|]; first by rewrite mul0r.
@@ -618,8 +624,8 @@ End GF2m.
 
 Arguments GF2_of_F2 [_] _.
 
-HB.instance Definition _ m := GRing.isAdditive.Build _ _ (@GF2_of_F2 m) (additive_GF2_of_F2 m).
-HB.instance Definition _ m := GRing.isMultiplicative.Build _ _ _ (multiplicative_GF2_of_F2 m).
+HB.instance Definition _ m := GRing.isZmodMorphism.Build _ _ (@GF2_of_F2 m) (additive_GF2_of_F2 m).
+HB.instance Definition _ m := GRing.isMonoidMorphism.Build _ _ _ (multiplicative_GF2_of_F2 m).
 
 Definition F2_to_GF2 (m : nat) n (y : 'rV['F_2]_n) := map_mx (@GF2_of_F2 m) y.
 

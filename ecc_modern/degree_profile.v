@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg fingroup zmodp poly ssrnum.
+From mathcomp Require Import all_boot all_order ssralg zmodp poly ssrnum.
 From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext fdist.
@@ -1921,7 +1921,7 @@ Definition ksets (A : finType) k := [set x : {set A} | #|x| == k].
 Definition ksetsP (A : finType) k (P : pred {set A}) :=
   [set x : {set A} | (#|x| == k) && P x ].
 Notation "[ 'node' x '$' k | P ]" := (ksetsP k (fun x => P%B))
-  (at level 2, x at level 99, format "[ 'node'  x  '$'  k  |  P ]") : set_scope.
+  (at level 0, x at level 99, format "[ 'node'  x  '$'  k  |  P ]") : set_scope.
 
 Section prob_tree_like_neighbor.
 

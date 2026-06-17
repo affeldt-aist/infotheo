@@ -3,7 +3,9 @@
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_order ssralg archimedean ssrnum ssrint.
 From mathcomp Require Import reals normedtype sequences exp.
-From mathcomp Require Import unstable mathcomp_extra boolp interval_inference.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem *)
+From mathcomp Require Import mathcomp_extra boolp interval_inference.
 From mathcomp Require Import ring lra.
 
 (**md**************************************************************************)
@@ -306,9 +308,9 @@ Lemma probmul_eq1 p q : p%:num * q%:num = 1 <-> p = 1%:i01 /\ q = 1%:i01.
 Proof.
 split => [/= pq1|[-> ->]]; last by rewrite mulr1.
 move: (oner_neq0 R); rewrite -{1}pq1 mulf_eq0 negb_or => /andP[p0 q0].
-have := prob_le1 p; rewrite le_eqVlt => /orP[/eqP p1|p1].
+have : p%:num <= 1 by []; rewrite le_eqVlt => /orP[/eqP p1|p1].
   by rewrite p1 mul1r in pq1; split; exact/val_inj.
-have := prob_le1 q; rewrite le_eqVlt => /orP[/eqP q1|q1].
+have : q%:num <= 1 by []; rewrite le_eqVlt => /orP[/eqP q1|q1].
   by rewrite q1 mulr1 in pq1; split; exact/val_inj.
 have {}p0 : 0 < p%:num by rewrite lt_neqAle ge0 eq_sym andbT.
 by move: p1; rewrite -[in X in X -> _]pq1 (ltr_pMr _ p0) ltNge (ltW q1).
@@ -316,6 +318,7 @@ Qed.
 
 End prob_lemmas.
 
+(*
 Global Hint Resolve prob_ge0 : core.
 Global Hint Resolve prob_le1 : core.
 
@@ -323,6 +326,7 @@ Global Hint Resolve prob_le1 : core.
   exact/prob_le1 : core.
 #[export] Hint Extern 0 (is_true (@Order.le ring_display _ _ _)) =>
   exact/prob_ge0 : core.
+*)
 
 Lemma prob_invn {R : realType} (m : nat) :
   0 <= ((1 + m)%:R^-1 : R) <= 1.

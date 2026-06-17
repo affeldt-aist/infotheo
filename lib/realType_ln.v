@@ -2,8 +2,13 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_boot all_order ssralg ssrnum ssrint archimedean.
 From mathcomp Require Import interval.
-From mathcomp Require Import unstable mathcomp_extra boolp classical_sets.
-From mathcomp Require Import functions reals interval_inference topology.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for inv_fun *)
+From mathcomp Require Import mathcomp_extra boolp classical_sets.
+(* ssrfun and functions are defining incompatible notations [fun ... ]*)
+#[warning="-notation-incompatible-prefix"]
+From mathcomp Require Import functions.
+From mathcomp Require Import reals interval_inference topology.
 From mathcomp Require Import normedtype derive sequences exp realfun.
 Require Import ssralg_ext realType_ext derive_ext.
 

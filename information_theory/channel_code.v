@@ -24,8 +24,13 @@ Require Import bigop_ext realType_ext realType_ln fdist proba channel.
 (* ```                                                                        *)
 (******************************************************************************)
 
+(* instead of turning off the warning,
+   these notations can also be safely put at level 0 *)
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "e( W , c )" (at level 50).
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "echa( W , c )" (at level 50).
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "scha( W , C )" (at level 50).
 
 Declare Scope channel_code_scope.
@@ -58,12 +63,12 @@ Definition preimC (phi : decT) m := ~: (phi @^-1: xpred1 (Some m)).
 Definition ErrRateCond (W : `Ch(A, B)) c m :=
   Pr (W ``(| enc c m)) (preimC (dec c) m).
 
-Local Notation "e( W , c )" := (ErrRateCond W c) (at level 50).
+Local Notation "e( W , c )" := (ErrRateCond W c).
 
 Definition CodeErrRate (W : `Ch(A, B)) c :=
   (#| M |%:R^-1 * \sum_(m in M) e(W, c) m)%R.
 
-Local Notation "echa( W , c )" := (CodeErrRate W c) (at level 50).
+Local Notation "echa( W , c )" := (CodeErrRate W c).
 
 Lemma echa_ge0 (HM : (0 < #| M |)%nat) W (c : code) : 0 <= echa(W , c).
 Proof.
