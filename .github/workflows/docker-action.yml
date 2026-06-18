@@ -10,24 +10,22 @@ on:
     branches:
       - '**'
 
-# jobs:
-#   build:
-#     # the OS must be GNU/Linux to be able to use the docker-coq-action
-#     runs-on: ubuntu-latest
-#     strategy:
-#       matrix:
-#         image:
-#           - 'mathcomp/mathcomp:2.4.0-rocq-prover-9.0'
-#           - 'mathcomp/mathcomp:2.4.0-rocq-prover-9.1'
-#           - 'mathcomp/mathcomp:2.5.0-rocq-prover-9.0'
-#           - 'mathcomp/mathcomp:2.5.0-rocq-prover-9.1'
-#       fail-fast: false
-#     steps:
-#       - uses: actions/checkout@v2
-#       - uses: coq-community/docker-coq-action@v1
-#         with:
-#           opam_file: 'coq-infotheo.opam'
-#           custom_image: ${{ matrix.image }}
+jobs:
+  build:
+    # the OS must be GNU/Linux to be able to use the docker-coq-action
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          - 'mathcomp/mathcomp:2.5.0-rocq-prover-9.0'
+          - 'mathcomp/mathcomp:2.5.0-rocq-prover-9.1'
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: coq-community/docker-coq-action@v1
+        with:
+          opam_file: 'rocq-infotheo.opam'
+          custom_image: ${{ matrix.image }}
 
 # See also:
 # https://github.com/coq-community/docker-coq-action#readme
