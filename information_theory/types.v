@@ -28,7 +28,10 @@ Require Import fdist proba entropy num_occ channel_code channel typ_seq.
 (*                                                                            *)
 (******************************************************************************)
 
+(* putting this notation at level 0 breaks compilation *)
+#[warning="-closed-notation-not-level-0"]
 Reserved Notation "'P_' n '(' A ')'" (at level 9, n, A at next level).
+
 Reserved Notation "'T_{' P '}'" (at level 0).
 Reserved Notation "P '.-typed_code' c" (at level 50, c at next level).
 

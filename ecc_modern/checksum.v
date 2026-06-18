@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg ssrnum fingroup finalg perm.
+From mathcomp Require Import all_boot ssralg ssrnum finalg perm.
 From mathcomp Require Import zmodp matrix vector.
 From mathcomp Require Import Rstruct reals.
 Require Import ssralg_ext f2 fdist channel tanner linearcode.

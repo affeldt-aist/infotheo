@@ -100,11 +100,11 @@ Proof. by rewrite /syndrome 3!linearN. Qed.
 Lemma syndrome0 : syndrome 0 = 0.
 Proof. by rewrite /syndrome trmx0 mulmx0 trmx0. Qed.
 
-Lemma additive_syndrome : additive syndrome.
+Lemma additive_syndrome : zmod_morphism syndrome.
 Proof. move=> x y; by rewrite syndromeD syndromeN. Qed.
 
 HB.instance Definition _ :=
-  GRing.isAdditive.Build _ _ _ additive_syndrome.
+  GRing.isZmodMorphism.Build _ _ _ additive_syndrome.
 HB.instance Definition _ :=
   GRing.isScalable.Build _ _ _ _ _ syndromeZ.
 
@@ -378,11 +378,11 @@ Proof. by apply/rowP => i; rewrite !mxE. Qed.
 Lemma sbound_f'N k (H : k.-1 <= n) y : sbound_f' H (- y) = - sbound_f' H y.
 Proof. by apply/rowP => i; rewrite !mxE. Qed.
 
-Lemma additive_sbound_f' k (H : k.-1 <= n) : additive (sbound_f' H).
+Lemma additive_sbound_f' k (H : k.-1 <= n) : zmod_morphism (sbound_f' H).
 Proof. by move=> x y; rewrite sbound_f'D sbound_f'N. Qed.
 
 HB.instance Definition _ k (H : k.-1 <= n) :=
-  GRing.isAdditive.Build _ _ _ (additive_sbound_f' H).
+  GRing.isZmodMorphism.Build _ _ _ (additive_sbound_f' H).
 HB.instance Definition _ k (H : k.-1 <= n) :=
   GRing.isScalable.Build _ _ _ _ _ (sbound_f'Z H).
 

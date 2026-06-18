@@ -1,7 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_boot all_algebra matrix.
-From mathcomp Require Import unstable mathcomp_extra Rstruct.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem *)
+From mathcomp Require Import mathcomp_extra Rstruct.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 Require Import entropy binary_entropy_function channel hamming channel_code.
 

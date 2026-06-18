@@ -2,8 +2,12 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot ssralg ssrnum interval_inference.
+(* finmap has some conflicting notations (with finset?) *)
+#[warning="-notation-incompatible-prefix"]
 From mathcomp Require Import finmap.
-From mathcomp Require Import unstable mathcomp_extra boolp classical_sets reals.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem *)
+From mathcomp Require Import mathcomp_extra boolp classical_sets reals.
 Require Import realType_ext classical_sets_ext fdist fsdist convex.
 
 (**md**************************************************************************)
@@ -746,6 +750,7 @@ Qed.
    In order to type check its statement,
    we need some bigop-like machinery for semilattice,
    which is unfortunately only a semigroup and not a monoid *)
+#[warning="-non-reversible-notation"]
 Local Notation "\lub_ ( i < n ) F" := False
          (at level 41, F at level 41, i, n at level 50,
           format "'[' \lub_ ( i  <  n ) '/  '  F ']'").
@@ -901,18 +906,20 @@ move: a b => -[a [[?] [?]]] -[b [[?] [?]]] /= ?; subst a.
 congr NECSet.Pack; congr NECSet.Class; f_equal; exact/Prop_irrelevance.
 Qed.
 
-(*Canonical neset_hull_necset*)
-HB.instance Definition _ (T : convType R) (F : neset T) :=
-  isConvexSet.Build R _ _ (hull_is_convex F).
-HB.instance Definition _ (T : convType R) (F : neset T) :=
-  isNESet.Build _ _ (neset_hull_neq0 F).
-
-(*Canonical necset1*)
-HB.instance Definition _ (T : convType R) (x : T) :=
-  isConvexSet.Build R _ _ (is_convex_set1 x).
-HB.instance Definition _ (T : convType R) (x : T) :=
-  isNESet.Build _ _ (set1_neq0 x).
 End necset_lemmas.
+
+Section necset_instances.
+Context {R : realType}.
+
+HB.instance Definition _ (T : convType R) (F : neset T) :=
+  ConvexSet.on (hull F).
+Succeed Let __ (T : convType R) (F : neset T) := hull F : necset T.
+
+HB.instance Definition _ (T : convType R) (x : T) :=
+  ConvexSet.on [set x].
+Succeed Let __ (T : convType R) (x : T) := [set x] : necset T.
+
+End necset_instances.
 
 Definition necset_convType_conv {R : realType} {A : convType R} p (X Y : necset A) :=
   X :<|p|>: Y.

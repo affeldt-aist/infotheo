@@ -2,8 +2,13 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From mathcomp Require Import all_boot all_order ssralg ssrnum.
-From mathcomp Require Import interval_inference finmap.
-From mathcomp Require Import unstable mathcomp_extra.
+From mathcomp Require Import interval_inference. 
+(* finmap has some conflicting notations (with finset?) *)
+#[warning="-notation-incompatible-prefix"]
+From mathcomp Require Import finmap.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for onem *)
+From mathcomp Require Import mathcomp_extra.
 From mathcomp Require Import classical_sets boolp cardinality reals Rstruct.
 From mathcomp Require ereal topology esum measure probability.
 Require Import realType_ext ssr_ext ssralg_ext.
@@ -976,7 +981,6 @@ Section probability_measure.
 
 Section trivIset.
 Import boolp classical_sets.
-From mathcomp Require Import measure probability.
 Local Open Scope classical_set_scope.
 Context [T : Type] [I : eqType].
 Variables (D : set I) (F : I -> set T)
@@ -1123,8 +1127,10 @@ rewrite /f /=.
 by rewrite (fibration_of_partitionE disjF _ Fit).
 Qed.
 
+Fail Let __ := P : {measure set _ -> \bar _}.
 HB.instance Definition _ :=
   isMeasure.Build disp T _ P P_set0 P_ge0 P_semi_sigma_additive.
+Succeed Let __ := P : {measure set _ -> \bar _}.
 
 Lemma P_is_probability : P [set: _] = 1%E.
 Proof.
@@ -1134,6 +1140,9 @@ rewrite setTI set_fsetK.
 by rewrite sumEFin d1.
 Qed.
 
-HB.instance Definition _ := isProbability.Build disp T _ P P_is_probability.
+Fail Let __ := P : probability _ _.
+HB.instance Definition _ :=
+  Measure_isProbability.Build disp T _ P P_is_probability.
+Succeed Let __ := P : probability _ _.
 
 End probability_measure.

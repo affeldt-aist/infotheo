@@ -1,7 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import all_boot all_order ssralg ssrnum matrix lra.
-From mathcomp Require Import unstable.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext.
 

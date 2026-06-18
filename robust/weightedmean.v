@@ -951,7 +951,7 @@ Qed.
 
 End base_case.
 
-From Coq Require Import FunInd Recdef.
+From Stdlib Require Import FunInd Recdef.
 
 Notation "a '<=?' b" := (Bool.bool_dec (Rleb a b) true) (at level 70).
 Notation "a '!=?' b" := (Bool.bool_dec (a != b) true) (at level 70).
@@ -1032,7 +1032,8 @@ Hypothesis low_eps : eps <= eps_max.
 Let v_ge0 := cvariance_ge0 X S.
 Let eps0 : 0 <= eps. Proof. exact/Pr_ge0. Qed.
 
-Functional Scheme filter1D_rec_ind := Induction for filter1D_rec Sort Prop.
+(* NB: derivation of the following induction principle fails *)
+(* Functional Scheme filter1D_rec_ind := Induction for filter1D_rec Sort Prop. *)
 
 Lemma filter1D_correct :
   let v := `V_[X | S] in

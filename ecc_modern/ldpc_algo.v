@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From Coq Require Import Init.Wf Recdef.
+From Stdlib Require Import Init.Wf Recdef.
 From mathcomp Require Import all_boot perm zmodp matrix ssralg ssrnum.
 From mathcomp Require Import Rstruct reals ring lra.
 Require Import f2 subgraph_partition tanner.

@@ -2,9 +2,14 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From Stdlib Require Peano_dec.
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order all_algebra fingroup lra.
+From mathcomp Require Import all_boot all_order all_algebra.
+From mathcomp Require Import lra.
 From mathcomp Require boolp.
-From mathcomp Require Import unstable mathcomp_extra functions reals exp.
+#[warning="-warn-library-file-internal-analysis"]
+From mathcomp Require Import unstable. (* imported for swap *)
+(* ssrfun and functions are defining incompatible notations [fun ... ]*)
+#[warning="-notation-incompatible-prefix"]
+From mathcomp Require Import mathcomp_extra functions reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
 (**md**************************************************************************)

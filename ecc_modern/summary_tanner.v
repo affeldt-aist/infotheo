@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg ssrnum fingroup finalg zmodp.
+From mathcomp Require Import all_boot ssralg ssrnum finalg zmodp.
 From mathcomp Require Import matrix lra ring.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext f2 summary.
