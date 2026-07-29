@@ -778,8 +778,9 @@ Proof.
 move=> z.
 apply: cvgB => //.
   apply: cvg_comp; last exact: continuous_at_xlnx.
-  apply: cvgB => //.
-  exact: cvg_cst.
+  apply: cvgB.
+    exact: cvg_cst.
+  exact: cvg_id.
 by apply: continuous_at_xlnx.
 Qed.
 
