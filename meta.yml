@@ -46,14 +46,10 @@ license:
 nix: false
 
 supported_rocq_versions:
-  text: Rocq 9.0--9.3
-  opam: '{ (>= "9.0" & < "9.4") }'
+  text: Rocq 9.1--9.3
+  opam: '{ (>= "9.1" & < "9.4") }'
 
 tested_rocq_opam_versions:
-- version: '2.4.0-rocq-prover-9.0'
-  repo: 'mathcomp/mathcomp'
-- version: '2.5.0-rocq-prover-9.0'
-  repo: 'mathcomp/mathcomp'
 - version: '2.5.0-rocq-prover-9.1'
   repo: 'mathcomp/mathcomp'
 - version: '2.5.0-rocq-prover-9.2'
