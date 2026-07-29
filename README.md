@@ -7,7 +7,10 @@ Follow the instructions on https://github.com/coq-community/templates to regener
 [![Docker CI][docker-action-shield]][docker-action-link]
 
 [docker-action-shield]: https://github.com/affeldt-aist/infotheo/actions/workflows/docker-action.yml/badge.svg?branch=master
-[docker-action-link]: https://github.com/affeldt-aist/infotheo/actions?query=branch%3Amaster+event%3Apush
+[docker-action-link]: https://github.com/affeldt-aist/infotheo/actions/workflows/docker-action.yml
+
+
+
 
 Infotheo is a Rocq library for reasoning about discrete probabilities,
 information theory, and linear error-correcting codes.
@@ -25,7 +28,6 @@ information theory, and linear error-correcting codes.
   - Naruomi Obata, Titech (M2)
   - Alessandro Bruni, IT-University of Copenhagen
 - License: [LGPL-2.1-or-later](LICENSE)
-- Compatible Rocq versions: Rocq 9.0--9.1
 - Additional dependencies:
   - [MathComp ssreflect](https://math-comp.github.io)
   - [MathComp fingroup](https://math-comp.github.io)
@@ -35,9 +37,10 @@ information theory, and linear error-correcting codes.
   - [MathComp analysis](https://github.com/math-comp/analysis)
   - [MathComp analysis reals standard library](https://github.com/math-comp/analysis)
   - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
-  - [MathComp algebra tactics](https://github.com/math-comp/algebra-tactics)
-  - [CoqInterval](https://gitlab.inria.fr/coqinterval)
-- Rocq namespace: `infotheo`
+  - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
+  - MathComp algebra tactics
+  - A Coq tactic for proving bounds
+- Rocq/Coq namespace: `infotheo`
 - Related publication(s):
   - [An Approach to Formalize Information-Theoretic Security of Multiparty Computation Protocols](https://link.springer.com/chapter/10.1007/978-3-031-95497-9_11) doi:[10.1007/978-3-031-95497-9_11](https://doi.org/10.1007/978-3-031-95497-9_11)
   - [Robust Mean Estimation by All Means (short paper)](https://drops.dagstuhl.de/storage/00lipics/lipics-vol309-itp2024/LIPIcs.ITP.2024.39/LIPIcs.ITP.2024.39.pdf) doi:[10.4230/LIPIcs.ITP.2024.39](https://doi.org/10.4230/LIPIcs.ITP.2024.39)
@@ -52,7 +55,8 @@ information theory, and linear error-correcting codes.
 
 ## Building and installation instructions
 
-The easiest way to install the latest released version of A Rocq formalization of information theory and linear error correcting codes
+The easiest way to install the latest released version of A Rocq formalization of
+information theory and linear error correcting codes
 is via [OPAM](https://opam.ocaml.org/doc/Install.html):
 
 ```shell
@@ -65,7 +69,7 @@ To instead build and install manually, do (using GNU `make`):
 ``` shell
 git clone https://github.com/affeldt-aist/infotheo.git
 cd infotheo
-make   # or make -j <number-of-cores-on-your-machine> 
+make   # or make -j <number-of-cores-on-your-machine>
 make -C extraction tests
 make install
 ```
@@ -74,42 +78,32 @@ make install
 
 Many thanks to several [contributors](https://github.com/affeldt-aist/infotheo/graphs/contributors).
 
-The principle of inclusion-exclusion is a contribution by 
+The principle of inclusion-exclusion is a contribution by
 Erik Martin-Dorel (University Toulouse III Paul Sabatier, IRIT research laboratory)
-(main theorem: Pr_bigcup_incl_excl; commit 956096859ed89325b2bb74033690ac882bbcd64e)
+(main theorem: `Pr_bigcup_incl_excl`; commit 956096859ed89325b2bb74033690ac882bbcd64e)
 
 The variable-length source coding theorems are a contribution by
-Ryosuke Obi (Chiba U. (M2))
-(commit a67da5e24eaaabb345d225a5bd0f5e86d35413a8)
+Ryosuke Obi (Chiba U.) (commit a67da5e24eaaabb345d225a5bd0f5e86d35413a8)
 (with Manabu Hagiwara and Mitsuharu Yamamoto)
 
-Commit 64814f529c1819684c4b8060d0779c24c6339041 was originally by Karl Palmskog
+Commit 64814f529c1819684c4b8060d0779c24c6339041 was originally by Karl Palmskog.
 
 The formalization of modern coding theory is a collaboration with
-K. Kasai, S. Kuzuoka, R. Obi
+Y. Takahashi collaborated to the formalization of linear error-correcting codes.
 
-Y. Takahashi collaborated to the formalization of linear error-correcting codes
+This work was partially supported by a JSPS Grant-in-Aid for Scientific Research
+(Project Number: 25289118), a JSPS Grand-in-Aid for Scientific Research
+(Project Number: 18H03204).
 
-This work was partially supported by a JSPS Grant-in-Aid for Scientific
-Research (Project Number: 25289118), a JSPS Grand-in-Aid for Scientific Research (Project Number: 18H03204)
-
-## Documentation
-
-Each file is documented in its header.
-
-Changes are (lightly) documented in [changelog.txt](changelog.txt).
+Each file is documented in its header. Changes are (lightly) documented
+in [changelog.txt](changelog.txt).
 
 ## Installation with Windows 10 & 11
 
 Installation of infotheo on Windows is less simple.
 See [this page](https://github.com/affeldt-aist/mathcomp-install/blob/master/install-windows-en.org)
 for instructions to install MathComp on Windows 10 & 11
-(or [this page](https://staff.aist.go.jp/reynald.affeldt/ssrcoq/install.html) for instructions in Japanese).
-
+(or [this page](https://staff.aist.go.jp/reynald.affeldt/ssrcoq/install.html) for
+instructions in Japanese).
 Once MathComp is installed (with opam), do
 `opam install coq-infotheo` or `git clone git@github.com:affeldt-aist/infotheo.git; opam install .`
-
-## Original License
-
-Before version 0.2, infotheo was distributed under the terms of the
-`GPL-3.0-or-later` license.
