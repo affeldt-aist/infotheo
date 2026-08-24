@@ -1174,7 +1174,7 @@ Section shell_partition.
 Variables A B : finType.
 Variable n' : nat.
 Let n := n'.+1.
-Local Open Scope fun_scope.
+Local Open Scope function_scope.
 Local Open Scope nat_scope.
 
 (** The stochastic matrix with entries N(a, b | ta, tb): *)

@@ -15,10 +15,6 @@
   ## (for instance "rocq-elpi" and "coq-elpi")
   # coq-attribute = "mathcomp-infotheo";
 
-  ## Set this when the package has no rocqPackages version yet
-  ## (either in nixpkgs or in .nix/rocq-overlays)
-  no-rocq-yet = true;
-
   ## If you want to select a different attribute (to build from the local sources as well)
   ## when calling `nix-shell` and `nix-build` without the `--argstr job` argument
   # shell-attribute = "{{nix_name}}";
@@ -101,7 +97,9 @@
     let
       common-bundle = {
           hierarchy-builder.override.version = "master";
+          hierarchy-builder.job = false;
           mathcomp.override.version = "master";
+          mathcomp.job = false;
           mathcomp-bigenough.override.version = "master";
           mathcomp-bigenough.job = false;
           mathcomp-finmap.override.version = "master";
@@ -110,6 +108,8 @@
           mathcomp-classical.job = false;
           mathcomp-reals.override.version = "master";
           mathcomp-reals.job = false;
+          mathcomp-real-closed.override.version = "master";
+          mathcomp-real-closed.job = false;
           mathcomp-analysis.override.version = "master";
           mathcomp-analysis.job = false;
           mathcomp-reals-stdlib.override.version = "master";
@@ -122,41 +122,12 @@
           micromega-plugin.job = false;
       };
     in {
-      "9.0" = {
-        rocqPackages = common-bundle // {
-          rocq-core.override.version = "9.0";
-          rocq-core.job = false;
-          stdlib.override.version = "9.0";
-	  stdlib.job = false;
-          rocq-elpi.override.version = "master";
-	  rocq-elpi.job = false;
-        } ;
-        coqPackages = common-bundle // {
-          coq.override.version = "9.0";
-          coq.job = false;
-          stdlib.override.version = "9.0";
-	  stdlib.job = false;
-          coq-elpi.override.version = "master";
-	  coq-elpi.job = false;
-        } ;
-      };
-
       "9.1" = {
         rocqPackages = common-bundle // {
           rocq-core.override.version = "9.1";
           rocq-core.job = false;
-          stdlib.override.version = "9.1";
-	  stdlib.job = false;
-          rocq-elpi.override.version = "master";
-	  rocq-elpi.job = false;
-        } ;
-        coqPackages = common-bundle // {
           coq.override.version = "9.1";
           coq.job = false;
-          stdlib.override.version = "9.1";
-	  stdlib.job = false;
-          coq-elpi.override.version = "master";
-	  coq-elpi.job = false;
         } ;
       };
     };
