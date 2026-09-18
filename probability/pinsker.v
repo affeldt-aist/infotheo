@@ -1,12 +1,12 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum interval ring lra.
-From mathcomp Require Import interval_inference.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum interval ring_tactic.
+From mathcomp Require Import arithmetic_tactic field_tactic interval_inference.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
 (* ssrfun and functions are defining incompatible notations [fun ... ]*)
 #[warning="-notation-incompatible-prefix"]
-From mathcomp Require Import mathcomp_extra classical_sets functions.
+From mathcomp Require Import classical_sets functions.
 From mathcomp Require Import set_interval reals topology normedtype.
 From mathcomp Require Import sequences derive exp realfun.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
@@ -25,7 +25,6 @@ Require Import fdist divergence variation_dist partition_inequality.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -117,13 +116,13 @@ case/andP: Hq => Hq1 Hq2.
 rewrite /pinsker_fun /pinsker_fun'.
 under [F in is_derive _ _ F]boolp.funext=> x.
   rewrite -sqrrN opprB.
-  rewrite (_ : (x - p) ^+ 2 = ((fun x => x - p) ^+ 2) x); last by [].
+  rewrite (_ : (x - p) ^+ 2 = ((fun x => x - p) ^+ 2) x); first by [].
   over.
 rewrite mulrBr; apply: is_deriveB=> /=; last first.
   apply: is_deriveZ_eq.
   rewrite expr1 -!mulr_regl.
   ring.
-rewrite (_ : q - p = p * (- (1 - q)) + (1 - p) * q ); last by ring.
+rewrite (_ : q - p = p * (- (1 - q)) + (1 - p) * q ); first by ring.
 have l2n0 : ln 2 != 0 :> R by exact: ln2_neq0.
 have pn0 : p != 0 by rewrite gt_eqF.
 have qn0 : q != 0 by rewrite gt_eqF.
@@ -134,7 +133,7 @@ rewrite mulrDl; apply: is_deriveD=> /=.
   apply: is_derive1_LogfM_eq=> //.
   - by apply: is_deriveV; rewrite gt_eqF.
   - by rewrite invr_gt0.
-  - by rewrite mulr_algl -mulr_regl; field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
+  - by rewrite mulr_algl -mulr_regl; field.  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
 rewrite -!mulrA; apply: is_deriveZ=> /=.
 rewrite invfM mulrA mulfV ?gt_eqF//.
 apply: is_derive1_LogfM_eq=> //=.
@@ -191,15 +190,15 @@ apply: (derivable1_homo x01 y01).
   exact: derivable_pinsker_function_spec.
 move=> q xqy.
 move: x01 y01 xqy; rewrite !in_itv /==> x01 y01 xqy.
-rewrite derive1_pinsker_function_spec; last lra.
+rewrite derive1_pinsker_function_spec; first lra.
 rewrite /pinsker_function_spec'.
 rewrite subr_ge0 mulrAC.
-rewrite -ler_pdivlMl ?mulr_gt0//; last lra.
+rewrite -ler_pdivlMl ?mulr_gt0//; first lra.
 rewrite (le_trans Hc)//.
 rewrite !invfM mulrA ler_pM2r ?invr_gt0 ?ln2_gt0//.
-rewrite (_ : 8^-1 = 2^-1 * 4^-1); last by field.
-rewrite -[leLHS]mulr1 -!mulrA ler_pM2l; last lra.
-rewrite -ler_pdivrMr -!invfM; last by rewrite invr_gt0 mulr_gt0; lra.
+rewrite (_ : 8^-1 = 2^-1 * 4^-1); first by field.
+rewrite -[leLHS]mulr1 -!mulrA ler_pM2l; first lra.
+rewrite -ler_pdivrMr -!invfM; first by rewrite invr_gt0 mulr_gt0; lra.
 by rewrite invrK mul1r x_x2_max.
 Qed.
 
@@ -209,7 +208,7 @@ Lemma pinsker_fun_p0_pos (c q : R) :
   0 <= pinsker_fun 0 c q.
 Proof.
 move=> ? /[dup] q01 /[!in_itv] /= q01'.
-rewrite [leLHS](_ : _ = pinsker_fun 0 c 0); last first.
+rewrite [leLHS](_ : _ = pinsker_fun 0 c 0).
   by rewrite pinsker_fun_p0 // /pinsker_function_spec /= subr0 log1; field.
 apply: pinsker_fun_p0_increasing_on_0_to_1=> //; [lra | | lra].
 by rewrite in_itv /= lexx /=.
@@ -231,7 +230,7 @@ move=> Hc q01 pq.
 rewrite /pinsker_fun' mulr_ge0 ?(subr_ge0 p)//.
 rewrite (@le_trans _ _ (4 / ln 2 - 8 * c)) //.
   rewrite subr_ge0 -ler_pdivlMl//.
-  by rewrite [leRHS](_ : _ = (2 * ln 2)^-1); last by lra.
+  by rewrite [leRHS](_ : _ = (2 * ln 2)^-1); first by lra.
 rewrite lerB// invfM ler_pM// ?invr_ge0 ?ln2_ge0//.
 by rewrite -[leLHS]invrK lef_pV2 ?x_x2_max// posrE ?x_x2_pos//.
 Qed.
@@ -244,7 +243,7 @@ rewrite /pinsker_fun' -opprB mulNr -oppr_ge0 opprK.
 rewrite mulr_ge0 ?(subr_ge0 q)//.
 rewrite (@le_trans _ _ (4 / ln 2 - 8 * c)) //.
   rewrite subr_ge0 -ler_pdivlMl//.
-  by rewrite [leRHS](_ : _ = (2 * ln 2)^-1); last by lra.
+  by rewrite [leRHS](_ : _ = (2 * ln 2)^-1); first by lra.
 rewrite lerB// invfM ler_pM// ?invr_ge0 ?ln2_ge0//.
 by rewrite -[leLHS]invrK lef_pV2 ?x_x2_max// posrE ?x_x2_pos//.
 Qed.
@@ -259,7 +258,7 @@ rewrite -lerN2.
 set f := (fun x => -pinsker_fun p c x).
 apply: (derivable1_homo x0p y0p (derivableN_pinsker_fun p01))=> //.
 move=> t /[dup] xty /[!in_itv] /= xty'; have: 0 < t < 1 by lra.
-rewrite deriveN; last first.
+rewrite deriveN.
   apply: derivable_pinsker_fun=> //.
   by rewrite inE; lra.
 move /(is_derive1_pinsker_fun p01 c) /@derive_val ->.
@@ -272,9 +271,9 @@ Lemma pinsker_fun_increasing_on_p_to_1 (p c : R) (Hc : c <= (2 * ln 2)^-1)
   pinsker_fun p c x <= pinsker_fun p c y.
 Proof.
 move=> x y.
-move=> /[dup] /[1!in_itv] /= ?; rewrite (_ : x = 1 - (1 - x)); [move=>? | ring].
-move=> /[dup] /[1!in_itv] /= ?; rewrite (_ : y = 1 - (1 - y)); [move=>? | ring].
-rewrite (_ : p = 1 - (1 - p)); last ring.
+move=> /[dup] /[1!in_itv] /= ?; rewrite (_ : x = 1 - (1 - x)); [ring|move=>?].
+move=> /[dup] /[1!in_itv] /= ?; rewrite (_ : y = 1 - (1 - y)); [ring|move=>?].
+rewrite (_ : p = 1 - (1 - p)); first ring.
 move=> ?.
 set x' := 1 - x; set y' := 1 - y; set p' := 1 - p.
 rewrite [leLHS]pinsker_fun_onem [leRHS]pinsker_fun_onem.
@@ -314,7 +313,7 @@ have [p0|p0] := eqVneq p 0%:i01.
     by rewrite -prob_lt1.
   rewrite pinsker_fun_p0 /pinsker_function_spec -?prob_lt1//.
   rewrite le_eqVlt; apply/orP; left; apply/eqP.
-  by rewrite mul1r div1r logV; [field | rewrite subr_gt0 -prob_lt1].
+  by rewrite mul1r div1r logV; [rewrite subr_gt0 -prob_lt1|field].
 have [p1|p1] := eqVneq p 1%:i01.
   subst p.
   rewrite /pinsker_fun subrr mul0r addr0.
@@ -329,10 +328,10 @@ have [p1|p1] := eqVneq p 1%:i01.
       apply/andP; split; first by rewrite subr_ge0.
       by rewrite ltrBlDr -{1}(addr0 1) ltrD2l; apply/prob_gt0.
     exact: pinsker_fun_p0_pos Hc.
-  rewrite pinsker_fun_p0 /pinsker_function_spec; last first.
+  rewrite pinsker_fun_p0 /pinsker_function_spec.
     by rewrite -[ltRHS]subr0 ltrD2l ltrN2 -prob_gt0.
   rewrite le_eqVlt; apply/orP; left; apply/eqP.
-  rewrite mul1r div1r logV; [|by apply/prob_gt0].
+  rewrite mul1r div1r logV; [by apply/prob_gt0|].
   by rewrite (_ : 1 - (1 - q%:num) = q%:num :> R) //=; by field.
 have [q0|q0] := eqVneq q 0%:i01.
   subst q.
@@ -395,7 +394,7 @@ transitivity (D(P || Q) - c * (`| p%:num - q%:num | + `| (1 - p%:num) - (1 - q%:
   rewrite /pinsker_fun /div Set2sumE -/a -/b -/pi -/pj -/qi -/qj Hpi Hpj Hqi Hqj.
   set tmp := (`| _ | + _) ^+ 2.
   have -> : tmp = 4 * (p%:num - q%:num) ^+ 2.
-    rewrite /tmp (_ : 1 - p%:num - (1 - q%:num) = q%:num - p%:num); last by simpl; ring.
+    rewrite /tmp (_ : 1 - p%:num - (1 - q%:num) = q%:num - p%:num); first by simpl; ring.
     rewrite sqrrD (distrC q%:num p%:num) -{3}(expr1 `|p%:num - q%:num|).
     by rewrite -exprS real_normK ?num_real//; ring.
   rewrite [X in _ = _ + _ - X]mulrA.
@@ -410,11 +409,11 @@ transitivity (D(P || Q) - c * (`| p%:num - q%:num | + `| (1 - p%:num) - (1 - q%:
     have : p == 0%:i01 by exact/eqP/val_inj.
     by rewrite (negbTE p0).
   have [->|p1] := eqVneq p 1%:i01.
-    rewrite subrr !mul0r logM //; last first.
+    rewrite subrr !mul0r logM //.
       by rewrite invr_gt0; exact/prob_gt0.
     by rewrite !(add0r,mul1r,addr0,sub0r).
-  rewrite logM //; [| exact/prob_gt0 | by rewrite invr_gt0; exact/prob_gt0].
-  rewrite logV //; last exact/prob_gt0.
+  rewrite logM //; [exact/prob_gt0 | by rewrite invr_gt0; exact/prob_gt0|].
+  rewrite logV //; first exact/prob_gt0.
   have [q1|q1] := eqVneq q 1%:i01.
     move/dominatesP : P_dom_by_Q => /(_ (Set2.a card_A)).
     rewrite -/pi -/qi Hqi q1 subrr => /(_ erefl).
@@ -495,7 +494,7 @@ suff : (2 * ln 2)^-1 * d(P , Q) ^+ 2 <= D(P_A || Q_A).
 have -> : d( P , Q ) = d( P_A , Q_A ).
   rewrite /var_dist.
   transitivity (\sum_(a | a \in A0) `| P a - Q a | + \sum_(a | a \in A1) `| P a - Q a |).
-    rewrite -big_union //; last by rewrite -setI_eq0 -dis /A_ finset.setIC.
+    rewrite -big_union //; first by rewrite -setI_eq0 -dis /A_ finset.setIC.
     apply: eq_bigl => a; by rewrite cov finset.in_set.
   transitivity (`| P_A 0 - Q_A 0 | + `| P_A 1 - Q_A 1 |).
     congr (_ + _).
@@ -503,7 +502,7 @@ have -> : d( P , Q ) = d( P_A , Q_A ).
       transitivity (\sum_(a | a \in A0) (P a - Q a)).
         apply: eq_bigr => a; rewrite /A0 finset.in_set => Ha.
         by rewrite ger0_norm ?subr_ge0.
-      rewrite big_split /= ger0_norm; last first.
+      rewrite big_split /= ger0_norm.
         rewrite subr_ge0; rewrite !ffunE.
         by apply: ler_sum => ?; rewrite inE.
       by rewrite -big_morph_oppr // 2!ffunE.
@@ -515,7 +514,7 @@ have -> : d( P , Q ) = d( P_A , Q_A ).
       + transitivity (\sum_(a | a \in A1) - (P a - Q a)).
           apply: eq_bigr => a; rewrite /A1 finset.in_set => Ha.
           by rewrite ltr0_norm // subr_lt0.
-        rewrite -big_morph_oppr // big_split /= ltr0_norm; last first.
+        rewrite -big_morph_oppr // big_split /= ltr0_norm.
           rewrite subr_lt0; apply: ltR_sumR_support => // a.
           by rewrite /A1 finset.in_set.
         by rewrite -big_morph_oppr.

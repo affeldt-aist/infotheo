@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order all_algebra lra.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order algebra arithmetic_tactic.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
-From mathcomp Require Import mathcomp_extra classical_sets reals.
+From mathcomp Require Import classical_sets reals.
 From mathcomp Require Import topology normedtype derive exp realfun.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln derive_ext.
 
@@ -19,7 +19,6 @@ Require Import ssr_ext ssralg_ext realType_ext realType_ln derive_ext.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -98,7 +97,7 @@ Proof.
 evar (D0 : (R : Type)); evar (D1 : (R : Type)); exists D0.
 move/[dup]=> x01.
 rewrite inE /= => /andP [] x0 x1.
-rewrite (near_eq_is_derive _ DnH2) ?oner_neq0//; last exact: near_DnH2E.
+rewrite (near_eq_is_derive _ DnH2) ?oner_neq0//; first exact: near_DnH2E.
 suff->: D0 = D1.
   apply: is_deriveB.
     exact: is_derive1_Logf.
