@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg fingroup finalg perm zmodp.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix mxalgebra vector.
 Require Import hamming num_occ ssralg_ext f2 linearcode decoding channel_code.
 
@@ -18,7 +18,6 @@ Require Import hamming num_occ ssralg_ext f2 linearcode decoding channel_code.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -35,7 +34,7 @@ elim=> [l r | r IH l [ | k H] ].
   by exists l, nil; rewrite cats0.
 - rewrite muln1 => H.
   exists (take (r.+1) l), nil.
-  by rewrite cats0 take_oversize; [rewrite muln0 | rewrite H].
+  by rewrite cats0 take_oversize; [rewrite H | rewrite muln0].
 - exists (take (r.+1) l), (drop (r.+1) l).
   rewrite cat_take_drop size_drop H size_take H ltn_Pmulr //.
   repeat (split => //).
@@ -48,7 +47,7 @@ Lemma dH_num_occ_opp r a (v : 'rV_ r) :
 Proof.
 rewrite /dH /wH.
 rewrite (_ : tuple_of_row _ =
-    [tuple of map (fun x => F2_of_bool (x != a%R)) (tuple_of_row v)]); last first.
+    [tuple of map (fun x => F2_of_bool (x != a%R)) (tuple_of_row v)]).
   apply: eq_from_tnth => i.
   rewrite tnth_mktuple tnth_map tnth_mktuple !mxE.
   by case/F2P : a; case: F2P => //; rewrite ?subrr ?subr0 ?sub0r ?oppr_pchar2.
@@ -112,15 +111,15 @@ have : forall i : 'I_n.-1, x ``_ ord0 = x ``_ (lift ord0 i).
   set i0 := cast_ord (esym (@subn1 n)) i.
   move/eqP/rowP : abs => /(_ i0).
   rewrite !mxE (bigD1 ord0) //= castmxE /= cast_ord_id.
-  rewrite (_ : _ i0 _ = 1); last first.
+  rewrite (_ : _ i0 _ = 1).
     rewrite mxE; case: splitP => [j _ | k] /=; by [rewrite mxE | rewrite add1n].
   rewrite mul1r mxE (bigD1 (lift ord0 i)) //=.
-  rewrite [X in _ + (X + _) = _ -> _](_ : _ = x ``_ (lift ord0 i)); last first.
+  rewrite [X in _ + (X + _) = _ -> _](_ : _ = x ``_ (lift ord0 i)).
     rewrite castmxE /= mxE.
     case: splitP => [j | k /=]; first by rewrite {j}(ord1 j) mxE mul1r mxE.
     rewrite /bump leq0n /= 2!add1n; case => ik.
     rewrite !mxE (_ : _ == _ = true) ?mul1r //; exact/eqP/val_inj.
-  rewrite [X in _ + (_ + X) = _ -> _](_ : _ = 0).
+  rewrite [X in _ + (_ + X) = _ -> _](_ : _ = 0); last first.
     by move/eqP; rewrite addr_eq0 ?addr0 oppr_pchar2 // => /eqP.
   set F := BIG_F.
   rewrite big1 // => i1 /andP[i10 i11].
@@ -264,29 +263,29 @@ rewrite negb_and negbK.
 case/orP => H1 [<-{h}].
 - case: wC => /eqP -> //.
   rewrite 2!dH_num_occ_opp; apply: num_occ_tuple_F2.
-  rewrite (_ : N(_ | _) = r.+1 - N(1%R | tuple_of_row u))%nat; last first.
+  rewrite (_ : N(_ | _) = r.+1 - N(1%R | tuple_of_row u))%nat.
     rewrite -[in X in _ = (X - _)%nat](num_occ_negF2 1%R (tuple_of_row u)).
     by rewrite addnC addnK.
   rewrite (@leq_ltn_trans (r.+1 - (r.+1)./2)%nat) //.
     by rewrite -{2}(odd_double_half r.+1) -addnn addnA addnC addnA addnK leq_addr.
   apply: ltn_sub2l; last by rewrite ltn_neqAle H eq_sym H1.
   rewrite (leq_ltn_trans H) //.
-  rewrite -ltn_double (_ : _./2.*2 = r.+1 - odd r.+1)%nat; last first.
+  rewrite -ltn_double (_ : _./2.*2 = r.+1 - odd r.+1)%nat.
     by rewrite -{2}(odd_double_half r.+1) addnC addnK.
   by rewrite -addnn (@leq_ltn_trans r.+1) // ?leq_subr // addnS ltnS ltn_addr.
 - case : wC => /eqP -> //.
   rewrite 2!dH_num_occ_opp; apply: num_occ_tuple_F2.
-  rewrite (_ : N(_ | _) = r.+1 - N(1%R | tuple_of_row u))%nat; last first.
+  rewrite (_ : N(_ | _) = r.+1 - N(1%R | tuple_of_row u))%nat.
     rewrite -[in X in _ = (X - _)%nat](num_occ_negF2 1%R (tuple_of_row u)).
     by rewrite addnC addnK.
-  rewrite -ltn_double (_ : _./2.*2 = r.+1 - odd r.+1)%nat; last first.
+  rewrite -ltn_double (_ : _./2.*2 = r.+1 - odd r.+1)%nat.
     by rewrite -{2}(odd_double_half r.+1) addnC addnK.
   rewrite H1 /= subn1 /= doubleB.
   rewrite (@leq_trans ((r.+1).*2 - (r.+1)./2.*2)%nat) //; last first.
     by rewrite leq_sub2l // leq_double.
-  rewrite (_ : (r.+1)./2.*2 = r.+1 - odd r.+1)%nat; last first.
+  rewrite (_ : r.+1./2.*2 = r.+1 - odd r.+1)%nat.
     by rewrite -{2}(odd_double_half r.+1) addnC addnK.
-  rewrite subnBA //; last by case: (odd r.+1).
+  rewrite subnBA //; first by case: (odd r.+1).
   by rewrite -addnn -addnA addnC addnK ltn_addr.
 Qed.
 
@@ -294,7 +293,7 @@ End majority_vote_decoding.
 
 (* TODO: remove? *)
 Section repetition_code.
-Variable r : nat.
+Context (r : nat).
 Let LC := Rep.Lcode_wo_repair (@reprepair_img r).
 
 Lemma rep_encode_decode m v : m \in LC ->

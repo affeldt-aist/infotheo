@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum matrix.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem and swap *)
-From mathcomp Require Import mathcomp_extra boolp reals.
+From mathcomp Require Import boolp reals.
 Require Import ssr_ext ssralg_ext realType_ext.
 Require Import fdist proba convex.
 

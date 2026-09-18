@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg finalg poly polydiv cyclic.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg finalg poly polydiv cyclic.
 From mathcomp Require Import perm matrix mxpoly vector mxalgebra zmodp.
 Require Import ssr_ext ssralg_ext poly_ext channel_code decoding linearcode.
 Require Import hamming dft poly_decoding euclid grs cyclic_code.
@@ -114,7 +114,7 @@ rewrite inE; apply/forallP => i; apply/implyP => i0.
 rewrite fdcoorN eqr_oppLR oppr0; move: (H i); by rewrite i0 implyTb.
 Qed.
 
-Lemma addr_closed : addr_closed codebook.
+Lemma addr_closed : Algebra.nmod_closed codebook.
 Proof.
 split; [exact: O_in_codebook | move=> x y].
 have [/= ->|xy] := eqVneq (x + y) 0; first by rewrite O_in_codebook.

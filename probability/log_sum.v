@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import boot order all_algebra arithmetic_tactic.
+From mathcomp Require Import boot order algebra arithmetic_tactic.
 From mathcomp Require Import reals exp.
 Require Import bigop_ext realType_ext realType_ln.
 

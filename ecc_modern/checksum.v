@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg ssrnum finalg perm.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg ssrnum finalg perm.
 From mathcomp Require Import zmodp matrix vector.
 From mathcomp Require Import Rstruct reals.
 Require Import ssralg_ext f2 fdist channel tanner linearcode.
@@ -11,7 +11,6 @@ Require Import pproba.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -45,7 +44,7 @@ Lemma checksubsum_D1 i x : i \in A ->
   \delta A x = (F2_of_bool (\delta (A :\ i) x) != x ``_ i).
 Proof.
 move=> iA; rewrite /checksubsum (bigD1 i) //=.
-rewrite (_ : \sum_(i0 in A | i0 != i) x ``_ i0 = \sum_(n0 in A :\ i) x ``_ n0); last first.
+rewrite (_ : \sum_(i0 in A | i0 != i) x ``_ i0 = \sum_(n0 in A :\ i) x ``_ n0).
   apply: eq_bigl => j; by rewrite in_setD1 andbC.
 rewrite addr_eq0 eq_sym oppr_pchar2 //.
 case/F2P : (x ``_ i) => //=.
@@ -69,8 +68,8 @@ Lemma kernel_checksubsum1 (x : 'rV['F_2]_n) : x \in kernel H ->
   (1 = (\prod_m0 \delta ('V m0) x)%:R :> R)%R.
 Proof.
 move=> x_in_C.
-rewrite {1}(_ : (1 = (\prod_(m0 < m) 1)%:R)%R); [congr _%:R |
-  by rewrite big_const iter_muln_1 exp1n].
+rewrite {1}(_ : (1 = (\prod_(m0 < m) 1)%:R)%R); [
+  by rewrite big_const iter_muln_1 exp1n|congr _%:R].
 apply: eq_bigr => m0 _.
 rewrite mem_kernel_syndrome0 /syndrome in x_in_C.
 move/eqP in x_in_C.
@@ -87,7 +86,7 @@ have {}x_in_C : forall m0, \sum_(i in 'V m0) ((H m0 i) * x ``_ i) = 0.
   rewrite (bigID [pred i | i \in 'V m1]) /=.
   set tmp := {2}(\sum_(i in 'V m1) _).
   rewrite -[in X in _ = X](addr0 tmp); congr (_ + _).
-  rewrite [in X in _ = X](_ : 0 = \sum_(i | i \notin 'V m1) 0); last first.
+  rewrite [in X in _ = X](_ : 0 = \sum_(i | i \notin 'V m1) 0).
     by rewrite big_const /= iter_addr0.
   apply: eq_big => // n0.
   rewrite VnextE tanner_relE -F2_eq0 => /eqP ->; by rewrite mul0r.
@@ -117,7 +116,7 @@ have {}x_notin_C : [exists m0, \sum_(i in 'V m0) ((H m0 i) * x ``_ i) != 0].
   apply: contra Hm0 => /eqP Hm0.
   apply/eqP.
   rewrite (bigID [pred i | i \in 'V m0]) /= Hm0 add0r.
-  rewrite [in X in _ = X](_ : 0 = \sum_(i | i \notin 'V m0) 0); last first.
+  rewrite [in X in _ = X](_ : 0 = \sum_(i | i \notin 'V m0) 0).
     by rewrite big_const /= iter_addr0.
   apply: eq_big => n0 //.
   rewrite VnextE tanner_relE -F2_eq0 => /eqP ->; by rewrite mul0r.
@@ -142,11 +141,11 @@ Proof.
 apply/idP/idP; last first.
   apply: contraTT => /kernel_checksubsum0.
   rewrite -(@big_morph _ _ nat_of_bool true muln true andb) //.
-    rewrite -eqb0 /= (_ : 0 = 0%:R)%R // => /eqP.
-    by rewrite Num.Theory.eqr_nat.
-  by move=> ? ? /=; rewrite mulnb.
+    by move=> ? ? /=; rewrite mulnb.
+  rewrite -eqb0 /= (_ : 0 = 0%:R)%R // => /eqP.
+  by rewrite Num.Theory.eqr_nat.
 move/kernel_checksubsum1.
-rewrite -(@big_morph _ _ nat_of_bool true muln true andb) //; last first.
+rewrite -(@big_morph _ _ nat_of_bool true muln true andb) //.
   move=> ? ? /=; by rewrite mulnb.
 rewrite (_ : 1 = true%:R)%R // => /eqP.
 rewrite Num.Theory.eqr_nat.

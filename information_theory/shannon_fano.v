@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order all_algebra archimedean.
-From mathcomp Require Import mathcomp_extra reals exp.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order algebra archimedean.
+From mathcomp Require Import reals exp.
 Require Import ssr_ext bigop_ext realType_ext realType_ln fdist entropy kraft.
 
 (**md**************************************************************************)
@@ -20,7 +20,6 @@ Require Import ssr_ext bigop_ext realType_ext realType_ln fdist entropy kraft.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -64,7 +63,7 @@ move=> H.
 rewrite /kraft_cond.
 rewrite -[leRHS](FDist.f1 P) /sizes size_map.
 rewrite (eq_bigr (fun i : 'I_(size(enum A)) =>
-    #|'I_t|%:R ^- size (f (nth a (enum A) i)))); last first.
+    #|'I_t|%:R ^- size (f (nth a (enum A) i)))).
   by move=> i _; rewrite /= (nth_map a)// FDist.f1.
 rewrite -(big_mkord xpredT (fun i => #|T|%:R ^- size (f (nth a (enum A) i)))).
 rewrite -(big_nth a xpredT (fun i => #|'I_t|%:R ^- size (f i))).
@@ -74,7 +73,7 @@ rewrite H.
 have Pi0 : 0 < P i by rewrite lt0r Pr0/=.
 apply: (@le_trans _ _ (#|T|%:R `^ (- Log #|T|%:R (P i)^-1))%R); last first.
   by rewrite LogV// opprK natn LogK// card_ord.
-rewrite -powR_mulrn; last by rewrite card_ord.
+rewrite -powR_mulrn; first by rewrite card_ord.
 rewrite powRN card_ord lef_pV2// ?posrE ?powR_gt0//.
 rewrite gt1_ler_powRr ?ltr1n//.
 rewrite (le_trans (ceil_ge _))//.
@@ -157,8 +156,8 @@ rewrite -(@nth_uniq _ [::] C (enum_rank x) (enum_rank y)) //.
 - rewrite /C /ACode /= /acode size_map size_enum_ord prednK //.
   exact: (fdist_card_neq0 P).
 - rewrite /C /ACode /= /acode map_inj_uniq //.
-    exact/enum_uniq.
-  exact/injective_sigma.
+    exact/injective_sigma.
+  exact/enum_uniq.
 Qed.
 
 Let f := Encoding.mk f_inj.

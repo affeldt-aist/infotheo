@@ -50,7 +50,9 @@ supported_rocq_versions:
   opam: '{ (>= "9.1" & < "9.4") }'
 
 tested_rocq_opam_versions:
-- version: '2.5.0-rocq-prover-9.1'
+- version: '2.6.0-rocq-prover-9.1'
+  repo: 'mathcomp/mathcomp'
+- version: '2.6.0-rocq-prover-9.2'
   repo: 'mathcomp/mathcomp'
 
 dependencies:
@@ -61,24 +63,24 @@ dependencies:
       Rocq core
   - opam:
       name: rocq-mathcomp-algebra
-      version: '{ (= "2.5.0") }'
+      version: '{ (>= "2.6.0") }'
     description: |-
       [MathComp](https://github.com/math-comp/math-comp)
   - opam:
       name: coq-mathcomp-analysis
-      version: '{ (= "1.15.0") }'
+      version: '{ (>= "1.16.0") }'
     description: |-
       [MathComp analysis](https://github.com/math-comp/analysis)
   - opam:
       name: rocq-mathcomp-reals-stdlib
-      version: '{ (= "1.15.0") }'
+      version: '{ (>= "1.16.0") }'
     description: |-
       [MathComp analysis reals standard library](https://github.com/math-comp/analysis)
   - opam:
       name: coq-interval
       version: '{ >= "4.11.5"}'
     description: |-
-      A Rocq tactic for proving bounds
+      [CoqInterval](https://gitlab.inria.fr/coqinterval)
 
 namespace: infotheo
 

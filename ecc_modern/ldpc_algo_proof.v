@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From Stdlib Require Import Wf_nat Init.Wf Recdef.
-From mathcomp Require Import all_boot perm zmodp matrix ssralg ssrnum.
-From mathcomp Require Import Rstruct reals ring lra.
+From mathcomp Require Import boot perm zmodp matrix ssralg ssrnum.
+From mathcomp Require Import Rstruct reals ring_tactic arithmetic_tactic.
 Require Import ssr_ext ssralg_ext bigop_ext f2.
 Require Import fdist channel pproba linearcode subgraph_partition tanner.
 Require Import tanner_partition summary ldpc checksum ldpc_algo.

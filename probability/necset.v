@@ -1,13 +1,13 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot ssralg ssrnum interval_inference.
+From mathcomp Require Import boot ssralg ssrnum interval_inference.
 (* finmap has some conflicting notations (with finset?) *)
 #[warning="-notation-incompatible-prefix"]
 From mathcomp Require Import finmap.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
-From mathcomp Require Import mathcomp_extra boolp classical_sets reals.
+From mathcomp Require Import boolp classical_sets reals.
 Require Import realType_ext classical_sets_ext fdist fsdist convex.
 
 (**md**************************************************************************)

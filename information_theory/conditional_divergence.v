@@ -1,6 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix ring lra.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum matrix ring_tactic.
+From mathcomp Require Import arithmetic_tactic field_tactic.
 From mathcomp Require Import Rstruct reals exp.
 Require Import ssr_ext bigop_ext ssralg_ext realType_ext realType_ln.
 Require Import num_occ fdist proba entropy channel divergence types jtypes.

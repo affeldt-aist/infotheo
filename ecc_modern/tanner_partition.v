@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg fingroup finalg perm zmodp.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import ssrnum matrix.
 (*From mathcomp Require Import Rstruct.*)
 Require Import ssr_ext subgraph_partition tanner f2.

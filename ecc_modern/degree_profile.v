@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg zmodp poly ssrnum.
+From mathcomp Require Import boot order ssralg zmodp poly ssrnum.
 From mathcomp Require Import matrix perm.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext fdist.
@@ -18,7 +18,6 @@ Require Import ssr_ext ssralg_ext fdist.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -375,7 +374,7 @@ Proof.
 elim: l k x => [|l IH] k x.
   by rewrite (tree_frontier x) /= addn0.
 rewrite (tree_node_children x).
-rewrite -(@finseqs_deg n l k (tree_enum l (negk k))); last by [].
+rewrite -(@finseqs_deg n l k (tree_enum l (negk k))); first by [].
 rewrite {IH} /=.
 congr addn.
 - rewrite eqtype.inj_eq //.
@@ -598,10 +597,10 @@ transitivity (\sum_(d < tw') (LR k)`_d); last first.
   destruct (LR k) => /= Hsz.
   (*rewrite -(@big_morph _ _ RofK 0 Rplus 0%:R (@GRing.add K)) //.*)
   rewrite (@horner_coef_wide _ tw') // in p1.
-    rewrite -p1.
-    apply: eq_bigr => i _.
-    by rewrite expr1n mulr1.
-  by apply: ltnW.
+    exact: ltnW.
+  rewrite -p1.
+  apply: eq_bigr => i _.
+  by rewrite expr1n mulr1.
 rewrite (@big_mkord _ _ _ tw').
 apply: eq_bigr => d _.
 transitivity (\sum_(s <- nseqs (tree_enum tw l (negk k)) d)
@@ -831,10 +830,10 @@ symmetry.
 apply/imsetP.
 case: ifPn => Hyx.
   rewrite -(@can2_in_imset_pre _ _ (enum_rank_in (Hxp _ Hyx))).
-      esplit; first exact/imset_f/Hyx.
-      by rewrite enum_rankK_in // Hxp.
-    by move=> z Hz; exact: (enum_rankK_in _ (Hxp _ Hz)).
+  by move=> z Hz; exact: (enum_rankK_in _ (Hxp _ Hz)).
   by move=> z Hz; rewrite enum_valK_in.
+  esplit; first exact/imset_f/Hyx.
+  by rewrite enum_rankK_in // Hxp.
 move=> [z Hz Hzy].
 rewrite /preimset inE in Hz.
 by rewrite Hzy Hz in Hyx.
@@ -1669,10 +1668,10 @@ case: (Hc (switch_graph_node x) (switch_graph_node y)).
   exists (map switch_path_node p), b1, b2.
   rewrite -(switch_graph_nodeK x).
   rewrite -/(switch_path_node (switch_graph_node x, b1)).
-  rewrite (@map_path _ _ _ _ (graph_rel c) pred0); first last.
-      by rewrite has_pred0.
-    move=> a b _.
-    by rewrite switch_graph_rel.
+  rewrite (@map_path _ _ _ _ (graph_rel c) pred0).
+      move=> a b _.
+      by rewrite switch_graph_rel.
+    by rewrite has_pred0.
   rewrite Hp /=.
   rewrite last_map (eqP Hl).
   by rewrite /switch_path_node switch_graph_nodeK.
@@ -1870,8 +1869,8 @@ case Hy': (known_port c y).
   move/andP: Hp => [Hp Hl].
   apply/andP; split.
     rewrite (_ : (x,~~b2) = last (flip (y,b1)) (map (@flip port) p)).
-      by apply: flip_seq_path.
-    by rewrite last_map (eqP Hl).
+      by rewrite last_map (eqP Hl).
+    by apply: flip_seq_path.
   rewrite -/(flip (x,b2)) last_map.
   destruct p => /=.
     by rewrite -(eqP Hl).
@@ -1898,10 +1897,10 @@ apply/'forall_forallP => /= n p.
 move/(_ n (map_tuple switch_path_node p)) : Hc.
 apply: contra.
 rewrite /ucycleb /ucycle -(@cycle_morph _ (graph_rel (switch c))).
-  rewrite map_inj_in_uniq //.
+- move=> [x a] [y b].
+  by rewrite -switch_graph_rel /switch_path_node !switch_graph_nodeK.
+- rewrite map_inj_in_uniq //.
   move=> ? ? _ _; exact: inj_switch_path_node.
-move=> [x a] [y b].
-by rewrite -switch_graph_rel /switch_path_node !switch_graph_nodeK.
 Qed.
 
 End partial_graph_progress.
@@ -1961,7 +1960,7 @@ move=> HL.
 transitivity (\sum_(0 <= j < L.+1 | j != 0%nat ) lambda`_(j.-1)).
   by rewrite big_mkord.
 rewrite (@big_cat_nat _ _ _ 1%nat) //=.
-rewrite big1_seq //; last first.
+rewrite big1_seq //.
   move=> j /andP [Hj] /=.
   rewrite in_cons in_nil orbF => Hj'.
   by rewrite Hj' in Hj.
@@ -2238,7 +2237,7 @@ rewrite !inE.
 case: ifP => Hi'.
   by move: Hi; rewrite Hi'.
 rewrite andbF /= => /(_ erefl) <-.
-rewrite -(@card_imset _ _ (fun x : {set port} => (i, x))); last first.
+rewrite -(@card_imset _ _ (fun x : {set port} => (i, x))).
   by move=> a b [].
 do !f_equal.
 apply/setP => [] [j s].
@@ -2298,7 +2297,7 @@ set CE := 'C(_,_)%:R.
 have unitCE : (CE \is a GRing.unit).
   apply: unitf_gt0.
   by rewrite ltr0n bin_gt0 -!subn1 subnAC leq_sub2r // -ltnS ltn_ord.
-rewrite [X in _ * X = _](_ : _ = CE); first by rewrite mulVr.
+rewrite [X in _ * X = _](_ : _ = CE); last by rewrite mulVr.
 by rewrite /CE -card_nodes3 // sumr_const -cardsE.
 Qed.
 
@@ -2331,8 +2330,7 @@ rewrite /weighted_count big_map -big_distrl -big_distrr /=.
 rewrite mul1r /free_coports cardsCp.
 rewrite (bigID [pred ps | ps.1 \in known_coports c]) /=.
 rewrite (bigID [pred ps | ps.1 \in border (conodes c)]) /=.
-rewrite (eq_bigl (fun ps => ps.1 \in border (conodes c)));
-    last first.
+rewrite (eq_bigl (fun ps => ps.1 \in border (conodes c))).
   move=> [x s] /=.
   case Hb: (x \in border _).
     rewrite andbT.
@@ -2340,12 +2338,12 @@ rewrite (eq_bigl (fun ps => ps.1 \in border (conodes c)));
   by rewrite andbF.
 rewrite 3!big_enum_in /= sum_step_border sum_step_used addr0 sum_step_out -natrD.
 (*rewrite -[in X in (X - #|ports(conodes c)|)%nat](card_ord E).*)
-rewrite addnBA; last by apply: max_card.
+rewrite addnBA; first by apply: max_card.
 rewrite addnC.
-rewrite -subnBA; last by apply: card_border_ports.
+rewrite -subnBA; first exact: card_border_ports.
 move: free_coports_card.
 rewrite /free_coports cardsCp.
-rewrite cardsDS; last by apply: border_p.
+rewrite cardsDS; first by apply: border_p.
 move=> Hf.
 rewrite divrr // unitfE.
 apply: lt0r_neq0.
@@ -2435,8 +2433,8 @@ destruct px as [|a px] => //.
 rewrite (@eq_path_in _ _ (graph_rel c) (fun x => known_port c x.1)) //
   in Hcy; last first.
   rewrite -rcons_cons all_rcons Hin.
-    by apply/allP.
-  by rewrite in_cons eqxx.
+    by rewrite in_cons eqxx.
+  by apply/allP.
 move=> /= x y Hkx Hky.
 destruct x as [x xb], y as [y yb].
 rewrite /known_port !unfold_in /= in Hkx Hky.
@@ -2555,7 +2553,7 @@ Proof.
 rewrite weight_is_dist divr1 /weighted_count big_map big_enum_in /=.
 rewrite -big_distrl -big_distrr /= mul1r; congr (_ / _).
 rewrite (bigID (fun ps => ps.1 \in known_coports c)) /=.
-rewrite big_pred0 ?add0r; last first.
+rewrite big_pred0 ?add0r.
   move=> /= i; apply/negbTE; rewrite negb_and -implybE.
   by apply/implyP => /andP[] /step_dest_port /andP[] /tree_like_no_sharing.
 rewrite -sum_step_out.
@@ -2683,13 +2681,13 @@ Lemma weighted_count_step c r len P :
       | y in dest_ports (step c (bnext c) x.1 x.2) len ].
 Proof.
 move=> Hlen.
-rewrite dest_ports_step; last first.
+rewrite dest_ports_step.
   rewrite -lt0n.
   by apply: (leq_ltn_trans (leq0n len)).
 rewrite /weighted_count big_map.
 rewrite big_mkcond /=.
 rewrite [in enum _]big_mkcond /=.
-rewrite big_enum_in /= partition_disjoint_bigcup /=; last first.
+rewrite big_enum_in /= partition_disjoint_bigcup /=.
   move=> i j Hij.
   case: ifP => Hi.
     case: ifP => Hj.
@@ -2738,7 +2736,7 @@ apply: (@Order.POrderTheory.le_trans _ K ((\sum_(i in P | r2 <= F i / G i) G i /
     by rewrite invr_ge0 ltW.
   rewrite -big_distrl /=.
   rewrite (_ : \sum_(i in P | r2 <= F i / G i) F i =
-          \sum_(i in P | r2 <= F i / G i) (F i / G i) * G i); first last.
+          \sum_(i in P | r2 <= F i / G i) (F i / G i) * G i).
     apply: eq_bigr => i /andP [Hi Hir2].
     rewrite -mulrA (mulrC _ (G i)) mulfV ?mulr1 //.
     by apply: HGneq0.
@@ -2834,10 +2832,10 @@ rewrite /known_coports /= step_coports_ok //.
 rewrite /ports /=.
 case/boolP : (x.2 \in conodes c) => Hx2.
   rewrite eq_setSU.
-    rewrite mulSn addnC in Hk.
-    by rewrite -(leq_add2r maxdeg) (leq_trans Hk) // leq_addr.
-  by apply/subsetP => y Hy; apply/bigcupP; exists x.2.
-rewrite cardsU disjoint_setI0; last first.
+    by apply/subsetP => y Hy; apply/bigcupP; exists x.2.
+  rewrite mulSn addnC in Hk.
+  by rewrite -(leq_add2r maxdeg) (leq_trans Hk) // leq_addr.
+rewrite cardsU disjoint_setI0.
   rewrite disjoint_sym disjoints_subset.
   apply/subsetP => i Hip.
   rewrite inE; apply/negP => Hix2.
@@ -2886,8 +2884,8 @@ have Hhead: s \in border (nodes c).
 rewrite /= /step_nodes /step_trivIset step_dest_port //=.
 move: (Heqb).
 rewrite (@enum_cons _ _ s) /=.
-  by move=> [->].
-by rewrite Heqb.
+  by rewrite Heqb.
+by move=> [->].
 Qed.
 
 Lemma sum_weighted_count_it c r k s b P :
@@ -2941,12 +2939,12 @@ have Hhead: s \in border (nodes c).
 have Hlam: (maxdeg <= #|port| - #|known_coports c|)%nat.
   move: Hk; rewrite mulSn => /ltnW Hk.
   by rewrite -(leq_add2r (k * maxdeg)) (leq_trans Hk) // leq_addr.
-rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0; last first.
+rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0.
   by move=> ?; rewrite andbF.
 rewrite (sum_weighted_count_it r predT eqb) //.
 move: (weight_is_dist Hhead (leq_trans Hmax Hlam)).
 rewrite /weighted_count big_map big_enum_in /=.
-rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0; last first.
+rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0.
   by move=> ?; rewrite andbF.
 rewrite -!big_distrl -!big_distrr /= mul1r -mulrA => ->.
 by rewrite mulr1.
@@ -3016,12 +3014,12 @@ apply: ler_wpDr; first by apply: sumr_ge0 => i _; exact: weighted_count_it_ge0.
 set F := BIG_F.
 apply: (@Order.POrderTheory.le_trans _ _
   (\sum_(i in dest_port c | tree_like (step c (bnext c) i.1 i.2)) F i)).
-  rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0; last first.
+  rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0.
     by move=> ?; rewrite andbF.
-  do 2 (rewrite (sum_weighted_count_it r _ eqb) // ?eqk //; last
+  do 2 (rewrite (sum_weighted_count_it r _ eqb) // ?eqk //; first
     by move=> ? ?; apply: weighted_count_it).
-  rewrite (eq_bigl (mem (dest_port c))); last by move=> ?; rewrite andbT.
-  rewrite -big_distrl -big_distrr /= mulrC -ler_pdivlMl; last first.
+  rewrite (eq_bigl (mem (dest_port c))); first by move=> ?; rewrite andbT.
+  rewrite -big_distrl -big_distrr /= mulrC -ler_pdivlMl.
     move: (weight_is_dist Hhead (leq_trans Hmax Hlam')).
     rewrite /weighted_count big_map big_enum_in -big_distrl /=.
     by rewrite -big_distrr /= mul1r -mulrA => ->; by rewrite mulr1.
@@ -3029,7 +3027,7 @@ apply: (@Order.POrderTheory.le_trans _ _
   move: (tree_like_step Htl Hhead (leq_trans Hmax Hlam') Hpc).
   rewrite /weighted_count 2!big_map big_enum_in -2!big_distrl /=.
   rewrite -2!big_distrr /= 2!mul1r big_mkcond big_enum_in -big_mkcondr /=.
-  rewrite -3!mulf_div (@mulfV _ r) ?gt_eqF // mulfV; last first.
+  rewrite -3!mulf_div (@mulfV _ r) ?gt_eqF // mulfV.
     by rewrite invr_neq0 // pnatr_eq0 -lt0n.
   rewrite mul1r /bnext eqb /= => ->.
   by rewrite ler_pM // ?ler_nat ?leq_subr // ?invr_ge0 ltW // ltr0n.
@@ -3037,10 +3035,10 @@ apply: (@Order.POrderTheory.le_trans _ _
 rewrite {}/F le_eqVlt.
 apply/orP /or_introl /eqP.
 (* remove impossible cases from sum *)
-rewrite (bigID (fun i => dest_dist c i.2 == 0)) /= big1; last first.
+rewrite (bigID (fun i => dest_dist c i.2 == 0)) /= big1.
   by move=> i /andP[_]; apply: weighted_count_it_eq0; rewrite eqb.
 rewrite add0r [in RHS](bigID (fun i => dest_dist c i.2 == 0)) /=.
-rewrite [in RHS]big1 ?add0r; last first.
+rewrite [in RHS]big1 ?add0r.
   by move=> i /andP[_]; apply: weighted_count_it_eq0; rewrite eqb.
 apply: eq_bigl => i.
 apply: andb_id2r => Hd; rewrite -andbA; apply: andb_id2l => Hi.
@@ -3209,8 +3207,8 @@ apply/ffunP => i.
 rewrite ffunE.
 case/boolP : (i \in s) => Hi.
   rewrite (nth_map i) //.
-    by rewrite nth_index // mem_enum.
-  by rewrite index_mem mem_enum.
+    by rewrite index_mem mem_enum.
+  by rewrite nth_index // mem_enum.
 move: (Hout i).
 rewrite inE Hi /= => /eqP.
 rewrite nth_default // leqNgt.
@@ -3273,7 +3271,7 @@ Proof.
 rewrite dest_ports_seqs_step.
 rewrite /weighted_count big_map big_enum_in [LHS]/=.
 rewrite big_mkcondr [\bigcup_(_ in _) _]big_mkcond /=.
-rewrite partition_disjoint_bigcup /=; last first.
+rewrite partition_disjoint_bigcup /=.
   move=> i j Hij.
   case: ifP => Hi.
     case: ifP => Hj.
@@ -3366,7 +3364,7 @@ apply: (@leq_trans (len + size (enum (border (nodes c))) * maxdeg)).
   destruct b => /=.
     by rewrite zip_nill mul0n addn0.
   rewrite mulSn addnA.
-  rewrite (dest_ports_step def_port) /=; last first.
+  rewrite (dest_ports_step def_port) /=.
     by rewrite cardE -Heqb.
   move/bigcupP => [/= i Hi].
   move/imsetP => [t' Ht' ->] /=.
@@ -3383,9 +3381,9 @@ apply: (@leq_trans (len + size (enum (border (nodes c))) * maxdeg)).
   rewrite /known_coports step_coports_ok //.
   case /boolP: (i.2 \in conodes c) => Hi2.
     rewrite eq_setSU.
-      exact/(leq_trans Hcp)/leq_addr.
-    apply/subsetP => j Hj.
-    by apply/bigcupP; exists i.2.
+      apply/subsetP => j Hj.
+      by apply/bigcupP; exists i.2.
+    exact/(leq_trans Hcp)/leq_addr.
   rewrite cardsU addnC.
   apply: (leq_trans (leq_subr _ _)).
   apply: leq_add => //.
@@ -3428,7 +3426,7 @@ elim: k c t Heqk => [|k IH] c t eqk.
   rewrite tuple0 /step_it.
   case: cardEP (eqk) => //= _ _.
   by apply: cards0_eq.
-rewrite (dest_ports_step def_port); last by rewrite -eqk.
+rewrite (dest_ports_step def_port); first by rewrite -eqk.
 move/bigcupP => [/= i Hi].
 move/imsetP => [t' Ht' ->] /=.
 rewrite /step_it /=.
@@ -3541,7 +3539,7 @@ apply: ler_wpDr; first by apply: sumr_ge0 => i _; exact: weighted_count_switch_g
 set F := BIG_F.
 apply: (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (nodes c)|
                            | tree_like (step_it c i)) F i)).
-  rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0; last first.
+  rewrite (bigID xpredT) /= [in X in _ + X]big_pred0 ?addr0.
     by move=> ?; rewrite andbF.
   have HF: forall P,
         \sum_(i in dest_ports c #|border (nodes c)| | P i) F i =
@@ -3575,7 +3573,7 @@ apply: (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (node
       by rewrite mulnS leq_add // leq_mul.
     rewrite (leq_ltn_trans _ Hlenmax) //.
     by rewrite sum_expr_S mulnDr addnA (addnC len) -addnA muln1 leq_addr.
-  rewrite big_mkcondr /= -ler_pdivlMr; last first.
+  rewrite big_mkcondr /= -ler_pdivlMr.
     move: (weighted_count_it Hlam def_port r (leqnn _) Hb').
     by rewrite /weighted_count big_map big_enum_in => ->.
   move: (tree_like_empty_border Hlam def_port Hpc Htl Hr Hb') => /=.
@@ -3609,28 +3607,28 @@ apply: (@Order.POrderTheory.le_trans _ _ (\sum_(i in dest_ports c #|border (node
         by rewrite mulnC leq_mul.
       by rewrite leq_addr.
     rewrite ler_pV2 //.
-        by rewrite ler_nat max_card.
-      by rewrite inE unitf_gt0 // ltr0n /=; apply/card_gt0P; exists def_port.
-    by rewrite inE unitf_gt0 // ltr0n.
+        by rewrite inE unitf_gt0 // ltr0n /=; apply/card_gt0P; exists def_port.
+      by rewrite inE unitf_gt0 // ltr0n.
+    by rewrite ler_nat max_card.
   rewrite -(subnK Hb) exprD.
   rewrite ger_pMl //.
-    apply: exprn_ile1.
-      by rewrite mulr_ge0 ?ler0n // invr_ge0 ler0n.
-    rewrite ler_pdivrMr ?mul1r.
-      rewrite ler_nat (cardsCs (free_coports _)) setCK -subnDA.
-      apply/leq_sub2l/(@leq_trans #|known_coports c|).
-        by rewrite cardsD leq_subr.
-      by rewrite leq_addr.
+    apply/exprn_gt0/mulr_gt0.
+      by rewrite ltr0n ltn_subRL addn0 mulnC.
+    by rewrite invr_gt0 ltr0n.
+  apply: exprn_ile1.
+    by rewrite mulr_ge0 ?ler0n // invr_ge0 ler0n.
+  rewrite ler_pdivrMr ?mul1r.
     by rewrite ltr0n.
-  apply/exprn_gt0/mulr_gt0.
-    by rewrite ltr0n ltn_subRL addn0 mulnC.
-  by rewrite invr_gt0 ltr0n.
+  rewrite ler_nat (cardsCs (free_coports _)) setCK -subnDA.
+  apply/leq_sub2l/(@leq_trans #|known_coports c|).
+    by rewrite cardsD leq_subr.
+  by rewrite leq_addr.
 (* prove this is equal to the original rhs *)
 rewrite {}/F le_eqVlt.
 apply/orP /or_introl /eqP.
 (* remove impossible cases from sum *)
 rewrite (bigID (fun i : _ .-tuple _  => (step_dist_it lam c r i).2 == 0))
-         big1 ?add0r; last first.
+         big1 ?add0r.
   move=> i /andP [] /andP [Hi _] Hd.
   rewrite tuple_to_partial_enumK.
   rewrite (surjective_pairing (step_dist_it _ _ _ _)) /=.
@@ -3639,7 +3637,7 @@ rewrite (bigID (fun i : _ .-tuple _  => (step_dist_it lam c r i).2 == 0))
   move=> j _; rewrite switch_step_dist_it_const.
   by destruct switch_step_dist_it; rewrite mul0r.
 rewrite [in RHS](bigID (fun i : _ .-tuple _  =>(step_dist_it lam c r i).2 == 0))
-        [in RHS]big1 /= ?add0r; last first.
+        [in RHS]big1 /= ?add0r.
   move=> i /andP [] /andP [Hi _] Hd.
   rewrite tuple_to_partial_enumK.
   rewrite (surjective_pairing (step_dist_it _ _ _ _)) /=.
@@ -3825,8 +3823,8 @@ rewrite /step_it.
 move: (zip _ _) => {t} z.
 elim: z c => //= [] [ep en] z IH c p Hp.
 rewrite IH /=.
-  by rewrite monotonic_edges_step.
-by move: Hp; apply/subsetP/monotonic_edom_step.
+  by move: Hp; apply/subsetP/monotonic_edom_step.
+by rewrite monotonic_edges_step.
 Qed.
 
 Lemma monotonic_edom_step_it c t : edom c \subset edom (step_it c t).
@@ -3889,9 +3887,9 @@ have Hsw : {in edom c,
                switch_edges (switch_step_it c (rcons ts t2)) =1 edges c}.
   rewrite -cats1 switch_step_it_cat /= switchK_edges => p Hp.
   rewrite monotonic_edges_step_it => //.
-  + exact: IHl.2.
   + apply/subsetP: Hp.
     exact: IHl.1.
+  + exact: IHl.2.
 have Hsw' : edom c \subset graph_dom (conodes (switch_step_it c (rcons ts t2))).
   apply: (subset_trans (proj1 IHl)).
   rewrite -cats1 switch_step_it_cat /=.
@@ -3901,8 +3899,8 @@ split.
   by rewrite (subset_trans _ (monotonic_codom_step_it _ _)).
 move=> /= p Hp.
 rewrite monotonic_switch_edges_step_it.
-  by rewrite Hsw.
-by apply/subsetP: Hp.
+  by apply/subsetP: Hp.
+by rewrite Hsw.
 Qed.
 
 Lemma monotonic_switch_step_it_odd l c (ts : l.*2.+1.-tuple _) :
@@ -3920,11 +3918,11 @@ split.
   by rewrite (subset_trans _ (monotonic_codom_step_it _ _)).
 move=> p Hp.
 rewrite (proj2 (monotonic_switch_step_it _ _)).
-  rewrite monotonic_switch_edges_step_it //.
-  by rewrite switchK_edges.
-rewrite /edom /=.
-apply/subsetP: Hp.
-by apply: monotonic_codom_step_it.
+  rewrite /edom /=.
+  apply/subsetP: Hp.
+  by apply: monotonic_codom_step_it.
+rewrite monotonic_switch_edges_step_it //.
+by rewrite switchK_edges.
 Qed.
 
 Lemma tree_like_rev_step_it (c : comp_graph port) t :
@@ -3959,7 +3957,7 @@ remember (#|border (nodes c)|) as k.
 elim: k c t Heqk => [|k IH] c t eqk.
   rewrite tuple0 /step_it zip_nilr /=.
   by rewrite big_nil // set_nil set0U setU0.
-rewrite (dest_ports_step def_port); last by rewrite -eqk.
+rewrite (dest_ports_step def_port); first by rewrite -eqk.
 move/bigcupP => [/= i Hi].
 move/imsetP => [t' Ht' ->] Htl Hpc /=.
 rewrite /step_it /=.
@@ -4023,7 +4021,7 @@ elim: t c => [|t0 t IH] /= c.
   by rewrite -(eqP Hsz) ltn0 in Hidx.
 set eb := enum _.
 case_eq eb => // s b Hb Hsz Hidx.
-rewrite (dest_ports_step def_port); last first.
+rewrite (dest_ports_step def_port).
   by rewrite cardE -/eb Hb.
 move=> /bigcupP /= [y] Hy.
 move/step_dest_port: (Hy).
@@ -4126,77 +4124,77 @@ destruct (conodes_step_it Ht) as [Hct Hbt].
   apply: tree_like_rev_switch_step_it.
 + by [].
 rewrite (@node_of_hemi_comp_graph ep en) //.
-    rewrite ffunE def.
-    rewrite /image_mem.
-    congr Node.
-    apply/eq_in_map => s Hs.
-    have Hsb : s \in border (conodes (step_it c t)).
-      rewrite Hbt inE big_tuple.
-      apply/orP/or_intror/bigcupP.
-      move/tnthP: (Hin) => [i Hi].
-      exists i => //.
-      by rewrite -Hi /= -mem_enum.
-    move: Hts.
-    rewrite dest_ports_seqs_step => /bigcupP [t' Ht'].
-    move/imsetP => /= [ts' Hts' eqts].
-    subst ts.
-    rewrite !tbeheadE theadE.
-    move: (Hsb).
-    rewrite -mem_enum -index_mem -cardE => Hidx'.
-    move: (memt_nth (def_port,set0) t' Hidx').
-    set epn' := nth _ _ _.
-    case_eq epn' => ep' en' def' Hin'.
-    rewrite {}/epn' in def'.
-    destruct (conodes_step_it Ht') as [Hct' Hbt'].
-    + rewrite -tree_like_switch.
-      move: Htl; rewrite /c' /= !tuple_to_partial_enumK.
-      apply: tree_like_rev_switch_step_it.
-    + exact/connected_switch/connected_step_it.
-    destruct (@add_edge_step_it (switch (step_it c t)) s t' ep' en')
-        as [Hsd Hse] => //.
-    rewrite -switchK_edges // in Hse.
-    have Hs' : ep' = switch_edges c' s.
-      rewrite -Hse /c' /= !tuple_to_partial_enumK.
-      rewrite -(proj2 (@monotonic_switch_progress
-                         (fun c => switch_step_it c ts') _ _ _)) //.
-        apply: (proj1 (monotonic_switch_step_it _ _)).
-      apply: (proj2 (monotonic_switch_step_it _ _)).
-    rewrite ffunE def' Hs' /c'.
-    rewrite (@node_of_hemi_comp_graph _ en').
-        congr Node.
-        apply/eq_in_map => q.
-        rewrite mem_enum -Hs' => Hq.
-        rewrite negk_involution switchK.
-        rewrite (IHl k (switch (step_it (switch (step_it c t)) t'))).
-        + by rewrite /= !tuple_to_partial_enumK.
-        + rewrite Hbt' inE big_tuple.
-          apply/orP/or_intror/bigcupP.
-          exists (Ordinal Hidx') => //.
-          move: Hq.
-          by rewrite (tnth_nth (def_port,set0)) def'.
-        + by [].
-        + by rewrite /c' /= !tuple_to_partial_enumK in Htl.
-        + exact/connected_switch/connected_step_it/connected_switch/connected_step_it.
-      rewrite -Hs'.
-      move: Ht'; rewrite inE => /and3P[] /allP /(_ _ Hin') /=.
-      by rewrite inE => /andP [].
-    rewrite /= !tuple_to_partial_enumK.
+- move: Ht; rewrite inE => /and3P[] /allP /(_ _ Hin) /=.
+  by rewrite inE => /andP [].
+- destruct ts as [ts Hsz].
+  destruct ts as [|t' ts'] => //.
+  move/eqP: (Hsz) => [] /eqP Hsz'.
+  rewrite /c' /=.
+  apply/(subsetP (monotone_conodes_switch_step_it _ (Tuple Hsz'))).
+  rewrite /= part_nodes_step_it /= tuple_to_partial_enumK -Hct inE.
+  apply/orP/or_introl.
+  rewrite inE.
+  exact: (map_f snd Hin).
+- rewrite ffunE def.
+  rewrite /image_mem.
+  congr Node.
+  apply/eq_in_map => s Hs.
+  have Hsb : s \in border (conodes (step_it c t)).
+    rewrite Hbt inE big_tuple.
+    apply/orP/or_intror/bigcupP.
+    move/tnthP: (Hin) => [i Hi].
+    exists i => //.
+    by rewrite -Hi /= -mem_enum.
+  move: Hts.
+  rewrite dest_ports_seqs_step => /bigcupP [t' Ht'].
+  move/imsetP => /= [ts' Hts' eqts].
+  subst ts.
+  rewrite !tbeheadE theadE.
+  move: (Hsb).
+  rewrite -mem_enum -index_mem -cardE => Hidx'.
+  move: (memt_nth (def_port,set0) t' Hidx').
+  set epn' := nth _ _ _.
+  case_eq epn' => ep' en' def' Hin'.
+  rewrite {}/epn' in def'.
+  destruct (conodes_step_it Ht') as [Hct' Hbt'].
+  + rewrite -tree_like_switch.
+    move: Htl; rewrite /c' /= !tuple_to_partial_enumK.
+    apply: tree_like_rev_switch_step_it.
+  + exact/connected_switch/connected_step_it.
+  destruct (@add_edge_step_it (switch (step_it c t)) s t' ep' en')
+      as [Hsd Hse] => //.
+  rewrite -switchK_edges // in Hse.
+  have Hs' : ep' = switch_edges c' s.
+    rewrite -Hse /c' /= !tuple_to_partial_enumK.
+    rewrite -(proj2 (@monotonic_switch_progress
+                       (fun c => switch_step_it c ts') _ _ _)) //.
+      apply: (proj1 (monotonic_switch_step_it _ _)).
+    apply: (proj2 (monotonic_switch_step_it _ _)).
+  rewrite ffunE def' Hs' /c'.
+  rewrite (@node_of_hemi_comp_graph _ en').
+  + rewrite -Hs'.
+    move: Ht'; rewrite inE => /and3P[] /allP /(_ _ Hin') /=.
+    by rewrite inE => /andP [].
+  + rewrite /= !tuple_to_partial_enumK.
     apply: (subsetP (monotone_nodes_switch_step_it _ _)).
     rewrite /= -Hct'.
     rewrite inE; apply/orP/or_introl.
     rewrite inE.
-    apply: (map_f snd Hin').
-  move: Ht; rewrite inE => /and3P[] /allP /(_ _ Hin) /=.
-  by rewrite inE => /andP [].
-destruct ts as [ts Hsz].
-destruct ts as [|t' ts'] => //.
-move/eqP: (Hsz) => [] /eqP Hsz'.
-rewrite /c' /=.
-apply/(subsetP (monotone_conodes_switch_step_it _ (Tuple Hsz'))).
-rewrite /= part_nodes_step_it /= tuple_to_partial_enumK -Hct inE.
-apply/orP/or_introl.
-rewrite inE.
-apply: (map_f snd Hin).
+    by apply: (map_f snd Hin').
+  + congr Node.
+    apply/eq_in_map => q.
+    rewrite mem_enum -Hs' => Hq.
+    rewrite negk_involution switchK.
+    rewrite (IHl k (switch (step_it (switch (step_it c t)) t'))).
+    * rewrite Hbt' inE big_tuple.
+      apply/orP/or_intror/bigcupP.
+      exists (Ordinal Hidx') => //.
+      move: Hq.
+      by rewrite (tnth_nth (def_port,set0)) def'.
+    * by [].
+    * by rewrite /c' /= !tuple_to_partial_enumK in Htl.
+    * exact/connected_switch/connected_step_it/connected_switch/connected_step_it.
+    * by rewrite /= !tuple_to_partial_enumK.
 Qed.
 
 Lemma tree'_of_trace_graph l pn (seqs : l.*2.+1.-tuple _) :
@@ -4236,6 +4234,14 @@ have Hp' : ep = switch_edges c' p.
   + by apply: (proj2 (monotonic_switch_step_it _ _)).
 rewrite -Hp'.
 rewrite (@node_of_hemi_comp_graph _ en).
++ move: Ht; rewrite inE => /and3P[] /allP /= /(_ _ Hin).
+  by rewrite /= !inE /= => /andP [].
++ rewrite /c'.
+  apply: (subsetP (monotone_nodes_switch_step_it _ _)).
+  rewrite /= -Hct.
+  rewrite inE; apply/orP/or_introl.
+  rewrite inE.
+  by apply/mapP; exists (ep,en).
 + congr Node.
   apply/eq_in_map => q.
   rewrite mem_enum switchK => /= Hq.
@@ -4245,14 +4251,6 @@ rewrite (@node_of_hemi_comp_graph _ en).
     exists (Ordinal Hidx) => //.
     by rewrite (tnth_nth (def_port,set0)) Heqn.
   - exact/connected_switch/connected_step_it.
-+ move: Ht; rewrite inE => /and3P[] /allP /= /(_ _ Hin).
-  by rewrite /= !inE /= => /andP [].
-+ rewrite /c'.
-  apply: (subsetP (monotone_nodes_switch_step_it _ _)).
-  rewrite /= -Hct.
-  rewrite inE; apply/orP/or_introl.
-  rewrite inE.
-  by apply/mapP; exists (ep,en).
 Qed.
 
 End tree_of_trace.
@@ -4290,24 +4288,24 @@ Lemma weighted_count_next (P : pred ({set port} * comp_graph port)) :
 Proof.
 rewrite /weighted_count big_map big_mkcond big_enum_in /build_traces /=.
 rewrite curry_imset2l_dep.
-rewrite partition_disjoint_bigcup /=; last first.
+rewrite partition_disjoint_bigcup /=.
   move=> i j Hij.
   rewrite disjoints_subset.
   apply/subsetP => x /imsetP [y Hy ->] {x}.
   rewrite inE.
   apply/negP => /imsetP [z Hz] [] /eqP.
   by rewrite (negbTE Hij).
-rewrite (bigID (fun i => start_dist i == 0)) big1 /= ?add0r; last first.
+rewrite (bigID (fun i => start_dist i == 0)) big1 /= ?add0r.
   move=> i Hi.
   rewrite big_imset /=.
-    rewrite big1 // => j Hj.
-    case: ifP => _ //.
-    rewrite /graph_of_trace (eqP Hi) switch_step_dist_it_const.
-    destruct switch_step_dist_it.
-    by rewrite mul0r.
-  by move => a b _ _ [].
+    by move => a b _ _ [].
+  rewrite big1 // => j Hj.
+  case: ifP => _ //.
+  rewrite /graph_of_trace (eqP Hi) switch_step_dist_it_const.
+  destruct switch_step_dist_it.
+  by rewrite mul0r.
 apply: eq_bigr => i Hi.
-rewrite big_imset /=; last first.
+rewrite big_imset /=.
   by move => a b _ _ [].
 rewrite big_map [RHS]big_mkcond big_enum_in /=.
 apply: eq_bigr => j Hj /=.
@@ -4393,7 +4391,7 @@ transitivity (\sum_pn start_dist pn).
 rewrite partition_big_nodes_arities.
 rewrite /start_dist.
 rewrite (bigID (fun j : 'I_#|port|.+1 => j == 0)) /=.
-rewrite big1 /= ?add0r; last first.
+rewrite big1 /= ?add0r.
   move=> i /eqP Hi.
   rewrite big1 // => j /eqP Hj.
   case: ifP => //.
@@ -4411,11 +4409,11 @@ transitivity (\sum_(j < #|port|.+1 | j != 0) lam`_(j.-1)).
   rewrite -[RHS]mulr1.
   f_equal.
   rewrite -big_distrl -[RHS](@divff K ('C(#|port|, k))%:R) /=.
-    f_equal.
-    by rewrite -card_draws sumr_const cardsE.
-  apply: lt0r_neq0.
-  rewrite ltr0n bin_gt0.
-  by apply: (ltn_ord k).
+    apply: lt0r_neq0.
+    rewrite ltr0n bin_gt0.
+    by apply: (ltn_ord k).
+  f_equal.
+  by rewrite -card_draws sumr_const cardsE.
 have HlamE : (size lam <= #|port|)%nat.
   apply: (leq_trans Hlam).
   rewrite (leq_trans _ (ltnW Hmaxlen)) //.
@@ -4440,9 +4438,9 @@ apply: le_sum_all.
 - by rewrite /= Hw ltr01.
 - move=> i Hi.
   rewrite (@weighted_count_switch_it maxdeg def_port maxdeg) //.
-  + rewrite lt_def Hi /=; exact: start_dist_ge0.
   + by rewrite card_ports_nodes_start // Hi.
   + by rewrite /known_coports /ports /= big_set0 cards0.
+  + by rewrite lt_def Hi /=; exact: start_dist_ge0.
 - move=> /= i Hi.
   apply: tree_like_after => //.
   + by apply: connected_start.

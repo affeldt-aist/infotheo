@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg finalg perm zmodp.
-From mathcomp Require Import matrix vector ssrnum lra ring.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg finalg perm zmodp.
+From mathcomp Require Import matrix vector ssrnum arithmetic_tactic ring_tactic.
 From mathcomp Require Import Rstruct reals.
 Require Import realType_ext ssr_ext ssralg_ext num_occ bigop_ext.
 Require Import fdist channel pproba f2 linearcode subgraph_partition tanner.

@@ -2,8 +2,8 @@
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 From Stdlib Require Import Init.Wf Recdef.
-From mathcomp Require Import all_boot perm zmodp matrix ssralg ssrnum.
-From mathcomp Require Import Rstruct reals ring lra.
+From mathcomp Require Import boot perm zmodp matrix ssralg ssrnum.
+From mathcomp Require Import Rstruct reals ring_tactic arithmetic_tactic.
 Require Import f2 subgraph_partition tanner.
 Require Import fdist channel pproba linearcode ssralg_ext.
 Require Import tanner_partition summary ldpc checksum.

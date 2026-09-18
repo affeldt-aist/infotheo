@@ -1,11 +1,12 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix.
-From mathcomp Require Import perm interval_inference lra ring.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum matrix.
+From mathcomp Require Import perm interval_inference arithmetic_tactic.
+From mathcomp Require Import ring_tactic field_tactic.
 From mathcomp Require boolp.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
-From mathcomp Require Import mathcomp_extra reals.
+From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext realType_ext fdist convex.
 
 (****************************************************************************)

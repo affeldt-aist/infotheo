@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 Require Program.Wf.
-From mathcomp Require Import all_boot ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import boot ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import ssr_ext ssralg_ext num_occ f2 hamming tanner linearcode.
 

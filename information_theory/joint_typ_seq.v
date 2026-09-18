@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssrnum ssrint ssralg matrix.
-From mathcomp Require Import lra ring archimedean.
-From mathcomp Require Import mathcomp_extra Rstruct reals exp.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssrnum ssrint ssralg matrix archimedean.
+From mathcomp Require Import arithmetic_tactic ring_tactic field_tactic.
+From mathcomp Require Import Rstruct reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq channel.
 
@@ -55,8 +55,7 @@ Local Open Scope ring_scope.
 Import Order.Theory GRing.Theory Num.Theory.
 
 Section joint_typ_seq_definition.
-Variables A B : finType.
-Variable P : {fdist A}.
+Context {A B : finType} (P : {fdist A}).
 Variable W : `Ch(A, B).
 Variable n : nat.
 Variable epsilon : R.

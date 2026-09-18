@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order all_algebra zmodp matrix.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order algebra zmodp matrix.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext realType_ext bigop_ext fdist proba.
 Require Import channel jfdist_cond.
@@ -30,7 +30,6 @@ Reserved Notation "P ''_' n0 '`^^' W '(' a '|' y ')'" (at level 1,
 Reserved Notation "P .-receivable W" (at level 2, format "P .-receivable  W").
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -64,7 +63,7 @@ Proof.
 apply/idP/idP => [|H].
 - case/existsP => /= x /andP[Px0].
   apply: contra => /eqP /psumr_eq0P => /= H.
-  rewrite -(@mulrI_eq0 _ (P x)); last by rewrite /GRing.lreg; apply: mulfI.
+  rewrite -(@mulrI_eq0 _ (P x)); first by rewrite /GRing.lreg; apply: mulfI.
   by rewrite H// => /= x' _; rewrite mulr_ge0//.
 - have /= : \sum_(x in setT) P x * W ``(y | x) != 0.
     apply: contra H => /eqP H; apply/eqP.
@@ -176,7 +175,7 @@ rewrite mulrC mulrA.
 congr (_ * _).
 rewrite fdist_uniform_supp_restrict.
 rewrite -invfM//.
-rewrite (eq_bigr (fun t => 1 / #|C|%:R * W ``(y | t))); last first.
+rewrite (eq_bigr (fun t => 1 / #|C|%:R * W ``(y | t))).
   move=> *; rewrite fdist_uniform_supp_in//.
   by rewrite mul1r.
 rewrite /K /post_prob_uniform_cst; congr (_^-1)%R.

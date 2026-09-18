@@ -1,13 +1,13 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix interval.
-From mathcomp Require Import ring.
+From mathcomp Require Import boot order ssralg ssrnum matrix interval.
+From mathcomp Require Import interval_inference ring_tactic.
 From mathcomp Require boolp.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
-From mathcomp Require Import mathcomp_extra reals.
-From mathcomp Require Import interval_inference set_interval.
+From mathcomp Require Import reals.
+From mathcomp Require Import set_interval.
 (* ssrfun and functions are defining incompatible notations [fun ... ]*)
 #[warning="-notation-incompatible-prefix"]
 From mathcomp Require Import functions topology normedtype realfun derive exp.

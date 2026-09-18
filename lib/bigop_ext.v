@@ -675,7 +675,7 @@ Notation "\rmax_ ( i <- r ) F" :=  (\big[Order.max/GRing.zero]_(i <- r) F)
            format "'[' \rmax_ ( i  <-  r ) '/  '  F ']'").
 
 Section order.
-Import classical.mathcomp_extra Order.Theory.
+Import Order.Theory.
 Local Open Scope ring_scope.
 Local Open Scope order_scope.
 
