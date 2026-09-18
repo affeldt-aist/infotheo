@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix lra.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum matrix arithmetic_tactic.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext.
 
@@ -9,7 +9,6 @@ Require Import ssr_ext ssralg_ext.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -54,8 +53,8 @@ Lemma big_bool (f : bool -> R) : \big[M/idx]_(i in {:bool}) f i = M (f false) (f
 Proof.
 set h : 'I_2 -> bool := [eta (fun=>false) with ord0 |-> false, lift ord0 ord0 |-> true].
 set h' : bool -> 'I_2 := fun x => match x with false => ord0 | true => lift ord0 ord0 end.
-rewrite (reindex_onto h h') /=; last by move=> i _; rewrite /h /h'; case: ifP.
-rewrite (eq_bigl xpredT); last first.
+rewrite (reindex_onto h h') /=; first by move=> i _; rewrite /h /h'; case: ifP.
+rewrite (eq_bigl xpredT).
   move=> i; move: (ord2 i) => /orP[|] /eqP -> /=; first by rewrite eqxx.
   exact/eqP/val_inj.
 by rewrite big_ord_recl /= big_ord_recl big_ord0 Monoid.addm0.
@@ -70,7 +69,7 @@ Lemma big_rV0_row_of_tuple f (P : pred _) :
 Proof.
 rewrite -big_map /= /index_enum -enumT /=.
 set e := enum _.
-rewrite (_ : e = [:: row_of_tuple [tuple]]).
+rewrite (_ : e = [:: row_of_tuple [tuple]]); last first.
   by rewrite /= big_cons big_nil Monoid.addm0.
 rewrite /e.
 apply: (@eq_from_nth _ (row_of_tuple [tuple])).
@@ -99,7 +98,7 @@ Lemma bigA_distr (R : Type) (zero one : R) (times : Monoid.mul_law zero)
 Proof.
 pose F12 i (j : bool) := if ~~ j then F1 i else F2 i.
 under eq_bigr=> i.
-  rewrite (_: plus (F1 i) (F2 i) = \big[plus/zero]_j F12 i j); last first.
+  rewrite (_: plus (F1 i) (F2 i) = \big[plus/zero]_j F12 i j).
     rewrite (bigID (fun i => i == false)) big_pred1_eq (big_pred1 true) //.
     by case.
   over.
@@ -107,7 +106,7 @@ rewrite bigA_distr_bigA big_mkord (partition_big
   (fun i : {ffun I -> bool} => inord #|[set x | i x]|)
   (fun j : 'I_#|I|.+1 => true)) //=.
 apply/eq_big =>// i _.
-rewrite (reindex (fun s : {set I} => [ffun x => x \in s])); last first.
+rewrite (reindex (fun s : {set I} => [ffun x => x \in s])).
   apply: onW_bij.
   exists (fun f : {ffun I -> bool} => [set x | f x]).
   by move=> s; apply/setP => v; rewrite inE ffunE.
@@ -175,7 +174,7 @@ have -> : \big[op/idx]_(j <- bs) \big[op/idx]_(i <- h ++ t | f i == j) F i =
   have : uniq (b :: bs) by rewrite -H undup_uniq.
   move: fab; rewrite /= in_cons in_nil orbC /= => /eqP ?; subst b.
   by rewrite b0bs.
-rewrite -IH //; last first.
+rewrite -IH //.
   have : uniq (h ++ t) by rewrite -(perm_uniq H1).
   by rewrite cat_uniq => /and3P[].
 suff -> : \big[op/idx]_(i <- h ++ t | f i == b) F i = \big[op/idx]_(i <- h) F i.
@@ -339,9 +338,9 @@ Qed.
 Lemma big_setX (a : {set A}) (b : {set B}) f :
   \big[M/idx]_(x in a `* b) f x = \big[M/idx]_(x in a) \big[M/idx]_(y in b) f (x, y).
 Proof.
-rewrite (eq_bigl (fun x => (x.1 \in a) && (x.2 \in b))); last first.
+rewrite (eq_bigl (fun x => (x.1 \in a) && (x.2 \in b))).
   by case=> x y; rewrite in_setX.
-rewrite (eq_bigr (fun x => f (x.1, x.2))); last by case.
+rewrite (eq_bigr (fun x => f (x.1, x.2))); first by case.
 by rewrite -(pair_big _ _ (fun a b => f (a, b))).
 Qed.
 
@@ -349,7 +348,7 @@ Lemma big_rV_prod n f (X : {set 'rV[A * B]_n}) :
   \big[M/idx]_(a in 'rV[A * B]_n | a \in X) f a =
   \big[M/idx]_(a in {: 'rV[A]_n * 'rV[B]_n} | (prod_rV a) \in X) f (prod_rV a).
 Proof.
-rewrite (reindex_onto (@rV_prod _ _ _) (@prod_rV _ _ _)) //=; last first.
+rewrite (reindex_onto (@rV_prod _ _ _) (@prod_rV _ _ _)) //=.
   move=> ? _; by rewrite prod_rVK.
 apply: eq_big => [?|? _]; by rewrite rV_prodK // eqxx andbC.
 Qed.
@@ -363,7 +362,7 @@ Lemma big_rV_1 f g (P : pred _) (Q : pred _):
   \big[M/idx]_(i in 'rV[A]_1 | P i) f i = \big[M/idx]_(i in A | Q i) g i.
 Proof.
 move=> FG PQ.
-rewrite (reindex_onto (fun i => \row_(j < 1) i) (fun p => p ``_ ord0)) /=; last first.
+rewrite (reindex_onto (fun i => \row_(j < 1) i) (fun p => p ``_ ord0)) /=.
   move=> m Pm.
   apply/rowP => a; by rewrite {a}(ord1 a) mxE.
 apply: eq_big => a.
@@ -376,9 +375,9 @@ Lemma big_rV1_ord0 (f : A -> R) k :
 Proof.
 move=> <-.
 rewrite (reindex_onto (fun j => \row_(i < 1) j) (fun p => p ``_ ord0)) /=.
+- move=> t _; apply/rowP => a; by rewrite (ord1 a) mxE.
 - apply: eq_big => a; first by rewrite mxE eqxx inE.
   move=> _; by rewrite mxE.
-- move=> t _; apply/rowP => a; by rewrite (ord1 a) mxE.
 Qed.
 
 Local Open Scope vec_ext_scope.
@@ -389,7 +388,7 @@ Lemma big_rV_cons n (F : 'rV[A]_n.+1 -> R) (a : A) (i0 : 'I_n.+1) : i0 = ord0 ->
   \big[M/idx]_(v in 'rV[A]_n.+1 | v ``_ i0 == a) (F v).
 Proof.
 move=> i00.
-rewrite [in RHS](reindex_onto (row_mx (\row_(k < 1) a)) rbehead) /=; last first.
+rewrite [in RHS](reindex_onto (row_mx (\row_(k < 1) a)) rbehead) /=.
   move=> m /eqP <-; by rewrite i00 row_mx_rbehead.
 apply: eq_bigl => ?; by rewrite i00 rbehead_row_mx eqxx andbT row_mx_row_ord0 eqxx.
 Qed.
@@ -399,7 +398,7 @@ Lemma big_rV_behead n (F : 'rV[A]_n.+1 -> R) (w : 'rV[A]_n) :
   \big[M/idx]_(v in 'rV[A]_n.+1 | rbehead v == w) (F v).
 Proof.
 rewrite [in RHS](reindex_onto
-  (fun p => row_mx (\row_(k < 1) p) w) (fun p => p ``_ ord0) ) /=; last first.
+  (fun p => row_mx (\row_(k < 1) p) w) (fun p => p ``_ ord0) ) /=.
   move=> i /eqP <-; by rewrite row_mx_rbehead.
 apply: eq_bigl => ?; by rewrite rbehead_row_mx eqxx /= row_mx_row_ord0 eqxx.
 Qed.
@@ -409,10 +408,10 @@ Lemma big_rV_cons_behead_support n (F : 'rV[A]_n.+1 -> R)
   \big[M/idx]_(a in X1) \big[M/idx]_(v in X2) (F (row_mx (\row_(k < 1) a) v)) =
   \big[M/idx]_(w in 'rV[A]_n.+1 | (w ``_ ord0 \in X1) && (rbehead w \in X2)) (F w).
 Proof.
-rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord0) (mem X1)) /=; last first.
+rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord0) (mem X1)) /=.
   by move=> i /andP[].
 apply: eq_bigr => i Hi.
-rewrite (reindex_onto (fun j => row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
+rewrite (reindex_onto (fun j => row_mx (\row_(k < 1) i) j) rbehead) /=.
   move=> j /andP[] => _ /eqP => <-; by rewrite row_mx_rbehead.
 apply: eq_big => //= x; by rewrite row_mx_row_ord0 rbehead_row_mx !eqxx Hi !andbT.
 Qed.
@@ -423,10 +422,10 @@ Lemma big_rV_cons_behead n (F : 'rV[A]_n.+1 -> R)
     \big[M/idx]_(j in 'rV[A]_n | P2 j) (F (row_mx (\row_(k < 1) i) j)) =
   \big[M/idx]_(p in 'rV[A]_n.+1 | (P1 (p ``_ ord0)) && (P2 (rbehead p)) ) (F p).
 Proof.
-rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord0) P1) /=; last first.
+rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => x ``_ ord0) P1) /=.
   by move=> i /andP[].
 apply: eq_bigr => i Hi.
-rewrite (reindex_onto (fun j => row_mx (\row_(k < 1) i) j) rbehead) /=; last first.
+rewrite (reindex_onto (fun j => row_mx (\row_(k < 1) i) j) rbehead) /=.
     move=> j /andP[] Hj1 /eqP => <-; by rewrite row_mx_rbehead.
 apply: eq_big => //= x; by rewrite row_mx_row_ord0 rbehead_row_mx 2!eqxx Hi !andbT.
 Qed.
@@ -437,11 +436,11 @@ Lemma big_rV_belast_last n (F : 'rV[A]_n.+1 -> R)
     \big[M/idx]_(j in A | P2 j) (F (castmx (erefl, addn1 n) (row_mx i (\row_(k < 1) j)))) =
   \big[M/idx]_(p in 'rV[A]_n.+1 | (P1 (rbelast p)) && (P2 (rlast p)) ) (F p).
 Proof.
-rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => rlast x) P2) /=; last first.
+rewrite [in RHS](partition_big (fun x : 'rV_n.+1 => rlast x) P2) /=.
   by move=> i /andP[].
 rewrite exchange_big.
 apply: eq_bigr => i Hi.
-rewrite (reindex_onto (fun j => (castmx (erefl 1%nat, addn1 n) (row_mx j (\row_(k < 1) i)))) rbelast) /=; last first.
+rewrite (reindex_onto (fun j => (castmx (erefl 1%nat, addn1 n) (row_mx j (\row_(k < 1) i)))) rbelast) /=.
     move=> j /andP[] Hj1 /eqP => <-; by rewrite row_mx_rbelast.
 apply: eq_big => //= x.
 by rewrite row_mx_row_ord_max rbelast_row_mx 2!eqxx !andbT Hi andbT.
@@ -514,20 +513,20 @@ have ->: \bigcup_(i in V) F i = cover Q.
     rewrite inE => -> /=.
     by case: ifP => // /eqP.
   by rewrite inE => ->.
-rewrite big_trivIset // big_imset => [|i j _ /setIdP[_ notFj0] eqFij].
-  rewrite big_mkcond [in X in _ = X]big_mkcond.
-  apply: eq_bigr => i _.
-  rewrite inE.
-  case: ifP.
-    by case/andP=> ->.
-  move/negbT.
-  rewrite negb_and.
-  case/orP.
-    by move/negbTE => ->.
-  rewrite negbK => /eqP Fi.
-  case: ifP => //.
-  by rewrite Fi big_set0.
-by apply: contraNeq (disjF _ _) _; rewrite -setI_eq0 eqFij setIid.
+rewrite big_trivIset // big_imset => [i j _ /setIdP[_ notFj0] eqFij|].
+  by apply: contraNeq (disjF _ _) _; rewrite -setI_eq0 eqFij setIid.
+rewrite big_mkcond [in X in _ = X]big_mkcond.
+apply: eq_bigr => i _.
+rewrite inE.
+case: ifP.
+  by case/andP=> ->.
+move/negbT.
+rewrite negb_and.
+case/orP.
+  by move/negbTE => ->.
+rewrite negbK => /eqP Fi.
+case: ifP => //.
+by rewrite Fi big_set0.
 Qed.
 
 End MyPartitions.
@@ -546,7 +545,7 @@ Lemma big_tuple_ffun (I J : finType) (F : {ffun I -> J} -> R)
   \big[+%M/@GRing.zero V]_(j : #|I|.-tuple J) G (F [ffun x => tnth j (enum_rank x)]) (nth jdef j 0)
     = \big[+%M/@GRing.zero V]_(f : {ffun I -> J}) G (F f) (f (nth idef (enum I) 0)).
 Proof.
-rewrite (reindex_onto (fun y => fgraph y) (fun p => [ffun x => tnth p (enum_rank x)])); last first.
+rewrite (reindex_onto (fun y => fgraph y) (fun p => [ffun x => tnth p (enum_rank x)])).
   move=> t _; by apply/eq_from_tnth => i; rewrite tnth_fgraph ffunE enum_valK.
 apply: eq_big.
   move=> f /=; apply/eqP/ffunP => i; by rewrite ffunE tnth_fgraph enum_rankK.
@@ -632,7 +631,7 @@ Lemma ler_sum_predU [P Q : pred I] (F : I -> R) :
 Proof.
 move=> F0.
 under eq_bigr => i _.
-  rewrite (_ : F i = if Q i then F i else F i); last by case: ifP.
+  rewrite (_ : F i = if Q i then F i else F i); first by case: ifP.
   over.
 rewrite big_if /=.
 under eq_bigl do rewrite orbC orbK.
@@ -735,14 +734,14 @@ Lemma big_union_nondisj (R : Type) (idx : R) (M : Monoid.com_law idx)
 Proof.
 move=> I0.
 rewrite -setIUY big_union_disj 1?disjoint_sym ?setIYI_disj //.
-rewrite I0 Monoid.opm1 big_union_disj; last first.
+rewrite I0 Monoid.opm1 big_union_disj.
   by rewrite -setI_eq0 setIDA setIC Order.SetSubsetOrder.setIDv // set0D.
   (* Order.SetSubsetOrder.setIDv is B :&: (A :\: B) = set0 *)
 set lhs := LHS.
-rewrite -(setID X1 X2) big_union_disj; last first.
+rewrite -(setID X1 X2) big_union_disj.
   by rewrite -setI_eq0 setIC -setIA Order.SetSubsetOrder.setIDv // setI0.
 rewrite I0 Monoid.op1m.
-rewrite -[in X in M _ X](setID X2 X1) big_union_disj; last first.
+rewrite -[in X in M _ X](setID X2 X1) big_union_disj.
   by rewrite -setI_eq0 setIC -setIA Order.SetSubsetOrder.setIDv // setI0.
 by rewrite setIC I0 Monoid.op1m.
 Qed.
@@ -750,9 +749,7 @@ Qed.
 End big_union.
 
 Section bigID_setC.
-Context {X : finType} {R : pzRingType}.
-Variable f0 : X -> R.
-Variable S : {set  X}.
+Context {X : finType} {R : pzRingType} (f0 : X -> R) (S : {set  X}).
 Local Open Scope ring_scope.
 
 (* TODO: this is maybe not very useful, try to get rid of it *)

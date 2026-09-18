@@ -1,10 +1,10 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum ssrint archimedean.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum ssrint archimedean.
 From mathcomp Require Import interval.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for inv_fun *)
-From mathcomp Require Import mathcomp_extra boolp classical_sets.
+From mathcomp Require Import boolp classical_sets.
 (* ssrfun and functions are defining incompatible notations [fun ... ]*)
 #[warning="-notation-incompatible-prefix"]
 From mathcomp Require Import functions.
@@ -778,9 +778,7 @@ Proof.
 move=> z.
 apply: cvgB => //.
   apply: cvg_comp; last exact: continuous_at_xlnx.
-  apply: cvgB.
-    exact: cvg_cst.
-  exact: cvg_id.
+  exact: cvgB.
 by apply: continuous_at_xlnx.
 Qed.
 

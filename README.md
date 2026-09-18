@@ -29,20 +29,15 @@ information theory, and linear error-correcting codes.
   - Alessandro Bruni, IT-University of Copenhagen
 - License: [LGPL-2.1-or-later](LICENSE)
 - Additional dependencies:
-  - [MathComp ssreflect](https://math-comp.github.io)
-  - [MathComp fingroup](https://math-comp.github.io)
-  - [MathComp algebra](https://math-comp.github.io)
-  - [MathComp solvable](https://math-comp.github.io)
-  - [MathComp field](https://math-comp.github.io)
+  - Rocq core
+  - [MathComp](https://github.com/math-comp/math-comp)
   - [MathComp analysis](https://github.com/math-comp/analysis)
   - [MathComp analysis reals standard library](https://github.com/math-comp/analysis)
   - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
-  - [Hierarchy Builder](https://github.com/math-comp/hierarchy-builder)
-  - [MathComp algebra tactics](https://github.com/math-comp/algebra-tactics)
   - [CoqInterval](https://gitlab.inria.fr/coqinterval)
 - Rocq/Coq namespace: `infotheo`
 - Related publication(s):
-  - [An Approach to Formalize Information-Theoretic Security of Multiparty Computation Protocols](https://link.springer.com/chapter/10.1007/978-3-031-95497-9_11) doi:[10.1007/978-3-031-95497-9_11](https://doi.org/10.1007/978-3-031-95497-9_11)
+  - [An Approach to Formalize Information-Theoretic Security of Multiparty Computation Protocols.](https://link.springer.com/chapter/10.1007/978-3-031-95497-9_11) doi:[10.1007/978-3-031-95497-9_11](https://doi.org/10.1007/978-3-031-95497-9_11)
   - [Robust Mean Estimation by All Means (short paper)](https://drops.dagstuhl.de/storage/00lipics/lipics-vol309-itp2024/LIPIcs.ITP.2024.39/LIPIcs.ITP.2024.39.pdf) doi:[10.4230/LIPIcs.ITP.2024.39](https://doi.org/10.4230/LIPIcs.ITP.2024.39)
   - [Trimming Data Sets: a Verified Algorithm for Robust Mean Estimation](https://dl.acm.org/doi/abs/10.1145/3479394.3479412) doi:[10.1145/3479394.3479412](https://doi.org/10.1145/3479394.3479412)
   - [Formal Adventures in Convex and Conical Spaces](https://arxiv.org/abs/2004.12713) doi:[10.1007/978-3-030-53518-6_2](https://doi.org/10.1007/978-3-030-53518-6_2)
@@ -88,7 +83,8 @@ Ryosuke Obi (Chiba U.) (commit a67da5e24eaaabb345d225a5bd0f5e86d35413a8)
 
 Commit 64814f529c1819684c4b8060d0779c24c6339041 was originally by Karl Palmskog.
 
-The formalization of modern coding theory is a collaboration with
+The formalization of modern coding theory is a collaboration with K. Kasai, S. Kuzuoka, R. Obi.
+
 Y. Takahashi collaborated to the formalization of linear error-correcting codes.
 
 This work was partially supported by a JSPS Grant-in-Aid for Scientific Research
