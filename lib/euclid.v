@@ -138,8 +138,9 @@ elim/pair_ind: i => [||k [Hk1 Hk]].
 rewrite /v uvE.
 transitivity (- q k.+2 * (u k.+1 * r 0 + v k.+1 * r 1) + (u k * r 0 + v k * r 1)).
   by rewrite -Hk -Hk1 (rE k) addrA addrC [in X in _ + X]addrC mulNr subrr addr0.
-rewrite mulrDl mulrDr mulrA -2!addrA; congr (_ + _).
-rewrite mulrDl [in RHS]addrC mulrA -addrA; congr (_ + _); by rewrite addrC.
+rewrite (mulrDl _ _ (r 0)) (mulrDr (- q k.+2)) [in LHS]mulrA.
+rewrite -!addrA; congr (_ + _).
+by rewrite mulrDl [in RHS]addrC mulrA -addrA; congr (_ + _); rewrite addrC.
 Qed.
 
 Lemma ltn_size_r i : 1 <= i -> r i != 0 -> size (r i.+1) < size (r i).

@@ -46,7 +46,6 @@ Require Import ssr_ext ssralg_ext poly_ext f2 hamming decoding channel_code.
 Import GRing.Theory.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -118,7 +117,7 @@ Definition kernel : Lcode0.t F n := lker hom_syndrome.
 
 Lemma dim_hom_syndrome_ub : \dim (limg hom_syndrome) <= m.
 Proof.
-rewrite [in X in _ <= X](_ : m = \dim (fullv : {vspace 'rV[F]_m})); last first.
+rewrite [in X in _ <= X](_ : m = \dim (fullv : {vspace 'rV[F]_m})).
   by rewrite dimvf/= /dim/= mul1n.
 by rewrite dimvS // subvf.
 Qed.
@@ -129,8 +128,8 @@ Proof. by rewrite memv_ker lfunE. Qed.
 Lemma dim_kernel (Hm : \rank H = m) (mn : m <= n) : \dim kernel = (n - m)%N.
 Proof.
 move: (limg_ker_dim hom_syndrome fullv).
-rewrite (_ : (fullv :&: _)%VS = kernel); last exact/capv_idPr/subvf.
-rewrite (_ : \dim fullv = n); last by rewrite dimvf /dim /= mul1n.
+rewrite (_ : (fullv :&: _)%VS = kernel); first exact/capv_idPr/subvf.
+rewrite (_ : \dim fullv = n); first by rewrite dimvf /dim /= mul1n.
 move=> kerimg; rewrite -{}[in RHS]kerimg.
 suff -> : \dim (limg hom_syndrome) = m by rewrite addnK.
 set K := castmx (erefl, Hm) (col_base H).
@@ -143,7 +142,7 @@ rewrite basisEfree; apply/and3P; split.
 - apply/freeP => k kb m0; apply/eqP/negPn/negP => abs.
   have kK0 : \row_i k i *m K^T = const_mx 0 *m K^T.
     rewrite mul0mx; apply/rowP => m1.
-    rewrite !mxE (eq_bigr (fun j => k j * b`_j 0 m1)); last first.
+    rewrite !mxE (eq_bigr (fun j => k j * b`_j 0 m1)).
       by move=> m2 _; rewrite !mxE /b nth_mktuple !mxE.
     move/rowP : kb => /(_ m1).
     rewrite !mxE summxE => kb0; rewrite -{}[RHS]kb0.
@@ -187,8 +186,8 @@ Lemma dim_dual_code : (\dim (kernel H) + \dim dual_code = n)%N.
 Proof.
 move: (limg_ker_dim (linfun (syndrome H)) fullv).
 rewrite -/(kernel H).
-rewrite (_ : (fullv :&: _)%VS = kernel H); last by apply/capv_idPr/subvf.
-rewrite (_ : \dim fullv = n); last by rewrite dimvf /dim /= mul1n.
+rewrite (_ : (fullv :&: _)%VS = kernel H); first by apply/capv_idPr/subvf.
+rewrite (_ : \dim fullv = n); first by rewrite dimvf /dim /= mul1n.
 rewrite (_ : \dim (limg _) = \dim dual_code) // /dual_code.
 rewrite /dimv.
 Abort.
@@ -425,7 +424,7 @@ have [cw [Hcw1 [Hcw2 Hcw3]]] : exists cw, cw \in C /\ cw != 0 /\ f cw = 0.
   by rewrite memv_cap => /andP[].
 have Kcw : wH cw <= n - k + 1.
   rewrite wH_sum (bigID (fun x : 'I_n => x < k.-1)) /=.
-  rewrite (eq_bigr (fun=> O)) ?big_const ?iter_addn ?mul0n ?add0n; last first.
+  rewrite (eq_bigr (fun=> O)) ?big_const ?iter_addn ?mul0n ?add0n.
     move=> i Hi /=.
     apply/eqP.
     rewrite eqb0 negbK.
@@ -441,26 +440,26 @@ have Kcw : wH cw <= n - k + 1.
     by case: (_ != _).
   apply: (leq_trans (@leq_sum _ _ _ _ (fun=> 1%N) X)).
   set lhs := (X in X <= _).
-  rewrite (_ : lhs = (\sum_(k.-1 <= i < n) 1%N))%N; last first.
+  rewrite (_ : lhs = (\sum_(k.-1 <= i < n) 1%N))%N.
     rewrite /lhs.
     rewrite -(big_mkord (fun i => ~~ (i < k.-1)) (fun=> 1%N)).
     rewrite {1}/index_iota subn0.
-    rewrite {1}(_ : n = k.-1 + (n - k.-1))%N; last by rewrite subnKC // ltnW.
+    rewrite {1}(_ : n = k.-1 + (n - k.-1))%N; first by rewrite subnKC // ltnW.
     rewrite iotaD big_cat /=.
     rewrite sum1_count.
-    rewrite (@eq_in_count _ _ xpred0); last first.
+    rewrite (@eq_in_count _ _ xpred0).
       move=> i.
       by rewrite mem_iota add0n leq0n /= => ->.
     rewrite count_pred0 add0n add0n.
     rewrite sum1_count.
-    rewrite (@eq_in_count _ _ xpredT); last first.
+    rewrite (@eq_in_count _ _ xpredT).
       move=> i.
       rewrite mem_iota -ltnNge => /andP[K1 K2].
       by rewrite ltnS.
     rewrite sum1_count.
     by rewrite /index_iota.
   rewrite sum_nat_const_nat muln1 -subn1 subnBA ?not_trivial_dim //.
-  rewrite addn1 subSn; last first.
+  rewrite addn1 subSn.
     clear f H1 H2 H3 Hcw3.
     move: dimCn.
     by rewrite prednK // not_trivial_dim.
@@ -584,7 +583,7 @@ Definition vproj n (F : pzRingType) (x : 'rV[F]_n) (s : {set 'I_n}) :=
 Lemma wH_vproj n (F : nzRingType) (x : 'rV[F]_n) (s : {set 'I_n}) :
   wH (vproj x s) <= #| s |.
 Proof.
-rewrite /wH count_map (_ : #| s | = count (mem s) (enum 'I_n)); last first.
+rewrite /wH count_map (_ : #| s | = count (mem s) (enum 'I_n)).
   rewrite cardE -count_predT !count_filter; apply: eq_in_count => /= i _.
   by rewrite !inE andbT.
 apply: sub_count => /= i /=.
@@ -621,7 +620,7 @@ Lemma wH_vproj_take2 n (F : nzRingType) (x : 'rV[F]_n) t : t < wH x <= t.*2 ->
   dH x (vproj x [set i in take t (enum (wH_supp x))]) <= t.
 Proof.
 move=> xt.
-rewrite dH_vproj; last first.
+rewrite dH_vproj.
   apply/subsetP => i /=; rewrite !inE.
   by move/mem_take; rewrite mem_enum inE.
 rewrite (@leq_trans #| drop t (enum (wH_supp x)) |) //.
@@ -720,10 +719,10 @@ transitivity (\sum_(i < r.+1) #| [set y | dH x y == i] |)%N.
       apply/eqP; rewrite eq_sym; apply/sphere_not_empty.
       by rewrite (leq_trans _ rn) //; move: (ltn_ord i); rewrite ltnS.
   rewrite (card_partition partD) /= big_imset /=.
-  - apply: eq_bigl => i; by rewrite mem_enum.
-  - move=> i j _ _;by apply: H2.
+  - by move=> i j _ _; apply: H2.
+  - by apply: eq_bigl => i; rewrite mem_enum.
 apply: eq_bigr => i _.
-rewrite card_sphere // (leq_trans _ rn) //; move: (ltn_ord i); by rewrite ltnS.
+by rewrite card_sphere // (leq_trans _ rn) //; move: (ltn_ord i); rewrite ltnS.
 Qed.
 
 Lemma hamming_bound q n (C : Lcode0.t 'F_q n)
@@ -736,7 +735,7 @@ destruct q' as [|q'] => //.
 set q := q'.+2.
 move/min_dist_ball_disjoint => H.
 suff : \sum_(c in C) #|ball c t| <= q ^ n.
-  rewrite (eq_bigr (fun c => card_ball q n t)); last first.
+  rewrite (eq_bigr (fun c => card_ball q n t)).
     rewrite /= => c cC; by rewrite card_ballE.
   by rewrite big_const iter_addn_0 mulnC.
 have -> : q ^ n = #| 'rV['F_q]_n |.
@@ -750,7 +749,7 @@ have /card_partition : partition P (\bigcup_(c in C) ball c t).
   apply/and3P; split => //; first by rewrite cover_imset.
   apply/imsetP; case => /= x xC.
   move/setP/(_ x); by rewrite !inE dHE subrr wH0 leq0n.
-rewrite big_imset /=; last first.
+rewrite big_imset /=.
   move=> c1 c2 c1C c2C.
   have [//|c1c2 abs] := eqVneq c1 c2.
   move: (H _ _ c1C c2C c1c2).
