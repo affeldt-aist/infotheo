@@ -33,7 +33,7 @@ information theory, and linear error-correcting codes.
   - [MathComp](https://github.com/math-comp/math-comp)
   - [MathComp analysis](https://github.com/math-comp/analysis)
   - [MathComp analysis reals standard library](https://github.com/math-comp/analysis)
-  - A Rocq tactic for proving bounds
+  - [CoqInterval](https://gitlab.inria.fr/coqinterval)
 - Rocq/Coq namespace: `infotheo`
 - Related publication(s):
   - [An Approach to Formalize Information-Theoretic Security of Multiparty Computation Protocols](https://link.springer.com/chapter/10.1007/978-3-031-95497-9_11) doi:[10.1007/978-3-031-95497-9_11](https://doi.org/10.1007/978-3-031-95497-9_11)

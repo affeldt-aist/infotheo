@@ -19,7 +19,6 @@ Reserved Notation "P '|-' V '<<b' W" (at level 5, V, W at next level).
 Reserved Notation "'D(' V '||' W '|' P ')'" (at level 50, V, W, P at next level).
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -50,7 +49,7 @@ split; [move/dominatesP => H | move=> H; apply/dominatesP].
 - case=> a p_not_0 b; move: {H}(H a) => H.
   rewrite fdist_prodE /=.
   have [->|H1] := eqVneq (P a) 0; first by rewrite mul0r.
-  move: {H}(H H1) => /dominatesP ->; first by rewrite mulr0.
+  move: {H}(H H1) => /dominatesP ->; last by rewrite mulr0.
   move/eqP : b; by rewrite fdist_prodE mulf_eq0 /= (negbTE H1) orFb => /eqP.
 Qed.
 
@@ -92,7 +91,7 @@ Hypothesis V_dom_by_W : P |- V << W.
 Lemma cdiv_is_div_joint_dist : D(V || W | P) = D((P `X V) || (P `X W)).
 Proof.
 rewrite (_ : D(V || W | P) = \sum_(a in A) (\sum_(b in B)
-    V a b * (log (V a b / W a b)) * P a)); last first.
+    V a b * (log (V a b / W a b)) * P a)).
   apply: eq_bigr => a _; rewrite big_distrr//=.
   by apply: eq_bigr => b _; rewrite mulrC.
 rewrite pair_bigA big_mkcond /=.
@@ -124,12 +123,12 @@ Lemma cond_relative_entropy_compat : R `X P `<< R `X Q ->
   cond_relative_entropy (R, P) (R, Q) = D(P || Q | R).
 Proof.
 move=> PQ.
-rewrite /cond_relative_entropy cdiv_is_div_joint_dist; last exact/dom_by_cdom_by.
+rewrite /cond_relative_entropy cdiv_is_div_joint_dist; first exact/dom_by_cdom_by.
 rewrite /div.
 under eq_bigr do rewrite big_distrr /=.
 rewrite pair_big /=; apply: eq_bigr => -[a b] _ /=.
-rewrite (_ : (R `X P) (a, b) = (R `X P) (a, b)); last by rewrite fdist_prodE.
-rewrite (_ : (R `X Q) (a, b) = (R `X Q) (a, b)); last by rewrite fdist_prodE.
+rewrite (_ : (R `X P) (a, b) = (R `X P) (a, b)); first by rewrite fdist_prodE.
+rewrite (_ : (R `X Q) (a, b) = (R `X Q) (a, b)); first by rewrite fdist_prodE.
 rewrite mulrA.
 rewrite {1}/jcPr.
 rewrite fdistX2 fdist_prod1 Pr_set1.
@@ -168,7 +167,7 @@ transitivity (\prod_(a : A) \prod_(b : B) \prod_(i < n)
   rewrite pair_big exchange_big /= DMCE.
   apply: eq_bigr => i _.
   rewrite (bigD1 (x ``_ i, y ``_ i)) //= 2!eqxx andbT.
-  rewrite big1; first by rewrite mulr1.
+  rewrite big1; last by rewrite mulr1.
   case=> a b /=.
   rewrite xpair_eqE negb_and.
   case/orP.
@@ -176,7 +175,7 @@ transitivity (\prod_(a : A) \prod_(b : B) \prod_(i < n)
   - move/negbTE => ->; by rewrite andbF.
 apply: eq_bigr => a _; apply: eq_bigr => b _.
 rewrite num_co_occ_alt -sum1_card.
-rewrite (@big_morph _ _ (fun x => W a b ^+ x) 1 *%R O addn) //; last first.
+rewrite (@big_morph _ _ (fun x => W a b ^+ x) 1 *%R O addn) //.
   by move=> * /=; rewrite exprD.
 rewrite [in RHS]big_mkcond.
 apply: eq_bigr => i _.
@@ -237,7 +236,7 @@ have [Vab0|Vab0] := eqVneq (V a b) 0.
 rewrite -powR_mulrn ?powR_ge0// -powRrM//.
 congr (_ `^ _).
 rewrite -mulrN -mulrDr mulrA.
-rewrite logM; last 2 first.
+rewrite logM.
   by rewrite fdist_gt0.
   by rewrite invr_gt0 fdist_gt0.
 rewrite logV ?fdist_gt0//.
@@ -253,7 +252,7 @@ case: ifPn => [/eqP|] HP.
 - rewrite HPa -sumB HP mul0r mulr0 mul0r.
   move/eqP : HP; rewrite sum_nat_eq0 => /forallP/(_ b).
   by rewrite implyTb => /eqP ->.
-- rewrite HPa -sumB (mulrCA (n%:R)) mulfV ?mulr1; last first.
+- rewrite HPa -sumB (mulrCA (n%:R)) mulfV ?mulr1.
     by rewrite pnatr_eq0.
   by rewrite mulrCA mulfV ?mulr1 // pnatr_eq0.
 Qed.
@@ -301,7 +300,7 @@ Lemma dmc_exp_cdiv_cond_entropy :
 Proof.
 rewrite /exp_cdiv.
 case : ifP => Hcase.
-- rewrite -powRD; last by rewrite pnatr_eq0 implybT.
+- rewrite -powRD; first by rewrite pnatr_eq0 implybT.
   rewrite -mulrDr.
   apply: dmc_cdiv_cond_entropy => //.
   (* TODO: lemma? *)
