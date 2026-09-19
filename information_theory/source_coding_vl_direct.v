@@ -355,7 +355,7 @@ apply: (@le_lt_trans _ _  (n'.+1%:R * (`H P + epsilon') + 1 + 1 +
     rewrite (mulrC _^-1).
     rewrite ltW//.
     rewrite (le_lt_trans _ n0_eps3)//.
-    by rewrite mulrDr mulr1 -mulrA.
+    by rewrite mulrDr mulr1 -?mulrA.
   rewrite -/epsilon'.
   rewrite /epsilon'.
   rewrite (mulrCA _ epsilon).

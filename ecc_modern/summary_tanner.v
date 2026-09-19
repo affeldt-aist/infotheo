@@ -579,15 +579,13 @@ rewrite dprojs_in.
   by apply/existsP; exists m1'; rewrite Hm1'.
 rewrite /ssgraph Hn1' /=.
 case/andP: Hm1' => Hm1'.
-rewrite 3!inE; case/predU1P => [?|].
+rewrite !inE; case/predU1P => [?|].
   subst n1'.
   move=> abs.
-  rewrite inE in abs.
   exfalso.
   move/negP : tmp; apply.
   case/existsP : abs => m1 /andP[abs _].
   by apply/existsP; exists m1.
-rewrite inE.
 case/andP => n1'm1' /connectP [] /= p.
 case/shortenP => p' Hp' Hun p'p Hlast.
 exfalso.

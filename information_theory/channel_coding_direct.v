@@ -591,8 +591,8 @@ transitivity (\sum_(j0 : 'rV[A]_n) \sum_(ji : 'rV[A]_n)
   ((P `^ n)%fdist j0) * ((P `^ n)%fdist ji) * (\sum_( y | y \in
     [set y0 in 'rV[B]_n | prod_rV (ji , y0) \in `JTS P W n epsilon0])
   (W ``(| j0)) y)).
-  set lhs := (\sum_(_ <- _) _).
-  suff : lhs = 1 by move=> ->; rewrite mul1r.
+  set lhs := (\sum_(_ <- _) _ in LHS).
+  suff : lhs = 1 by move=> ->; rewrite ?mul1r.
   rewrite /lhs {lhs}.
   rewrite (@big_cat_tuple_seq _ i.-1 (#|M| - i.+1) (fun x => \prod_(i0 <- x) (P `^ n)%fdist i0)).
   by rewrite rsum_rmul_tuple_pmf.

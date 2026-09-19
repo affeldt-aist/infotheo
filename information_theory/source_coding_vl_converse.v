@@ -523,7 +523,7 @@ rewrite ffunE.
 rewrite [in RHS]mulrC -mulrA -mulrA.
 have [->|Pfi0_non0] := eqVneq (Pf i0) 0; first by rewrite !mul0r.
 congr *%R.
-rewrite -mulrA.
+rewrite -?mulrA.
 rewrite mulrC.
 rewrite -mulrA.
 rewrite {2}/PN.

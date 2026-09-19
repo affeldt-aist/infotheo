@@ -38,7 +38,6 @@ Reserved Notation "P '.-typed_code' c" (at level 50, c at next level).
 Declare Scope types_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -284,12 +283,12 @@ apply: (@leq_trans (size (map (@ffun_of_type A n) (Finite.enum _)))).
 rewrite cardE.
 apply: uniq_leq_size.
   rewrite map_inj_uniq //.
-    move: (enum_uniq (P_ n (A))).
-    by rewrite enumT.
-  case=> d f Hd [] d2 f2 Hd2 /= ?; subst f2.
-  have ? : d = d2 by apply/fdist_ext => a; rewrite Hd Hd2.
-  subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
-move=> /= f Hf; by rewrite mem_enum.
+    case=> d f Hd [] d2 f2 Hd2 /= ?; subst f2.
+    have ? : d = d2 by apply/fdist_ext => a; rewrite Hd Hd2.
+    by subst d2; congr type.mkType; exact: boolp.Prop_irrelevance.
+  move: (enum_uniq (P_ n (A))).
+  by rewrite enumT/=.
+by move=> /= f Hf; rewrite mem_enum.
 Qed.
 
 Lemma type_card_neq0 n : 0 < #|A| -> 0 < #|P_ n.+1(A)|.
@@ -298,8 +297,8 @@ case/card_gt0P => a _.
 apply/card_gt0P.
 have [f Hf] : [the finType of {f : {ffun A -> 'I_n.+2} | \sum_(a in A) f a == n.+1}].
   exists [ffun a1 => if pred1 a a1 then Ordinal (ltnSn n.+1) else Ordinal (ltn0Sn n.+1)].
-  rewrite (bigD1 a) //= big1; first by rewrite ffunE eqxx addn0.
-  move=> p /negbTE Hp; by rewrite ffunE Hp.
+  rewrite (bigD1 a) //= big1; last by rewrite ffunE eqxx addn0.
+  by move=> p /negbTE Hp; rewrite ffunE Hp.
 exists (@type.mkType _ _ (fdist_of_ffun Hf) _ (fdist_of_ffun_prop Hf)).
 by rewrite inE.
 Qed.
@@ -365,18 +364,18 @@ rewrite inE.
 apply/forallP => a.
 rewrite /num_occ /= -size_filter.
 rewrite filter_flatten size_flatten /shape -!map_comp sumn_big_addn big_map.
-rewrite (bigD1 a) // big1 /= => [|a' Ha'].
-- rewrite addn0 -(INR_type_fun P).
-  apply/eqP.
-  do 2 f_equal.
-  rewrite -{1}(_ : size (nseq (type.f P a) a) = type.f P a); last by rewrite size_nseq.
-  congr (size _).
-  apply/esym/all_filterP/all_pred1P.
-  by rewrite size_nseq.
+rewrite (bigD1 a) // big1 /= => [a' Ha'|].
 - transitivity (size (@List.nil A)) => //.
   congr (size _).
   apply/eqP/negPn; rewrite -has_filter; apply/hasPn => l Hl.
   by case/nseqP : Hl => ->.
+- rewrite addn0 -(INR_type_fun P).
+  apply/eqP.
+  do 2 f_equal.
+  rewrite -{1}(_ : size (nseq (type.f P a) a) = type.f P a); first by rewrite size_nseq.
+  congr (size _).
+  apply/esym/all_filterP/all_pred1P.
+  by rewrite size_nseq.
 Qed.
 
 Lemma typed_tuples_not_empty : { t | t \in T_{P} }.
@@ -406,7 +405,7 @@ Proof.
 move=> Hx.
 rewrite fdist_rVE.
 rewrite (_ : \prod_(i < n) type.d P (t ``_ i) =
-  \prod_(a : A) (\prod_(i < n) (if a == t ``_ i then type.d P t ``_ i else 1))); last first.
+  \prod_(a : A) (\prod_(i < n) (if a == t ``_ i then type.d P t ``_ i else 1))).
   rewrite exchange_big; apply: eq_big ; first by [].
   move=> i _.
   rewrite (bigID (fun y => y == t ``_ i)) /=.
@@ -436,7 +435,7 @@ Lemma tuple_dist_type_entropy t : tuple_of_row t \in T_{P} ->
 Proof.
 move/(@tuple_dist_type t) => ->.
 rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
-             \prod_(a : A) (2%:R:Rdefinitions.R) `^ (type.d P a * log (type.d P a) * n%:R)); last first.
+             \prod_(a : A) (2%:R:Rdefinitions.R) `^ (type.d P a * log (type.d P a) * n%:R)).
   apply: eq_bigr => a _.
   have [H|H] := eqVneq 0 (type.d P a); last first.
     have {}H : 0 < type.d P a.
@@ -449,7 +448,7 @@ rewrite (_ : \prod_(a : A) type.d P a ^+ (type.f P) a =
     congr (_ * _).
     by rewrite -type_fun_type.
   - move : (H) => <-.
-    rewrite -(_ : O = type.f P a).
+    rewrite -(_ : O = type.f P a); last first.
       by rewrite !mul0r expr0 exp.powRr0.
     apply/eqP.
     rewrite -(eqr_nat Rdefinitions.R).
@@ -471,7 +470,7 @@ Lemma typed_tuples_are_typ_seq :
   (@row_of_tuple A n @: T_{ P }) \subset `TS P n 0.
 Proof.
 apply/subsetP => t Ht.
-rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy; last first.
+rewrite /set_typ_seq inE /typ_seq tuple_dist_type_entropy.
   by case/imsetP : Ht => x Hx ->; rewrite row_of_tupleK.
 by rewrite addr0 subr0 lexx.
 Qed.
@@ -486,7 +485,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
 - case/existsP : x_T_P => ta Hta.
   rewrite -(row_of_tupleK ta) in Hta.
   rewrite -(tuple_dist_type_entropy Hta).
-  rewrite [X in X <= _](_ : _ = Pr ((type.d P) `^ n) (@row_of_tuple A n @: T_{P})).
+  rewrite [X in X <= _](_ : _ = Pr ((type.d P) `^ n) (@row_of_tuple A n @: T_{P})); last first.
     exact: Pr_le1.
   symmetry.
   rewrite /Pr.
@@ -501,7 +500,7 @@ case/boolP : [exists x, x \in T_{P}] => x_T_P.
   rewrite mulr_natr.
   do 2 f_equal.
   by rewrite card_imset //; exact: row_of_tuple_inj.
-- rewrite (_ : (#| T_{P} |%:R = 0)%R); first by rewrite mul0r.
+- rewrite (_ : (#| T_{P} |%:R = 0)%R); last by rewrite mul0r.
   rewrite (_ : 0%R = 0%:R) //; congr (_%:R); apply/eqP.
   rewrite cards_eq0; apply/negPn.
   by move: x_T_P; apply: contra => /set0Pn/existsP.
@@ -607,11 +606,11 @@ Lemma sum_messages_types' f :
 Proof.
 rewrite (bigID (fun P => [exists m, m \in enc_pre_img c P] )).
 rewrite /=.
-rewrite addrC big1 ; last first.
+rewrite addrC big1.
   move=> P; rewrite negb_exists => HP.
   apply: big_pred0 => m /=.
   by apply/negP/negPn; move:HP => /forallP/(_ m) ->.
-rewrite /= add0r big_imset.
+rewrite /= add0r big_imset; last first.
   apply: eq_big => [P|P _] //=.
   rewrite in_set.
   by case: set0Pn => [/existsP //| ?]; exact/existsP.

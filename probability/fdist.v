@@ -924,8 +924,7 @@ End fdist_perm.
 
 Section fdistI_perm.
 Local Open Scope ring_scope.
-Variable R : realType.
-Variables (n : nat) (P : R.-fdist  'I_n) (s : 'S_n).
+Context {R : realType} n (P : R.-fdist  'I_n) (s : 'S_n).
 
 Let f := [ffun i : 'I_n => P (s i)].
 
@@ -936,8 +935,8 @@ Proof.
 transitivity (\sum_(i <- [tuple (s^-1)%g i | i < n]) f i).
   apply/perm_big/tuple_permP; exists s.
   destruct n; first by move: (fdistI0_False P).
-  rewrite /index_enum -enumT; apply/(@eq_from_nth _ ord0).
-    by rewrite size_map size_tuple -enumT size_enum_ord.
+  rewrite /index_enum/= -enumT; apply/(@eq_from_nth _ ord0).
+    by rewrite size_map size_tuple.
   move=> i; rewrite size_enum_ord => ni /=.
   rewrite (nth_map ord0) ?size_enum_ord //= tnth_map /=.
   apply: (@perm_inj _ s); by rewrite permKV /= tnth_ord_tuple.

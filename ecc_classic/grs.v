@@ -206,8 +206,12 @@ have [r0|r0] := eqVneq r 0.
   rewrite /GRS.syndromep poly_def big_ord0 mulr0.
   apply/eqP; rewrite eq_sym addr_eq0; apply/eqP.
   rewrite /GRS_mod /Omega /erreval -sumrN; apply: eq_bigr => j jy.
-  rewrite expr0 mulr1 mulrN opprK [in RHS]mulrC mulrC -!scalerA.
-  rewrite -scalerAl mulrC mul_polyC; congr (_ *: (_ *: _)).
+  rewrite expr0 mulr1 mulrN opprK.
+  rewrite [in RHS](mulrC _ ((b``_j)%:P)).
+  rewrite (mulrC (y``_j)).
+  rewrite -scalerA.
+  rewrite mul_polyC.
+  congr (_ *: (_ *: _)).
   by apply: eq_bigl => k; rewrite in_setD1 andbC.
 rewrite /GRS_mod big_distrl /= /Omega /erreval -big_split /=.
 rewrite GRS.syndromepE big_distrr /=.

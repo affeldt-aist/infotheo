@@ -2972,7 +2972,7 @@ Lemma concave_function_atN f x y t : concave_function_at f x y t ->
 Proof.
 move=> H k k0; rewrite /concave_function_at /convex_function_at.
 rewrite leEdual avgRE.
-rewrite /= -avgR_mulDl.
+rewrite /= -[leLHS]avgR_mulDl.
 exact: ler_wpM2r.
 Qed.
 

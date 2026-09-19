@@ -4325,18 +4325,18 @@ case => //= [|s3 s] _.
   case: s1 => [] [] s1 [] //=;
   case: s2 => [] [] s2 [] //=; by rewrite !andbF.
 case: s1 => [] [] s1 [] //=;
-case: s2 => [] [] s2 [] //=; try by rewrite !andbF.
-- rewrite inE /= /ports big_set1.
+case: s2 => [] [] s2 [] //; try by rewrite !andbF.
+- rewrite !inE /ports big_set1.
   by case: (s1 \in i).
 - case: existsP => //= [] [j].
   rewrite inE => /and4P[/eqP -> {j} H1 H2 H3].
   case: s3 => [] [] s3 [] //=; try by rewrite !andbF.
-  rewrite inE /= /ports big_set1.
+  rewrite !inE /ports big_set1.
   by case: (s2 \in i).
-- rewrite inE /= /ports big_set1.
+- rewrite !inE /ports big_set1.
   by case: (s2 \in i).
 - case: existsP => //= [] [j].
-  by rewrite inE.
+  by rewrite !inE.
 Qed.
 
 Hypothesis Hlam : (size lam <= maxdeg)%nat.

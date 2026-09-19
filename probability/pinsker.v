@@ -395,7 +395,7 @@ transitivity (D(P || Q) - c * (`| p%:num - q%:num | + `| (1 - p%:num) - (1 - q%:
   set tmp := (`| _ | + _) ^+ 2.
   have -> : tmp = 4 * (p%:num - q%:num) ^+ 2.
     rewrite /tmp (_ : 1 - p%:num - (1 - q%:num) = q%:num - p%:num); first by simpl; ring.
-    rewrite sqrrD (distrC q%:num p%:num) -{3}(expr1 `|p%:num - q%:num|).
+    rewrite [in LHS]sqrrD (distrC q%:num p%:num) -{3}(expr1 `|p%:num - q%:num|).
     by rewrite -exprS real_normK ?num_real//; ring.
   rewrite [X in _ = _ + _ - X]mulrA.
   rewrite [in X in _ = _ + _ - X](mulrC c).

@@ -237,13 +237,14 @@ apply: eq_bigr => i /= _.
 by rewrite fdist_prodE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
 
-Lemma Pr_DMC_fst (Q : 'rV_n -> bool) :
+Lemma Pr_DMC_fst (Q : {pred 'rV_n}) :
   Pr ((P `X W) `^ n) [set x | Q (rV_prod x).1 ] =
   Pr (P `^ n)        [set x | Q x].
 Proof.
-rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=.
-  move=> t /=.
-  set X := (X in X _ = _); transitivity (prod_rV t \in X) => //; rewrite inE/=.
+rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ Q)/=.
+  move=> t.
+  set X := (X in X (prod_rV _) = _).
+  transitivity (prod_rV t \in X) => //; rewrite inE/=.
   congr (Q _).
   by apply/rowP => a; rewrite !mxE.
 transitivity (\sum_(i | Q i) (P `^ n) i * (\sum_(y in 'rV[B]_n) W ``(y | i))).
@@ -260,8 +261,9 @@ Lemma Pr_DMC_out m (S : {set 'rV_m}) :
   Pr (`O(P , W) `^ m) (~: S).
 Proof.
 rewrite {1}/Pr big_rV_prod /= -(pair_big_snd _ _ [pred x | x \notin S]) //=.
-  move=> tab /=.
-  set X := (X in X _ = _); transitivity (prod_rV tab \in X) => //; rewrite inE/=.
+  move=> t /=.
+  set X := (X in X (prod_rV _) = _).
+  transitivity (prod_rV t \in X) => //; rewrite inE/=.
   do 2 f_equal.
   by apply/rowP => a; rewrite !mxE.
 rewrite /= /Pr /= exchange_big /=; apply: eq_big => tb; first by rewrite !inE.

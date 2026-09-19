@@ -901,8 +901,9 @@ have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (JType.f V a b) b | 
     rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
     apply: eq_bigr => i _ /=; by rewrite sz_flat size_nseq.
   rewrite (_ : _ :: _ = [:: a] ++ A2) //.
-  rewrite map_cat.
+  rewrite (map_cat _ _ A2).
   rewrite [in X in _ ++ mask _ X = _]map_cat flatten_cat.
+  rewrite map_cat.
   rewrite mask_cat.
     by rewrite size_map /= cats0 sz_flat size_nseq.
   transitivity (mask (map (pred1 a) (flatten [seq nseq N(a1 | ta) a1 | a1 <- [:: a]]))

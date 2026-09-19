@@ -10,7 +10,6 @@ Require Import ssr_ext subgraph_partition tanner f2.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -526,7 +525,7 @@ Proof.
 transitivity (\prod_(m0 in [set: 'I_m]) g m0).
   apply: eq_bigl => /= ?; by rewrite in_set.
 rewrite -(cover_Fgraph_part_fnode n0).
-rewrite big_trivIset /=; last exact: trivIset_Fgraph_part_fnode.
+rewrite big_trivIset /=; first exact: trivIset_Fgraph_part_fnode.
 rewrite big_imset // => //.
 move=> m1 m2 Hm1 Hm2 /=.
 apply: Fgraph_injective => //; by rewrite -FnextE.
@@ -655,8 +654,7 @@ apply/connectP; exists p' => //.
 apply: sub_path_except H3 => //.
 apply/negP => n1p'.
 move: Hun.
-rewrite -(cat1s (inl m0)) -(cat1s (inr n1)) -(cat1s (inl p2)) catA uniq_catCA.
-by rewrite catA uniq_catC -!catA catA cat_uniq uniq_catC /= n1p'.
+by rewrite !cons_uniq/= !inE n1p'/= andbF.
 Qed.
 
 Lemma trivIset_Fgraph_part_Fgraph m0 n0 : n0 \in 'V m0 ->
@@ -1007,8 +1005,7 @@ apply/connectP; exists p'; last by [].
 apply: sub_path_except H3 => //.
 apply/negP => n2p'.
 move: Hun.
-rewrite -(cat1s (inl m0)) -(cat1s (inr n2)) -(cat1s (inl m1)) catA uniq_catCA.
-by rewrite catA uniq_catC -!catA catA cat_uniq uniq_catC /= n2p'.
+by rewrite !cons_uniq/= !inE/= n2p'/= andbF.
 Qed.
 
 Lemma trivIset_Vgraph_part_Vgraph m0 n0 : n0 \in 'V m0 ->
@@ -1037,7 +1034,7 @@ apply/setP => /= m1.
 rewrite !inE.
 case: (boolP (m1 == n1)) => [|m1n1] /=.
   move/eqP => ->; by rewrite eqxx.
-rewrite (_ : inr m1 == _ = false) /=; last first.
+rewrite (_ : inr m1 == _ = false) /=.
   apply/negbTE.
   by apply: contra m1n1 => /eqP [] ->.
 apply/bigcupP.
@@ -1087,27 +1084,27 @@ case/connectP => p.
 case/shortenP => p' Hp unp pp' lastp.
 suff : ucycle (tanner_rel H) [:: inl m0, inr n1, inl m1 & p'] by exact: Hacyclic.
 apply: uniq_path_ucycle_extend_1.
-exact: simple_tanner_rel.
-by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
-by rewrite /= -VnextE -FnextE; move: m1n1; rewrite in_setD1 => /andP[].
-rewrite rcons_path Hp /= exceptE /= andbT -lastp.
-apply/andP; split.
-  by rewrite /= -VnextE; move: Hn2; rewrite in_setD1 => /andP[].
-apply/eqP; case=> ?; subst n2; by rewrite eqxx in abs'.
-rewrite rcons_uniq unp andbT inE negb_or.
-apply/andP; split.
-  apply/eqP; case => ?; subst m1; by rewrite in_setD1 eqxx in m1n1.
-apply/negP => m0p'.
-case/splitPr : m0p' => p'1 p'2 in Hp unp pp' lastp.
-suff : ucycle (tanner_rel H) [:: inl m0, inr n1, inl m1 & p'1].
-  exact: Hacyclic.
-apply: uniq_path_ucycle_extend_1; try assumption.
-exact: simple_tanner_rel.
-by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
-by rewrite /= -VnextE -FnextE; move: m1n1; rewrite in_setD1 => /andP[].
-rewrite -(cat1s (inl m0)) catA cats1 cat_path in Hp; by case/andP : Hp.
-rewrite rcons_uniq.
-by move: unp; rewrite -cat_cons cat_uniq => /and3P[-> /=]; rewrite negb_or => /andP[->].
+- exact: simple_tanner_rel.
+- by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
+- by rewrite /= -VnextE -FnextE; move: m1n1; rewrite in_setD1 => /andP[].
+- rewrite rcons_path Hp /= exceptE /= andbT -lastp.
+  apply/andP; split.
+    by rewrite /= -VnextE; move: Hn2; rewrite in_setD1 => /andP[].
+  by apply/eqP; case=> ?; subst n2; rewrite eqxx in abs'.
+- rewrite rcons_uniq unp andbT inE negb_or.
+  apply/andP; split.
+    apply/eqP; case => ?; subst m1; by rewrite in_setD1 eqxx in m1n1.
+  apply/negP => m0p'.
+  case/splitPr : m0p' => p'1 p'2 in Hp unp pp' lastp.
+  suff : ucycle (tanner_rel H) [:: inl m0, inr n1, inl m1 & p'1].
+    exact: Hacyclic.
+  apply: uniq_path_ucycle_extend_1; try assumption.
+  exact: simple_tanner_rel.
+  by rewrite /= -VnextE; move: Hn1; rewrite in_setD1 => /andP[].
+  by rewrite /= -VnextE -FnextE; move: m1n1; rewrite in_setD1 => /andP[].
+  rewrite -(cat1s (inl m0)) catA cats1 cat_path in Hp; by case/andP : Hp.
+  rewrite rcons_uniq.
+  by move: unp; rewrite -cat_cons cat_uniq => /and3P[-> /=]; rewrite negb_or => /andP[->].
 Qed.
 
 End tanner_partition.

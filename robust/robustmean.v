@@ -649,7 +649,7 @@ have Exbad_bound : 0 < Pr P (bad :\: drop) ->
   rewrite /Ex -big_split /= [X in `|X / _|](_ : _ =
       \sum_(i in U) (X i - mu) * @Ind _ U (bad :\: drop) i * P i).
     apply: eq_bigr => u _; rewrite -!mulr_regl.
-    by rewrite mulrCA -mulrDl mulrAC mulrA.
+    by rewrite (mulrCA (P u)) -mulrDl mulrAC mulrA.
   rewrite normrM (@ger0_norm _ _^-1); first by rewrite ltW // invr_gt0.
   rewrite ler_pdivrMr //; apply: (le_trans (ler_norm_sum _ _ _)).
   rewrite (bigID [pred i | i \in bad :\: drop]) /=.
@@ -727,7 +727,7 @@ apply: ler_pM.
     rewrite /delta.
     have en0 : 1 - eps != 0 by lra.
     have fen0 : 1 - 5 * eps != 0 by lra.
-    by field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
+    field.
   rewrite ler_pdivrMr; first lra.
   rewrite mul1r (@le_trans _ _ eps) //; last lra.
   by rewrite ler_piMl //; lra.

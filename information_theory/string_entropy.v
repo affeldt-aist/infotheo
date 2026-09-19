@@ -110,9 +110,12 @@ rewrite /entropy /nHs /num_occ_dist /=.
 rewrite (big_morph _ (id1:=0) (@opprD _)) ?oppr0 // big_distrr /=.
 apply: eq_bigr => a _ /=; rewrite ffunE.
 case: ifPn => [/eqP -> | Hnum]; first by rewrite !mul0r oppr0 mulr0.
-rewrite (mulrC N(a | s)%:R) mulrN 3![in LHS]mulrA mulrV ?unitfE ?pnatr_eq0 //.
-rewrite mul1r -mulrA -mulrN -logV 1?mulrC ?invf_div //.
-by apply: divr_gt0; rewrite ltr0n lt0n.
+rewrite -mulrN.
+rewrite -logV.
+  by rewrite divr_gt0 ?ltr0n ?lt0n.
+rewrite mulrA; congr (_ * _).
+  by rewrite mulrCA divff ?mulr1// gt_eqF// ltr0n lt0n.
+by rewrite invf_div.
 Qed.
 
 Definition mulnrdep (x : nat) (y : x != O -> R) : R.

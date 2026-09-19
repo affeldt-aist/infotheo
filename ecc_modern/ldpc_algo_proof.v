@@ -1291,11 +1291,11 @@ Proof.
 destruct a, b; rewrite //= => Hij.
 - by rewrite tanner_relE in Hij.
 - rewrite -alpha_def; first by rewrite VnextE sym_tanner_rel.
-  rewrite -imset_set1 (@kind_filter _ kf).
+  rewrite -[in RHS]imset_set1 (@kind_filter _ kf).
   set x := [set x | _].
   suff : 'V o = x by move=> ->.
   by apply/setP => i; rewrite inE /= -VnextE.
-- rewrite -beta_def -imset_set1 (@kind_filter _ kv) /=.
+- rewrite -beta_def -[in RHS]imset_set1 (@kind_filter _ kv) /=.
   congr beta.
   rewrite /image_mem /enum_mem.
   congr map.
