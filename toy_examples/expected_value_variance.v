@@ -7,7 +7,6 @@ Require Import ssralg_ext fdist proba.
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2 *)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -22,8 +21,7 @@ From mathcomp Require Import normedtype.
 Import numFieldNormedType.Exports.
 
 Section expected_value_variance.
-
-Variable R : realType.
+Context {R : realType}.
 
 Definition pmf : {ffun 'I_3 -> R} := [ffun i =>
   [fun x => 0 with inord 0 |-> 1/2, inord 1 |-> 1/3, inord 2 |-> 1/6] i].
@@ -33,7 +31,7 @@ CoInductive I3_spec : 'I_3 -> bool -> bool -> bool -> Prop :=
 | I2_1 : I3_spec (inord 1) false true false
 | I2_2 : I3_spec (inord 2) false false true.
 
-Ltac I3_neq := rewrite (_ : _ == _ = false); last by
+Ltac I3_neq := rewrite (_ : _ == _ = false); first by
               apply/negbTE/negP => /eqP/(congr1 (@nat_of_ord 3));
               rewrite !inordK.
 
@@ -65,14 +63,14 @@ Proof.
 apply/forallP.
 case/I3P.
 - rewrite /f ffunE /= eqxx; lra.
-- rewrite /f ffunE /= ifF; last by I3_neq.
+- rewrite /f ffunE /= ifF; first by I3_neq.
   rewrite eqxx; lra.
-- rewrite /f ffunE /= ifF; last by I3_neq.
-  rewrite ifF; last by I3_neq.
+- rewrite /f ffunE /= ifF; first by I3_neq.
+  rewrite ifF; first by I3_neq.
   rewrite eqxx; lra.
 Qed.
 
-Ltac I3_eq := rewrite (_ : _ == _ = true); last by
+Ltac I3_eq := rewrite (_ : _ == _ = true); first by
               apply/eqP/val_inj => /=; rewrite inordK.
 
 Lemma pmf01 : [forall a, 0 <= pmf a] && (\sum_(a in 'I_3) pmf a == 1).
@@ -81,12 +79,12 @@ apply/andP; split; first exact: pmf_ge0.
 apply/eqP.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addr0 /=.
-rewrite /f !ffunE /= ifT; last by I3_eq.
-rewrite ifF; last by I3_neq.
-rewrite ifT; last by I3_eq.
-rewrite ifF; last by I3_neq.
-rewrite ifF; last by I3_neq.
-rewrite ifT; last by I3_eq.
+rewrite /f !ffunE /= ifT; first by I3_eq.
+rewrite ifF; first by I3_neq.
+rewrite ifT; first by I3_eq.
+rewrite ifF; first by I3_neq.
+rewrite ifF; first by I3_neq.
+rewrite ifT; first by I3_eq.
 (* 1 / 2 + (1 / 3 + 1 / 6) = 1 *)
 lra.
 Qed.
@@ -104,14 +102,14 @@ rewrite /Ex.
 do 3 rewrite big_ord_recl.
 rewrite big_ord0 addr0.
 rewrite /X/= !scaler1.
-rewrite /f !ffunE /= ifT; last by I3_eq.
+rewrite /f !ffunE /= ifT; first by I3_eq.
 rewrite (_ : (bump 0 0).+1%:R = 2) //.
-rewrite /= ifF; last by I3_neq.
-rewrite ifT; last by I3_eq.
+rewrite /= ifF; first by I3_neq.
+rewrite ifT; first by I3_eq.
 rewrite (_ : (bump 0 (bump 0 0)).+1%:R = 3)//.
-rewrite /f /= ifF; last by I3_neq.
-rewrite ifF; last by I3_neq.
-rewrite ifT; last by I3_eq.
+rewrite /f /= ifF; first by I3_neq.
+rewrite ifF; first by I3_neq.
+rewrite ifT; first by I3_eq.
 rewrite -!mulr_regl.
 lra.
 Qed.
@@ -126,15 +124,15 @@ rewrite big_ord0 addr0 -!ssralg_ext.mulr_regl /=.
 rewrite !RV_fctE/=.
 rewrite {1}/pmf !ffunE /=.
 rewrite expr1n.
-rewrite ifT; last by I3_eq.
+rewrite ifT; first by I3_eq.
 rewrite (_ : (bump 0 0).+1%:R = 2) //.
 rewrite /f /=.
-rewrite ifF; last by I3_neq.
-rewrite ifT; last by I3_eq.
+rewrite ifF; first by I3_neq.
+rewrite ifT; first by I3_eq.
 rewrite (_ : (bump 0 (bump 0 0)).+1%:R = 3)//.
-rewrite ifF; last by I3_neq.
-rewrite ifF; last by I3_neq.
-rewrite ifT; last by I3_eq.
+rewrite ifF; first by I3_neq.
+rewrite ifF; first by I3_neq.
+rewrite ifT; first by I3_eq.
 lra.
 Qed.
 

@@ -18,7 +18,6 @@ Require Import error_exponent channel_code channel success_decode_bound.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -36,8 +35,7 @@ Import Order.POrderTheory Num.Theory GRing.Theory.
 
 Section channel_coding_converse_intermediate_lemma.
 Let R := Rdefinitions.R.
-Variables (A B : finType) (W : `Ch*(A, B)).
-Variable minRate : R.
+Context {A B : finType} (W : `Ch*(A, B)) (minRate : R).
 Hypothesis HminRate : minRate > capacity W.
 Hypothesis set_of_I_has_ubound :
   classical_sets.has_ubound (fun y => exists P, `I(P, W) = y)(*TODO*).
@@ -67,7 +65,7 @@ apply: ler_wpM2l.
 set Vmax := [arg max_(V > _) _]%O.
 rewrite /success_factor_bound /exp_cdiv.
 case : ifP => Hcase; last by rewrite mul0r powR_ge0.
-rewrite -powRD; last by rewrite pnatr_eq0 implybT.
+rewrite -powRD; first by rewrite pnatr_eq0 implybT.
 rewrite ler_powR ?ler1n//.
 rewrite -mulrDr 2!mulNr.
 rewrite lerNr opprK; apply/ler_wpM2l; first exact/ler0n.
@@ -90,8 +88,7 @@ End channel_coding_converse_intermediate_lemma.
 
 Section channel_coding_converse.
 Let R := Rdefinitions.R.
-Variables (A B : finType) (W : `Ch*(A, B)).
-Variable minRate : R.
+Context {A B : finType} (W : `Ch*(A, B)) (minRate : R).
 Hypothesis minRate_cap : minRate > capacity W.
 Hypothesis set_of_I_has_ubound :
   classical_sets.has_ubound (fun y => exists P, `I(P, W) = y).
@@ -142,7 +139,7 @@ apply: (@le_trans _ _ ((n.+1%:R / n%:R) ^+ K * aux)); last first.
   by rewrite -[in leRHS]mulrC mulr_natr mulr2n -natr1 lerD2l ler1n.
 rewrite expr_div_n -mulrA ler_wpM2l//.
 - by rewrite exprn_ge0.
-- rewrite -lef_pV2 ?posrE ?powR_gt0//; last first.
+- rewrite -lef_pV2 ?posrE ?powR_gt0//.
     by rewrite mulr_gt0// invr_gt0 exprn_gt0.
   rewrite -powRN mulNr opprK.
   have nDeltaln2 : 0 < n%:R * Delta * ln 2.
@@ -159,7 +156,7 @@ rewrite expr_div_n -mulrA ler_wpM2l//.
   rewrite invrK.
   rewrite mulrCA.
   rewrite invrK -exprSr.
-  rewrite -exprMn_comm//; last by rewrite /GRing.comm [in RHS]mulrC.
+  rewrite -exprMn_comm//; first by rewrite /GRing.comm [in RHS]mulrC.
   by rewrite mulrC mulrA.
 Qed.
 

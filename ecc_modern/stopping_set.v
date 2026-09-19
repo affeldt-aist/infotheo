@@ -26,7 +26,6 @@ Require Import num_occ hamming ldpc_erasure tanner linearcode.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -37,7 +36,7 @@ Local Open Scope ring_scope.
 Local Open Scope vec_ext_scope.
 
 Section PCM_instance.
-Variables (m n : nat) (H : 'M['F_2]_(m, n)).
+Context m n (H : 'M['F_2]_(m, n)).
 
 Local Notation "''F'" := (Fnext H).
 
@@ -89,7 +88,7 @@ End PCM_instance.
 
 Section stopping_set.
 Local Open Scope ring_scope.
-Variables (m n : nat) (H : 'M['F_2]_(m, n)).
+Context m n (H : 'M['F_2]_(m, n)).
 
 Local Notation "'`V'" := (Vnext H).
 Local Notation "'`F'" := (Fnext H).
@@ -127,7 +126,7 @@ have : s :&: `V m0 :\ n0 != set0.
   apply: contra.
   move/eqP.
   move/(f_equal (fun x => n0 |: x)).
-  rewrite setD1K; last by rewrite inE n0s -FnextE.
+  rewrite setD1K; first by rewrite inE n0s -FnextE.
   move=> ->.
   by rewrite cardsU1 /= cards0 inE.
 case/set0Pn => n1.
@@ -226,8 +225,7 @@ Qed.
 End test_stopset.
 
 Section largest_subset_verifying_stopset.
-Variables (m n : nat) (H : 'M['F_2]_(m, n)).
-Variable E : {set 'I_n}.
+Context m n (H : 'M['F_2]_(m, n)) (E : {set 'I_n}).
 
 Definition largest_stopset := maxset (stopset H) E.
 
@@ -242,7 +240,7 @@ Qed.
 End largest_subset_verifying_stopset.
 
 Section stopset_cols_starblank.
-Variables (m n : nat) (H : 'M['F_2]_(m, n)).
+Context m n (H : 'M['F_2]_(m, n)).
 
 Local Notation "''F'" := (Fnext H).
 Local Notation "''V'" := (Vnext H).
@@ -274,7 +272,7 @@ Qed.
 End stopset_cols_starblank.
 
 Section subset_erasures.
-Variables (m n : nat) (H : 'M['F_2]_(m, n)).
+Context m n (H : 'M['F_2]_(m, n)).
 
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
@@ -387,7 +385,7 @@ End subset_erasures.
 Local Open Scope letter_scope.
 
 Section erase.
-Variables n : nat.
+Context (n : nat).
 
 Definition erase (y : 'rV['F_2]_n) (E : {set 'I_n}) :=
   \row_(n0 < n) if n0 \in E then Star else Bit (y ``_ n0).
@@ -500,8 +498,7 @@ Qed.
 End erase.
 
 Section erasures_SP_BEC.
-Variables (m n : nat) (H : 'M['F_2]_(m, n)).
-Variable c : 'rV['F_2]_n.
+Context m n (H : 'M['F_2]_(m, n)) (c : 'rV['F_2]_n).
 Hypothesis Hc : syndrome H c = 0.
 Variable E : {set 'I_n}.
 
@@ -667,7 +664,7 @@ case/boolP : (n0 \in erasures (Esti H y (iSP_BEC0 H y l))) => H0.
     by rewrite mxE abs.
   exfalso.
   move: H0; rewrite Prod_StarE => /forallP/(_ (bool_of_F2 (c ``_ n0)))/eqP.
-  rewrite num_occ_cons /= bool_of_F2K eqxx /= (_ : _ == _ = false) /=; last by case/F2P : (c ``_ n0).
+  rewrite num_occ_cons /= bool_of_F2K eqxx /= (_ : _ == _ = false) /=; first by case/F2P : (c ``_ n0).
   rewrite add1n add0n.
   rewrite (_ : N(Bit (F2_of_bool (~~ bool_of_F2 c ``_ n0)) | _) = O) //.
   apply/eqP; rewrite -notin_num_occ_0.
@@ -717,7 +714,7 @@ Lemma starletter_PiSP_BEC0 : forall l n0 m0, m0 \in `F n0 ->
   starletter ((PiSP_BEC0 H y l) m0 n0) (c ``_ n0).
 Proof.
 case => [ | l] n0 m0 n0m0.
-  rewrite /PiSP_BEC0 mxProd_mxStar_PCM_instance; last first.
+  rewrite /PiSP_BEC0 mxProd_mxStar_PCM_instance.
     move=> n1; rewrite mxE; by case: ifPn.
   rewrite PCM_instanceE // mxE.
   case: ifPn => // _; by rewrite /starletter eqxx orbC.
@@ -761,7 +758,7 @@ Lemma PiSP_BEC0_Star_inv l n0 m0 : n0 \in `V m0 -> (PiSP_BEC0 H y l) m0 n0 = Sta
   y ``_ n0 = Star.
 Proof.
 case: l n0 m0 => [n0 m0 n0m0|].
-  rewrite /PiSP_BEC0 /= mxProd_mxStar_PCM_instance; last first.
+  rewrite /PiSP_BEC0 /= mxProd_mxStar_PCM_instance.
     move=> n1; rewrite mxE; by case: ifPn.
   by rewrite PCM_instanceE // FnextE.
 move=> l n1 m0 n1m0.

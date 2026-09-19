@@ -8,7 +8,6 @@ Require Import realType_ext fdist proba ssralg_ext.
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, using tuple *)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -21,7 +20,7 @@ From mathcomp Require Import normedtype.
 Import numFieldNormedType.Exports.
 
 Section expected_value_variance_tuple.
-Variable R : realType.
+Context {R : realType}.
 
 Definition ps := [tuple (1/2:R); 1/3; 1/6].
 Definition p : {ffun 'I_3 -> R} := [ffun i => tnth ps i].

@@ -21,7 +21,6 @@ Require Import fdist proba entropy aep typ_seq natbin source_code.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -34,11 +33,8 @@ Local Open Scope ring_scope.
 Import Order.POrderTheory GRing.Theory Num.Theory Order.TotalTheory.
 
 Section Length.
-Variable R : realType.
-Variable (X : finType) (n' : nat).
-Let n := n'.+1.
-Variable P : R.-fdist X.
-Variable epsilon : R.
+Context (R : realType) (X : finType) n' (n := n'.+1) (P : R.-fdist X)
+  (epsilon : R).
 Hypothesis eps_pos : 0 < epsilon.
 
 Lemma fdist_support_LB : 1 <= #|X|%:R :> R.
@@ -66,9 +62,9 @@ Proof.
 apply: (@le_trans _ _ (log (#|[set: n.-tuple X]|%:R))); last first.
   by rewrite ceil_ge.
 rewrite -log1 ler_log ?posrE// cardsT card_tuple.
-  by rewrite natrX exprn_ege1// fdist_support_LB.
-rewrite natrX exprn_gt0//.
-by rewrite (lt_le_trans _ fdist_support_LB).
+  rewrite natrX exprn_gt0//.
+  by rewrite (lt_le_trans _ fdist_support_LB).
+by rewrite natrX exprn_ege1// fdist_support_LB.
 Qed.
 
 Lemma card_le_TS_Lt : #| `TS P n epsilon |%:R <= #|[ set : `|L_typ|%N.-tuple bool]|%:R :> R.
@@ -87,6 +83,8 @@ Lemma card_le_Xn_Lnt' : #| [set: n.-tuple X]|%:R <= #| [set: `|L_not_typ|%N.-tup
 Proof.
 rewrite /L_not_typ cardsT card_tuple.
 rewrite {1}(_ : (expn #|X| n)%:R = 2 `^ (log ((expn #|X| n)%:R))).
+- rewrite LogK// natrX exprn_gt0//.
+  by rewrite (lt_le_trans _ fdist_support_LB).
 - rewrite cardsT card_tuple card_bool.
   rewrite [in leRHS]natrX.
   rewrite -powR_mulrn//.
@@ -94,18 +92,13 @@ rewrite {1}(_ : (expn #|X| n)%:R = 2 `^ (log ((expn #|X| n)%:R))).
   rewrite (le_trans (ceil_ge _))//.
   rewrite natr_absz ler_int.
   by rewrite (le_trans (ler_norm _)).
-- rewrite LogK// natrX exprn_gt0//.
-  by rewrite (lt_le_trans _ fdist_support_LB).
 Qed.
 
 End Length.
 
 Section Enc_Dec.
-Variable R : realType.
-Variable (X : finType) (n' : nat).
-Let n := n'.+1.
-Variable P : R.-fdist X.
-Variable epsilon : R.
+Context (R : realType) (X : finType) n' (n := n'.+1) (P : R.-fdist X)
+  (epsilon : R).
 Hypothesis eps_pos : 0 < epsilon.
 
 Local Notation "'L_typ'" := (L_typ n' P epsilon).
@@ -143,8 +136,8 @@ case: ifP=>?; case: ifP=>? //; case=> H; last by apply/tuple_of_row_inj/inj_enc_
 - have {}H : index t1 (enum (`TS P n epsilon)) = index t2 (enum (`TS P n epsilon))
     by apply: (@bitseq_of_nat_inj (`|L_typ|%N)) => //;  apply: (leq_trans _ card_TS_Lt);
       apply: seq_index_enum_card => //;  apply: enum_uniq.
-  rewrite -(@nth_index _ t1 t1 (enum (`TS P n epsilon))); last by rewrite mem_enum.
-  rewrite -(@nth_index _ t1 t2 (enum (`TS P n epsilon))); last by rewrite mem_enum.
+  rewrite -(@nth_index _ t1 t1 (enum (`TS P n epsilon))); first by rewrite mem_enum.
+  rewrite -(@nth_index _ t1 t2 (enum (`TS P n epsilon))); first by rewrite mem_enum.
  by rewrite H.
 Qed.
 
@@ -177,10 +170,10 @@ Proof.
 elim => [ | a la H ]; case => [|b lb]; rewrite /extension /= /f //=;
  [by case : ifP |by case : ifP | ].
 case: ifP  => aT; case: ifP=> bT //;  move /eqP; rewrite -/f eqseq_cat.
-+ by case/andP=>[/eqP eq_ab ] /eqP /H ->; congr (_ :: _); apply: f_inj; rewrite /f aT bT.
 + by rewrite /= !/bitseq_of_nat !size_pad_seqL.
 + by case/andP=>[/eqP eq_ab ] /eqP /H ->; congr (_ :: _); apply: f_inj; rewrite /f aT bT.
 + by rewrite !size_tuple.
++ by case/andP=>[/eqP eq_ab ] /eqP /H ->; congr (_ :: _); apply: f_inj; rewrite /f aT bT.
 Qed.
 
 End Enc_Dec.
@@ -235,16 +228,16 @@ rewrite (bigID_setC _ (`TS P n'.+1 epsilon)).
 rewrite eq_sizef_Lnt eq_sizef_Lt.
 rewrite -!big_distrl/= mulrC.
 rewrite (_ : \sum_(i | i \in ~: `TS P n epsilon)
- (P `^ n)%fdist i = 1 - \sum_(i | i \in `TS P n epsilon) (P `^ n)%fdist i); last first.
-- rewrite -(FDist.f1 (P `^ n)%fdist) (bigID_setC _ (`TS P n epsilon)).
+ (P `^ n)%fdist i = 1 - \sum_(i | i \in `TS P n epsilon) (P `^ n)%fdist i).
+  rewrite -(FDist.f1 (P `^ n)%fdist) (bigID_setC _ (`TS P n epsilon)).
   by rewrite addrAC subrr add0r.
-- apply: lerD => //.
-  + rewrite -[X in _ <= X]mulr1; apply: ler_wpM2l => //.
-    * by apply: addr_ge0 => //; exact/ltW/Lt_pos.
-    * by rewrite -(FDist.f1 (P `^ n)%fdist); apply: leR_sumRl => // *.
-  + apply: ler_wpM2r => //.
-    * by apply: addr_ge0 => //; exact: (Lnt_nonneg _ P).
-    * by rewrite lerBlDr addrC -lerBlDr; exact: Pr_TS_1.
+apply: lerD => //.
++ rewrite -[X in _ <= X]mulr1; apply: ler_wpM2l => //.
+  * by apply: addr_ge0 => //; exact/ltW/Lt_pos.
+  * by rewrite -(FDist.f1 (P `^ n)%fdist); apply: leR_sumRl => // *.
++ apply: ler_wpM2r => //.
+  * by apply: addr_ge0 => //; exact: (Lnt_nonneg _ P).
+  * by rewrite lerBlDr addrC -lerBlDr; exact: Pr_TS_1.
 Qed.
 
 End E_Leng_Cw_Lemma.
@@ -303,8 +296,8 @@ Proof.
 rewrite /epsilon'.
 rewrite divr_gt0//.
 rewrite ltr_wpDr// mulr_ge0// -log1 ler_log ?posrE//.
-  exact: fdist_support_LB.
-by rewrite (lt_le_trans _ (fdist_support_LB P)).
+  by rewrite (lt_le_trans _ (fdist_support_LB P)).
+exact: fdist_support_LB.
 Qed.
 
 Lemma le_aepbound_n : aep_bound P epsilon' <= n%:R.
@@ -340,7 +333,7 @@ apply: (@le_lt_trans _ _  (n'.+1%:R * (`H P + epsilon') + 1 + 1 +
     rewrite -lerBlDr ltW//.
     rewrite [X in _ - X](_ : 1 = 1%:~R)//.
     by rewrite -intrB ceilB1_lt.
-- rewrite cardsT card_tuple log_pow_natmul; last by apply: fdist_card_neq0; exact: P.
+- rewrite cardsT card_tuple log_pow_natmul; first by apply: fdist_card_neq0; exact: P.
   rewrite -![_ + 1 + 1]addrA.
   have ->: 1 + 1 = (1 + 1) * n%:R * n%:R^-1 :> R by rewrite mulfK// pnatr_eq0.
   rewrite (mulrC 2 _).

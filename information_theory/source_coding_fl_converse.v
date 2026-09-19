@@ -19,7 +19,6 @@ Require Import typ_seq source_code.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -47,8 +46,7 @@ by rewrite leNgt.
 Qed.
 
 Section source_coding_converse'.
-Variables (R : realType) (A : finType) (P : R.-fdist A).
-Variables num den : nat.
+Context (R : realType) (A : finType) (P : R.-fdist A) (num den : nat).
 Let r : R := num%:R / den.+1%:R.
 Hypothesis Hr : 0 < r < `H P.
 
@@ -133,10 +131,10 @@ apply: (@le_trans _ _ (2%R `^ n%:R)%R).
   rewrite cardsT card_mx /= card_bool mul1n.
   by rewrite powR_mulrn// natrX.
 rewrite gt1_ler_powRr ?ltr1n//.
-rewrite /e0 [X in _ <= _ * X](_ : _ = r); last by field.
-rewrite -(@ler_pM2r _ (r^-1)) => //; last first.
+rewrite /e0 [X in _ <= _ * X](_ : _ = r); first by field.
+rewrite -(@ler_pM2r _ (r^-1)) => //.
   by rewrite invr_gt0//; case/andP : Hr.
-rewrite -mulrA mulfV ?mulr1; last first.
+rewrite -mulrA mulfV ?mulr1.
   by case/andP : Hr => r0 _; rewrite gt_eqF.
 rewrite (le_trans _ Hk)//.
 by rewrite /SrcConverseBound le_max lexx orbT.
@@ -196,7 +194,7 @@ apply/(le_trans step3); rewrite lerD//.
   apply: ler_sum => /= i.
   rewrite in_setI => /andP[i_B i_TS].
   move: (typ_seq_definition_equiv2 i_TS) => /andP[+ _].
-  rewrite -[in X in X -> _](@ler_nM2l _ (- (k.+1%:R))); last first.
+  rewrite -[in X in X -> _](@ler_nM2l _ (- (k.+1%:R))).
     by rewrite ltrNl oppr0 ltr0n.
   rewrite mulrA mulrN !mulNr opprK divff ?pnatr_eq0// mul1r => H2.
   have := FDist.ge0 (P `^ k.+1) i.
@@ -213,7 +211,7 @@ apply: (@le_trans _ _ (delta + #| no_failure |%:R * 2 `^ (- k.+1%:R * (`H P - de
 - rewrite lerD2l.
   apply: (@le_trans _ _ (2 `^ (k.+1%:R * (`H P - e0)) * 2 `^ (- k.+1%:R * (`H P - delta))));
     last first.
-    rewrite -powRD; last by rewrite pnatr_eq0 implybT.
+    rewrite -powRD; first by rewrite pnatr_eq0 implybT.
     by rewrite gt1_ler_powRr ?ltr1n//; lra.
   by rewrite ler_wpM2r ?powR_ge0//; exact: no_failure_sup.
 Qed.
@@ -225,18 +223,17 @@ have H : (2 `^ (- k.+1%:R * (e0 - delta)) <= delta)%R; last first.
   by apply/(le_trans step5); rewrite lerD2l.
 rewrite -ler_log ?posrE ?powR_gt0 ?Hdelta//.
 rewrite log_powR log2 mulr1.
-rewrite -(@ler_pM2r _ ((e0 - delta)^-1)) ?invr_gt0 ?subr_gt0//; last first.
+rewrite -(@ler_pM2r _ ((e0 - delta)^-1)) ?invr_gt0 ?subr_gt0//.
   rewrite /e0 /delta /r.
   have H1 : (`H P - r) / 2 < `H P - r.
     rewrite -[X in _ < X]mulr1.
     rewrite ltr_pM2l ?subr_gt0 ?invf_lt1 ?ltr1n//.
     by case/andP : Hr.
-    apply: (@minr_case_strong _ ((`H P - num%:R / den.+1%:R) / 2) (lambda / 2) (fun x => x < `H P - num%:R / den.+1%:R)) => H2.
-      exact: H1.
-    by rewrite (le_lt_trans H2)//.
-rewrite -mulrA mulfV ?subr_eq0//; last first.
-  apply/eqP.
-  exact: e0_delta.
+  apply: (@minr_case_strong _ ((`H P - num%:R / den.+1%:R) / 2) (lambda / 2) (fun x => x < `H P - num%:R / den.+1%:R)) => H2.
+    exact: H1.
+  by rewrite (le_lt_trans H2).
+rewrite -mulrA mulfV ?subr_eq0//.
+  exact/eqP/e0_delta.
 rewrite mulNr mulr1 lerNl.
 by move: Hk; rewrite !ge_max => /andP[/andP[]].
 Qed.
@@ -259,7 +256,7 @@ Qed.
 End source_coding_converse'.
 
 Section source_coding_converse.
-Variables (R : realType) (A : finType) (P : R.-fdist A).
+Context (R : realType) (A : finType) (P : R.-fdist A).
 
 Theorem source_coding_converse epsilon : 0 < epsilon < 1 ->
   forall nu de : nat, 0 < (nu%:R / de.+1%:R : R) < `H P ->

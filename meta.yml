@@ -67,7 +67,7 @@ dependencies:
     description: |-
       [MathComp](https://github.com/math-comp/math-comp)
   - opam:
-      name: coq-mathcomp-analysis
+      name: rocq-mathcomp-analysis
       version: '{ (>= "1.18.0") }'
     description: |-
       [MathComp analysis](https://github.com/math-comp/analysis)

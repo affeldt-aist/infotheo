@@ -8,7 +8,6 @@ Require Import realType_ext ssralg_ext fdist proba.
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, without inord *)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -23,8 +22,7 @@ From mathcomp Require Import normedtype.
 Import numFieldNormedType.Exports.
 
 Section expected_value_variance_ordn.
-
-Variable R : realType.
+Context {R : realType}.
 
 Definition ord1 {n} := lift ord0 (@ord0 n).
 Definition ord2 {n} := lift ord0 (@ord1 n).

@@ -16,7 +16,6 @@ Require Import realType_ln fdist proba.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -27,7 +26,7 @@ Import numFieldNormedType.Exports.
 Declare Scope source_code_scope.
 
 Section scode_definition.
-Variables (A : finType) (B : Type) (k : nat).
+Context (A : finType) (B : Type) (k : nat).
 
 Definition encT := 'rV[A]_k -> B.
 
@@ -41,7 +40,7 @@ Local Open Scope fdist_scope.
 Local Open Scope proba_scope.
 
 Section scode_vl_definition.
-Variables (R : realType) (A : finType) (k n : nat).
+Context (R : realType) (A : finType) (k n : nat).
 
 Definition scode_vl := scode A (seq bool) k.
 
@@ -53,7 +52,7 @@ End scode_vl_definition.
 Arguments E_leng_cw {R A n} _.
 
 Section scode_fl_definition.
-Variables (R : realType) (A : finType) (k n : nat).
+Context (R : realType) (A : finType) (k n : nat).
 
 Definition scode_fl := scode A 'rV[bool]_n k.
 
@@ -62,8 +61,8 @@ Definition SrcRate (sc : scode_fl) : R := (n%:R / k%:R)%R.
 End scode_fl_definition.
 
 Section code_error_rate.
-Variables (R : realType) (A : finType) (B : Type) (P : R.-fdist A).
-Variables (k : nat) (sc : scode A B k).
+Context (R : realType) (A : finType) (B : Type) (P : R.-fdist A) (k : nat)
+  (sc : scode A B k).
 
 Definition SrcErrRate := Pr (P `^ k) [set ta | dec sc (enc sc ta) != ta].
 
@@ -72,7 +71,7 @@ End code_error_rate.
 Notation "esrc( P , sc )" := (SrcErrRate P sc) (at level 40) : source_code_scope.
 
 Section extension.
-Variables (A : finType) (B : Type).
+Context (A : finType) (B : Type).
 
 Definition extension (f : A -> seq B) : seq A -> seq B :=
   fun a => flatten (map f a).

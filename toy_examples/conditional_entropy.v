@@ -12,7 +12,6 @@ Require Import proba jfdist_cond entropy.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -24,7 +23,7 @@ Import GRing.Theory Num.Theory Order.Theory.
 
 Module conditional_entropy_example.
 Section example.
-Variable R : realType.
+Context {R : realType}.
 Definition zero : 'I_4 := ord0.
 Definition one : 'I_4 := @Ordinal 4 1 isT.
 Definition two : 'I_4 := @Ordinal 4 2 isT.
@@ -47,7 +46,7 @@ Qed.
 
 Lemma f1 : \sum_(x in {: 'I_4 * 'I_4}) f x = 1.
 Proof.
-rewrite (eq_bigr (fun x => f (x.1, x.2))); last by case.
+rewrite (eq_bigr (fun x => f (x.1, x.2))); first by case.
 rewrite -(pair_bigA _ (fun x1 x2 => f (x1, x2))) /=.
 by rewrite !big_ord_recl !big_ord0 /f /= !ffunE /=; field.
 Qed.
@@ -72,18 +71,19 @@ rewrite !fdist_sndE /=.
 rewrite !big_ord_recl !big_ord0.
 repeat (rewrite dE /f /= ffunE /=).
 rewrite !(add0r,addr0).
-rewrite (_ : 1/32 + 1/32 = 1/16); last lra.
+rewrite (_ : 1/32 + 1/32 = 1/16); first lra.
 rewrite (addrCA (1/16)).
 rewrite (addrA (1/16)).
-rewrite (_ : 1/16 + 1/16 = 1/8); last lra.
-rewrite (_ : 1/8 + 1/8 = 1/4); last lra.
+rewrite (_ : 1/16 + 1/16 = 1/8); first lra.
+rewrite (_ : 1/8 + 1/8 = 1/4); first lra.
 rewrite invfM//.
-repeat (rewrite logM; [|lra|lra]).
+repeat (rewrite logM; [lra|lra|]).
 rewrite invrK invr1 !mul1r.
-repeat (rewrite logV; last lra).
+repeat (rewrite logV; first lra).
 rewrite log1 log4 log8 log16 log32.
 by field.
 Qed.
 
 End example.
+
 End conditional_entropy_example.
