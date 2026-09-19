@@ -19,7 +19,6 @@ Require Import proba jfdist_cond.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -218,7 +217,7 @@ have <- : \sum_(d <- fin_img W)
   suff H : forall d, `Pr[ [% X, Y] = (a, b) | Z = c] / `Pr[ Y = b | Z = c ] =
                 `Pr[ [% X, W] = (a, d) | Z = c] / `Pr[ W = d | Z = c ].
     apply: eq_bigr => d _.
-    rewrite -eqr_divrMr; last first.
+    rewrite -eqr_divrMr.
       rewrite cpr_eqE mulf_neq0 //.
       - by move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 W d) ->.
       - move: (P0 b c d); apply: contra.
@@ -235,7 +234,7 @@ have <- : \sum_(d <- fin_img W)
     move=> d.
     rewrite cpr_eq_product_rule (H d).
     rewrite [in RHS]cpr_eq_product_rule.
-    rewrite -mulrA mulfV; last first.
+    rewrite -mulrA mulfV.
       rewrite cpr_eqE mulf_eq0 negb_or invr_eq0; apply/andP; split.
       - by move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 W d) ->.
       - move: (P0 b c d); apply: contra => /eqP/(pfwd1_domin_RV2 [% Y, W] (b, d)).

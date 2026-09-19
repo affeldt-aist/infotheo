@@ -9,7 +9,6 @@ Require Import fdist proba.
 Require coqRE.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -117,7 +116,7 @@ Proof. by rewrite /d; unlock; rewrite ffunE. Qed.
 
 Lemma support_nonempty : {i | g i != 0}.
 Proof.
-move: total_neq0; rewrite psumr_neq0; last first.
+move: total_neq0; rewrite psumr_neq0.
   by move=> *; apply: mulr_ge0.
 case/hasP/sig2W=> /= x ?.
 move/(@wpmulr_lgt0 R).
@@ -335,10 +334,10 @@ rewrite mulf_eq0 => /orP []; last first.
   by rewrite invr_eq0; have:= PC0; rewrite /Weighted.total=> /negPf ->.
 move/[swap] => i.
 rewrite psumr_eq0.
-  by move/allP/(_ i)/[!mem_index_enum]/(_ erefl)/implyP/[!inE]/(_ erefl)/eqP->.
-move=> x _; apply/mulr_ge0.
-  by rewrite mulr_ge0.
-by rewrite sqr_ge0.
+  move=> x _; apply/mulr_ge0.
+    by rewrite mulr_ge0.
+  by rewrite sqr_ge0.
+by move/allP/(_ i)/[!mem_index_enum]/(_ erefl)/implyP/[!inE]/(_ erefl)/eqP->.
 Qed.
 
 End evar.
@@ -442,9 +441,9 @@ rewrite -!pr_S.
 apply: (@le_trans _ _ ((Pr P S / 2 *
                          (1 + Pr P S + (\sum_(i in cplt_S) C i * P i))) /
                         (\sum_i C i * P i))).
-  rewrite -(@ler_pM2r _ ((\sum_i C i * P i) * 2)); last exact: mulr_gt0.
+  rewrite -(@ler_pM2r _ ((\sum_i C i * P i) * 2)); first exact: mulr_gt0.
   rewrite !mulrA !(mulrC _ 2) -(mulrA _ _^-1) mulVf //.
-  rewrite mulr1 !mulrA (mulrC _ (2^-1)) mulrA mulVf //; last by apply/eqP; lra.
+  rewrite mulr1 !mulrA (mulrC _ (2^-1)) mulrA mulVf //; first by apply/eqP; lra.
   rewrite -addrA mulrDr mulr2n 2!mulrDl mul1r.
   apply: lerD; first by rewrite ler_pM2l // Weighted.total_le1'.
   rewrite ler_pM2l // addrC -bigID2.
@@ -453,11 +452,11 @@ apply: (@le_trans _ _ ((Pr P S / 2 *
   rewrite -[leRHS]mul1r ler_wpM2r //.
   by have/andP[] := C01 i.
 under [X in _ <= X]eq_bigr do rewrite Weighted.dE /Weighted.total.
-rewrite -big_distrl /= ler_pM2r; last by rewrite invr_gt0.
+rewrite -big_distrl /= ler_pM2r; first by rewrite invr_gt0.
 rewrite -lerN2.
 rewrite {2}pr_S addrA -[X in _ * X]addrA mulrDr opprD [leRHS]addrC.
 rewrite -lerBlDr.
-rewrite opprK -mulrN [leLHS]addrC -mulrA mulVf; last by apply/eqP; lra.
+rewrite opprK -mulrN [leLHS]addrC -mulrA mulVf; first by apply/eqP; lra.
 rewrite mulr1 opprD opprK.
 rewrite -!sumrN -!big_split /=.
 have H E : \sum_(i in E) (P i + - (C i * P i)) = \sum_(i in E) (1 - C i) * P i.
@@ -483,7 +482,7 @@ have vhe0: 0 <= `V (WP.-RV X) * 2 * eps / (1 - eps).
 suff h : `| `E (WP.-RV X) - `E_[WP.-RV X | S] | <= Num.sqrt (`V (WP.-RV X) * 2 * eps / (1 - eps)).
   rewrite -real_normK ?num_real // -[leRHS]sqr_sqrtr //.
   by rewrite lerXn2r // ?nnegrE ?sqrtr_ge0.
-rewrite distrC {1}(_ : eps = 1 - (1 - eps)); last by lra.
+rewrite distrC {1}(_ : eps = 1 - (1 - eps)); first by lra.
 set delta := 1 - eps.
 apply: resilience=> //.
 by rewrite /delta; move: low_eps eps_max01; lra.
@@ -499,12 +498,12 @@ apply: (@le_trans _ _ (1 - (1 - eps) / 2 / Pr P S * Pr P cplt_S)).
   by rewrite pr_S [in leRHS]mulrC mulrAC mulfV // div1r.
 apply: (@le_trans _ _ (1 - (1 - eps) / 2 / Pr P S *
                             \sum_(i in cplt_S) P i * (1 - C i))).
-  rewrite lerD2l lerNl opprK ler_pM2l; last first.
+  rewrite lerD2l lerNl opprK ler_pM2l.
     rewrite pr_S mulrC mulrA mulVf //; lra.
   apply: ler_sum => i icplt_S.
   by rewrite mulrBr mulr1 lerBlDr lerDl; exact: mulr_ge0.
 rewrite -pr_S -mulrA mulrCA !mulrA mulVf ?pr_S // mul1r.
-rewrite ler_pdivlMr; last by move: low_eps eps_max01; lra.
+rewrite ler_pdivlMr; first by move: low_eps eps_max01; lra.
 rewrite -pr_S mulrDl mul1r {2}pr_S mulNr.
 rewrite addrC; rewrite -lerBrDr lerNl opprD opprK addrC. (* mulrA.*)
 rewrite -sumrN -big_split /=.
@@ -559,15 +558,15 @@ apply: (le_trans (ler_distD `E_[ (WP.-RV X) | S ] `E_[ X | S ] (`E (WP.-RV X))))
 have ? : 0 <= eps by apply/Pr_ge0.
 apply: lerD.
 - rewrite -(ger0_norm (sqrtr_ge0 _)).
-  rewrite ler_abs_sqr sqr_sqrtr; first rewrite bound_mean//.
+  rewrite ler_abs_sqr sqr_sqrtr; last by rewrite bound_mean.
   rewrite -!mulrA; apply/mulr_ge0; first exact: cvariance_ge0.
   rewrite mulr_ge0 // mulr_ge0 // invr_ge0.
   by move: low_eps eps0 eps_max01; lra.
 - rewrite distrC -(ger0_norm (sqrtr_ge0 _)).
   rewrite ler_abs_sqr sqr_sqrtr ?bound_mean //.
-  + exact: bound_emean.
   + apply: mulr_ge0; last by rewrite invr_ge0; move: low_eps eps_max01; lra.
     by rewrite mulr_ge0 // mulr_ge0 // variance_ge0.
+  + exact: bound_emean.
 Qed.
 
 End bounding_empirical_mean.
@@ -599,7 +598,7 @@ rewrite /update_ffun ffunE.
 case: ifPn => //.
 case/norP=> tau_max_neq0 Ci_neq0.
 apply/mulr_ge0 => //.
-rewrite subr_ge0 ler_pdivrMr ?mul1r; first exact/sq_dev_max_ge.
+rewrite subr_ge0 ler_pdivrMr ?mul1r; last exact/sq_dev_max_ge.
 by rewrite lt_neqAle eq_sym tau_max_neq0/=; exact/sq_dev_max_ge0.
 Qed.
 
@@ -670,7 +669,7 @@ apply: (@le_trans _ _ ((1 - eps) * (`V_[X | S] + (Num.sqrt (`V_[X | S] * 2 * eps
   apply: ler_wpM2l.
     by rewrite subr_ge0; exact/Pr_le1.
   rewrite lerD2l -ler_abs_sqr.
-  rewrite [x in _ <= x]ger0_norm; first exact: (bound_mean_emean C eps_max).
+  rewrite [x in _ <= x]ger0_norm; last exact: (bound_mean_emean C eps_max).
   exact/addr_ge0/sqrtr_ge0/sqrtr_ge0.
 (*a7-a8*)
 apply: (@le_trans _ _ ((1 - eps) * `V (WP.-RV X) *
@@ -683,22 +682,22 @@ apply: (@le_trans _ _ ((1 - eps) * `V (WP.-RV X) *
   rewrite [leRHS]mulrA [in leRHS](mulrA _ 2) -[in leRHS](sqr_sqrtr Hvar_hat_2_eps).
 
   rewrite -exprMn (mulrDr (Num.sqrt (`V (WP.-RV X) * 2 * eps))).
-  rewrite ler_sqr ?nnegrE; last 2 first.
+  rewrite ler_sqr ?nnegrE.
   - by apply/addr_ge0/sqrtr_ge0/sqrtr_ge0.
   - by rewrite ?addr_ge0 ?mulr_ge0 ?invr_ge0 ?mulr_ge0 ?sqrtr_ge0//.
   apply: lerD.
     apply: (@le_trans _ _ (Num.sqrt (`V (WP.-RV X) * 2 * eps * (4 * 4 * (2 - eps))^-1))); last first.
       rewrite sqrtrM // sqrtrV //.
-      rewrite (sqrtrM (2 - eps)); last lra.
+      rewrite (sqrtrM (2 - eps)); first lra.
       by rewrite -expr2 sqrtr_sqr ger0_norm.
-    rewrite ler_psqrt ?nnegrE; last 2 first.
+    rewrite ler_psqrt ?nnegrE.
     - apply: mulr_ge0; last by rewrite invr_ge0.
       by rewrite mulr_ge0 // mulr_ge0.
     - apply: mulr_ge0; last by rewrite invr_ge0.
       by rewrite mulr_ge0 // mulr_ge0.
-    - rewrite invfM !mulrA ler_pM2r; last by rewrite invr_gt0.
-      rewrite ler_pdivlMr; last lra.
-      rewrite mulrC !mulrA (_ : 4 * 4 = 16); last lra.
+    - rewrite invfM !mulrA ler_pM2r; first by rewrite invr_gt0.
+      rewrite ler_pdivlMr; first lra.
+      rewrite mulrC !mulrA (_ : 4 * 4 = 16); first lra.
       by rewrite -[leLHS]mulrA -[leRHS]mulrA ler_pM // mulr_ge0.
   by rewrite -sqrtrV // -sqrtrM // sqr_sqrtr.
 rewrite /bound_intermediate [leRHS]mulrC (mulrC (1 - eps)).
@@ -744,9 +743,9 @@ apply: (@le_trans _ _ ((1 - eps) *
       by move: low_eps; lra.
     rewrite lerXn2r // ?nnegrE ?addr_ge0 //?invr_ge0 ?mulr_ge0 // ?sqrtr_ge0 //.
     rewrite lerD ?lerXn2r // ?nnegrE ?addr_ge0 //?invr_ge0 ?mulr_ge0 // ?sqrtr_ge0 //.
-      rewrite ?lef_pV2 ?posrE ?mulr_gt0 // ?sqrtr_gt0 //; last by move: eps_max01; lra.
+      rewrite ?lef_pV2 ?posrE ?mulr_gt0 // ?sqrtr_gt0 //; first by move: eps_max01; lra.
       rewrite ?ler_pM2l // ler_wsqrtr // lerD2l lerN2 //.
-    rewrite ?lef_pV2 ?posrE ?mulr_gt0 // ?sqrtr_gt0 // ; last by move: eps_max01; lra.
+    rewrite ?lef_pV2 ?posrE ?mulr_gt0 // ?sqrtr_gt0 //; first by move: eps_max01; lra.
     rewrite ?ler_pM2l // ler_wsqrtr // lerD2l lerN2 //.
 rewrite ler_wpM2r// -!mulrA ler_wpM2l// mulrA.
 exact: key.
@@ -800,7 +799,7 @@ apply: (@le_trans _ _ (`V (WP.-RV X) * (1 - 3 / 2 * eps) -
   rewrite lerD2r ler_wpM2l // ?variance_ge0 //.
   apply: (@le_trans _ _ ((1 - eps / 2) * (1 - eps))); first nra.
   apply: (@le_trans _ _ (\sum_(i in S) C i * P i)).
-    rewrite -pr_S -ler_pdivlMr; last by move: low_eps; lra.
+    rewrite -pr_S -ler_pdivlMr; first by move: low_eps; lra.
     exact: (S_mass eps_max).
   apply: ler_suml=> // i _ _.
   by rewrite mulr_ge0 // nneg_finfun_ge0.
@@ -890,12 +889,12 @@ have tau_max_gt0 : 0 < sq_dev_max X PC0 C0.
 suff H2 : \sum_(i in S) (C i * P i) * tau C0 i <=
     (1 - eps) / 2 * (\sum_(i in ~: S) (C i * P i) * tau C0 i).
   rewrite /invariant !update_removed_weight// !mulrDr; apply: lerD => //.
-  by rewrite mulrCA; rewrite ler_pM2l; [exact: H2 | exact: divr_gt0].
+  by rewrite mulrCA; rewrite ler_pM2l; [exact: divr_gt0|exact: H2].
 have var16':= ltW var16.
 apply: le_trans; first exact: bound_empirical_variance_S.
-rewrite -ler_pdivrMl; last by apply: divr_gt0; move: low_eps; lra.
+rewrite -ler_pdivrMl; first by apply: divr_gt0; move: low_eps; lra.
 rewrite invf_div !mulrA.
-rewrite -(mulrA 2) mulVf ?mulr1; last by move: low_eps; lra.
+rewrite -(mulrA 2) mulVf ?mulr1; first by move: low_eps; lra.
 by apply: le_trans; last exact: bound_empirical_variance_cplt_S.
 Qed.
 
@@ -905,7 +904,7 @@ move=> u; apply/andP; split; first by have := update_pos_ffun X C0 PC0.
 rewrite /update_ffun ffunE; case: ifPn; first lra.
 rewrite negb_or => /andP[sq_dev_neq0 Cu_neq0].
 apply: mulr_ile1 => //.
-- rewrite subr_ge0 ler_pdivrMr// ?mul1r//; last first.
+- rewrite subr_ge0 ler_pdivrMr// ?mul1r//.
     by rewrite lt_neqAle eq_sym sq_dev_neq0/=; exact: sq_dev_max_ge0.
   exact: sq_dev_max_ge.
 - by have/andP[]:= C01 u.
@@ -943,9 +942,9 @@ Lemma base_case: invariant P ffun1 S eps.
 Proof.
 rewrite /invariant/=.
 under eq_bigr do rewrite ffunE subrr mul0r.
-rewrite big1; last by [].
+rewrite big1; first by [].
 under eq_bigr do rewrite ffunE subrr mul0r.
-rewrite big1; last by [].
+rewrite big1; first by [].
 by rewrite mulr0.
 Qed.
 
@@ -989,11 +988,11 @@ have sq_dev_max_neq0 : sq_dev_max X PCneq0 C0 != 0.
 exists [arg max_(i > u | C i != 0) sq_dev X PCneq0 C0 i]%O.
   by rewrite supportE.
 rewrite /update_ffun supportE ffunE negbK ifF.
-  rewrite mulf_eq0 subr_eq0 -invr1 -(mul1r (1^-1)).
-  rewrite eqr_div ?oner_eq0// ?mulr1 ?mul1r// /sq_dev_max.
-  rewrite (@bigmax_eq_arg _ _ _ _ u) ?eq_refl ?orbT ?gt_eqF//.
-  by move=> i _; exact/sq_dev_ge0.
-by rewrite (negbTE sq_dev_max_neq0)/=; exact/negbTE.
+  by rewrite (negbTE sq_dev_max_neq0)/=; exact/negbTE.
+rewrite mulf_eq0 subr_eq0 -invr1 -(mul1r (1^-1)).
+rewrite eqr_div ?oner_eq0// ?mulr1 ?mul1r// /sq_dev_max.
+rewrite (@bigmax_eq_arg _ _ _ _ u) ?eq_refl ?orbT ?gt_eqF//.
+by move=> i _; exact/sq_dev_ge0.
 Qed.
 
 Function filter1D_rec v (v_ge0 : 0 <= v)
@@ -1061,7 +1060,7 @@ apply filter1D_rec_ind => //=.
   move/tr: evar16.
   move=> evar16 /(invariant_update C01 low_eps evar16).
   have PC0' : forall x, update_ffun X C0 PC0 x * P x = 0.
-    move: PC_eq0=> /negP/negbNE; rewrite psumr_eq0; last first.
+    move: PC_eq0=> /negP/negbNE; rewrite psumr_eq0.
       move=> u _.
       by rewrite mulr_ge0// update_pos_ffun.
     by move/allP=> PC0' x; apply/eqP/PC0'/mem_index_enum.

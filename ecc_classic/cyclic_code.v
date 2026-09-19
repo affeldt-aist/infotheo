@@ -36,7 +36,6 @@ Reserved Notation "''cgen[' C ]" (at level 0, format "''cgen[' C ]").
 Declare Scope cyclic_code_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -58,17 +57,17 @@ case: ifPn => [/eqP ->|x0].
   move/eqP; rewrite -val_eqE /= => /eqP n0y.
   exfalso; move: (ltn_ord y).
   rewrite ltnNge => /negP; apply.
-  rewrite [in X in X < _]n0y /= inordK //; first by rewrite prednK // lt0n.
+  rewrite [in X in X < _]n0y /= inordK //; last by rewrite prednK // lt0n.
   by apply: ltn_trans (ltn_ord y); rewrite prednK // lt0n.
 case: ifPn => [/eqP -> //|y0 /eqP].
   move/eqP; rewrite -val_eqE /= => /eqP n0x.
   exfalso; move: (ltn_ord x).
   rewrite ltnNge => /negP; apply.
-  rewrite -[in X in X < _]n0x /= inordK //; first by rewrite prednK // lt0n.
+  rewrite -[in X in X < _]n0x /= inordK //; last by rewrite prednK // lt0n.
   apply: ltn_trans (ltn_ord x); by rewrite prednK // lt0n.
-rewrite -val_eqE /= inordK; last first.
+rewrite -val_eqE /= inordK.
   by rewrite (ltn_trans _ (ltn_ord x))// prednK// lt0n.
-rewrite inordK; last first.
+rewrite inordK.
   by rewrite (ltn_trans _ (ltn_ord y))// prednK // lt0n.
 move/eqP/(congr1 S).
 by rewrite prednK ?lt0n // prednK ?lt0n // => ?; exact: val_inj.
@@ -103,7 +102,7 @@ apply/idP/idP => [|/eqP ->].
         by rewrite -ltnS abs ltn_Pmull.
       by rewrite mul1n => /eqP; rewrite eqSS => /eqP.
     rewrite -[RHS]Hx; congr (x _ _); apply/val_inj => /=; by rewrite inordK.
-  rewrite -[RHS]Hx modn_small /=; last first.
+  rewrite -[RHS]Hx modn_small /=.
     rewrite ltnS ltn_neqAle -ltnS (ltn_ord i) andbT; apply/eqP => in''.
     by rewrite in'' modnn eqxx in in'.
   congr (x _ _); apply: val_inj => /=; by rewrite inordK.
@@ -120,8 +119,8 @@ case: ifPn => [/eqP -> |i0].
   by rewrite inordK.
 congr (x _ _); apply: val_inj => /=.
 rewrite unlock ffunE /= inordK.
-  by rewrite (negPf i0) inordK // (ltn_trans _ (ltn_ord i)) // prednK // lt0n.
-by rewrite (ltn_trans _ (ltn_ord i)) // prednK // lt0n.
+  by rewrite (ltn_trans _ (ltn_ord i)) // prednK // lt0n.
+by rewrite (negPf i0) inordK // (ltn_trans _ (ltn_ord i)) // prednK // lt0n.
 Qed.
 
 Lemma sub_XrVpoly_rcs (R : idomainType) n (x : 'rV[R]_n.+1) :
@@ -145,7 +144,7 @@ rewrite mulr0 2!coef_rVpoly; case: insubP => /= [j|].
     rewrite mxE unlock ffunE -val_eqE /= ki (negPf i0) -ji; congr (x _ _).
     by apply/val_inj => /=; rewrite inordK.
   rewrite ltnS -ltnNge => n0i; exfalso.
-  rewrite -ltnS prednK // in in0'; last by rewrite lt0n.
+  rewrite -ltnS prednK // in in0'; first by rewrite lt0n.
   by move/negP : in0; apply; rewrite eq_sym eqn_leq {}n0i.
 rewrite -leqNgt => n0i; case: insubP => /= [j|]; last by rewrite subrr.
 rewrite ltnS => in0' ji; exfalso; move/negP : in0; apply.
@@ -161,7 +160,7 @@ move=> n0.
 rewrite /rcs_poly.
 set xn1 := _ - _.
 apply: (@leq_trans (size xn1).-1); last by rewrite /xn1 size_XnsubC.
-rewrite -ltnS prednK; last by rewrite size_XnsubC.
+rewrite -ltnS prednK; first  by rewrite size_XnsubC.
 have : xn1 != 0 by apply/monic_neq0/monicXnsubC.
 by move/ltn_modpN0; exact.
 Qed.
@@ -181,9 +180,9 @@ Lemma rcs_rcs_poly (F : fieldType) n0 (x : 'rV[F]_n0) :
   rcs x = poly_rV (rcs_poly (rVpoly x) n0).
 Proof.
 destruct n0 as [|n0].
-  rewrite /rcs_poly (_ : 'X^0 = 1); last first.
+  rewrite /rcs_poly (_ : 'X^0 = 1).
     by apply/polyP => i; rewrite coefXn.
-  rewrite subrr modp0 (_ : rVpoly x = 0); last first.
+  rewrite subrr modp0 (_ : rVpoly x = 0).
     apply/polyP => i.
     rewrite coef_rVpoly.
     by case: insubP => //; rewrite coef0.
@@ -219,33 +218,33 @@ Lemma fdcoor_rcs' (i : 'I_n) x : a ^+ n = 1 ->
   a ^+ i * x ^`_ i = 0 -> (rcs x) ^`_ i = 0.
 Proof.
 move=> an1.
-rewrite /fdcoor (@horner_coef_wide _ n); last by rewrite /rVpoly size_poly.
+rewrite /fdcoor (@horner_coef_wide _ n); first by rewrite /rVpoly size_poly.
 rewrite big_distrr /=.
-rewrite (eq_bigr (fun i1 : 'I_ _ => (rVpoly x)`_i1 * a ^+ i ^+ i1.+1)); last first.
+rewrite (eq_bigr (fun i1 : 'I_ _ => (rVpoly x)`_i1 * a ^+ i ^+ i1.+1)).
   move=> i1 _; rewrite mulrC -mulrA; congr (_ * _).
   by rewrite mxE -!exprM -exprD mulnS addnC.
 move=> x_RS.
-rewrite (@horner_coef_wide _ n); last by move: (size_rcs x); rewrite size_XnsubC.
+rewrite (@horner_coef_wide _ n); first by move: (size_rcs x); rewrite size_XnsubC.
 rewrite -{}[RHS]x_RS rcs_rcs_poly; apply/esym.
-rewrite (reindex_onto (@rcs_perm n) (perm_inv (@rcs_perm n))) /=; last first.
-  move=> i1 _; by rewrite permKV.
-rewrite (eq_bigl xpredT); last by move=> i1; rewrite permK eqxx.
+rewrite (reindex_onto (@rcs_perm n) (perm_inv (@rcs_perm n))) /=.
+  by move=> i1 _; rewrite permKV.
+rewrite (eq_bigl xpredT); first by move=> i1; rewrite permK eqxx.
 apply: eq_bigr => i1 _.
 rewrite coef_rVpoly unlock ffunE.
 case: ifPn => [/eqP ->|].
   case: insubP => [j _ jn0|]; last by rewrite ltnS leqnn.
   rewrite /= in jn0.
   rewrite coef_rVpoly; case: insubP => // k _ k0.
-  rewrite mxE rcs_poly_rcs ?rVpolyK; last by rewrite size_poly.
+  rewrite mxE rcs_poly_rcs ?rVpolyK; first by rewrite size_poly.
   rewrite coef_rVpoly_ord mxE unlock ffunE -val_eqE k0 /= expr0 mulr1.
   by rewrite exprAC an1 expr1n mulr1; congr (x _ _); apply: val_inj => /=.
 case: insubP => /= [j|].
   rewrite ltnS => i1n0 ji1 i10; rewrite coef_rVpoly.
   case: insubP => /= [k|].
     rewrite ltnS => i1n0' ki1.
-    rewrite mxE rcs_poly_rcs ?rVpolyK; last by rewrite size_poly.
+    rewrite mxE rcs_poly_rcs ?rVpolyK; first by rewrite size_poly.
     rewrite coef_rVpoly_ord mxE unlock ffunE -val_eqE [val k]/= ki1 val_eqE (negPf i10).
-    rewrite inordK; last by rewrite ltnW // ltnS prednK // lt0n.
+    rewrite inordK; first by rewrite ltnW // ltnS prednK // lt0n.
     rewrite prednK // ?lt0n //; congr (x _ _ * _).
     exact/val_inj.
     by rewrite mxE.
@@ -355,8 +354,8 @@ Proof.
 move=> gC; elim=> [| k ih] /=.
 - by rewrite (_ : 'X^0 = 1) // mul1r modp_small // (leq_ltn_trans cn) // size_XnsubC.
 - have {}ih : poly_rV `[ 'X^k * c ]_ n \in [set cs in C] by rewrite inE.
-  move: (Ccode.P ih); rewrite rcs_rcs_poly poly_rV_K; last first.
-    rewrite -ltnS -(_ : size (('X^n : {poly F}) - 1) = n.+1); last by rewrite size_XnsubC.
+  move: (Ccode.P ih); rewrite rcs_rcs_poly poly_rV_K.
+    rewrite -ltnS -(_ : size (('X^n : {poly F}) - 1) = n.+1); first by rewrite size_XnsubC.
     exact/ltn_modpN0/monic_neq0/monicXnsubC.
   by rewrite /rcs_poly modp_mul mulrA exprS inE; exact.
 Qed.
@@ -388,7 +387,7 @@ Proof.
 move=> cC p /= r  p_in_C Hdivp_g Hsize_rem.
 have -> : r = `[ r ]_n.
   by symmetry; rewrite modp_small// (@ltn_trans (size c))// size_XnsubC // ltnS.
-rewrite (_ : r = rVpoly p - rVpoly p %/ c * c); last first.
+rewrite (_ : r = rVpoly p - rVpoly p %/ c * c).
   by rewrite {1}Hdivp_g addrAC subrr add0r.
 rewrite modpD linearD /=.
 have -> : `[ rVpoly p ]_n = rVpoly p.
@@ -437,7 +436,7 @@ have g''0 : g'' = 0.
       apply/eqP; rewrite rVpoly0; by case/and3P : Hg'.
       rewrite lreg_size ?size_g' //; by apply/GRing.lregP.
     rewrite lead_coefZ /k -mulrA mulVr ?mulr1 // unitfE lead_coef_eq0 rVpoly0; by case/and3P : (canonical_cgenP HC).
-  rewrite andbT poly_rV_K; last by rewrite ltnW // (leq_trans size_g'') // size_canonical_cgen.
+  rewrite andbT poly_rV_K; first by rewrite ltnW // (leq_trans size_g'') // size_canonical_cgen.
   rewrite leq_eqVlt -(eq_sym (size g'')) ltn_eqF //=.
   apply/negP.
   rewrite negb_imply -leqNgt leq_eqVlt size_g'' orbT andbT.
@@ -461,7 +460,7 @@ have size_rem : size (p %% rVpoly g) < size (rVpoly g).
   rewrite ltn_modpN0 //; case/and3P : Hg => _ ? _; by rewrite rVpoly0.
 have rem_n : size (p %% rVpoly g) <= n.
   by rewrite ltnW //; apply/(leq_trans size_rem)/(size_is_cgen Hg).
-rewrite modp_small; last by rewrite size_XnsubC.
+rewrite modp_small; first by rewrite size_XnsubC.
 rewrite modpD modpN => pmodg.
 have rem_in_C : poly_rV (p %% rVpoly g) \in C.
   rewrite pmodg linearD /= (proj2 (Lcode0.aclosed C)) // linearN /= Lcode0.oclosed //.
@@ -471,7 +470,7 @@ have rem_in_C : poly_rV (p %% rVpoly g) \in C.
 have rem_0 : p %% rVpoly g = 0.
   apply/eqP/negPn/negP => abs.
    case/and3P : Hg => _ _ /forallP/(_ (poly_rV (p %% rVpoly g))).
-   rewrite rem_in_C /= (_ : _ != 0 = true) ?andbT; last first.
+   rewrite rem_in_C /= (_ : _ != 0 = true) ?andbT.
      apply: contra abs; by apply: poly_rV_0_inv.
    apply/negP.
    rewrite negb_imply -ltnNge poly_rV_K // size_rem andbT.
@@ -580,7 +579,7 @@ Lemma divides_Xn_sub_1_is_cyclic (g : {poly F}) : g %| 'X^n - 1 ->
 Proof.
 move=> gXn x.
 rewrite !inE => /dvdpP[/= i xig].
-rewrite rcs_rcs_poly poly_rV_K; last first.
+rewrite rcs_rcs_poly poly_rV_K.
   rewrite /rcs_poly -ltnS -(@size_XnsubC F n 1)//.
   by rewrite ltn_modpN0 // -size_poly_eq0 size_XnsubC.
 by rewrite /rcs_poly -dvdp_mod // xig mulrA dvdp_mull // modpp.
@@ -601,14 +600,14 @@ split => [H|].
   rewrite inE rcs_rcs_poly.
   move/forallP: (Pcode.P C) => /(_ (poly_rV (rcs_poly (rVpoly cw) n))).
   rewrite inE => /eqP ->.
-  rewrite poly_rV_K; last by apply: size_rcs_poly_old.
+  rewrite poly_rV_K; first by apply: size_rcs_poly_old.
   rewrite /rcs_poly -dvdp_mod // dvdp_mull //.
   by move/forallP: (Pcode.P C) => /(_ cw); rewrite inE cwC => /eqP/esym.
 move=> H.
 move: (@cgen_divides_Xn_sub_1 _ _ (@Ccode.mk _ _ (Pcode.lcode0 C) H) (poly_rV (Pcode.gen C))).
-rewrite poly_rV_K; last by rewrite ltnW // (Pcode.size_gen C).
+rewrite poly_rV_K; first by rewrite ltnW // (Pcode.size_gen C).
 apply.
-rewrite -pgen_cgen // poly_rV_K; last by rewrite ltnW // (Pcode.size_gen C).
+rewrite -pgen_cgen // poly_rV_K; first by rewrite ltnW // (Pcode.size_gen C).
 exact: (Pcode.P C).
 Qed.
 

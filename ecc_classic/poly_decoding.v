@@ -30,7 +30,6 @@ Reserved Notation "t '.-'rV[' R ]_ n" (at level 2).
 Reserved Notation "'\omega_(' f , a , e )" (at level 0).
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -46,7 +45,7 @@ have H : forall n, lead_coef 'X^n \is a GRing.unit
   by move=> ??; rewrite lead_coefXn GRing.unitr1.
 rewrite (Pdiv.IdomainUnit.divp_eq (H R j) p).
 rewrite (Pdiv.IdomainUnit.modpD (H R i)).
-rewrite modp_eq0; last by rewrite dvdp_mull // dvdp_exp2l.
+rewrite modp_eq0; first by rewrite dvdp_mull // dvdp_exp2l.
 by rewrite add0r -(Pdiv.IdomainUnit.divp_eq (H R j) p) modp_small // size_polyXn.
 Qed.
 
@@ -55,8 +54,8 @@ Lemma size_one_minus_X (R : idomainType) (a : R) (a0 : a != 0) :
   size (1 - a *: 'X) = 2%N.
 Proof.
 rewrite addrC size_polyDl.
-  by rewrite size_polyN size_scale ?size_polyX // expf_neq0.
-by rewrite size_polyN size_scale ?expf_neq0 // size_polyX size_polyC oner_eq0.
+  by rewrite size_polyN size_scale ?expf_neq0 // size_polyX size_polyC oner_eq0.
+by rewrite size_polyN size_scale ?size_polyX // expf_neq0.
 Qed.
 
 Lemma one_minus_X_neq0 (R : idomainType) (a : R) : 1 - a *: 'X != 0.
@@ -67,7 +66,7 @@ Qed.
 
 (* NB: not used *)
 Section error_locator_polynomial_alt.
-Variables (F : fieldType) (n : nat) (a : {ffun 'I_n -> F}).
+Context (F : fieldType) (n : nat) (a : {ffun 'I_n -> F}).
 
 Definition errloc_alt (E : {set 'I_n}) : {poly F} :=
   \prod_(i in E) ('X - (a i)%:P).
@@ -77,7 +76,7 @@ End error_locator_polynomial_alt.
 Local Open Scope vec_ext_scope.
 
 Section distinct_non_zero.
-Variables (F : fieldType) (n : nat).
+Context (F : fieldType) (n : nat).
 
 Definition distinct_non_zero (a : 'rV[F]_n) :=
   injective [ffun i => a ``_i] /\ (forall i, a ``_ i != 0).
@@ -92,7 +91,7 @@ Qed.
 End distinct_non_zero.
 
 Section error_locator_polynomial.
-Variables (F : fieldType) (n : nat).
+Context (F : fieldType) (n : nat).
 
 Definition errloc (a : 'rV[F]_n) (E : {set 'I_n}) : {poly F} :=
   \prod_(i in E) (1 - a ``_ i *: 'X).
@@ -113,14 +112,14 @@ move Hm : (#| E |) => m.
 elim: m E Hm => [E /eqP| m IH E Em].
   rewrite cards_eq0 => /eqP ->; by rewrite /errloc 2!big_set0 derivC.
 have [/= f Hf] : exists f, f \in E by apply/set0Pn; rewrite -cards_eq0 Em.
-rewrite /errloc (big_setD1 f) //= derivM IH; last first.
+rewrite /errloc (big_setD1 f) //= derivM IH.
   move: (cardsD1 f E); rewrite Hf /= add1n Em; by case.
 rewrite derivB derivC sub0r linearZ /= derivX.
 rewrite [in RHS](big_setD1 f) //=; congr (_ + _).
   by rewrite alg_polyC -mul_polyC polyCN.
 rewrite big_distrr /=; apply: eq_bigr => i Hi.
 rewrite mulrC -!mul_polyC -mulrA; congr (_ * _).
-rewrite [in RHS](big_setD1 f) //=; last first.
+rewrite [in RHS](big_setD1 f) //=.
   rewrite in_setD1; by move: Hi; rewrite in_setD1 eq_sym => /andP [] ->.
 rewrite mulrC mul_polyC; congr (_ * _).
 apply: eq_bigl => ?; rewrite !in_setD1; bool_congr.
@@ -131,10 +130,10 @@ Lemma decomp_errloc (a :'rV[F]_n) E : (forall i, a ``_ i != 0) ->
 Proof.
 move=> a0.
 rewrite /errloc (eq_bigr (fun i : 'I_n => (- a ``_ i)%:P * ('X - (a ``_ i)^-1%:P))).
-  by rewrite big_split.
-move=> i iE.
-rewrite -polyCN mulrDr -polyCM mulrNN divff //.
-by rewrite polyC1 -(addrC 1) polyCN mulNr mul_polyC.
+  move=> i iE.
+  rewrite -polyCN mulrDr -polyCM mulrNN divff //.
+  by rewrite polyC1 -(addrC 1) polyCN mulNr mul_polyC.
+by rewrite big_split.
 Qed.
 
 Lemma errloc_neq0 a E : errloc a E != 0.
@@ -180,16 +179,16 @@ Lemma size_errloc_eq a E : distinct_non_zero a -> size (errloc a E) = #| E |.+1.
 Proof.
 move=> Ha.
 rewrite /errloc.
-rewrite (eq_bigr (fun i : 'I_n => (- a ``_ i *: ('X - (a ``_ i)^-1%:P)))); last first.
+rewrite (eq_bigr (fun i : 'I_n => (- a ``_ i *: ('X - (a ``_ i)^-1%:P)))).
   move=> i iE.
   rewrite scalerDr addrC !scaleNr scalerN opprK; congr (_ + _).
   rewrite -mul_polyC -!alg_polyC mulr_algl scalerA.
   rewrite divrr // ?alg_polyC // unitfE.
   by case: Ha => _; apply.
-rewrite scaler_prod size_scale; last first.
+rewrite scaler_prod size_scale.
   apply/prodf_neq0 => i iE; by rewrite oppr_eq0 (proj2 Ha).
 rewrite (_ : \prod_(i in E) ('X - (a ``_ i)^-1%:P) =
-  \prod_(i <- enum E) ('X - (a ``_ i)^-1%:P)); last by rewrite big_filter.
+  \prod_(i <- enum E) ('X - (a ``_ i)^-1%:P)); first by rewrite big_filter.
 by rewrite size_prod_XsubC cardE.
 Qed.
 
@@ -217,7 +216,7 @@ apply: contra => /eqP t0; case: e => /= e; by rewrite t0 leqn0 -cards_eq0.
 Qed.
 
 Section error_evaluator_polynomial_def.
-Variables (F : fieldType) (n : nat).
+Context (F : fieldType) (n : nat).
 
 Definition erreval (b a : 'rV[F]_n) e :=
   \sum_(i in supp e) e ``_ i * b ``_ i *: \sigma_(a, e, i).
@@ -227,9 +226,8 @@ End error_evaluator_polynomial_def.
 Notation "'\omega_(' f , a , e )" := (erreval f a e).
 
 Section error_evaluator_polynomial_prop.
-Variables (F : fieldType) (n : nat) (a : 'rV[F]_n).
-Variables (t : nat) (e : t.-'rV[F]_n).
-Variables (f : 'rV[F]_n).
+Context (F : fieldType) (n : nat) (a : 'rV[F]_n) (t : nat) (e : t.-'rV[F]_n)
+  (f : 'rV[F]_n).
 
 Lemma size_erreval : size \omega_(f, a, e) <= t.
 Proof.
@@ -242,7 +240,7 @@ apply: (@leq_trans (1 + size \sigma_( a, e, i)).-1).
   by rewrite addn1.
   by rewrite addn0 leq_pred.
 rewrite add1n /= (leq_trans (size_errloc _ _)) //.
-rewrite (_ : #|_| = #|supp e|.-1); last by rewrite (cardsD1 i (supp e)) inE /= iE.
+rewrite (_ : #|_| = #|supp e|.-1); first by rewrite (cardsD1 i (supp e)) inE /= iE.
 rewrite -insupp in iE.
 rewrite prednK // ?(errsupp e) // lt0n cards_eq0; by apply/set0Pn; exists i.
 Qed.
@@ -256,7 +254,7 @@ apply/coprimepP => p p_sigma p_eta.
 suff no_root_p : forall x, root p x -> False.
   move : p_sigma; rewrite (decomp_errloc _ (proj2 Ha)) //.
   move/(dvdp_mull (\prod_(i in supp E) (- a ``_ i)^-1%:P)).
-  rewrite mulrA -big_split /= (eq_bigr (fun=> 1%:P)); last first.
+  rewrite mulrA -big_split /= (eq_bigr (fun=> 1%:P)).
     move=> i _; by rewrite -polyCM mulVr // unitrN unitfE (proj2 Ha).
   rewrite big1 // mul1r -big_filter; case/dvdp_prod_XsubC => bs.
   set mask_bs := mask bs _.
@@ -266,7 +264,7 @@ suff no_root_p : forall x, root p x -> False.
   rewrite -has_predT => /hasP [/= i i_mask_bs] _ => p_prod.
   suff : root (\prod_(j <- mask_bs) ('X - (a ``_ j)^-1%:P)) (a ``_ i)^-1.
     rewrite -(eqp_root p_prod); by move/no_root_p.
-  rewrite (@big_morph _ _ (fun p => root p (a ``_ i)^-1) false orb); last 2 first.
+  rewrite (@big_morph _ _ (fun p => root p (a ``_ i)^-1) false orb).
     move=> ? ?; by rewrite rootM.
     by apply/negP/negP/root1.
   rewrite big_has /=; apply/hasP; exists i => //; by rewrite root_XsubC.
@@ -285,9 +283,9 @@ have {px} : root \omega_(f, a, E) (a ``_ n0)^-1.
 rewrite /root horner_sum (bigD1 _ n0e) /=.
 set q := (X in _ + X == 0 -> _).
 have {q}-> : q = 0.
-  rewrite {}/q (eq_bigr (fun=> 0)); first by rewrite big_const /= iter_addr0.
+  rewrite {}/q (eq_bigr (fun=> 0)); last by rewrite big_const /= iter_addr0.
   move=> i /andP[ie in0].
-  rewrite !hornerE /= horner_prod (bigD1 n0) /=; last first.
+  rewrite !hornerE /= horner_prod (bigD1 n0) /=.
     by rewrite in_setD1 n0e eq_sym andbT.
   by rewrite !hornerE /= divrr ?unitfE ?(proj2 Ha) // subrr mulr0 mul0r.
 rewrite addr0 !hornerE /= mulf_eq0; case/orP.
@@ -302,8 +300,7 @@ Proof. by rewrite /erreval supp0 big_set0. Qed.
 End error_evaluator_polynomial_prop.
 
 Section characterization_of_error_vector.
-Variables (F : fieldType) (n : nat) (e : 'rV[F]_n).
-Variable a : 'rV[F]_n.
+Context (F : fieldType) (n : nat) (e : 'rV[F]_n) (a : 'rV[F]_n).
 Hypothesis Ha : distinct_non_zero a.
 Variable f : 'rV[F]_n.
 
@@ -318,34 +315,34 @@ have morph_horner_mul : {morph (fun x => x.[(a ``_ i)^-1]) : x y / x * y >-> x *
   move=> x y; exact: hornerM.
 have -> : \omega_(f, a, e).[(a ``_ i)^-1] =
     e ``_ i * f ``_ i * \prod_(j in supp e :\ i) (1 - a ``_ j * (a ``_ i)^-1).
-  rewrite (@big_morph _ _ _ 0 _ _ _ morph_horner_add); last by rewrite horner0.
-  rewrite [in LHS](big_setD1 i) //= [X in _ + X = _](_ :_  = 0); last first.
-    rewrite (eq_bigr (fun=> 0)); first by rewrite big_const iter_addr0.
+  rewrite (@big_morph _ _ _ 0 _ _ _ morph_horner_add); first by rewrite horner0.
+  rewrite [in LHS](big_setD1 i) //= [X in _ + X = _](_ :_  = 0).
+    rewrite (eq_bigr (fun=> 0)); last by rewrite big_const iter_addr0.
     move=> j Hj.
-    rewrite !hornerE /= (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); last by rewrite hornerE.
-    rewrite (big_setD1 i) /=; last first.
+    rewrite !hornerE /= (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); first by rewrite hornerE.
+    rewrite (big_setD1 i) /=.
       rewrite !inE eq_sym in Hj.
       rewrite !inE.
       case/andP : Hj => /= ->.
       by rewrite insupp in iE.
     by rewrite !hornerE /= divrr ?unitfE ?(proj2 Ha) // ?Ht' // subrr mulr0 mul0r.
   rewrite addr0 !hornerE /=; congr (_ * _).
-  rewrite (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); last by rewrite hornerE.
+  rewrite (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); first by rewrite hornerE.
   apply: eq_bigr => ? ?; by rewrite !hornerE.
 have -> : (\sigma_(a, e)^`()).[(a ``_ i)^-1] = - a ``_ i *
   \prod_(j in supp e :\ i) (1 - a ``_ j * (a ``_ i)^-1).
-  rewrite derive_errloc (@big_morph _ _ _ 0 _ _ _ morph_horner_add); last by rewrite horner0.
-  rewrite [in LHS](big_setD1 i) //= [X in _ + X = _](_ :_  = 0); last first.
-    rewrite (eq_bigr (fun=> 0)); first by rewrite big_const iter_addr0.
+  rewrite derive_errloc (@big_morph _ _ _ 0 _ _ _ morph_horner_add); first by rewrite horner0.
+  rewrite [in LHS](big_setD1 i) //= [X in _ + X = _](_ :_  = 0).
+    rewrite (eq_bigr (fun=> 0)); last by rewrite big_const iter_addr0.
     move=> j Hj.
-    rewrite !hornerE /= (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); last by rewrite hornerE.
-    rewrite (big_setD1 i) /=; last first.
+    rewrite !hornerE /= (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); first by rewrite hornerE.
+    rewrite (big_setD1 i) /=.
       rewrite !inE; move: Hj.
       rewrite !inE eq_sym => /andP[-> /=].
       by rewrite insupp in iE.
     by rewrite !hornerE /= divrr ?unitfE ?(proj2 Ha) // ?Ht' // subrr mulr0 mul0r.
   rewrite addr0 !hornerE /=; congr (_ * _).
-  rewrite (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); last by rewrite hornerE.
+  rewrite (@big_morph _ _ _ 1 _ _ _ morph_horner_mul); first by rewrite hornerE.
   apply: eq_bigr => ? ?; by rewrite !hornerE.
 rewrite mulrCA mulrK // unitrM unitrN unitfE (proj2 Ha) /=.
 apply: (big_ind (fun r => r \is a GRing.unit)).
@@ -366,8 +363,7 @@ End characterization_of_error_vector.
 Local Open Scope dft_scope.
 
 Section syndrome_polynomial.
-Variables (F : fieldType) (n' : nat).
-Let n := n'.+1.
+Context (F : fieldType) n' (n := n'.+1).
 Implicit Types u : 'rV[F]_n.
 
 (* polynomial of degree <= t.-1 *)
@@ -384,7 +380,7 @@ rewrite (bigID (fun i => i \in supp y)) /= -[RHS]addr0 scalerDl; congr (_ + _).
   rewrite scaler_suml; apply/eq_bigr => j Hj.
   rewrite insubT // => H; congr ((y ord0 _ * _) *: _); by apply: val_inj.
 apply/eqP; rewrite scaler_eq0 (eq_bigr (fun=> 0)) ?big_const ?iter_addr0 ?eqxx //.
-move=> j Hj; rewrite insubT // => H; rewrite (_ : Sub _ _ = j); last by apply/val_inj.
+move=> j Hj; rewrite insubT // => H; rewrite (_ : Sub _ _ = j); first by apply/val_inj.
 move: Hj; rewrite inE negbK => /eqP ->; by rewrite mul0r.
 Qed.
 
@@ -417,7 +413,7 @@ Proof. by rewrite -[in LHS](subrr 0) syndromepB subrr. Qed.
 End syndrome_polynomial.
 
 Section twisted_error_pattern.
-Variables (F : fieldType) (a : F) (n : nat).
+Context (F : fieldType) (a : F) (n : nat).
 
 (* twisted error pattern; see [McEliece 2002] p. 243 (def 9.36), p. 259 *)
 Definition twisted (y : 'rV[F]_n) := \row_(i < n) (y ``_ i * a ^+ i).
@@ -432,12 +428,9 @@ Qed.
 End twisted_error_pattern.
 
 Section syndromep_prop.
-Variables (F : fieldType) (n' : nat).
-Let n := n'.+1.
-Variable a : F.
+Context (F : fieldType) n' (n := n'.+1) (a : F).
 Hypothesis a_neq0 : a != 0.
-Variable (y : 'rV[F]_n).
-Variable (t : nat).
+Variables (y : 'rV[F]_n) (t : nat).
 Hypothesis tn : t < n.
 
 Lemma dft_syndromep (v : 'rV[F]_n) :
@@ -451,10 +444,10 @@ have [->|a0] := eqVneq a 0.
   rewrite /fdcoor !horner_poly.
   apply: eq_bigr => j _.
   rewrite insubT // => jt.
-  rewrite !mxE (_ : Sub _ _ = j); last by apply: val_inj.
+  rewrite !mxE (_ : Sub _ _ = j); first exact: val_inj.
   rewrite (_ : Sub _ _ = Ordinal it) //=.
-  rewrite inordK //; last by rewrite (leq_trans it) // ltnW.
-  rewrite inordK; last by rewrite ltnS // (leq_trans it).
+  rewrite inordK //; first by rewrite (leq_trans it) // ltnW.
+  rewrite inordK; first by rewrite ltnS // (leq_trans it).
   rewrite !expr0n.
   set x := (i == _).
   case/boolP : (x) => //= Hx; first by rewrite expr1n mulr1.
@@ -472,16 +465,16 @@ rewrite horner_poly scaler_suml.
 transitivity (\sum_(i0 in 'I_n) ((twisted a v) ``_ i0 * (rVexp a n) ``_ (inord i) ^+ i0) *: 'X^i).
   apply/esym.
   rewrite (bigID (fun i => (twisted a v) ``_ i != 0)) /=.
-  rewrite [X in _ + X = _](eq_bigr (fun => 0)); last first.
+  rewrite [X in _ + X = _](eq_bigr (fun => 0)).
     move=> j.
     rewrite negbK => /eqP ->; by rewrite mul0r scale0r.
   rewrite big_const iter_addr0 addr0.
   apply: eq_bigl => j; by rewrite mxE inE mulf_eq0 negb_or expf_neq0 // andbT.
 apply: eq_bigr => /= j _.
 rewrite insubT // => jn.
-rewrite (_ : Sub _ _ = j); last by apply: val_inj.
-rewrite !mxE inordK; last by rewrite (leq_trans (ltn_ord i)) // ltnW.
-rewrite inordK //; last by rewrite ltnS // (leq_trans (ltn_ord i)).
+rewrite (_ : Sub _ _ = j); first by apply: val_inj.
+rewrite !mxE inordK; first by rewrite (leq_trans (ltn_ord i)) // ltnW.
+rewrite inordK //; first by rewrite ltnS // (leq_trans (ltn_ord i)).
 by rewrite -exprM mulnC exprM -mulrA -exprS -exprM mulnC exprM.
 Qed.
 

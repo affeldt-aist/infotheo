@@ -12,7 +12,6 @@ Require Import fdist proba convex.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -53,7 +52,7 @@ set d := fdistD1 Xb1.
 have HsumD1 q:
   \sum_(a in fdist_supp d) d a * q a =
   ((X b).~)^-1 * \sum_(a in fdist_supp d) X a * q a.
-  rewrite (eq_bigr (fun a => ((X b).~)^-1 * (X a * q a))); last first.
+  rewrite (eq_bigr (fun a => ((X b).~)^-1 * (X a * q a))).
     move=> i; rewrite inE fdistD1E.
     case: ifP => Hi; first by rewrite eqxx.
     by rewrite mulrCA mulrA onemE.

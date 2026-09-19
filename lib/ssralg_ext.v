@@ -32,7 +32,6 @@ Require Import ssr_ext f2.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -74,7 +73,7 @@ Proof. by rewrite in_set. Qed.
 Lemma sum_supp e x :
   \sum_(i < n) e ``_ i * x ^+ i = \sum_(i in supp e) e ``_ i * x ^+ i.
 Proof.
-rewrite (bigID (mem (supp e))) /= addrC (eq_bigr (fun=> 0)); last first.
+rewrite (bigID (mem (supp e))) /= addrC (eq_bigr (fun=> 0)).
   move=> ?; rewrite inE /= negbK => /eqP ->; by rewrite mul0r.
 by rewrite big_const /= iter_addr0 add0r.
 Qed.
@@ -216,13 +215,13 @@ Proof.
 apply: eq_from_tnth => n0.
 rewrite tnth_mktuple mxE.
 case: splitP => [n3 n0n3|n3 n0n1n3].
-  rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = true)%nat); last by rewrite n0n3 ltn_ord.
+  rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = true)%nat); first by rewrite n0n3 ltn_ord.
   transitivity ((tuple_of_row v1) !_ n3); first by rewrite tnth_mktuple.
   rewrite /tnth n0n3; apply: set_nth_default; by rewrite size_tuple.
-rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = false)%nat); last first.
+rewrite /tnth nth_cat size_tuple (_ : (n0 < n1 = false)%nat).
   rewrite n0n1n3; apply/negbTE; by rewrite -leqNgt leq_addr.
   transitivity ((tuple_of_row B) !_ n3); first by rewrite tnth_mktuple.
-  rewrite /tnth (_ : (n0 - n1 = n3)%nat); last by rewrite n0n1n3 addnC addnK.
+  rewrite /tnth (_ : (n0 - n1 = n3)%nat); first by rewrite n0n1n3 addnC addnK.
   apply: set_nth_default; by rewrite size_tuple.
 Qed.
 
@@ -246,13 +245,13 @@ Definition rbehead (x : 'rV[A]_n.+1) := col' ord0 x.
 
 Lemma rbehead_row_mx (x : 'rV_n) a : rbehead (row_mx (\row_(j < 1) a) x) = x.
 Proof.
-apply/rowP => i; rewrite mxE (_ : lift _ _ = rshift 1%nat i); last exact/val_inj.
+apply/rowP => i; rewrite mxE (_ : lift _ _ = rshift 1%nat i); first exact/val_inj.
 by rewrite (@row_mxEr _ _ 1).
 Qed.
 
 Lemma row_mx_row_ord0 (x : 'rV[A]_n) a : (row_mx (\row_(k < 1) a) x) ``_ 0 = a.
 Proof.
-rewrite [X in _ _ X = _](_ : _ = lshift n 0 :> 'I_(1 + n)); last exact/val_inj.
+rewrite [X in _ _ X = _](_ : _ = lshift n 0 :> 'I_(1 + n)); first exact/val_inj.
 by rewrite row_mxEl mxE.
 Qed.
 
@@ -307,44 +306,44 @@ rewrite !castmxE /= !cast_ord_id /=.
 case: (ltnP j i) => [ji|].
   move=> [:Hj0].
   have @j0 : 'I_(i + 1) by apply: (@Ordinal _ j); abstract: Hj0; rewrite addn1 ltnS ltnW.
-  rewrite (_ : cast_ord _ _ = lshift (n - i) j0); last exact/val_inj.
+  rewrite (_ : cast_ord _ _ = lshift (n - i) j0); first exact/val_inj.
   rewrite row_mxEl.
-  rewrite (_ : cast_ord _ _ = lshift (n.+1 - i) (Ordinal ji)); last exact/val_inj.
+  rewrite (_ : cast_ord _ _ = lshift (n.+1 - i) (Ordinal ji)); first exact/val_inj.
   rewrite row_mxEl.
-  rewrite (_ : j0 = lshift 1 (Ordinal ji)); last exact/val_inj.
+  rewrite (_ : j0 = lshift 1 (Ordinal ji)); first exact/val_inj.
   by rewrite row_mxEl.
 rewrite leq_eqVlt => /orP[/eqP|]ij.
   move=> [:Hj0].
   have @j0 : 'I_(i + 1) by apply: (@Ordinal _ j); abstract: Hj0; by rewrite addn1 ij ltnS.
-  rewrite (_ : cast_ord _ _ = lshift (n - i) j0); last exact/val_inj.
+  rewrite (_ : cast_ord _ _ = lshift (n - i) j0); first exact/val_inj.
   rewrite row_mxEl.
-  rewrite (_ : j0 = rshift i ord0); last first.
+  rewrite (_ : j0 = rshift i ord0).
     by apply: val_inj => /=; rewrite ij addn0.
   rewrite row_mxEr mxE.
   move=> [:Hj1].
   have @j1 : 'I_(n.+1 - i).
     by apply: (@Ordinal _ 0); abstract: Hj1; rewrite subn_gt0.
-  rewrite (_ : cast_ord _ _ = rshift i j1); last first.
+  rewrite (_ : cast_ord _ _ = rshift i j1).
     by apply/val_inj => /=; rewrite ij addn0.
   rewrite row_mxEr castmxE /= cast_ord_id esymK.
   have @j2 : 'I_1 := ord0.
-  rewrite (_ : cast_ord _ _ = lshift (n - i) j2); last exact/val_inj.
+  rewrite (_ : cast_ord _ _ = lshift (n - i) j2); first exact/val_inj.
   by rewrite (@row_mxEl _ _ 1%nat) mxE.
 move=> [:Hj0].
 have @j0 : 'I_(n - i).
   apply: (@Ordinal _ (j - i.+1)); abstract: Hj0.
   by rewrite subnS prednK ?subn_gt0 // leq_sub2r // -ltnS.
-rewrite (_ : cast_ord _ _ = rshift (i + 1) j0); last first.
+rewrite (_ : cast_ord _ _ = rshift (i + 1) j0).
   apply/val_inj => /=; by rewrite addn1 subnKC.
 rewrite row_mxEr.
 have @j1 : 'I_(n.+1 - i) by apply: (@Ordinal _ (j - i)); rewrite ltn_sub2r.
-rewrite (_ : cast_ord _ _ = rshift i j1); last first.
+rewrite (_ : cast_ord _ _ = rshift i j1).
   by apply: val_inj => /=; rewrite subnKC // ltnW.
 rewrite row_mxEr castmxE /= cast_ord_id.
 have @j2 : 'I_(n - i).
   apply: (@Ordinal _ (j1 - 1)).
   by rewrite /= subn1 prednK ?subn_gt0 // leq_sub2r // -ltnS.
-rewrite (_ : cast_ord _ _ = rshift 1 j2); last first.
+rewrite (_ : cast_ord _ _ = rshift 1 j2).
   apply/val_inj => /=; by rewrite subnKC // subn_gt0.
 rewrite (@row_mxEr _ _ 1%nat); congr (_ _ _); apply: val_inj => /=; by rewrite subnS subn1.
 Qed.
@@ -390,11 +389,11 @@ Lemma vec_perm_mx n (s : 'S_n) (z : 'rV[R]_n) :
 Proof.
 apply/rowP => j; rewrite !mxE (bigID (pred1 ((s^-1)%g j))) /=.
 rewrite big_pred1_eq !mxE {2}permE perm_invK eqxx mulr1 (eq_bigr (fun _ => 0)).
-- by rewrite big_const_seq iter_addr0 addr0.
 - move=> i H.
-  rewrite !mxE (_ : (s i == j) = false); first by rewrite mulr0.
+  rewrite !mxE (_ : (s i == j) = false); last by rewrite mulr0.
   apply/eqP; move/eqP in H; contradict H.
   by rewrite -H -permM (mulgV s) perm1.
+- by rewrite big_const_seq iter_addr0 addr0.
 Qed.
 
 Lemma perm_mx_vec n (s : 'S_n) (z : 'cV[R]_n) :
@@ -402,9 +401,9 @@ Lemma perm_mx_vec n (s : 'S_n) (z : 'cV[R]_n) :
 Proof.
 apply/colP => i; rewrite !mxE (bigID (pred1 (s i))) /=.
 rewrite big_pred1_eq {1}/perm_mx !mxE eqxx mul1r (eq_bigr (fun _ => 0)).
-- by rewrite big_const_seq iter_addr0 addr0.
 - move=> j; move/negbTE => H.
   by rewrite !mxE eq_sym H /= mul0r.
+- by rewrite big_const_seq iter_addr0 addr0.
 Qed.
 
 Lemma pid_mx_inj r n (a b : 'rV[R]_r) : (r <= n)%N ->
@@ -413,17 +412,17 @@ Proof.
 move=> Hrn /matrixP Heq.
 apply/matrixP => x y.
 move: {Heq}(Heq x (widen_ord Hrn y)).
-rewrite !mxE (ord1 x){x} (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)); last first.
+rewrite !mxE (ord1 x){x} (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)).
   move=> i Hiy.
-  rewrite mxE /= (_ : nat_of_ord _ == nat_of_ord _ = false) /=; last first.
+  rewrite mxE /= (_ : nat_of_ord _ == nat_of_ord _ = false) /=.
     by move/negbTE : Hiy.
   by rewrite mulr0.
-rewrite big_const_seq iter_addr0 (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)); last first.
+rewrite big1// (bigID (pred1 y)) /= big_pred1_eq (eq_bigr (fun _ => 0)).
   move=> i Hiy.
-  rewrite mxE /= (_ : nat_of_ord i == nat_of_ord y = false) /=; last first.
+  rewrite mxE /= (_ : nat_of_ord i == nat_of_ord y = false) /=.
     by move/negbTE : Hiy.
   by rewrite mulr0.
-by rewrite big_const_seq iter_addr0 !addr0 !mxE /= eqxx /= (ltn_ord y) /= 2!mulr1.
+by rewrite big1// !addr0 !mxE /= eqxx /= (ltn_ord y) /= 2!mulr1.
 Qed.
 
 End AboutPermPid.
@@ -462,8 +461,8 @@ rewrite mul_row_col mulmx0 addr0 -{1}(mulmx_ebase A) HA pid_mx_1 mulmx1 -!mulmxA
 have -> : row_ebase A *m (invmx (row_ebase A) *m invmx (col_ebase A)) =
   invmx (col_ebase A).
   rewrite !mulmxA mulmxV.
+    by apply: row_ebase_unit.
   by rewrite mul1mx.
-  by apply: row_ebase_unit.
 rewrite mulmxV //.
 by apply: col_ebase_unit.
 Qed.
@@ -487,12 +486,12 @@ have {}Hab :
   a *m col_ebase A *m pid_mx (\rank A) *m row_ebase A *m (invmx (row_ebase A)) =
   b *m col_ebase A *m pid_mx (\rank A) *m row_ebase A *m (invmx (row_ebase A)).
   by rewrite Hab.
-rewrite -!mulmxA mulmxV in Hab; last by exact: row_ebase_unit.
+rewrite -!mulmxA mulmxV in Hab; first by exact: row_ebase_unit.
 rewrite !Htmp mulmx1 !mulmxA /mxrank /= in Hab.
 move: {Heq}(@pid_mx_inj _ _ _ (a *m col_ebase A) (b *m col_ebase A) Hmn Hab) => Heq.
 have {}Hab : a *m col_ebase A *m (invmx (col_ebase A)) =
   b *m col_ebase A *m (invmx (col_ebase A)) by rewrite Heq.
-rewrite -!mulmxA mulmxV in Hab; last by apply: col_ebase_unit.
+rewrite -!mulmxA mulmxV in Hab; first by apply: col_ebase_unit.
 by rewrite !mulmx1 in Hab.
 Qed.
 
@@ -539,7 +538,7 @@ have Hg' : forall j, g' j != 0.
   by rewrite enum_rank_ord /= inordK // ltnS.
 have gg' : {in [set x in 'F_p | x != 0], cancel g g'}.
   move=> x; rewrite inE => /andP[Hx x_neq0].
-  rewrite /g' inordK //=; last first.
+  rewrite /g' inordK //=.
     rewrite enum_rank_ord //= prednK ?lt0n //.
     move: (ltn_ord x) => /=; rewrite ltnS => /leq_trans; apply.
     by rewrite -(ltn_add2r 1) 2!addn1 Zp_cast // ?pdiv_leq // pdiv_id.
@@ -551,7 +550,7 @@ have g'g : cancel g' g.
   by rewrite (@inordK _ x.+1) /= ?inordK // ltnS.
 set f : 'rV['F_p]_n -> n.-tuple 'I_p.-1 := fun x => tuple_of_row (map_mx g x).
 set f' : n.-tuple 'I_p.-1 -> 'rV['F_p]_n := fun x => map_mx g' (row_of_tuple x).
-rewrite (reindex_onto f' f); last first.
+rewrite (reindex_onto f' f).
   rewrite /= => x /forallP /= H; apply/rowP => j.
   by rewrite /f' /f mxE tuple_of_rowK mxE gg' // !inE /= H.
 apply: eq_bigl => x; apply/andP; split.
@@ -647,12 +646,12 @@ Let det_mlinear_rec n (f : 'I_n.+1 -> 'I_n.+1 -> R) (g : 'I_n.+1 -> R) k :
 Proof.
 elim: k => [_|k IH]; first by rewrite big_ord0 mul1r.
 rewrite ltnS => kn.
-rewrite IH; last by rewrite ltnW.
+rewrite IH; first by rewrite ltnW.
 rewrite big_ord_recr /= -mulrA; congr (_ * _).
 rewrite (@determinant_multilinear _ _ _
            (\matrix_(j, i) (f i j * (if (k < j)%N then g j else 1)))
            (\matrix_(j, i) (f i j * (if (k <= j)%N then g j else 1)))
-           (inord k) (g (inord k)) 0); last 3 first.
+           (inord k) (g (inord k)) 0).
 - rewrite scale0r addr0.
   apply/rowP => j.
   rewrite !mxE mulrCA; congr (_ * _).
@@ -676,7 +675,7 @@ Lemma det_mlinear (n: nat) (f : 'I_n -> 'I_n -> R) (g : 'I_n -> R) :
     \prod_(i < n) g i * \det (\matrix_(i, j) (f i j)).
 Proof.
 case: n => [|n] in f g *; first by rewrite big_ord0 mul1r !det_mx00.
-rewrite -det_tr (_ : _^T = \matrix_(j, i) (f i j * g j)); last first.
+rewrite -det_tr (_ : _^T = \matrix_(j, i) (f i j * g j)).
   by apply/matrixP => i j; rewrite !mxE.
 rewrite (@det_mlinear_rec _ _ _ n.+1) //; congr (_ * _).
   by under eq_bigr do rewrite inord_val.
@@ -722,7 +721,7 @@ move=> neq_x_1.
 rewrite -opprB.
 rewrite subrX1.
 rewrite -opprB mulNr opprK.
-rewrite mulrCA mulrC !mulrA mulVf; last first.
+rewrite mulrCA mulrC !mulrA mulVf.
   by rewrite subr_eq0 eq_sym.
 rewrite mul1r big_distrr//=.
 by apply: eq_bigr => i _; rewrite exprSz.

@@ -28,7 +28,6 @@ Require Import variation_dist pinsker.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -53,7 +52,7 @@ apply/andP; split.
   by rewrite sqrtr_ge0.
 rewrite -(@ler_pXn2r _ 2) ?nnegrE ?expR_ge0 ?sqrtr_ge0//.
 rewrite -(@ler_pM2r _ (2^-1)) ?invr_gt0//.
-rewrite sqr_sqrtr; last by rewrite mulr_ge0// cdiv_ge0.
+rewrite sqr_sqrtr; first by rewrite mulr_ge0// cdiv_ge0.
 by rewrite mulrAC divff ?mul1r// pnatr_eq0.
 Qed.
 
@@ -63,9 +62,9 @@ Lemma out_entropy_dist_ub : `| `H(P `o V) - `H(P `o W) | <=
   (ln 2)^-1 * #|B|%:R * - xlnx (Num.sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite -mulrN -mulrDr normrM gtr0_norm; last first.
+rewrite -mulrN -mulrDr normrM gtr0_norm.
   by rewrite invr_gt0// ln_gt0// ltr1n.
-rewrite -mulrA ler_pM2l; last first.
+rewrite -mulrA ler_pM2l.
   by rewrite invr_gt0// ln_gt0// ltr1n.
 rewrite opprK big_morph_oppr -big_split /=.
 apply: le_trans; first exact: ler_norm_sum.
@@ -96,9 +95,9 @@ Lemma joint_entropy_dist_ub : `| `H(P , V) - `H(P , W) | <=
   (ln 2)^-1 * #|A|%:R * #|B|%:R * - xlnx (Num.sqrt (2 * D(V || W | P))).
 Proof.
 rewrite 2!xlnx_entropy.
-rewrite -mulrN -mulrDr normrM gtr0_norm; last first.
+rewrite -mulrN -mulrDr normrM gtr0_norm.
   by rewrite invr_gt0// ln_gt0 ?ltr1n.
-rewrite -2!mulrA ler_pM2l//; last first.
+rewrite -2!mulrA ler_pM2l//.
   by rewrite invr_gt0// ln_gt0// ltr1n.
 rewrite opprK big_morph_oppr -big_split /=.
 apply: le_trans; first exact: ler_norm_sum.
@@ -127,7 +126,7 @@ Lemma mut_info_dist_ub : `| `I(P, V) - `I(P, W) | <=
 Proof.
 rewrite /mutual_info_chan.
 rewrite (_ : _ - _ =
-  `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); last ring.
+  `H(P `o V) - `H(P `o W) + (`H(P, W) - `H(P, V))); first ring.
 apply: le_trans; first exact: ler_normD.
 rewrite -mulrA mulrDl mulrDr lerD//.
 - by rewrite mulrA; apply: out_entropy_dist_ub.
@@ -207,10 +206,10 @@ rewrite -(lerD2l minRate).
 apply: le_trans.
 suff x_gamma : - xlnx (Num.sqrt (2 * (D(V || W | P)))) <= gamma.
   rewrite opprD addrA [in leRHS]addrC -lerBlDr.
-  rewrite [X in X <= _](_ : _ = - ((minRate + - capacity W) / 2)); last first.
+  rewrite [X in X <= _](_ : _ = - ((minRate + - capacity W) / 2)).
     lra.
   rewrite lerNr opprK -mulrA mulrC.
-  rewrite ler_pdivrMr ?ln2_gt0// mulrC -ler_pdivlMr; last first.
+  rewrite ler_pdivrMr ?ln2_gt0// mulrC -ler_pdivlMr.
     by rewrite ltr_wpDr ?ltr0n// mulr_ge0.
   rewrite (le_trans x_gamma)//.
   by rewrite /gamma mulrC (mulrC (ln 2)).
@@ -230,8 +229,8 @@ suff x_D : xlnx x <= xlnx (Num.sqrt (2 * (D(V || W | P)))).
   by rewrite ge_min lexx orbT.
 apply/ltW.
 have ? : Num.sqrt (2 * D(V || W | P)) < x.
-  rewrite -(@ltr_pXn2r _ 2) ?nnegrE ?sqrtr_ge0//; last exact/ltW.
-  rewrite sqr_sqrtr//; last first.
+  rewrite -(@ltr_pXn2r _ 2) ?nnegrE ?sqrtr_ge0//; first exact/ltW.
+  rewrite sqr_sqrtr//.
     by rewrite mulr_ge0// cdiv_ge0.
   rewrite mulrC -ltr_pdivlMr //.
   apply: (lt_le_trans Hcase).

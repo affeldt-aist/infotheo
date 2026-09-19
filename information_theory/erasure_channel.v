@@ -17,7 +17,6 @@ Require Import entropy binary_entropy_function channel hamming channel_code.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -52,9 +51,9 @@ Qed.
 Lemma f1 (a : A) : \sum_(a' : {:option A}) f a a' = 1.
 Proof.
 rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /=.
-rewrite [X in _ + (_ + X)](_ : _ = 0).
+rewrite [X in _ + (_ + X)](_ : _ = 0); last first.
   by rewrite addr0 add_onemK.
-apply/eqP; rewrite psumr_eq0/=; last first.
+apply/eqP; rewrite psumr_eq0/=.
   rewrite /f; move => [a'|//].
   rewrite ffunE.
   case: ifPn => [_ _|//].

@@ -7,7 +7,6 @@ From mathcomp Require Import boot.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -172,7 +171,7 @@ suff Hgen : forall F : {set {set A}} , (forall s', s' \in F -> P s') -> P (\bigc
 move=> F /= HF.
 move Hk : (#| F |) => k.
 elim: k => [ | k IH ] in F Hk HF *.
-  rewrite big_pred0.
+  rewrite big_pred0; last first.
     by rewrite P0.
   move=> s /=.
   apply/negbTE.
@@ -185,8 +184,8 @@ rewrite cards_eq0.
 case/set0Pn => f0 Hf0.
 rewrite -(@setD1K _ f0 F) // bigcup_setU PU //.
   rewrite (big_pred1 f0).
-    by apply: HF.
-  move=> /= s; by rewrite inE.
+    by move=> /= s; rewrite inE.
+  exact: HF.
 apply: IH.
   rewrite (cardsD1 f0) in Hk.
   rewrite Hf0 in Hk.

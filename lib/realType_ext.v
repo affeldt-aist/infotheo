@@ -39,7 +39,6 @@ Reserved Notation "[ 'p_of' r , s ]" (format "[ 'p_of'  r ,  s ]").
 Reserved Notation "[ 'q_of' r , s ]" (format "[ 'q_of'  r ,  s ]").
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -144,9 +143,9 @@ Qed.
 Lemma x_x2_pos {R : realFieldType} (q : R) : 0 < q < 1 -> 0 < q * (1 - q).
 Proof.
 move=> q01.
-rewrite [ltRHS](_ : _ = - (q - 2^-1)^+2 + (2^-2)); last by field.
+rewrite [ltRHS](_ : _ = - (q - 2^-1)^+2 + (2^-2)); first by field.
 rewrite addrC subr_gt0 -exprVn -[ltLHS]real_normK ?num_real//.
-rewrite ltr_pXn2r// ?nnegrE; [| lra].
+rewrite ltr_pXn2r// ?nnegrE; [lra|].
 have/orP[H|H]:= le_total (q - 2^-1) 0.
   rewrite (ler0_norm H); lra.
 rewrite (ger0_norm H); lra.
@@ -292,7 +291,7 @@ Proof. exact: add_onemK. Qed.
 Lemma probadd_eq0 p q : p%:num + q%:num = 0 <-> p = 0%:i01 /\ q = 0%:i01.
 Proof.
 split; last by move=> [-> ->] /=; rewrite addr0.
-move/eqP; rewrite paddr_eq0; [|exact: ge0|exact: ge0].
+move/eqP; rewrite paddr_eq0; [exact: ge0|exact: ge0|].
 by move=> /andP[/eqP ? /eqP ?]; split; exact/val_inj.
 Qed.
 
@@ -418,7 +417,7 @@ apply/andP; split.
 rewrite /divrnnm.
 have [->|n0] := eqVneq n 0.
   by rewrite mul0r ler01.
-rewrite ler_pdivrMr// ?ltr0n ?addn_gt0; last first.
+rewrite ler_pdivrMr// ?ltr0n ?addn_gt0.
   by rewrite lt0n n0.
 by rewrite mul1r ler_nat leq_addr.
 Qed.
@@ -502,8 +501,8 @@ have [->|a0] := eqVneq q 0%:i01.
 apply/andP; split.
   by rewrite divr_ge0.
 rewrite ler_pdivrMr ?mul1r.
-  exact: ge_s_of.
-by rewrite s_of_gt0.
+  by rewrite s_of_gt0.
+exact: ge_s_of.
 Qed.
 
 Definition r_of_pq {R : realType} (p q : {prob R}) : {prob R} :=
@@ -612,7 +611,7 @@ have [->|s1] := eqVneq s 1%:i01.
   by rewrite ler01// lexx.
 apply/andP; split.
   by rewrite divr_ge0// mulr_ge0.
-rewrite ler_pdivrMr// ?mul1r.
+rewrite ler_pdivrMr// ?mul1r; last first.
   by rewrite p_of_rsE {2}/onem lerBrDr -mulrDl addrC add_onemK mul1r.
 rewrite onem_gt0// -prob_lt1.
 apply/p_of_rs1P/not_andP; left.
@@ -660,7 +659,7 @@ Lemma pq_is_rs {R : realType} (p q : {prob R}) :
 Proof.
 have [->|p0] := eqVneq p 0%:i01.
   by rewrite onem0 mul1r r_of_0q onem0 mul1r s_of_0q.
-rewrite r_of_pqE [in RHS]mulrBl mul1r -mulrA mulVf ?mulr1; last first.
+rewrite r_of_pqE [in RHS]mulrBl mul1r -mulrA mulVf ?mulr1.
   by rewrite prob_gt0; exact/s_of_gt0.
 rewrite s_of_pqE onemM !onemK /onem mulrBl mul1r [RHS]addrC !addrA.
 lra.
@@ -784,7 +783,7 @@ move Hn : #|X| => n; elim: n X Hn => // n IH X Hn _ H.
 move: (ltn0Sn n); rewrite -Hn card_gt0; case/set0Pn => a0 Ha0.
 rewrite (@big_setD1 _ _ _ _ a0 _ f) //= (@big_setD1 _ _ _ _ a0 _ g) //=.
 case: n => [|n] in IH Hn.
-  rewrite (_ : X :\ a0 = set0); first by rewrite !big_set0 2!addr0; exact: H.
+  rewrite (_ : X :\ a0 = set0); last by rewrite !big_set0 2!addr0; exact: H.
   move: Hn.
   by rewrite (cardsD1 a0) Ha0 /= add1n => -[] /eqP; rewrite cards_eq0 => /eqP.
 apply: ltrD; first exact/H.
@@ -800,7 +799,7 @@ move=> A0 H0.
 have : forall i : A, i \in [set: A] -> f i < g i by move=> a _; exact/H0.
 move/ltR_sumR_support; rewrite cardsT => /(_ A0).
 rewrite big_mkcond /= [in X in _ < X]big_mkcond /=.
-rewrite (eq_bigr f) //; last by move=> *; rewrite inE.
+rewrite (eq_bigr f) //; first by move=> *; rewrite inE.
 by rewrite [in X in _ < X](eq_bigr g) // => *; rewrite inE.
 Qed.
 

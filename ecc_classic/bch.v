@@ -21,7 +21,6 @@ Reserved Notation "'\BCHomega_(' a , e )" (at level 0).
 Declare Scope bch_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -81,8 +80,8 @@ case/boolP : (odd j) => [odd_j|even_j]; last first.
   move: (odd_double_half j).
   by rewrite (negbTE even_j) add0n => ->.
 move: (IH j.-1./2).
-rewrite -{1}divn2 leq_divLR; last first.
-  rewrite dvdn2 -subn1 oddB; last by destruct j.
+rewrite -{1}divn2 leq_divLR.
+  rewrite dvdn2 -subn1 oddB; first by destruct j.
   by rewrite /= addbT odd_j.
 have -> : (j.-1 <= i * 2)%N.
   rewrite muln2 -addnn -subn1 leq_subLR addnA add1n (leq_trans ji) //.
@@ -95,7 +94,7 @@ have j2t : (j.-1)./2 < t.*2.
 move/(_ j2t)/(congr1 (fun x => x ^+ 2)).
 rewrite expr0n /= sum_sqr ?char_GFqm // => H'.
 rewrite -[RHS]H'; apply: eq_bigr => k _.
-rewrite exprMn_comm; last by rewrite /GRing.comm mulrC.
+rewrite exprMn_comm; first by rewrite /GRing.comm mulrC.
 congr (_ * _); last first.
   rewrite /= -exprM muln2; congr (_ ^+ _).
   move: (odd_double_half j).
@@ -206,7 +205,7 @@ apply/idP/idP.
   move: (Hc i ord0); rewrite !mxE => H1; rewrite -[RHS]H1.
   apply/eq_bigr => /= j _; rewrite insubT // => jn.
   rewrite mulrC 3![in RHS]mxE; congr (_ * (map_mx _ c) ord0 _); last by apply: val_inj.
-  rewrite inordK //; last first.
+  rewrite inordK //.
     move: (ltn_ord i).
     rewrite -(@ltn_pmul2r 2) // !muln2 -(ltn_add2r 1) !addn1.
     move/leq_trans; apply.
@@ -220,7 +219,7 @@ apply/idP/idP.
   rewrite -[RHS](eqP (H i)) /fdcoor horner_poly; apply/eq_bigr => /= j _.
   rewrite insubT // => jn.
   rewrite !mxE mulrC; congr (GF2_of_F2 (c ord0 _) * _); first by apply: val_inj.
-  rewrite inordK //; first by rewrite exprAC.
+  rewrite inordK //; last by rewrite exprAC.
   move: (ltn_ord i).
   rewrite -(@ltn_pmul2r 2) // !muln2 -(ltn_add2r 1) !addn1.
   move/leq_trans; apply.
@@ -268,7 +267,7 @@ apply/idP/idP.
   move/eqP: K.
   move/(congr1 (fun x : {poly F} => x`_i)).
   rewrite /BCH.syndromep /syndromep.
-  rewrite coef0 poly_def coef_sum (bigD1 i) //= (eq_bigr (fun=> 0)); last first.
+  rewrite coef0 poly_def coef_sum (bigD1 i) //= (eq_bigr (fun=> 0)).
     move=> j ji.
     rewrite coefZ coefXn (_ : _ == _ = false) ?mulr0 //.
     by apply/negbTE; rewrite eq_sym.
@@ -336,12 +335,12 @@ rewrite cardE => supp_wH.
 have Hinj : injective [ffun i : 'I_(wH x).-1.+1 => tnth (Tuple supp_wH) i].
   move=> /= i j.
   rewrite !ffunE /tnth /= => /eqP.
-  rewrite (set_nth_default (tnth_default (Tuple supp_wH) j)) //; last first.
-    rewrite -cardE card_wH_supp; move: i; by rewrite prednK // lt0n wH_eq0.
+  rewrite (set_nth_default (tnth_default (Tuple supp_wH) j)) //.
+    by rewrite -cardE card_wH_supp; move: i; rewrite prednK // lt0n wH_eq0.
   rewrite nth_uniq ?enum_uniq //.
+  by rewrite -cardE card_wH_supp; move: i; rewrite prednK // lt0n wH_eq0.
+  by rewrite -cardE card_wH_supp; move: j; rewrite prednK // lt0n wH_eq0.
   by move/eqP/val_inj.
-  rewrite -cardE card_wH_supp; move: i; by rewrite prednK // lt0n wH_eq0.
-  rewrite -cardE card_wH_supp; move: j; by rewrite prednK // lt0n wH_eq0.
 set f := finfun (tnth (Tuple supp_wH)).
 move=> [:tmp].
 have @f' : 'I_n -> 'I_(wH x).-1.+1.
@@ -362,8 +361,8 @@ have Hf : \sum_(i < (wH x).-1.+1)
   rewrite -[RHS]H.
   apply/colP => i.
   rewrite ![in RHS]mxE ![in LHS]summxE [in RHS](bigID (fun j => x ``_ j == 0)).
-  rewrite /= [X in _ = X + _](_ : _ = 0) ?add0r; last first.
-    rewrite (eq_bigr (fun x=> 0)); last first.
+  rewrite /= [X in _ = X + _](_ : _ = 0) ?add0r.
+    rewrite (eq_bigr (fun x=> 0)).
       by move=> j /eqP xj0; rewrite !mxE xj0 rmorph0 mulr0.
     by rewrite big_const iter_addr0.
   have ? : (wH x).-1.+1 <= n by rewrite -ltnS prednK ?lt0n ?wH_eq0 // ltnS max_wH.
@@ -401,10 +400,10 @@ apply/det0P; exists (\row_i GF2_of_F2 x ``_ (f i)).
   rewrite !mxE /f ffunE /tnth /=.
   have -> : forall i, i \in (enum (wH_supp x)) -> x ``_ i = 1.
     by move=> /= i; rewrite mem_enum inE -f2.F2_eq1 => /eqP.
-  by rewrite rmorph1.
   apply/(nthP (tnth_default (Tuple supp_wH) k)); exists k => //.
   rewrite -cardE card_wH_supp.
   move: (ltn_ord k); by rewrite {2}prednK // lt0n wH_eq0.
+  by rewrite rmorph1.
 apply/rowP => i; rewrite !mxE.
 move/colP : Hf => /(_ i).
 rewrite !mxE => Hf; rewrite -[RHS]Hf.
@@ -438,7 +437,7 @@ under eq_bigr.
   move=> i ie.
   rewrite -scalerAr.
   rewrite (_ : \sigma_(rVexp a n, y) =
-    \sigma_(rVexp a n, y, i) * (1 - ((rVexp a n) ``_ i) *: 'X)); last first.
+    \sigma_(rVexp a n, y, i) * (1 - ((rVexp a n) ``_ i) *: 'X)).
     rewrite /errloc (bigD1 i) //= mulrC; congr (_ * _).
     by apply: eq_bigl => ij; rewrite in_setD1 andbC.
   over.
@@ -447,7 +446,7 @@ transitivity (\sum_(i in supp y) y ``_ i *:
   apply: eq_bigr => /= i ie; congr (_ *: _).
   rewrite -mulrA; congr (_ * _).
   rewrite mulrDl mul1r mulNr big_distrr /=.
-  rewrite [X in _ - X](eq_bigr (fun j : 'I_n => a ^+ (i * j.+1) *: 'X^(j.+1))); last first.
+  rewrite [X in _ - X](eq_bigr (fun j : 'I_n => a ^+ (i * j.+1) *: 'X^(j.+1))).
     move=> j _.
     rewrite !mxE -scalerAr -scalerAl scalerA -exprM -exprD.
     by rewrite inord_val addnC -mulSn mulnC -exprS.
@@ -549,14 +548,14 @@ move=> r0 r1 vj /eqP l0 Hvj; apply/rowP => i.
 set r_ := \BCHomega_(rVexp a n, twisted a (F2_to_GF2 m e)).
 rewrite !mxE coef_poly ltn_ord; case: ifPn.
   rewrite -/r0 -/r1 -/r_ -/vj Hvj.
-  rewrite !hornerZ !mulf_eq0 invrM; last 2 first.
+  rewrite !hornerZ !mulf_eq0 invrM.
     by rewrite unitfE.
     by rewrite unitfE horner_errloc_0 oner_neq0.
   rewrite mulf_eq0 !invr_eq0 (negbTE l0) /= orbF horner_errloc_0 oner_eq0 /=.
   move: (errloc_zero (supp (F2_to_GF2 m e)) i H1); rewrite mxE => ->.
   by rewrite supp_F2_to_GF2 inE -F2_eq1 => /eqP.
 rewrite -/r0 -/vj in Hvj *.
-rewrite Hvj !hornerZ !mulf_eq0 invrM; last 2 first.
+rewrite Hvj !hornerZ !mulf_eq0 invrM.
   by rewrite unitfE.
   by rewrite unitfE horner_errloc_0 oner_neq0.
 rewrite mulf_eq0 !invr_eq0 (negbTE l0) /= orbF horner_errloc_0 oner_eq0 /=.
@@ -591,7 +590,7 @@ case: ifPn => syn_y.
   move: et.
   apply/negP.
   rewrite -ltnNge (@BCH_min_dist1 _ _ _ H1 _ _ e0 _ C) //.
-  rewrite (_ : e = y - c); last by rewrite /y addrAC subrr add0r.
+  rewrite (_ : e = y - c); first by rewrite /y addrAC subrr add0r.
   apply: (@Lcode0.aclosed _ _ _).2 => //; last by rewrite Lcode0.oclosed.
   apply: (proj2 (Rcode.P C _)).
   by rewrite mem_kernel_syndrome0 BCH_syndrome_synp.
@@ -639,7 +638,7 @@ have [M HM] : exists M, `[ 'X * rVpoly x' ]_ n = 'X * rVpoly x' + M * ('X^n - 1)
   exists (- ('X * rVpoly x') %/ ('X^n - 1)).
   move/eqP: (divp_eq ('X * rVpoly x') ('X^n - 1)); rewrite addrC -subr_eq => /eqP <-.
   by rewrite divpN mulNr.
-rewrite HM /fdcoor poly_rV_K //; last first.
+rewrite HM /fdcoor poly_rV_K //.
   rewrite -HM.
   move: (ltn_modp ('X * rVpoly x') ('X^n - 1)).
   rewrite size_XnsubC // ltnS => ->.

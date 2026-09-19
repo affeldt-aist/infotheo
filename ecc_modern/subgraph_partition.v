@@ -9,7 +9,6 @@ Require Import ssr_ext.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -56,10 +55,10 @@ Lemma bipartite_path_kind_even : colorable g kind ->
 Proof.
 move=> Hcol; elim=> // i IH h [//|t1 [//|t2 t3]] h0 ht it2.
 rewrite -[in RHS]muln2 mulSn add2n muln2 -(bipartite_path_kind_next Hcol) //.
-  apply: IH => //; by rewrite (leq_trans _ it2).
-move: it2 => /=.
-rewrite ltnS -(@leq_pmul2r 2) // !muln2 => /leq_ltn_trans; apply.
-by rewrite -{2}(odd_double_half (size t3)) ltnS leq_addl.
+  move: it2 => /=.
+  rewrite ltnS -(@leq_pmul2r 2) // !muln2 => /leq_ltn_trans; apply.
+  by rewrite -{2}(odd_double_half (size t3)) ltnS leq_addl.
+by apply: IH => //; rewrite (leq_trans _ it2).
 Qed.
 
 Lemma bipartite_cycle_even cy :
@@ -69,7 +68,7 @@ case: cy => //= h t Hcol Hcycle; apply/negP => abs.
 suff /Hcol : kind (last h t) = kind h.
   move: Hcycle; by rewrite rcons_path => /andP[_ ->].
 apply/esym.
-rewrite -nth_last (_ : nth _ _ _ = nth h (h :: t) (size t)); last by destruct t.
+rewrite -nth_last (_ : nth _ _ _ = nth h (h :: t) (size t)); first by destruct t.
 rewrite -(odd_double_half (size t)) (negbTE abs) add0n.
 apply: (bipartite_path_kind_even Hcol) => //.
 move: Hcycle; by rewrite /= rcons_path => /andP[].
@@ -127,7 +126,7 @@ rewrite /path.cycle rcons_path => /andP [/=/andP[Hab Hp]].
 case : {Hp}(shortenP Hp) => p' Hp' Hun Hmem Hla.
 move: {Hac}(Hac [:: a, b & p']).
 rewrite /ucycle /cycle {3}[b :: p']lock /= -lock Hun Hab rcons_path Hp' Hla.
-rewrite (_ : a \notin b :: p'); last first.
+rewrite (_ : a \notin b :: p').
   apply: contra Ha; rewrite !inE => /predU1P[->|]; first by rewrite eqxx.
   by move/Hmem => ->; rewrite orbT.
 by destruct p' as [|p'1 p'2] => [//|/= /(_ isT)].
@@ -296,11 +295,11 @@ Lemma trivIset_subgraph_succ
 Proof.
 apply/trivIsetP => s1 s2; rewrite !inE => /predU1P[->{s1}|].
   case/predU1P => [->{s2}|]; first by rewrite eqxx.
-  rewrite (@eq_disjoint1 _ n) //; last by move => ?; rewrite inE.
+  rewrite (@eq_disjoint1 _ n) //; first by move => ?; rewrite inE.
   case/imsetP => v Hv -> _; exact: root_notin_subgraph.
 case/imsetP => m1 Hm1 ->{s1}.
 case/predU1P => [->|].
-  rewrite disjoint_sym (@eq_disjoint1 _ n) //; last by move => ?; rewrite inE.
+  rewrite disjoint_sym (@eq_disjoint1 _ n) //; first by move => ?; rewrite inE.
   move=> _; exact: root_notin_subgraph.
 case/imsetP => m2 Hm2 ->{s2} s1s2.
 rewrite !inE in Hm1 Hm2.
@@ -460,7 +459,7 @@ rewrite /= !inE => /predU1P[xn1|].
   suff : ucycle g [:: n1, m, n, m' & k11] by apply: acyclic_g.
   apply: uniq_path_ucycle_extend_1 => //; first by rewrite symmetric_g.
     move: Hl; rewrite -cat_rcons rcons_cat cat_path => /andP[Hl _] /=.
-    rewrite (sub_path_except _ _ Hl) // ?andbT 1?eq_sym //.
+    rewrite (sub_path_except _ _ Hl) // ?andbT 1?eq_sym //; last first.
       by rewrite exceptE /= nm' eq_sym mn.
     rewrite mem_rcons inE negb_or eq_sym n1m /=; apply/negP => mk11.
     case/splitPr : mk11 => k111 k112 in Hl Hun.
@@ -518,7 +517,7 @@ rewrite /= !inE => /predU1P[xm'1|].
   suff : ucycle g (m'1 :: n1 :: m :: n :: m' :: l1) by apply: acyclic_g.
   apply: uniq_path_ucycle_extend_2 => //; [by rewrite symmetric_g|by rewrite eq_sym| |].
     move: Hl; rewrite -cat_rcons rcons_cat cat_path => /andP[Hl _].
-    rewrite /= (sub_path_except _ _ Hl) ?andbT 1?eq_sym //.
+    rewrite /= (sub_path_except _ _ Hl) ?andbT 1?eq_sym //; last first.
       by rewrite exceptE /= nm' /= eq_sym m_not_n.
     rewrite mem_rcons inE eq_sym negb_or m'1m /=; apply/negP => ml1.
     case/splitPr : ml1 => l11 l12 in Hl Hun.
@@ -568,9 +567,9 @@ elim: p {-2}p (leqnn p).
   apply/andP; split.
     by rewrite /= symmetric_g L2 /= symmetric_g symmetric_g /= H1 n2m symmetric_g n1m.
   rewrite /= !inE !negb_or /= andbT.
-  rewrite (simple_neg simple_g) /=; last by rewrite symmetric_g.
+  rewrite (simple_neg simple_g) /=; first by rewrite symmetric_g.
   rewrite K3 /=.
-  rewrite (simple_neg simple_g) /=; last by rewrite symmetric_g.
+  rewrite (simple_neg simple_g) /=; first by rewrite symmetric_g.
   by rewrite K2 /= n2n1 /= eq_sym.
 move=> p IH p' Hp' l1 l2 Hp x.
 move=> n2 m n2m n1 n1m n2n1.
@@ -579,10 +578,10 @@ apply/andP; split.
   rewrite /= rcons_cat /= -(cat1s n2) catA cat_path.
   apply/andP; split.
     move/except_path: Hl2.
-    rewrite -rev_path (_ : rev (belast _ _) = rev l2 ++ [:: n2]); last first.
+    rewrite -rev_path (_ : rev (belast _ _) = rev l2 ++ [:: n2]).
       by rewrite (_ : [:: n2] = rev [:: n2]) // -rev_cat lastI belast_rcons /=.
     rewrite cats1 last_rcons.
-    apply: sub_path => a b; by rewrite symmetric_g.
+    by apply: sub_path => a b; rewrite symmetric_g.
   by rewrite last_cat /= n2m /= symmetric_g n1m /= (except_path Hl1).
 rewrite -(cat1s x) -catA uniq_catC.
 rewrite -catA.
@@ -720,7 +719,7 @@ Lemma uniq_path_ucycle_cat_extend x m n2 m2 l2 l1 n1 m1
 Proof.
 rewrite -(cat1s m2) catA.
 rewrite cat_cons.
-rewrite (_ : rev l2 ++ [:: m2] = rev (m2 :: l2)); last first.
+rewrite (_ : rev l2 ++ [:: m2] = rev (m2 :: l2)).
   by rewrite rev_cons cats1.
 apply: uniq_path_ucycle_cat => //.
 by rewrite symmetric_g.
@@ -770,13 +769,13 @@ apply: uniq_path_ucycle_extend_1 => //.
 by move: Hl2; rewrite -cat_rcons rcons_cat cat_path => /andP[].
 by move: Hunl2; rewrite -cat_cons -(cat1s m) catA cats1 cat_uniq => /and3P[].
 rewrite -(cat1s n1) cat_uniq Hunl1 /= andbT !inE /= negb_or.
-rewrite (simple_neg simple_g) //=; last by rewrite symmetric_g.
+rewrite (simple_neg simple_g) //=; first by rewrite symmetric_g.
 apply/hasP; case => y yl1 /=.
 rewrite inE.
 move/eqP => ?; subst y.
 by move/path_except_notin : Hl1; rewrite mem_rcons inE yl1 orbC.
 rewrite -(cat1s n2) cat_uniq Hunl2 /= andbT !inE /= negb_or.
-rewrite (simple_neg simple_g) //=; last by rewrite symmetric_g.
+rewrite (simple_neg simple_g) //=; first by rewrite symmetric_g.
 apply/hasP; case => y yl2 /=.
 rewrite inE.
 move/eqP => ?; subst y.
@@ -1083,10 +1082,10 @@ apply/andP; split.
   rewrite (except_path Hk') /= rcons_path; apply/andP; split.
     rewrite -Hkast {1}Hlast rev_path.
     apply: sub_path Hl' => w1 w2 /except_rel; by rewrite symmetric_g.
-  rewrite (_ : last _ _ = m'1); first by rewrite symmetric_g.
+  rewrite (_ : last _ _ = m'1); last by rewrite symmetric_g.
   rewrite (last_nth m'1) size_rev size_belast.
-  rewrite (_ : _ :: _ = rev (belast m'1 l' ++ [:: last m'2 k'])); last by rewrite rev_cat.
-  rewrite nth_rev; last by rewrite size_cat /= size_belast addn1.
+  rewrite (_ : _ :: _ = rev (belast m'1 l' ++ [:: last m'2 k'])); first by rewrite rev_cat.
+  rewrite nth_rev; first by rewrite size_cat /= size_belast addn1.
   rewrite size_cat addnC addSn add0n subSS size_belast subnn nth_cat size_belast.
   have -> : 0 < size l'.
     apply: (@trivIset_subgraph_succ2_D1_helper _ m n1 n2 m'1 m'2 v l' k k') => //.

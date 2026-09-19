@@ -28,7 +28,6 @@ Reserved Notation "'D(' P '||' Q ')' " (at level 50, P, Q at next level,
 Declare Scope divergence_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -49,7 +48,7 @@ move=> x0 yx; rewrite le_eqVlt => /predU1P[/esym|] y0.
 - move: x0; rewrite le_eqVlt => /predU1P[/esym ->|x0].
   + rewrite mul0r subr0 mulr_ge0//; [exact: ltW | ].
     by rewrite log_exp1_Rle_0.
-  + rewrite (_ : y - x = x * (y / x - 1)); last first.
+  + rewrite (_ : y - x = x * (y / x - 1)).
       by rewrite mulrDr mulrCA mulfV ?gt_eqF// mulr1 mulrN1.
     rewrite -mulrA; apply: (ler_wpM2l (ltW x0)).
     by rewrite log_id_cmp// divr_gt0.
@@ -104,7 +103,7 @@ Hypothesis P_dom_by_Q : P `<< Q.
 Lemma div_ge0 : 0 <= D(P || Q).
 Proof.
 rewrite /div [X in _ <= X](_ : _ =
-    - \sum_(a | a \in A) P a * (log (Q a / P a))); last first.
+    - \sum_(a | a \in A) P a * (log (Q a / P a))).
   rewrite -sumrN; apply: eq_bigr => a _; rewrite -mulrN.
   have [->|H0] := eqVneq (P a) 0; first by rewrite !mul0r.
   congr (_ * _).
