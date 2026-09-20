@@ -1,12 +1,8 @@
 -------------------
-from 0.9.8 to 0.9.9
+from 0.9.7 to 0.9.8
 -------------------
 
 * port to MathComp 2.6.0 and MathComp-Analysis 1.18.0
-
--------------------
-from 0.9.7 to 0.9.8
--------------------
 
 * added
 - in convex.v

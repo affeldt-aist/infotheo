@@ -19,7 +19,6 @@ build: [
   [make "-j%{jobs}%" ]
   [make "-C" "extraction" "tests"] {with-test}
 ]
-build: [make "-j%{jobs}%"]
 install: [make "install"]
 depends: [
   "rocq-core" { (>= "9.1.1" & < "9.4~") }

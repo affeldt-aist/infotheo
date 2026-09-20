@@ -54,8 +54,8 @@ information theory and linear error correcting codes
 is via [OPAM](https://opam.ocaml.org/doc/Install.html):
 
 ```shell
-opam repo add coq-released https://coq.inria.fr/opam/released
-opam install coq-infotheo
+opam repo add rocq-released https://rocq-prover.org/opam/released
+opam install rocq-infotheo
 ```
 
 To instead build and install manually, do (using GNU `make`):
@@ -101,4 +101,4 @@ for instructions to install MathComp on Windows 10 & 11
 (or [this page](https://staff.aist.go.jp/reynald.affeldt/ssrcoq/install.html) for
 instructions in Japanese).
 Once MathComp is installed (with opam), do
-`opam install coq-infotheo` or `git clone git@github.com:affeldt-aist/infotheo.git; opam install .`
+`opam install rocq-infotheo` or `git clone git@github.com:affeldt-aist/infotheo.git; opam install .`
