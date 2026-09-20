@@ -61,7 +61,7 @@ by injection Hv; move=> ->; rewrite eqxx.
 Qed.
 
 Section EqTag.
-Variable k : kind.
+Context (k : kind).
 
 HB.instance Definition _ := hasDecEq.Build _ (@tag_eqP k).
 
@@ -114,7 +114,7 @@ by rewrite leq_max leqnn.
 Qed.
 
 Section EqTnTree.
-Variable k : kind.
+Context (k : kind).
 
 HB.instance Definition _ := hasDecEq.Build _ (@tn_tree_eqP k).
 
@@ -123,11 +123,10 @@ End EqTnTree.
 End TnTreeEq.
 
 Section BuildTreeOk.
-Variables (m n : nat) (H : 'M['F_2]_(m, n.+1)).
+Context m n (H : 'M['F_2]_(m, n.+1)) (rW : 'I_n.+1 -> R2).
+
 Hypothesis tanner_acyclic : acyclic' (tanner_rel H).
 Hypothesis tanner_connected : forall a b, connect (tanner_rel H) a b.
-
-Variable rW : 'I_n.+1 -> R2.
 
 Lemma select_children_spec s k i j :
   j \in select_children H s k i =
@@ -722,11 +721,11 @@ Qed.
 End BuildTreeTest.
 
 Section AlgoProof.
-Variables m n' : nat.
-Let n := n'.+1.
-Variable H : 'M['F_2]_(m, n).
+Context m n' (n := n'.+1) (H : 'M['F_2]_(m, n)).
+
 Hypothesis tanner_acyclic : acyclic' (tanner_rel H).
 Hypothesis tanner_connected : forall a b, connect (tanner_rel H) a b.
+
 Local Notation "''V(' x ',' y ')'" := (Vgraph H x y).
 Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
 Variable B : finType.
@@ -1841,7 +1840,7 @@ case Hid: (node_id t == inr n0).
     exact: cons_uniq_path.
   rewrite -tree_ok // labels_sumprod_down labels_sumprod_up.
   apply/negP => Hi.
-  have Hl := uniq_labels_build_tree_rec tanner_acyclic rW h.+1 Hun.
+  have Hl := uniq_labels_build_tree_rec rW tanner_acyclic h.+1 Hun.
   rewrite /= in Hl.
   move/andP/proj1: Hl.
   apply/negP.
@@ -1874,7 +1873,7 @@ have Hunj :
 (* get estimation by IH *)
 rewrite -(IH [:: id_of_kind k i & s] (negk k) j Hh') //.
 rewrite /= -map_comp.
-rewrite (flatten_single (x:=j)) => //.
+rewrite (flatten_single (x := j)) => //.
     by rewrite uniq_select_children.
   by rewrite select_children_spec.
 (* ensure this is the only answer *)
@@ -1888,7 +1887,7 @@ have Huny:
   apply: cons_uniq_path => //.
   by rewrite sym_tanner_rel.
 rewrite -tree_ok // labels_sumprod_down labels_sumprod_up.
-have Hun':= uniq_labels_build_tree_rec tanner_acyclic rW h.+1 Hun.
+have Hun':= uniq_labels_build_tree_rec rW tanner_acyclic h.+1 Hun.
 move: Hun' => /= /andP/proj2.
 rewrite -map_comp => Hun'.
 case Hn0: (inr n0 \in _); last by [].
@@ -1970,7 +1969,7 @@ Proof.
 split=> [|n0].
   rewrite /build_tree.
   have Hun0 : uniq_path (tanner_rel H) (id_of_kind kv ord0) [::] by [].
-  have := uniq_labels_build_tree_rec tanner_acyclic rW #|id'| Hun0.
+  have := uniq_labels_build_tree_rec rW tanner_acyclic #|id'| Hun0.
   rewrite -labels_sumprod_up -(@labels_sumprod_down kv _ None).
   apply: subseq_uniq.
   exact: subseq_estimation.

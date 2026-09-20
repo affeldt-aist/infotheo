@@ -1,7 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import boot order ssralg ssrnum.
-From Stdlib Require FunctionalExtensionality Wf_nat.
+From mathcomp Require Import boolp.
+From Stdlib Require Wf_nat.
 Require Import ssr_ext.
 
 (**md**************************************************************************)
@@ -45,7 +46,7 @@ by rewrite ltn_neqAle si /= -ltnS prednK // (leq_trans _ Hi).
 Qed.
 
 Section prefix.
-Variable T : eqType.
+Context {T : eqType}.
 Implicit Types a b : seq T.
 
 Definition prefix a b := a == take (size a) b.
@@ -123,8 +124,7 @@ End prefix.
 
 (* TODO: mv? *)
 Section ary_of_nat.
-Variable t' : nat.
-Let t := t'.+2.
+Context t' (t := t'.+2).
 
 Local Obligation Tactic := idtac.
 Program Definition ary_of_nat'
@@ -146,9 +146,8 @@ Lemma ary_of_nat_unfold n : ary_of_nat n =
 Proof.
 rewrite {1}/ary_of_nat Fix_eq //.
   move=> m f f' H; congr ary_of_nat'.
-  apply: FunctionalExtensionality.functional_extensionality_dep => k.
-  by apply: FunctionalExtensionality.functional_extensionality.
-destruct n => //=.
+  by apply/functional_extensionality_dep => k; exact: funext.
+case: n => [/=|//].
 by congr cons; apply: val_inj => /=; rewrite inordK.
 Qed.
 
@@ -300,7 +299,7 @@ Qed.
 End ary_of_nat.
 
 Section code.
-Variable T : finType.
+Context (T : finType).
 
 Record code_set := CodeSet {
   codeset :> seq (seq T) ;
@@ -348,7 +347,7 @@ Proof. by case/(empty_finType_code_set C) => ->. Qed.
 End code.
 
 Section prefix_code.
-Variable T : finType.
+Context (T : finType).
 
 Definition prefix_code (C : code_set T) :=
   forall c c', c \in C -> c' \in C -> c != c' -> ~~ prefix c c'.
@@ -379,11 +378,8 @@ Qed.
 End prefix_code.
 
 Section example_of_code.
-Variable (n' : nat) (t' : nat).
-Let n := n'.+1.
-Let t := t'.+2.
-Let T := 'I_t.
-Variable l : seq nat.
+Context n' t' (n := n'.+1) (t := t'.+2) (T := 'I_t) (l : seq nat).
+
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
 Hypothesis Hl : forall i : 'I_n, nth O l i != 0.
@@ -476,7 +472,7 @@ End example_of_code.
 
 Section kraft_condition.
 Local Notation "s ``_ i" := (nth O s i) (at level 4).
-Variable R : rcfType.
+Context (R : rcfType).
 
 Definition kraft_cond (T : finType) (l : seq nat) :=
   let n := size l in
@@ -506,10 +502,8 @@ Qed.
 Import Order.TTheory GRing.Theory Num.Def Num.Theory.
 
 Section prefix_implies_kraft_cond.
-Variables (T : finType) (C : code_set T).
-Let n := size C.
-Let l := sort_sizes C.
-Let lmax := last O l.
+Context (T : finType) (C : code_set T) (n := size C) (l := sort_sizes C)
+  (lmax := last O l).
 
 Lemma leq_lmax c : c \in C -> size c <= lmax.
 Proof.
@@ -596,11 +590,7 @@ Qed.
 End prefix_implies_kraft_cond.
 
 Section kraft_code.
-Variable (n' : nat) (t' : nat).
-Let n := n'.+1.
-Let t := t'.+2.
-Let T := 'I_t.
-Variable l : seq nat.
+Context n' t' (n := n'.+1) (t := t'.+2) (T := 'I_t) (l : seq nat).
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
 Hypothesis Hl : forall i : 'I_n, nth O l i != 0.
@@ -666,11 +656,8 @@ Qed.
 End kraft_code.
 
 Section kraft_cond_implies_prefix.
-Variable (n' : nat) (t' : nat).
-Let n := n'.+1.
-Let t := t'.+2.
-Let T := 'I_t.
-Variable l : seq nat.
+Context n' t' (n := n'.+1) (t := t'.+2) (T := 'I_t) (l : seq nat).
+
 Hypothesis l_n : size l = n.
 Hypothesis sorted_l : sorted leq l.
 Hypothesis l_neq0 : forall i : 'I_n, nth O l i != 0.
@@ -753,7 +740,7 @@ End kraft_cond_implies_prefix.
 
 (* wip *)
 Section code_cw.
-Variable T : finType.
+Context (T : finType).
 
 Record code_set_cw M := CodeSetCw {
   codesetcw :> {set M.-bseq T}

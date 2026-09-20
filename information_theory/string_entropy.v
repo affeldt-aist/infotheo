@@ -48,15 +48,15 @@ rewrite leEdual /= /log /Log /=.
 rewrite [in X in X <= _]avgRE !mulrA -mulrDl -avgRE.
 by rewrite ler_wpM2r // invr_ge0 ln2_ge0.
 Qed.
+
 End log_concave.
 
 Section seq_nat_fdist.
-Context (R : realType) (A : finType) (f : A -> nat).
+Context (R : realType) (A : finType) (f : A -> nat) (total : nat).
 (*
 Let N2R x : R := x%:R.
 #[reversible=yes] Local Coercion N2R' := N2R.
 *)
-Variable total : nat.
 Hypothesis sum_f_total : (\sum_(a in A) f a)%N = total.
 Hypothesis total_gt0 : total != O.
 
@@ -73,6 +73,7 @@ by rewrite sum_f_total divrr // unitfE pnatr_eq0.
 Qed.
 
 Definition seq_nat_fdist := FDist.make f_div_total_pos f_div_total_1.
+
 End seq_nat_fdist.
 
 Section string.
@@ -106,16 +107,14 @@ Definition nHs (s : seq A) : R :=
 Lemma szHs_is_nHs s (H : size s != O) :
   (size s)%:R * `H (@num_occ_dist s H) = nHs s :> R.
 Proof.
-rewrite /entropy /nHs /num_occ_dist /=.
-rewrite (big_morph _ (id1:=0) (@opprD _)) ?oppr0 // big_distrr /=.
+rewrite /entropy /nHs /num_occ_dist/=.
+rewrite (big_morph _ (id1 := 0) (@opprD _)) ?oppr0// big_distrr/=.
 apply: eq_bigr => a _ /=; rewrite ffunE.
 case: ifPn => [/eqP -> | Hnum]; first by rewrite !mul0r oppr0 mulr0.
-rewrite -mulrN.
-rewrite -logV.
+rewrite -mulrN -logV.
   by rewrite divr_gt0 ?ltr0n ?lt0n.
-rewrite mulrA; congr (_ * _).
-  by rewrite mulrCA divff ?mulr1// gt_eqF// ltr0n lt0n.
-by rewrite invf_div.
+rewrite mulrA; congr (_ * _); last by rewrite invf_div.
+by rewrite mulrCA divff ?mulr1// pnatr_eq0.
 Qed.
 
 Definition mulnrdep (x : nat) (y : x != O -> R) : R.
