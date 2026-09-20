@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg finalg poly polydiv cyclic.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg finalg poly polydiv cyclic.
 From mathcomp Require Import perm matrix mxpoly vector mxalgebra zmodp.
 Require Import ssr_ext ssralg_ext linearcode dft poly_decoding.
 
@@ -9,7 +9,6 @@ Require Import ssr_ext ssralg_ext linearcode dft poly_decoding.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -20,9 +19,8 @@ Local Open Scope vec_ext_scope.
 Module GRS.
 
 Section GRS_def.
-Variables (n : nat).
-Variable (F : finFieldType).
-Variable a : 'rV[F]_n.
+Context n (F : finFieldType) (a : 'rV[F]_n).
+
 Hypothesis a_inj : injective [ffun i => a``_i]. (* pairwise distinct *)
 Variable b : 'rV[F]_n.
 Hypothesis b_neq0 : forall i, b ``_ i != 0.
@@ -57,7 +55,7 @@ Definition syndrome_coord_supp (l : nat) (y : 'rV_n) :=
 Lemma syndrome_coord_suppE l y : syndrome_coord l y = syndrome_coord_supp l y.
 Proof.
 rewrite /syndrome_coord (bigID (fun i => i \in supp y)) /=.
-rewrite addrC (eq_bigr (fun=> 0)); last first.
+rewrite addrC (eq_bigr (fun=> 0)).
   by move=> i; rewrite inE negbK => /eqP ->; rewrite 2!mul0r.
 by rewrite big_const iter_addr0 add0r.
 Qed.
@@ -69,17 +67,19 @@ Lemma syndromepE r y :
      (y ``_ i * b ``_ i)%:P * (\sum_(l < r) (a ``_ i ^+ l)%:P * 'X^l).
 Proof.
 rewrite /syndromep poly_def.
-rewrite (eq_bigr (fun i : 'I_r=> 'X^i * (syndrome_coord i y)%:P)); last first.
+rewrite (eq_bigr (fun i : 'I_r=> 'X^i * (syndrome_coord i y)%:P)).
   by move=> i _; rewrite mulrC -scale_polyE.
-rewrite (eq_bigr (fun i : 'I_r => 'X^i * (syndrome_coord_supp i y)%:P)); last first.
+rewrite (eq_bigr (fun i : 'I_r => 'X^i * (syndrome_coord_supp i y)%:P)).
   move=> i _.
   by rewrite syndrome_coord_suppE.
 rewrite /syndrome_coord_supp.
-rewrite (eq_bigr (fun i : 'I_r => (\sum_(j in supp y) 'X^i * (y ``_ j * b ``_ j * a ``_ j ^+ i)%:P))); last first.
+rewrite (eq_bigr (fun i : 'I_r =>
+    (\sum_(j in supp y) 'X^i * (y ``_ j * b ``_ j * a ``_ j ^+ i)%:P))).
   move=> i _.
   by rewrite -big_distrr /= (big_morph (id1:=0) (fun x => x%:P) (@polyCD _)).
 rewrite exchange_big /=.
-rewrite (eq_bigr (fun j => (y ``_ j * b ``_ j)%:P * \sum_(l < r) ((a ``_ j ^+ l)%:P * 'X^l))) //.
+rewrite (eq_bigr (fun j => (y ``_ j * b ``_ j)%:P *
+  \sum_(l < r) ((a ``_ j ^+ l)%:P * 'X^l))) //.
 move=> i isupp.
 rewrite !big_distrr /=; apply: eq_bigr => j _.
 by rewrite mulrC mulrA polyCM.
@@ -102,9 +102,7 @@ End GRS_def.
 End GRS.
 
 Section GRS_rank.
-Variables (F : finFieldType) (n' : nat).
-Let n := n'.+1.
-Variable (r : nat).
+Context (F : finFieldType) n' (n := n'.+1) (r : nat).
 
 Definition GRS_PCM_sq (a b : 'rV[F]_n) r :=
   \matrix_(i < r, j < r) (GRS.PCM a b r) i (inord j).
@@ -116,9 +114,9 @@ Lemma GRS_PCM_sq_vander (a b : 'rV[F]_n) (rn : r <= n) :
 Proof.
 apply/matrixP => i j.
 rewrite !mxE (bigID (fun i : 'I_n => i < r)) /=.
-rewrite [in X in _ + X = _](eq_bigr (fun=> 0)); last first.
+rewrite [in X in _ + X = _](eq_bigr (fun=> 0)).
   move=> l lr.
-  rewrite !mxE (_ : l == inord j = false); last first.
+  rewrite !mxE (_ : l == inord j = false).
     apply/negbTE; apply: contra lr => /eqP ->.
     by rewrite inordK // (leq_trans (ltn_ord j)).
   by rewrite mulr0n mulr0.
@@ -164,15 +162,15 @@ rewrite /lhs' /lhs GRS_PCM_sq_vander //.
 apply/matrixP => i j.
 rewrite !mxE castmxE !mxE /=.
 rewrite (bigID (fun x : 'I_n => x < r) xpredT) /=.
-rewrite [in X in _ + X = _](eq_bigr (fun=> 0)); last first.
+rewrite [in X in _ + X = _](eq_bigr (fun=> 0)).
   move=> k kj; rewrite !mxE esymK (_ : _ == _ = false).
-    by rewrite mulr0n mulr0.
-  apply/negbTE; by apply: contra kj => /eqP -> /=.
+    by apply/negbTE; apply: contra kj => /eqP -> /=.
+  by rewrite mulr0n mulr0.
 rewrite big_const iter_addr0 addr0.
 rewrite big_ord_narrow //.
 apply: eq_bigr => k _.
 rewrite !mxE /=.
-rewrite (_ : widen_ord _ _ = inord k); last first.
+rewrite (_ : widen_ord _ _ = inord k).
   apply: val_inj => /=; by rewrite inordK // (leq_trans (ltn_ord k)).
 congr (_ * (_ *+ nat_of_bool _)).
 rewrite esymK.
@@ -180,7 +178,7 @@ apply/idP/idP => [|/eqP ->]; last first.
   apply/eqP/val_inj => /=.
   by rewrite inordK // (leq_trans (ltn_ord j)).
 move/eqP/(congr1 (@nat_of_ord n)).
-rewrite inordK; last by rewrite (leq_trans (ltn_ord k)).
+rewrite inordK; first by rewrite (leq_trans (ltn_ord k)).
 move=> Hk.
 apply/eqP/ord_inj; by rewrite Hk.
 Qed.
@@ -188,16 +186,17 @@ Qed.
 End GRS_rank.
 
 Section reduced_key_equation.
-Variables (F : finFieldType) (n : nat) (y : 'rV[F]_n).
+Context (F : finFieldType) n (y : 'rV[F]_n) (b a : 'rV[F]_n).
 Let E := supp y.
-Variables b a : 'rV[F]_n.
 
 Definition Sigma : {poly F} := errloc a E.
 
 Definition Omega : {poly F} := @erreval F n b a y.
 
 Definition GRS_mod r : {poly F} :=
-  \sum_(i in supp y) y ``_ i *: (\prod_(i0 in E | i0 != i) ((1 - a ``_ i0 *: 'X))) * (a ``_ i ^+ r)%:P * - (b ``_ i)%:P.
+  \sum_(i in supp y) y ``_ i *:
+    (\prod_(i0 in E | i0 != i) ((1 - a ``_ i0 *: 'X))) *
+    (a ``_ i ^+ r)%:P * - (b ``_ i)%:P.
 
 Lemma GRS_key_equation r :
   Sigma * GRS.syndromep a b r y = Omega + GRS_mod r * 'X^r.
@@ -207,8 +206,9 @@ have [r0|r0] := eqVneq r 0.
   rewrite /GRS.syndromep poly_def big_ord0 mulr0.
   apply/eqP; rewrite eq_sym addr_eq0; apply/eqP.
   rewrite /GRS_mod /Omega /erreval -sumrN; apply: eq_bigr => j jy.
-  rewrite expr0 mulr1 mulrN opprK [in RHS]mulrC mulrC -!scalerA.
-  rewrite -scalerAl mulrC mul_polyC; congr (_ *: (_ *: _)).
+  rewrite expr0 mulr1 mulrN opprK.
+  rewrite [in RHS](mulrC _ ((b``_j)%:P)) (mulrC (y``_j)).
+  rewrite -scalerA mul_polyC; congr (_ *: (_ *: _)).
   by apply: eq_bigl => k; rewrite in_setD1 andbC.
 rewrite /GRS_mod big_distrl /= /Omega /erreval -big_split /=.
 rewrite GRS.syndromepE big_distrr /=.
@@ -220,14 +220,14 @@ rewrite (bigD1 i) //=.
 rewrite (mulrC (1 - a ``_ i *: 'X)).
 rewrite -!mulrA mulrBl mul1r.
 set x := (X in _ * X = _).
-rewrite (_ : x = (b ``_ i)%:P * (1 - (a ``_ i ^+ r)%:P * 'X^r)); last first.
+rewrite (_ : x = (b ``_ i)%:P * (1 - (a ``_ i ^+ r)%:P * 'X^r)).
   rewrite /x mulrCA -mulrBr big_distrr /= -sumrB.
   rewrite (_ : \sum_(i0 < r) _ = 1 - ((a ``_ i ^+ r)%:P * 'X^r)) //.
   rewrite big_split /=.
   destruct r => //.
   rewrite big_ord_recl /= expr0 mulr1 big_ord_recr /= -addrA.
   rewrite (addrA _ _ (- (_ *: _ * _))).
-  rewrite addrCA [X in X + _](_ : _ = 0) ?add0r; last first.
+  rewrite addrCA [X in X + _](_ : _ = 0) ?add0r.
     rewrite sumrN.
     apply/eqP; rewrite subr_eq0; apply/eqP.
     apply: eq_bigr => j _.

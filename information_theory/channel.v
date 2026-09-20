@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_algebra.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot algebra.
 From mathcomp Require Import Rstruct reals classical_sets.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 Require Import proba entropy jfdist_cond.
@@ -32,7 +32,6 @@ Require Import proba entropy jfdist_cond.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -65,7 +64,7 @@ Notation "{ 'fdist' T }" := ((Rdefinitions.R).-fdist T) : fdist_scope.
 
 Module Channel1.
 Section channel1.
-Variables A B : finType.
+Context (A B : finType).
 
 Local Notation "'`Ch'" := (A -> {fdist B}) (only parsing).
 
@@ -99,7 +98,7 @@ Local Open Scope entropy_scope.
 Module DMC.
 Section def.
 Local Open Scope ring_scope.
-Variables (A B : finType) (W : `Ch(A, B)) (n : nat).
+Context {A B : finType} (W : `Ch(A, B)) (n : nat).
 
 Definition f (x : 'rV[A]_n) :=
   [ffun y : 'rV[B]_n => (\prod_(i < n) W `(y ``_ i | x ``_ i))].
@@ -112,7 +111,7 @@ set f' := fun i b => W (x ``_ i) b.
 suff H : (\sum_(g : {ffun 'I_n -> B}) \prod_(i < n) f' i (g i) = 1)%R.
   rewrite -{}[RHS]H /f'.
   rewrite (reindex_onto (fun vb : 'rV_n => [ffun x => vb ``_ x])
-    (fun g  => \row_(k < n) g k)) /=; last first.
+    (fun g  => \row_(k < n) g k)) /=.
     move=> g _; apply/ffunP => /= i; by rewrite ffunE mxE.
   apply: eq_big => vb.
   - rewrite inE.
@@ -138,7 +137,7 @@ Lemma DMCE (A B : finType) n (W : `Ch(A, B)) b a :
 Proof. by rewrite /DMC.c; unlock; rewrite ffunE. Qed.
 
 Section DMC_sub_vec.
-Variables (A B : finType) (W : `Ch(A, B)) (n : nat) (tb : 'rV[B]_n).
+Context {A B : finType} (W : `Ch(A, B)) (n : nat) (tb : 'rV[B]_n).
 
 Lemma rprod_sub_vec (D : {set 'I_n}) (t : 'rV_n) :
   \prod_(i < #|D|) W ((t \# D) ``_ i) ((tb \# D) ``_ i) =
@@ -152,12 +151,12 @@ pose f : 'I_n -> 'I_#|D| :=
              | _ => enum_rank_in iD i
            end.
 rewrite (reindex_onto (fun i : 'I_#|D| => enum_val i) f) /=.
-  apply: eq_big => j; last by rewrite /sub_vec 2!mxE.
-  rewrite /f /=; case: Bool.bool_dec => [a|].
-    by rewrite enum_valK_in a eqxx.
-  by rewrite enum_valP.
-move=> j jD.
-by rewrite /f /=; case: Bool.bool_dec => [a| //]; rewrite enum_rankK_in.
+  move=> j jD.
+  by rewrite /f /=; case: Bool.bool_dec => [a| //]; rewrite enum_rankK_in.
+apply: eq_big => j; last by rewrite /sub_vec 2!mxE.
+rewrite /f /=; case: Bool.bool_dec => [a|].
+  by rewrite enum_valK_in a eqxx.
+by rewrite enum_valP.
 Qed.
 
 Lemma DMC_sub_vecE (V : {set 'I_n}) (t : 'rV_n) :
@@ -167,7 +166,7 @@ Proof. by rewrite DMCE -rprod_sub_vec. Qed.
 End DMC_sub_vec.
 
 Section fdist_out.
-Variables (A B : finType) (P : {fdist A}) (W  : A -> {fdist B}).
+Context {A B : finType} (P : {fdist A}) (W  : A -> {fdist B}).
 
 Definition f := [ffun b : B => \sum_(a in A) W a b * P a].
 
@@ -195,7 +194,7 @@ Notation "'`O(' P , W )" := (fdist_out P W) : channel_scope.
 Notation "'`H(' P '`o' W )" := (`H ( `O( P , W ) )) : channel_scope.
 
 Section fdist_out_prop.
-Variables A B : finType.
+Context {A B : finType}.
 
 Lemma fdist_rV_out (W : `Ch(A, B)) (P : {fdist A}) n (b : 'rV_n):
   (`O(P, W) `^ _) b =
@@ -205,7 +204,7 @@ rewrite fdist_rVE.
 under eq_bigr do rewrite fdist_outE.
 rewrite bigA_distr_big_dep /=.
 rewrite (reindex_onto (fun p : 'rV_n => [ffun x => p ``_ x])
-                      (fun y => \row_(k < n) y k)) //=; last first.
+                      (fun y => \row_(k < n) y k)) //=.
   by move=> i _; apply/ffunP => /= n0; rewrite ffunE mxE.
 apply: eq_big.
 - move=> a /=; apply/andP; split; first exact/finfun.familyP.
@@ -225,7 +224,7 @@ Qed.
 End fdist_out_prop.
 
 Section Pr_fdist_prod.
-Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)) (n : nat).
+Context {A B : finType} (P : {fdist A}) (W : `Ch(A, B)) (n : nat).
 
 Lemma Pr_DMC_rV_prod (Q : 'rV_n * 'rV_n -> bool) :
   Pr (((P `^ n) `X (W ``^ n))) [set x | Q x] =
@@ -238,13 +237,14 @@ apply: eq_bigr => i /= _.
 by rewrite fdist_prodE -snd_tnth_prod_rV -fst_tnth_prod_rV.
 Qed.
 
-Lemma Pr_DMC_fst (Q : 'rV_n -> bool) :
+Lemma Pr_DMC_fst (Q : {pred 'rV_n}) :
   Pr ((P `X W) `^ n) [set x | Q (rV_prod x).1 ] =
   Pr (P `^ n)        [set x | Q x].
 Proof.
-rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ [pred x | Q x]) //=; last first.
-  move=> t /=.
-  set X := (X in X _ = _); transitivity (prod_rV t \in X) => //; rewrite inE/=.
+rewrite {1}/Pr big_rV_prod /= -(pair_big_fst _ _ Q)/=.
+  move=> t.
+  set X := (X in X (prod_rV _) = _).
+  transitivity (prod_rV t \in X) => //; rewrite inE/=.
   congr (Q _).
   by apply/rowP => a; rewrite !mxE.
 transitivity (\sum_(i | Q i) (P `^ n) i * (\sum_(y in 'rV[B]_n) W ``(y | i))).
@@ -260,9 +260,10 @@ Lemma Pr_DMC_out m (S : {set 'rV_m}) :
   Pr ((P `X W) `^ m) [set x | (rV_prod x).2 \notin S] =
   Pr (`O(P , W) `^ m) (~: S).
 Proof.
-rewrite {1}/Pr big_rV_prod /= -(pair_big_snd _ _ [pred x | x \notin S]) //=; last first.
-  move=> tab /=.
-  set X := (X in X _ = _); transitivity (prod_rV tab \in X) => //; rewrite inE/=.
+rewrite {1}/Pr big_rV_prod /= -(pair_big_snd _ _ [pred x | x \notin S]) //=.
+  move=> t /=.
+  set X := (X in X (prod_rV _) = _).
+  transitivity (prod_rV t \in X) => //; rewrite inE/=.
   do 2 f_equal.
   by apply/rowP => a; rewrite !mxE.
 rewrite /= /Pr /= exchange_big /=; apply: eq_big => tb; first by rewrite !inE.
@@ -271,7 +272,7 @@ rewrite fdist_rVE.
 under [RHS]eq_bigr do rewrite fdist_outE.
 rewrite bigA_distr_bigA /=.
 rewrite (reindex_onto (fun p : 'rV[A]_m => [ffun x => p ord0 x])
-    (fun y : {ffun 'I_m -> A} => \row_(i < m) y i)) /=; last first.
+    (fun y : {ffun 'I_m -> A} => \row_(i < m) y i)) /=.
   by move=> f _; apply/ffunP => /= m0; rewrite ffunE mxE.
 apply: eq_big => ta.
   by rewrite inE; apply/esym/eqP/rowP => a; rewrite mxE ffunE.
@@ -290,7 +291,7 @@ Proof. by move=> Pa0; rewrite jcPr_fdistX_prod//; exact/eqP. Qed.
 Notation "`H( P , W )" := (`H (P `X W)) : channel_scope.
 
 Section conditional_entropy_chan.
-Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
+Context {A B : finType} (W : `Ch(A, B)) (P : {fdist A}).
 
 Definition cond_entropy_chan := (`H(P, W) - `H P)%channel.
 End conditional_entropy_chan.
@@ -298,7 +299,7 @@ End conditional_entropy_chan.
 Notation "`H( W | P )" := (cond_entropy_chan W P) : channel_scope.
 
 Section condentropychan_prop.
-Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
+Context {A B : finType} (W : `Ch(A, B)) (P : {fdist A}).
 
 Lemma cond_entropy_chanE : (`H(W | P) = centropy (fdistX (P `X W)))%channel.
 Proof.
@@ -320,7 +321,7 @@ End condentropychan_prop.
 
 Section mutual_info_chan.
 Local Open Scope fdist_scope.
-Variables A B : finType.
+Context {A B : finType}.
 
 Definition mutual_info_dist (P : {fdist A * B}) := `H P`1 + `H P`2 - `H P.
 
@@ -332,7 +333,7 @@ End mutual_info_chan.
 Notation "`I( P , W )" := (mutual_info_chan P W) : channel_scope.
 
 Section mutual_info_chan_prop.
-Variables (A B : finType) (W : `Ch(A, B)) (P : {fdist A}).
+Context {A B : finType} (W : `Ch(A, B)) (P : {fdist A}).
 
 Lemma mutual_info_chanE : `I(P, W) = mutual_info (fdistX (P `X W)).
 Proof.

@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum finalg perm.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum finalg perm.
 From mathcomp Require Import zmodp matrix mxalgebra vector interval_inference.
-From mathcomp Require Import ring.
+From mathcomp Require Import ring_tactic.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext f2 linearcode natbin.
 Require Import hamming fdist proba channel channel_code decoding.
@@ -34,7 +34,6 @@ Require Import binary_symmetric_channel.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -61,7 +60,7 @@ Let n := len.
 
 Lemma len_dim : n = (2 ^ m).-1.
 Proof.
-rewrite /n /len !expnS -subn1 doubleB -muln2 -subSn; last first.
+rewrite /n /len !expnS -subn1 doubleB -muln2 -subSn.
   by rewrite -muln2 mulnC -mulnA leq_mul2l /= -expnSr expn_gt0.
 by rewrite -muln2 mul1n subn2 /= mulnC.
 Qed.
@@ -94,7 +93,7 @@ Lemma no_weight_1_cw x : wH x = 1%N -> syndrome H x <> 0.
 Proof.
 move=> /wH_1[i [Hi Hi']].
 rewrite /syndrome mulmx_sum_col (bigID (pred1 i)) /= big_pred1_eq /=.
-rewrite  (eq_bigr (fun=> 0)) /=; last first.
+rewrite  (eq_bigr (fun=> 0)) /=.
   move=> j; rewrite eq_sym => /eqP/Hi'; rewrite mxE => ->; by rewrite scale0r.
 rewrite big_const_seq /= iter_addr0_cV mxE Hi scale1r addr0 col_matrix trmxK.
 apply: rV_of_nat_neq0 => //.
@@ -105,10 +104,10 @@ Lemma no_weight_2_cw x : wH x = 2%N -> syndrome H x <> 0.
 Proof.
 move=> /wH_2[i [j [Hij [Hi [Hj Hk]]]]].
 rewrite /syndrome mulmx_sum_col (bigID (pred1 i)) /= big_pred1_eq /=.
-rewrite (bigID (pred1 j)) /= (eq_bigl (pred1 j)) /=; last first.
+rewrite (bigID (pred1 j)) /= (eq_bigl (pred1 j)) /=.
   move=> a /=; have [aj|aj] := eqVneq a j; last by rewrite andbC.
   rewrite andbC /= aj eq_sym; by apply/eqP.
-rewrite big_pred1_eq /= (eq_bigr (fun=> 0)) /=; last first.
+rewrite big_pred1_eq /= (eq_bigr (fun=> 0)) /=.
   move=> a /andP[X1 X2].
   rewrite mxE Hk ?scale0r //; (apply/eqP; by rewrite eq_sym).
 rewrite big_const_seq /= iter_addr0_cV /= 2!mxE Hi Hj 2!scale1r addr0.
@@ -127,7 +126,7 @@ have two_m := Hamming.two_len m'.
 apply/rowP => x; rewrite !mxE.
 have Hn' : size (bitseq_of_N (bin_of_nat (7 * 2 ^ (n - 3)))) = n.
   apply/eqP.
-  rewrite eqn_leq size_bitseq_of_N_ub /=; last 2 first.
+  rewrite eqn_leq size_bitseq_of_N_ub /=.
     exact/rev7_neq0.
     exact/rev7_ub.
   move: (@size_bitseq_of_N_lb (7 * 2 ^ (n - 3)) n.-1 (rev7_lb two_m)).
@@ -152,7 +151,7 @@ set i := nth _ _ i2.
 have {i} -> : i = true.
   rewrite /i /bitseq_of_nat /pad_seqL size_rev Hn'.
   by rewrite  leqnn subnn cat0s bin_of_nat_rev7 // rev7_bin.
-rewrite mulr1 big1 ?addr0 => [|i i_gt2]; last first.
+rewrite mulr1 big1 ?addr0 => [i i_gt2|].
   rewrite /rV_of_nat /bitseq_of_nat.
   rewrite !mxE /= /pad_seqL size_rev Hn' leqnn subnn /=.
   rewrite bin_of_nat_rev7 //= rev7_bin //=.
@@ -172,9 +171,9 @@ have [X|[X|X]] : (x = m.-1 \/ x = m.-2 \/ x < m.-2)%N.
   by rewrite ltnS leq_eqVlt => /orP[/eqP|]; auto.
 - (* true false true *)
   rewrite X.
-  rewrite {1}(_ : m = size p0); last by rewrite /p0 size_pad_seqL.
-  rewrite {1}(_ : m = size p1); last by rewrite /p0 size_pad_seqL.
-  rewrite {1}(_ : m = size p2); last by rewrite /p0 size_pad_seqL.
+  rewrite {1}(_ : m = size p0); first by rewrite /p0 size_pad_seqL.
+  rewrite {1}(_ : m = size p1); first by rewrite /p0 size_pad_seqL.
+  rewrite {1}(_ : m = size p2); first by rewrite /p0 size_pad_seqL.
   by rewrite 3!nth_last last_cat /= /p1 /p2 /= 2!last_cat /= add0r addrr_pchar2.
 - (* false true true *)
   rewrite X /= /p0 /pad_seqL /=.
@@ -258,11 +257,11 @@ destruct (nat_of_rV _); first by rewrite wH0.
 clearbody n; clear.
 rewrite wH_sum.
 have [n0n|n0n] := ltnP n0 n.
-  rewrite (bigD1 (Ordinal n0n))//= mxE eqxx (eq_bigr (fun x => O)); last first.
+  rewrite (bigD1 (Ordinal n0n))//= mxE eqxx (eq_bigr (fun x => O)).
     move=> i Hi; rewrite mxE ifF //.
     apply: contraNF Hi => /eqP Hi; by apply/eqP/val_inj.
   by rewrite big_const iter_addn mul0n.
-rewrite (eq_bigr (fun x => O)); first by rewrite big_const iter_addn.
+rewrite (eq_bigr (fun x => O)); last by rewrite big_const iter_addn.
 move=> i _; rewrite mxE ifF //=.
 by apply/negbTE; rewrite gtn_eqF// (leq_trans (ltn_ord i)).
 Qed.
@@ -286,7 +285,7 @@ transitivity
   rewrite trmx_mul trmxK.
   rewrite (mulmx_rV_of_nat_row (Hamming.PCM m)^T (Ordinal (rev_ord_proof k))).
   by rewrite tr_col.
-rewrite col_matrix /= subnS prednK; last by rewrite subnBA // addnC addnK.
+rewrite col_matrix /= subnS prednK; first by rewrite subnBA // addnC addnK.
 by rewrite subnBA // addnC addnK -ks trmxK nat_of_rVK.
 Qed.
 
@@ -434,7 +433,7 @@ Qed.
 
 Lemma card_unit_cols : #|unit_cols| = m.
 Proof.
-by rewrite /unit_cols cols_1 card_imset; [apply: card_ord | apply: cols_1_inj].
+by rewrite /unit_cols cols_1 card_imset; [apply: cols_1_inj|apply: card_ord].
 Qed.
 
 Lemma card_non_unit : #|non_unit_cols| = (n - m)%nat.
@@ -525,11 +524,11 @@ move: (splitP (ord_split i)) => [i' Hi'|i' Hi'].
   move: (splitP (ord_split j)) => [j' Hj'|j' Hj'].
     move/eqP.
     rewrite nth_uniq.
-    - rewrite -Hi' -Hj' => /eqP ij.
-      by apply: val_inj.
     - by rewrite size_idsA.
     - by rewrite size_idsA.
     - by apply: uniq_idsA.
+    - rewrite -Hi' -Hj' => /eqP ij.
+      by apply: val_inj.
   move=> Hij.
   by move: (idsA_ids1 Hij).
 move: (splitP (ord_split j)) => [j' Hj'|j' Hj'].
@@ -751,7 +750,7 @@ rewrite (mulmxA tmp).
 rewrite {}/tmp.
 rewrite (_ : castmx _ _ *m castmx _ _ =
   castmx (subnK (Hamming.dim_len m'), subnK (Hamming.dim_len m'))
-    ((col_mx 1%:M 0) *m (row_mx 1%:M (- SysHamming.CSM m')^T))); last first.
+    ((col_mx 1%:M 0) *m (row_mx 1%:M (- SysHamming.CSM m')^T))).
   apply/matrixP => a b.
   rewrite !mxE.
   rewrite castmxE.
@@ -884,10 +883,10 @@ move=> /= y c Hy c'.
 rewrite !(dH_sym _ y).
 move: (@hamming_MD_alt r' y c).
 move=> ->.
+- by rewrite -Hy /Decoder.repair /= /hamming_repair ffunE.
 - case: arg_minnP.
     by destruct C_not_empty.
   by move => /= i Hi; apply.
-- by rewrite -Hy /Decoder.repair /= /hamming_repair ffunE.
 Defined.
 
 Lemma encode_decode c y : c \in lcode ->
@@ -1033,7 +1032,7 @@ rewrite /=.
 rewrite -[in X in _ * X = _]mulr_natl.
 rewrite mulrA /=.
 set den := _%:R.
-rewrite mulVf; last first.
+rewrite mulVf.
   rewrite /den card_mx/= mul1n.
   rewrite Num.Theory.pnatr_eq0.
   rewrite expn_eq0.
@@ -1046,11 +1045,11 @@ apply: toleft.
 rewrite -addrA.
 rewrite -(hamming_01 n p%:num).
 rewrite -big_union //=.
-  rewrite (_ : _ :|: _ = [set: 'rV_n]).
-    by rewrite binomial_theorem//.
+  rewrite -setI_eq0.
+  by apply/eqP/setP => /= x; rewrite !inE leqNgt andNb.
+rewrite (_ : _ :|: _ = [set: 'rV_n]).
   by apply/setP => /= x; by rewrite !inE leqNgt orNb.
-rewrite -setI_eq0.
-apply/eqP/setP => /= x; by rewrite !inE leqNgt andNb.
+by rewrite binomial_theorem.
 Qed.
 
 End hamming_code_error_rate.

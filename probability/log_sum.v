@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order all_algebra lra.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order algebra arithmetic_tactic.
 From mathcomp Require Import reals exp.
 Require Import bigop_ext realType_ext realType_ln.
 
@@ -9,7 +9,6 @@ Require Import bigop_ext realType_ext realType_ln.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -70,7 +69,7 @@ wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
     by rewrite -big_distrr /= /k -mulrA mulVf ?mulr1.
   have Htmp : \sum_{ C } kg != 0.
     rewrite /=.
-    evar (h : A -> R); rewrite (eq_bigr h); last first.
+    evar (h : A -> R); rewrite (eq_bigr h).
       by move=> a aC; rewrite ffunE /h; reflexivity.
     rewrite {}/h (_ : \sum_(i in C) _ = \sum_{C} f) // -Hkg.
     by apply: eq_bigr => a aC /=; rewrite ffunE.
@@ -78,23 +77,23 @@ wlog : Fnot0 g g0 Gnot0 fg gspos / \sum_{ C } f = \sum_{ C } g.
   move: {Hwlog}(Hwlog Fnot0 kg kg_pos Htmp kabs_con kgspos Hkg) => /= Hwlog.
   rewrite Hkg mulfV // log1  mulr0 in Hwlog.
   set rhs := \sum_(_ | _) _ in Hwlog.
-  rewrite (_ : rhs = \sum_(a | a \in C) (f a * log (f a / g a) - f a * log k)) in Hwlog; last first.
+  rewrite (_ : rhs = \sum_(a | a \in C) (f a * log (f a / g a) - f a * log k)) in Hwlog.
     rewrite /rhs.
     apply: eq_bigr => a a_C.
-    rewrite logM; last 2 first.
+    rewrite logM.
       exact/fspos.
       by rewrite ffunE invr_gt0// mulr_gt0//; exact/gspos.
-    rewrite logV; last first.
+    rewrite logV.
       rewrite ffunE; apply: mulr_gt0 => //; exact: gspos.
-    rewrite ffunE logM //; last exact: gspos.
-    rewrite logM //; last 2 first.
+    rewrite ffunE logM //; first exact: gspos.
+    rewrite logM //.
       exact/fspos.
       by rewrite invr_gt0//; apply: gspos.
-    by rewrite logV; [lra | apply: gspos].
+    by rewrite logV; [apply: gspos|lra].
   rewrite big_split /= -big_morph_oppr -big_distrl /= in Hwlog.
   by rewrite -subr_ge0.
 move=> Htmp; rewrite Htmp.
-rewrite mulfV; last by rewrite -Htmp.
+rewrite mulfV; first by rewrite -Htmp.
 rewrite log1 mulr0.
 suff : 0 <= \sum_(a | a \in C) f a * ln (f a / g a).
   move=> H.
@@ -115,7 +114,7 @@ apply: (@le_trans _ _ (\sum_(a | a \in C) f a * (1 - g a / f a))).
   by rewrite mulrCA divff ?mulr1// gt_eqF//; exact/(fspos _ a_C).
 apply: ler_sum => a C_a.
 apply: ler_wpM2l; first exact/ltW/fspos.
-rewrite -[X in _ <= X]opprK lerNr -lnV; last first.
+rewrite -[X in _ <= X]opprK lerNr -lnV.
   by rewrite posrE divr_gt0//; [apply: fspos | apply: gspos].
 rewrite invfM.
 rewrite invrK mulrC; apply: le_trans.
@@ -148,7 +147,7 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
   have H1 : \sum_{C} f = \sum_{D} f.
     rewrite setUC in DUD'.
     rewrite DUD' (big_union _ f DID') /=.
-    rewrite (_ : \sum_{D'} f = \sum_(a | a \in D') 0); last first.
+    rewrite (_ : \sum_{D'} f = \sum_(a | a \in D') 0).
       apply: eq_bigr => a.
       rewrite /D' in_set.
       by case/andP => _ /eqP.
@@ -174,7 +173,7 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
       by apply/sumr_ge0 => //.
     apply/ler_wpM2l => //.
       exact/ltW.
-    rewrite ler_log// ?posrE//; last 2 first.
+    rewrite ler_log// ?posrE//.
       by apply: divr_gt0 => //; rewrite -HG.
       by apply: divr_gt0 => //; rewrite -HG.
     apply/ler_wpM2l => //.
@@ -187,7 +186,7 @@ suff : \sum_{D} f * log (\sum_{D} f / \sum_{D} g) <=
   apply: (le_trans H).
   rewrite setUC in DUD'.
   rewrite DUD' (big_union _ (fun a => f a * log (f a / g a)) DID') /=.
-  rewrite (_ : \sum_(_ | _ \in D') _ = 0); last first.
+  rewrite (_ : \sum_(_ | _ \in D') _ = 0).
     transitivity (\sum_(a | a \in D') (0:R)).
       apply: eq_bigr => a.
       by rewrite /D' in_set => /andP[a_C /eqP ->]; rewrite mul0r.

@@ -1,15 +1,14 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From Stdlib Require Peano_dec.
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order all_algebra.
-From mathcomp Require Import lra.
+From mathcomp Require Import boot order algebra arithmetic_tactic.
 From mathcomp Require boolp.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for swap *)
 (* ssrfun and functions are defining incompatible notations [fun ... ]*)
 #[warning="-notation-incompatible-prefix"]
-From mathcomp Require Import mathcomp_extra functions reals exp.
+From mathcomp Require Import functions reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln fdist.
 
 (**md**************************************************************************)
@@ -153,7 +152,6 @@ Reserved Notation "P |= X _|_ Y" (at level 50, X, Y at next level,
 Reserved Notation "Z \= X '@+' Y" (at level 50).
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -254,7 +252,7 @@ Proof. by rewrite /Pr big_set1. Qed.
 
 Lemma Pr_cplt E : Pr E + Pr (~: E) = 1.
 Proof.
-rewrite /Pr -bigU /=; last by rewrite -subsets_disjoint.
+rewrite /Pr -bigU /=; first by rewrite -subsets_disjoint.
 by rewrite -(FDist.f1 P); apply: eq_bigl => /= a; rewrite !inE /= orbN.
 Qed.
 
@@ -272,11 +270,11 @@ Qed.
 Lemma le_Pr_setU E1 E2 : Pr (E1 :|: E2) <= Pr E1 + Pr E2.
 Proof.
 rewrite /Pr.
-rewrite [X in X <= _](_ : _ = \sum_(i in A | [predU E1 & E2] i) P i); last first.
+rewrite [X in X <= _](_ : _ = \sum_(i in A | [predU E1 & E2] i) P i).
   by apply: eq_bigl => x /=; rewrite inE.
-rewrite [X in _ <= X + _](_ : _ = \sum_(i in A | pred_of_set E1 i) P i); last first.
+rewrite [X in _ <= X + _](_ : _ = \sum_(i in A | pred_of_set E1 i) P i).
   by apply: eq_bigl => x /=; rewrite unfold_in.
-rewrite [X in _ <= _ + X](_ : _ = \sum_(i in A | pred_of_set E2 i) P i); last first.
+rewrite [X in _ <= _ + X](_ : _ = \sum_(i in A | pred_of_set E2 i) P i).
   by apply: eq_bigl => x /=; rewrite unfold_in.
 exact: ler_sum_predU.
 Qed.
@@ -290,9 +288,9 @@ rewrite big_cons; case: ifP => H1.
   apply: (@le_trans _ _ (P h + \sum_(i | p i) \sum_(a <- t | a \in F i) P a)).
     by rewrite lerD2l.
   rewrite [X in _ <= X](exchange_big_dep
-    (fun h => (h \in A) && [pred x in \bigcup_(i | p i) F i] h)) /=; last first.
+    (fun h => (h \in A) && [pred x in \bigcup_(i | p i) F i] h)) /=.
     by move=> b a Ea jFi; apply/bigcupP; exists b.
-  rewrite big_cons /= H1 big_const iter_addr -exchange_big_dep /=; last first.
+  rewrite big_cons /= H1 big_const iter_addr -exchange_big_dep /=.
     by move=> b a Ea iFj; apply/bigcupP; exists b.
   rewrite lerD2r// addr0 -mulr_natl -{1}(mul1r (P h)) ler_wpM2r//.
   rewrite [leLHS](_ : 1 = 1%:R)// ler_nat; apply/card_gt0P.
@@ -310,7 +308,7 @@ Let Pr_big_union_disj n (F : 'I_n -> {set A}) :
   Pr (\bigcup_(i < n) F i) = \sum_(i < n) Pr (F i).
 Proof.
 elim: n F => [|n IH] F H; first by rewrite !big_ord0 Pr_set0.
-rewrite big_ord_recl /= disjoint_Pr_setU; last first.
+rewrite big_ord_recl /= disjoint_Pr_setU.
   rewrite -setI_eq0 big_distrr /=; apply/eqP/big1 => i _; apply/eqP.
   by rewrite setI_eq0; exact: H.
 by rewrite big_ord_recl IH // => i j ij; rewrite H.
@@ -333,12 +331,12 @@ Lemma Boole_eq (I : finType) (F : I -> {set A}) :
   Pr (\bigcup_(i in I) F i) = \sum_(i in I) Pr (F i).
 Proof.
 move=> H.
-rewrite (reindex_onto enum_val enum_rank) /=; last first.
+rewrite (reindex_onto enum_val enum_rank) /=.
   by move=> *; exact: enum_rankK.
-rewrite [in RHS](reindex_onto  enum_val enum_rank) /=; last first.
+rewrite [in RHS](reindex_onto  enum_val enum_rank) /=.
   by move=> *; exact: enum_rankK.
-rewrite (eq_bigl xpredT); last by move=> i; rewrite enum_valK eqxx.
-rewrite Pr_big_union_disj; last first.
+rewrite (eq_bigl xpredT); first by move=> i; rewrite enum_valK eqxx.
+rewrite Pr_big_union_disj.
   move=> i j ij.
   suff : enum_val i != enum_val j by move/H.
   by apply: contra ij => /eqP/enum_val_inj ->.
@@ -449,7 +447,7 @@ Lemma Pr_fdistmap {R : realType} (A B : finType) (f : A -> B) (d : R.-fdist A)
 Proof.
 move=> bf; rewrite /Pr.
 under [in RHS]eq_bigr do rewrite fdistmapE.
-rewrite (exchange_big_dep (mem E)) /=; last first.
+rewrite (exchange_big_dep (mem E)) /=.
   by move=> _ a /imsetP[a' a'E ->]; rewrite 2!inE => /eqP /bf ->.
 apply: eq_bigr => a aE; rewrite (big_pred1 (f a)) // => b /=.
 by rewrite !inE andb_idl //= => /eqP <-{b}; apply/imsetP; exists a.
@@ -462,21 +460,21 @@ Lemma Pr_fdist_prod {R : realType} (A B : finType) (P1 : R.-fdist A) (P2 : R.-fd
 Proof.
 rewrite {1}/Pr /=.
 set P := P1 `x P2.
-rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite [in LHS](eq_bigl (fun x => (x.1 \in E1) && (x.2 \in E2))); last first.
+rewrite (eq_bigr (fun x => P (x.1, x.2))); first by case.
+rewrite [in LHS](eq_bigl (fun x => (x.1 \in E1) && (x.2 \in E2))).
   by case=> a b; rewrite !inE.
 rewrite -[in LHS](pair_big _ _ (fun x1 x2 => P (x1, x2))) /=.
 rewrite {1}/Pr /=.
-rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite [in X in _ = X * _](eq_bigl (fun a => a.1 \in E1)); last first.
+rewrite (eq_bigr (fun x => P (x.1, x.2))); first by case.
+rewrite [in X in _ = X * _](eq_bigl (fun a => a.1 \in E1)).
   by case=> a b; rewrite !inE.
-rewrite [in RHS](eq_bigl (fun x => (x.1 \in E1) && true)); last first.
+rewrite [in RHS](eq_bigl (fun x => (x.1 \in E1) && true)).
   by case=> a b; rewrite !andbT.
 rewrite -[in RHS](pair_big (fun x => x \in E1) xpredT (fun x1 x2 => P (x1, x2))) /=.
 rewrite big_distrl /=; apply: eq_big => // a /eqP E1a /=.
 rewrite {1}/Pr /=.
-rewrite (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite [in X in _ = _ * X](eq_bigl (fun a => a.2 \in E2)); last first.
+rewrite (eq_bigr (fun x => P (x.1, x.2))); first by case.
+rewrite [in X in _ = _ * X](eq_bigl (fun a => a.2 \in E2)).
   by move=> b; rewrite !inE.
 rewrite [in RHS](eq_bigl (fun x => true && (x.2 \in E2))) //.
 rewrite -[in RHS](pair_big xpredT (fun x => x \in E2) (fun x1 x2 => P (x1, x2))) /=.
@@ -489,8 +487,8 @@ Qed.
 Lemma Pr_fdist_fst {R : realType} (A B : finType) (P : R.-fdist (A * B)) (E : {set A}) :
   Pr P`1 E = Pr P (E `*T).
 Proof.
-rewrite /Pr (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite [in RHS](eq_bigl (fun x => (x.1 \in E) && true)); last first.
+rewrite /Pr (eq_bigr (fun x => P (x.1, x.2))); first by case.
+rewrite [in RHS](eq_bigl (fun x => (x.1 \in E) && true)).
   by move=> [a b]; rewrite !inE andbT.
 rewrite -[in RHS](pair_big (mem E) xpredT (fun x1 x2 => P (x1, x2))) /=.
 by under eq_bigr do rewrite fdist_fstE.
@@ -499,8 +497,8 @@ Qed.
 Lemma Pr_fdist_snd {R : realType} (A B : finType) (P : R.-fdist (A * B)) (E : {set B}) :
   Pr P`2 E = Pr P (T`* E).
 Proof.
-rewrite /Pr (eq_bigr (fun x => P (x.1, x.2))); last by case.
-rewrite [in RHS](eq_bigl (fun x => true && (x.2 \in E))); last first.
+rewrite /Pr (eq_bigr (fun x => P (x.1, x.2))); first by case.
+rewrite [in RHS](eq_bigl (fun x => true && (x.2 \in E))).
   by move=> [a b]; rewrite !inE.
 rewrite -[in RHS](pair_big xpredT (mem E) (fun x1 x2 => P (x1, x2))) /=.
 under eq_bigr do rewrite fdist_sndE.
@@ -513,11 +511,11 @@ Lemma Pr_fdist_prod_of_rV {R : realType} (A : finType) n (P : R.-fdist 'rV[A]_n.
   Pr (fdist_prod_of_rV P) (E `* F) =
   Pr P [set x : 'rV[A]_n.+1 | ((x ``_ ord0) \in E) && ((rbehead x) \in F)].
 Proof.
-rewrite /Pr (eq_bigr (fun x => fdist_prod_of_rV P (x.1, x.2))); last by case.
-rewrite [in LHS](eq_bigl (fun a => (a.1 \in E) && (a.2 \in F))); last first.
+rewrite /Pr (eq_bigr (fun x => fdist_prod_of_rV P (x.1, x.2))); first by case.
+rewrite [in LHS](eq_bigl (fun a => (a.1 \in E) && (a.2 \in F))).
   by move=> [a b]; rewrite !inE.
 rewrite -[in LHS](pair_big (mem E) (mem F) (fun x1 x2 => fdist_prod_of_rV P (x1, x2))) /=.
-rewrite [in RHS](eq_bigl (fun x : 'rV_n.+1 => (x ``_ ord0 \in E) && (rbehead x \in F))); last first.
+rewrite [in RHS](eq_bigl (fun x : 'rV_n.+1 => (x ``_ ord0 \in E) && (rbehead x \in F))).
   by move=> v; rewrite !inE.
 rewrite -(big_rV_cons_behead _ (mem E) (mem F)) /=.
 by apply: eq_bigr => a aE; apply: eq_bigr => v _; rewrite fdist_prod_of_rVE.
@@ -769,7 +767,7 @@ Let mulrC : commutative (@GRing.mul {RV P -> V}).
 Proof. by move=> f g; rewrite boolp.funeqE => x; rewrite /GRing.mul/= mulrC. Qed.
 
 HB.instance Definition _ :=
-  GRing.PzRing_hasCommutativeMul.Build {RV P -> V} mulrC.
+  GRing.SemiRing_hasCommutativeMul.Build {RV P -> V} mulrC.
 
 End comPzRing_random_variables.
 
@@ -1128,7 +1126,7 @@ Lemma pr_in_pair_setT {R : realType} (U : finType) (P : R.-fdist U)
   `Pr[ [% X, Y] \in E `*T ] = `Pr[ X \in E ].
 Proof.
 apply/esym.
-rewrite (@pr_in_comp_image _ _ _ _ _ _ (fun a => (a, tt))); last by move=> u1 u2 -[].
+rewrite (@pr_in_comp_image _ _ _ _ _ _ (fun a => (a, tt))); first by move=> u1 u2 -[].
 rewrite 2!pr_inE; congr Pr; apply/setP => u; rewrite !inE /=.
 by apply/imsetP/idP => [[a aE [] ->//]|XuE]; exists (X u).
 Qed.
@@ -1318,10 +1316,10 @@ Hypothesis cov : cover [set F i | i in I] = [set: U].
 Lemma Ex_cEx : `E X = \sum_(i in I) Pr P (F i) *: `E_[X | F i].
 Proof.
 apply/esym; rewrite /cEx.
-evar (f : I -> V); rewrite (eq_bigr f); last first.
+evar (f : I -> V); rewrite (eq_bigr f).
   by move=> i _; rewrite scaler_suml /f; reflexivity.
 rewrite {}/f /= (bigID (fun i => Pr P (F i) != 0)) /=.
-rewrite [in X in _ + X = _]big1 ?addr0; last first.
+rewrite [in X in _ + X = _]big1 ?addr0.
   move=> i; rewrite negbK => /eqP ->; rewrite big1 // => r _.
   under eq_bigr => j _ do rewrite invr0 mulr0.
   by rewrite -scaler_sumr scale0r scaler0.
@@ -1339,7 +1337,7 @@ transitivity (\sum_(i in I) Pr P (finset (X @^-1 r) :&: F i)).
   rewrite /Pr big1 // => u; rewrite inE => /andP[uXr uFi].
   move/eqP : PFi0; rewrite psumr_eq0// => /allP/(_ u).
   by rewrite mem_index_enum uFi implyTb => /(_ isT)/eqP.
-rewrite -Boole_eq; last first.
+rewrite -Boole_eq.
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
   apply/negbTE; rewrite !negb_and.
   have [/= Xur|//] := eqVneq (X u) r.
@@ -1425,7 +1423,7 @@ Qed.
 Lemma E_Ind (P : R.-fdist A) s : `E (Ind s : {RV P -> R}) = Pr P s.
 Proof.
 rewrite /Ex /Ind /Pr (bigID (mem s)) /=.
-rewrite [X in _ + X = _]big1; last by move=> i /negbTE ->; rewrite scaler0.
+rewrite [X in _ + X = _]big1; first by move=> i /negbTE ->; rewrite scaler0.
 by rewrite addr0; apply: eq_bigr => i ->; rewrite -[RHS]mulr1 mulr_regl.
 Qed.
 
@@ -1495,25 +1493,25 @@ do [erewrite eq_bigr; last by move=> k _; (* TODO: replace with under *)
 rewrite big_ltn //= in Halg.
 move/eqP in Halg.
 rewrite addr_eq0 in Halg.
-rewrite cardT size_enum_ord (big_pred1 set0) in Halg; last first.
+rewrite cardT size_enum_ord (big_pred1 set0) in Halg.
   by move=> i; rewrite pred1E [RHS]eq_sym; apply: cards_eq0.
 move/eqP in Halg.
-rewrite [in X in _ * X = _]big_pred0 in Halg; last by move=> i; rewrite inE.
+rewrite [in X in _ * X = _]big_pred0 in Halg; first by move=> i; rewrite inE.
 do [erewrite eq_bigl; (* TODO: replace with under *)
   last by move=> j; rewrite !inE /negb /= ] in Halg.
 rewrite mulr1 -Ind_bigcap big_const_ord iterSr iter_fix setIT ?setIid // in Halg.
 rewrite {}Halg big_morph_oppr big_nat [RHS]big_nat.
 apply: eq_bigr => i Hi; rewrite /SumIndCap /Efull.
-rewrite m1powD; last first.
+rewrite m1powD.
   by case/andP: Hi => Hi _ K0; rewrite K0 in Hi.
 rewrite mulNr.
 rewrite (sumrRVE P) big_distrr/=.
 congr -%R; apply: eq_bigr => j Hj.
 rewrite prodrN (eqP Hj).
-rewrite (_ : ?[a] * ((-1)^+i * ?[b]) = (-1)^+i * (?a * ?b)); last by lra.
+rewrite (_ : ?[a] * ((-1)^+i * ?[b]) = (-1)^+i * (?a * ?b)); first by lra.
 congr *%R.
 have [Hlt|Hn1] := ltnP i n.+1; last first.
-{ rewrite big1; last first.
+{ rewrite big1.
   { move=> k Hk; rewrite inE in Hk.
     rewrite (_: j = [set: 'I_n.+1]) ?inE // in Hk.
     apply/setP/subset_cardP =>//.
@@ -1686,7 +1684,7 @@ Lemma inde_events_cplt (E F : {set A}) :
   inde_events E F -> inde_events E (~: F).
 Proof.
 rewrite /inde_events => EF; have : Pr d E = Pr d (E :&: F) + Pr d (E :&: ~:F).
-  rewrite (@total_prob _ _ d _ E (fun b => if b then F else ~:F)) /=; last 2 first.
+  rewrite (@total_prob _ _ d _ E (fun b => if b then F else ~:F)) /=.
     move=> i j ij; rewrite -setI_eq0.
     by case: ifPn ij => Hi; case: ifPn => //= Hj _;
       rewrite ?setICr // setIC setICr.
@@ -1959,7 +1957,7 @@ Proof.
 rewrite /f.
 under eq_bigr do rewrite ffunE.
 rewrite /cPr -big_distrl /= eqr_divrMr // mul1r.
-rewrite (@total_prob _ _ P _ E (fun i => [set i])); last 2 first.
+rewrite (@total_prob _ _ P _ E (fun i => [set i])).
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => // a.
   by rewrite !inE; apply/negbTE; apply: contra ij => /andP[/eqP ->].
   apply/setP => // a; rewrite !inE; apply/bigcupP.
@@ -1984,7 +1982,7 @@ Lemma Pr_fdist_cond G : Pr (fdist_cond E0) G = `Pr_P [ G | E ].
 Proof.
 rewrite /Pr; under eq_bigr do rewrite fdist_condE.
 rewrite -big_distrl /=; congr (_ / _).
-rewrite (_ : _ :&: _ = \bigcup_(i in G) ([set i] :&: E)); last first.
+rewrite (_ : _ :&: _ = \bigcup_(i in G) ([set i] :&: E)).
   by rewrite -big_distrl /= -bigcup_set1.
 rewrite [in RHS]/Pr big_bigcup_partition // => i j ij.
 rewrite -setI_eq0; apply/eqP/setP => a; rewrite !inE.
@@ -2140,7 +2138,7 @@ Lemma cpr_in_unit_RV {R : realType} (U A : finType) (P : R.-fdist U) (X : {RV P 
     (E : {set A}) :
   `Pr[ X \in E | (unit_RV P) = tt ] = `Pr[ X \in E ].
 Proof.
-rewrite cpr_inE (_ : _ @^-1: [set tt] = setT); last first.
+rewrite cpr_inE (_ : _ @^-1: [set tt] = setT).
   by apply/setP => u; rewrite !inE.
 by rewrite cPrET pr_inE.
 Qed.
@@ -2289,7 +2287,7 @@ Lemma cpr_eq_product_rule {R : realType} (U : finType) (P : R.-fdist U) (A B C :
 Proof.
 rewrite cPr_eq_def.
 rewrite (_ : [set x | preim [% X, Y] (pred1 (a, b)) x] =
-             finset (X @^-1 a) :&: finset (Y @^-1 b)); last first.
+             finset (X @^-1 a) :&: finset (Y @^-1 b)).
   by apply/setP => u; rewrite !inE xpair_eqE.
 rewrite product_rule_cond cPr_eq_def; congr (cPr _ _ _ * _).
 - by apply/setP=> u; rewrite !inE xpair_eqE.
@@ -2306,15 +2304,15 @@ have -> : X @^-1: E = \bigcup_d [% X, Y] @^-1: ((E `* [set d])).
   by move=> XuE; exists (Y u) => //; rewrite !inE /= XuE /=.
   by case=> b _; rewrite !inE => /andP[] ->.
 rewrite bigcup_preimset /Pr partition_big_preimset /=.
-rewrite partition_disjoint_bigcup /=; last first.
+rewrite partition_disjoint_bigcup /=.
   move=> i j ij; rewrite -setI_eq0; apply/eqP/setP => u; rewrite !inE.
   by apply/negbTE/negP=> /andP[] /andP[] -> /eqP -> /=; move/negP: ij; exact.
 apply/esym; set F := BIG_F.
 transitivity (\sum_(b in B) F b).
   rewrite [in RHS](bigID (mem (fin_img Y))) /=.
   rewrite [X in _ = _ + X]big1 ?addr0 //.
-    by rewrite big_uniq // undup_uniq.
-  by move=> b bY; rewrite {}/F pr_in_pairC pr_in_domin_RV2 // pr_in1 pfwd1_eq0.
+    by move=> b bY; rewrite {}/F pr_in_pairC pr_in_domin_RV2 // pr_in1 pfwd1_eq0.
+  by rewrite big_uniq // undup_uniq.
 by apply: eq_bigr => b _; rewrite /F pr_inE /Pr partition_big_preimset.
 Qed.
 
@@ -2601,11 +2599,11 @@ transitivity (\sum_(a in A) \sum_(j in 'rV[A]_n.+1)
   (X1 a * X2 j * P (row_mx (\row_(k < 1) a) j))).
   apply: eq_bigr => a _; apply: eq_bigr => ta _.
   by rewrite row_mx_row_ord0 rbehead_row_mx.
-rewrite (partition_big_undup_map _ X1); last first.
+rewrite (partition_big_undup_map _ X1).
   by rewrite /index_enum -enumT; apply: enum_uniq.
 rewrite /index_enum -enumT.
 apply: eq_bigr => /= r _.
-rewrite {1}enumT exchange_big /= (partition_big_undup_map _ X2); last first.
+rewrite {1}enumT exchange_big /= (partition_big_undup_map _ X2).
   by rewrite /index_enum -enumT; apply: enum_uniq.
 rewrite /index_enum -enumT.
 apply: eq_bigr => /= r' _.
@@ -2693,7 +2691,7 @@ Proof.
 move=> Hinde.
 transitivity (\sum_(x <- fin_img X) \sum_(y <- fin_img Y)
     `Pr[ XY = (x, y) ] *: (x * y)).
-  rewrite /Ex /= (eq_bigr (fun u => P (u.1, u.2) *: (X u.1 * Y u.2))); last by case.
+  rewrite /Ex /= (eq_bigr (fun u => P (u.1, u.2) *: (X u.1 * Y u.2))); first by case.
   rewrite -(pair_bigA _ (fun u1 u2 => P (u1, u2) *: (X u1 * Y u2))) /=.
   rewrite (partition_big_fin_img _ X) /=; apply: eq_bigr => x _.
   rewrite exchange_big /= (partition_big_fin_img _ Y) /=; apply: eq_bigr => y _.
@@ -2752,9 +2750,9 @@ Let XY : {RV P -> (TA * TB)%type} := fun x => (X' x, Y' x).
 Lemma prod_dist_inde_RV : P |= X' _|_ Y'.
 Proof.
 apply/inde_RV_events => x y.
-rewrite (_ : [set _ | _ ] = (finset (X @^-1 x)) `*T); last first.
+rewrite (_ : [set _ | _ ] = (finset (X @^-1 x)) `*T).
   by apply/setP => -[a b]; rewrite !inE.
-rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)); last first.
+rewrite (_ : [set x | preim Y' (pred1 y) x] = T`* finset (Y @^-1 y)).
   by apply/setP => -[a b]; rewrite !inE.
 by rewrite /P /inde_events -Pr_fdist_prod.
 Qed.
@@ -2784,13 +2782,13 @@ Proof.
 have /= := @prod_dist_inde_RV _ _ _ P (P `^ n) _ _ X Y x y.
 rewrite !pfwd1E -!fdist_prod_of_fdist_rV.
 rewrite (_ : [set x0 | _] =
-    finset (X @^-1 x) `* finset (Y @^-1 y))%set; last first.
+    finset (X @^-1 x) `* finset (Y @^-1 y))%set.
   by apply/setP => -[a b]; rewrite !inE /= xpair_eqE.
 rewrite Pr_fdist_prod_of_rV
-    (_ : [set x0 | _] = (finset (X @^-1 x)) `*T); last first.
+    (_ : [set x0 | _] = (finset (X @^-1 x)) `*T).
   by apply/setP => a; rewrite !inE.
 rewrite Pr_fdist_prod_of_rV1.
-rewrite (_ : [set x0 | _] = T`* finset (Y @^-1 y)); last first.
+rewrite (_ : [set x0 | _] = T`* finset (Y @^-1 y)).
   by apply/setP => a; rewrite !inE.
 move=> Hinde.
 apply: eq_trans.
@@ -2825,10 +2823,10 @@ elim => [Xs Xbar | [_ Xs Xbar | n IHn Xs Xbar] ].
   have XsE := inj_pair2_nat _ _ _ _ H2.
   subst Z Xs.
   rewrite big_ord_recl.
-  rewrite [X in _ = _ + X](_ : _ = \sum_(i < n.+1) `E (Xs0 ``_ i : {RV P -> R})); last first.
+  rewrite [X in _ = _ + X](_ : _ = \sum_(i < n.+1) `E (Xs0 ``_ i : {RV P -> R})).
     apply: eq_bigr => i _ /=.
     apply: eq_bigr => a _ /=.
-    rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.
+    rewrite (_ : lift _ _ = rshift 1 i); first exact: val_inj.
     by rewrite (@row_mxEr _ _ 1).
   rewrite -(IHn _ _ H3) (E_sum_2 H4) row_mx_row_ord0.
   by rewrite /Ex head_of_fdist_rV_fdist_rV tail_of_fdist_rV_fdist_rV.
@@ -2854,13 +2852,13 @@ case=> [_ | n IH] Xsum Xs Hsum s Hs.
   subst Z n0 Xs.
   move: {IH}(IH Y _ H2) => IH.
   rewrite -[in RHS](add2n n) mulrDl -IH.
-  + rewrite mul1r (V_sum_2 H3) //; last exact: prod_dist_inde_RV_rV.
-    rewrite -(Hs ord0) /= row_mx_row_ord0 // head_of_fdist_rV_fdist_rV.
-    by rewrite tail_of_fdist_rV_fdist_rV.
   + move=> i; rewrite -(Hs (lift ord0 i)).
     congr (`V _).
-    rewrite (_ : lift _ _ = rshift 1 i); last exact: val_inj.
+    rewrite (_ : lift _ _ = rshift 1 i); first exact: val_inj.
     by rewrite (@row_mxEr _ _ 1).
+  + rewrite mul1r (V_sum_2 H3) //; first exact: prod_dist_inde_RV_rV.
+    rewrite -(Hs ord0) /= row_mx_row_ord0 // head_of_fdist_rV_fdist_rV.
+    by rewrite tail_of_fdist_rV_fdist_rV.
 Qed.
 
 Lemma Var_average n (X : {RV (P `^ n) -> R}) Xs (sum_Xs : X \=sum Xs) :

@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot fingroup zmodp ssralg ssrnum finalg.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot fingroup zmodp ssralg ssrnum finalg.
 From mathcomp Require Import perm matrix poly mxalgebra mxpoly.
 From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext f2 num_occ natbin bigop_ext.
@@ -27,7 +27,6 @@ Require Import ssr_ext ssralg_ext f2 num_occ natbin bigop_ext.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -96,8 +95,8 @@ Qed.
 Lemma wH_const_mx b : b != 0 -> wH (const_mx b) = n.
 Proof.
 move=> b0; rewrite wH_sum (eq_bigr (fun=> 1%nat)) //.
-- by rewrite sum_nat_const card_ord muln1.
 - by move=> ? _; rewrite mxE b0.
+- by rewrite sum_nat_const card_ord muln1.
 Qed.
 
 Lemma wH0 : wH 0 = O.
@@ -117,7 +116,7 @@ Proof. apply/idP/idP => [/eqP/wH0_inv/eqP //|/eqP ->]; by rewrite wH0. Qed.
 
 Lemma wH_opp v : wH (- v) = wH v.
 Proof.
-rewrite {1}/wH [X in tval X](_ : _ = [tuple of map (fun x => - x) (tuple_of_row v)]); last first.
+rewrite {1}/wH [X in tval X](_ : _ = [tuple of map (fun x => - x) (tuple_of_row v)]).
   apply: eq_from_tnth => i /=; by rewrite !tnth_map mxE.
 rewrite count_map; apply: eq_count => i /=; by rewrite oppr_eq0.
 Qed.
@@ -144,7 +143,7 @@ have -> : [seq (poly_rV p) ``_ i | i <- enum 'I_n] =
   rewrite nth_cat size_map size_enum_ord; case: ifPn => [pi|].
     by rewrite (nth_map (Ordinal pi)) ?size_enum_ord // mxE nth_enum_ord.
   rewrite -leqNgt => /leq_sizeP/(_ _ (leqnn i)) ->; by rewrite nth_nseq ltn_sub2r.
-rewrite count_cat [X in (_ + X <= _)%N](_ : count _ _ = O) ?addn0; last first.
+rewrite count_cat [X in (_ + X <= _)%N](_ : count _ _ = O) ?addn0.
   rewrite (@eq_in_count _ _ pred0) ?count_pred0 //.
   move=> i; case/nseqP => -> /= _; by rewrite eqxx.
 by rewrite count_map (leq_trans (count_size _ _)) // size_enum_ord.
@@ -198,8 +197,8 @@ Section wH_num_occ_bitstring.
 Lemma wH_col_1 n (i : 'I_n) : @wH 'F_2 _ (col i 1%:M)^T = 1%N.
 Proof.
 rewrite wH_sum (bigD1 i) //= !mxE eqxx /= add1n (eq_bigr (fun=> O)).
-by rewrite big_const iter_addn mul0n.
-move=> j ji; by rewrite !mxE (negbTE ji).
+  by move=> j ji; rewrite !mxE (negbTE ji).
+by rewrite big1.
 Qed.
 
 Lemma wH_num_occ n (v : 'rV['F_2]_n) : wH v = N(1 | tuple_of_row v).
@@ -226,25 +225,25 @@ Lemma wH_row_mx n (F : nzRingType) r (rn : (r <= n)%N) :
   wH (row_mx (const_mx 1) 0 : 'rV[F]_(r + (n - r))) = r.
 Proof.
 rewrite wH_sum (bigID (fun x : 'I__ => (x < r)%N)) /=.
-rewrite (eq_bigr (fun=> 1%N)); last first.
+rewrite (eq_bigr (fun=> 1%N)).
   move=> i ir.
   rewrite (_ : i = lshift _ (Ordinal ir)) ?row_mxEl ?mxE ?oner_neq0 //.
   by apply: val_inj.
-rewrite sum1dep_card (eq_bigr (fun=> O)) //; last first.
+rewrite sum1dep_card (eq_bigr (fun=> O)) //.
   move=> i ir.
   have ir' : (i - r < n - r)%N.
     destruct r as [|r].
       rewrite subn0.
       move/leq_trans: (ltn_ord i); apply; by rewrite subn0 add0n.
-    rewrite subnS prednK // ?subn_gt0 // ?ltnNge; last by rewrite ltnS in ir.
+    rewrite subnS prednK // ?subn_gt0 // ?ltnNge; first by rewrite ltnS in ir.
     rewrite /= [in X in (_ <= X)%N]subnS.
     destruct n as [|n'] => //.
     rewrite subSKn leq_sub2r //.
     move: (ltn_ord i); by rewrite [in X in (_ < X)%N -> _]subnKC ltnS.
-  rewrite (_ : i = rshift _ (Ordinal ir')); last first.
+  rewrite (_ : i = rshift _ (Ordinal ir')).
     apply: val_inj => /=; by rewrite [in RHS]subnKC // leqNgt.
   by rewrite row_mxEr mxE eqxx.
-rewrite big_const iter_addn_0 mul0n addn0 -sum1dep_card.
+rewrite big1// addn0 -sum1dep_card.
 by rewrite big_ord_narrow ?subnKC // sum1_card card_ord.
 Qed.
 
@@ -344,11 +343,11 @@ have h'h (i : 'rV_n) : h' [set i0 | i ``_ i0 == 1] == i.
   apply/eqP/rowP => y; rewrite !mxE inE.
   case: ifP => [/eqP -> // | /negbT]; by rewrite -F2_eq0 => /eqP.
 rewrite (reindex_onto (fun x : 'rV_n => [set i | x ``_ i == 1]) h') /=.
+- move=> s Hs.
+  by apply/setP => /= i; rewrite !inE /h' mxE; case: ifP.
 - apply: eq_bigl => i.
   rewrite wH_num_occ num_occ_alt h'h andbC /=; congr (_ == _).
-  apply: eq_card => t; by rewrite !inE tnth_mktuple.
-- move=> s Hs.
-  apply/setP => /= i; rewrite !inE /h' mxE; by case: ifP.
+  by apply: eq_card => t; rewrite !inE tnth_mktuple.
 Qed.
 Local Close Scope ring_scope.
 
@@ -393,13 +392,13 @@ transitivity (\sum_(x : 'rV['F_p]_k | [forall j : 'I_k, x ``_ j != 0%R]) 1).
     have @i'' : 'I_(n - k).
       exists (i - k); destruct k as [|k]; first by rewrite ltn_sub2r.
       by rewrite subnS prednK // ?subn_gt0 // subnS -subSKn -2!subn1 leq_sub2r // leq_sub2r.
-    rewrite (_ : i' = rshift k i''); last by apply: val_inj => /=; rewrite subnKC.
+    rewrite (_ : i' = rshift k i''); first by apply: val_inj => /=; rewrite subnKC.
     by rewrite row_mxEr // mxE.
   - have := Hx0 (Ordinal n0i).
     apply: contra.
     rewrite castmxE /= cast_ord_id.
     set i' := cast_ord _ _.
-    rewrite (_ : i' = lshift (n - k) (Ordinal n0i)); last by apply: val_inj.
+    rewrite (_ : i' = lshift (n - k) (Ordinal n0i)); first exact: val_inj.
     by rewrite row_mxEl.
   apply/rowP => i; rewrite !mxE !castmxE /= !cast_ord_id lshift0.
   rewrite (_ : cast_ord _ _ = (lshift (n - k) i)) ?row_mxEl //; by apply: val_inj.
@@ -445,7 +444,7 @@ rewrite exchange_big /=.
 set P := fun x : 'rV['F_p]_n => wH x == k.
 set Q := fun x : 'rV['F_p]_k => [forall j, x ``_ j != 0%R].
 set f := fun x : 'rV['F_p]_n => (\row_i x ``_ (nth ord0 (enum (wH_supp x)) i) : 'rV['F_p]_k).
-rewrite (partition_big f Q) /=; last first.
+rewrite (partition_big f Q) /=.
   move=> /= x /eqP Hx.
   apply/forallP => /= i; by rewrite !mxE (@nth_wH_supp k).
 apply: eq_bigr => x Hx.
@@ -497,8 +496,8 @@ apply/imsetP/andP => /=.
     rewrite -wH_supp_h'.
     move/(_ i (ltn_ord i)); by rewrite Kz.
   rewrite wH_supp_h' index_uniq ?enum_uniq //.
+    by rewrite -cardE card_wH_supp Hz.
   by rewrite inord_val.
-  by rewrite -cardE card_wH_supp Hz.
 have wH_supp_h : wH_supp y = wH_supp (h y).
   apply/setP => j; rewrite !inE !mxE; by case: ifPn.
 case=> Hyn0 hyx.
@@ -510,7 +509,7 @@ case: ifPn => // yi0 _.
 rewrite -(eqP hyx) !mxE.
 have Hk : k = size (enum (wH_supp y)).
   rewrite -cardE; apply/esym; rewrite card_wH_supp; by apply/eqP.
-rewrite inordK; last by rewrite -wH_supp_h -/k Hk index_mem mem_enum inE.
+rewrite inordK; first by rewrite -wH_supp_h -/k Hk index_mem mem_enum inE.
 by rewrite wH_supp_h nth_index // mem_enum -wH_supp_h inE.
 Qed.
 Local Close Scope ring_scope.
@@ -521,7 +520,7 @@ Proof.
 move=> n0m0 primeq.
 rewrite /dH.
 transitivity (#|[set a in 'rV['F_q]_n | wH a == k]|).
-  rewrite -!sum1dep_card (reindex_onto (fun y => x - y)%R (fun y => x - y)%R) /=; last first.
+  rewrite -!sum1dep_card (reindex_onto (fun y => x - y)%R (fun y => x - y)%R) /=.
     by move=> y _; rewrite opprB addrCA subrr addr0.
   apply: eq_bigl => y; by rewrite !opprB addrCA subrr addr0 eqxx andbT.
 destruct k as [|k]; last by apply: wH_m_card_gen.
@@ -542,20 +541,20 @@ apply/set0Pn.
 set y : 'rV[F]_n:= (\row_i if (i < r)%N then 1 else 0)%R.
 exists (x + y)%R.
 rewrite inE dH_wH.
-rewrite (_ : y = castmx (erefl, subnKC rn) (@row_mx _ 1 r (n -r) (const_mx 1%R) 0)).
+rewrite (_ : y = castmx (erefl, subnKC rn) (@row_mx _ 1 r (n -r) (const_mx 1%R) 0)); last first.
   by rewrite wH_castmx wH_row_mx.
 apply/rowP => i.
 rewrite !castmxE /= cast_ord_id /= mxE.
 case: ifPn => ir; set j := cast_ord _ _.
-  rewrite (_ : j = lshift _ (Ordinal ir)); last by apply: val_inj.
+  rewrite (_ : j = lshift _ (Ordinal ir)); first exact: val_inj.
   by rewrite row_mxEl mxE.
 have ir' : i - r < n - r.
-  rewrite subnS prednK //; last first.
+  rewrite subnS prednK //.
     rewrite subn_gt0; move: ir; by rewrite -leqNgt.
   destruct n as [|n'] => //.
   rewrite subSS leq_sub2r //; by move: (ltn_ord i).
-rewrite (_ : j = rshift _ (Ordinal ir')); last first.
-  apply: val_inj => /=; by rewrite subnKC // leqNgt.
+rewrite (_ : j = rshift _ (Ordinal ir')).
+  by apply: val_inj => /=; rewrite subnKC // leqNgt.
 by rewrite row_mxEr mxE.
 Qed.
 
@@ -621,9 +620,9 @@ Proof.
 move=> pn.
 rewrite wH_bitstring /rV_of_nat /row_of_bitseq /row_of_seq /rowF2_tuplebool /=.
 rewrite /HammingBitstring.wH /num_occ count_map.
-rewrite (eq_count (a2 := pred1 1)); last by move=> ? /=; rewrite eqb_id F2_eq1.
+rewrite (eq_count (a2 := pred1 1)); first by move=> ? /=; rewrite eqb_id F2_eq1.
 rewrite -sum1_count big_map /=.
-rewrite (eq_bigl (pred1 (Ordinal (rev_ord_proof (Ordinal pn))))); last first.
+rewrite (eq_bigl (pred1 (Ordinal (rev_ord_proof (Ordinal pn))))).
   move=> i /=; symmetry; rewrite -[in X in X = _]val_eqE /=.
   rewrite mxE bitseq_of_nat_expn2 // nth_cat size_nseq.
   case: ifP => [ i_m | /negbT ].
@@ -674,18 +673,18 @@ rewrite size_tuple.
 case/(_ erefl) => i [] [] H1 H2 H3.
 exists (Ordinal H1); split.
   transitivity (F2_of_bool true) => //.
-  rewrite -H2 /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
-  rewrite (_ : _ _ _ i = (tuple_of_row x) !_ (Ordinal H1)); last first.
-    apply: set_nth_default; by rewrite size_tuple.
+  rewrite -H2 /rowF2_tuplebool (nth_map ord0); first by rewrite size_tuple.
+  rewrite (_ : _ _ _ i = (tuple_of_row x) !_ (Ordinal H1)).
+    by apply: set_nth_default; rewrite size_tuple.
   rewrite tnth_mktuple {1}(F2_0_1 (x ``_ (Ordinal H1))); by case: (x ``_ _ != 0%R).
 move=> j Hj.
 transitivity (F2_of_bool false) => //.
-rewrite -(H3 j) //; last first.
+rewrite -(H3 j) //.
   move=> ?; subst i.
   by apply/Hj/val_inj.
-rewrite /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
+rewrite /rowF2_tuplebool (nth_map ord0); first by rewrite size_tuple.
 suff -> : x ``_ j = nth ord0 (tuple_of_row x) j by apply: F2_0_1.
-rewrite (_ : _ _ _ j = (tuple_of_row x) !_ j); last by rewrite tnth_mktuple.
+rewrite (_ : _ _ _ j = (tuple_of_row x) !_ j); first by rewrite tnth_mktuple.
 exact: tnth_nth.
 Qed.
 
@@ -742,26 +741,26 @@ exists (Ordinal H1), (Ordinal H3); split.
   by case.
 split.
   transitivity (F2_of_bool true) => //.
-  rewrite -H2 /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
-  rewrite (_ : _ _ _ i = (tuple_of_row x) !_ (Ordinal H1)); last first.
-    apply: set_nth_default; by rewrite size_tuple.
-  rewrite tnth_mktuple {1}(F2_0_1 (x ``_ (Ordinal H1))); by case: (x ``_ _ != 0%R).
+  rewrite -H2 /rowF2_tuplebool (nth_map ord0); first by rewrite size_tuple.
+  rewrite (_ : _ _ _ i = (tuple_of_row x) !_ (Ordinal H1)).
+    by apply: set_nth_default; rewrite size_tuple.
+  by rewrite tnth_mktuple {1}(F2_0_1 (x ``_ (Ordinal H1))); case: (x ``_ _ != 0%R).
 split.
   transitivity (F2_of_bool true) => //.
-  rewrite -H4 /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
-  rewrite (_ : _ _ _ k = (tuple_of_row x) !_ (Ordinal H3)); last first.
-    apply: set_nth_default; by rewrite size_tuple.
-  rewrite tnth_mktuple {1}(F2_0_1 (x ``_ (Ordinal H3))); by case: (x ``_ _ != 0%R).
+  rewrite -H4 /rowF2_tuplebool (nth_map ord0); first by rewrite size_tuple.
+  rewrite (_ : _ _ _ k = (tuple_of_row x) !_ (Ordinal H3)).
+    by apply: set_nth_default; rewrite size_tuple.
+  by rewrite tnth_mktuple {1}(F2_0_1 (x ``_ (Ordinal H3))); case: (x ``_ _ != 0%R).
 move=> j ij kj.
 transitivity (F2_of_bool false) => //.
-rewrite -(H6 j) //; last first.
-- move=> ?; subst k.
-  by apply/kj/val_inj.
+rewrite -(H6 j) //.
 - move=> ?; subst i.
   by apply/ij/val_inj.
-rewrite /rowF2_tuplebool (nth_map ord0); last by rewrite size_tuple.
+- move=> ?; subst k.
+  by apply/kj/val_inj.
+rewrite /rowF2_tuplebool (nth_map ord0); first by rewrite size_tuple.
 suff -> : x ``_ j = nth ord0 (tuple_of_row x) j by apply: F2_0_1.
-rewrite (_ : _ _ _ j = (tuple_of_row x) !_ j); last by rewrite tnth_mktuple.
+rewrite (_ : _ _ _ j = (tuple_of_row x) !_ j); first by rewrite tnth_mktuple.
 exact: tnth_nth.
 Qed.
 
@@ -773,7 +772,7 @@ set tmp := tuple_of_row _.
 have -> : tmp = [tuple of rev (1 :: 1 :: nseq n.+1 0)]%R.
   apply: eq_from_tnth => i.
   rewrite tnth_mktuple mxE.
-  rewrite -(nth_map _ 0%R); last by rewrite size_cat size_nseq /= addn2.
+  rewrite -(nth_map _ 0%R); first by rewrite size_cat size_nseq /= addn2.
   rewrite (tnth_nth 0%R); congr ( _ `_ i)%R.
   rewrite /= (_ : 0 :: nseq n 0 = nseq n.+1 0)%R //.
   rewrite nseq_S -[in RHS]cat1s -[in RHS](cat1s _ (rcons _ _)) catA rev_cat.
@@ -782,8 +781,8 @@ have -> : tmp = [tuple of rev (1 :: 1 :: nseq n.+1 0)]%R.
 rewrite /=.
 set y := _ :: _.
 rewrite (_ : y = [:: 1; 1; 0] ++ nseq n 0)%R // rev_cat count_cat /= -(@eq_in_count _ pred0).
-  by rewrite count_pred0.
-move=> /= b; by rewrite rev_nseq => /nseqP[->].
+  by move=> /= b; rewrite rev_nseq => /nseqP[->].
+by rewrite count_pred0.
 Qed.
 
 Lemma wH_7 : forall n, (3 <= n)%N -> wH (rV_of_nat n 7) = 3%N.
@@ -795,7 +794,7 @@ have -> : x =[tuple of rev (1 :: 1 :: 1 :: nseq n 0)]%R.
   rewrite /x {x}.
   apply: eq_from_tnth => i.
   rewrite tnth_mktuple mxE (tnth_nth 0%R).
-  rewrite -(nth_map _ ord0); last first.
+  rewrite -(nth_map _ ord0).
     rewrite /pad_seqL /=.
     destruct n => //=.
     by rewrite size_cat size_nseq /= addn3.
@@ -834,7 +833,7 @@ Lemma hamming_01 (R : realType) m p :
   (1 - p) ^+ m + m%:R * p * (1 - p) ^+ (m - 1) :> R.
 Proof.
 rewrite (bigID [pred i | wH i == O]) /=.
-rewrite (big_pred1 (@GRing.zero _)) /=; last first.
+rewrite (big_pred1 (@GRing.zero _)) /=.
   by move=> i /=; rewrite !inE -wH_eq0 andb_idl // => /eqP ->.
 rewrite wH0 expr0 subn0 mulr1; congr (_ + _).
 transitivity (\sum_(i | wH (i : 'rV['F_2]_m) == 1%nat) ((1 - p) ^+ (m - 1) * p ^+ 1)).

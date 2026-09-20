@@ -1,7 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum ssrint matrix.
-From mathcomp Require Import archimedean lra ring.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum ssrint matrix.
+From mathcomp Require Import archimedean ring_tactic arithmetic_tactic.
+From mathcomp Require Import field_tactic.
 From mathcomp Require Import reals exp.
 Require Import ssr_ext ssralg_ext realType_ln natbin fdist.
 Require Import proba entropy aep typ_seq source_code.
@@ -17,7 +18,6 @@ Require Import proba entropy aep typ_seq source_code.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -50,7 +50,7 @@ Definition phi : decT A 'rV_n k.+1 := fun x =>
 Lemma phi_f i : phi (f i) = i -> i \in S.
 Proof.
 rewrite /f; case: ifPn => // iS.
-rewrite /phi (_ : tuple_of_row _ = [tuple of nseq n false]); last first.
+rewrite /phi (_ : tuple_of_row _ = [tuple of nseq n false]).
   rewrite -[RHS]row_of_tupleK; congr tuple_of_row.
   by apply/rowP => a; rewrite !mxE /tnth nth_nseq ltn_ord.
 rewrite /tuple2N /= /N_of_bitseq /= -{1}(cats0 (nseq n false)).
@@ -167,7 +167,7 @@ exists (mkScode F PHI); split.
   rewrite /SrcRate /r /n /k.
   have dn0 : 1 + den%:R != 0 :> R by rewrite nat1r gt_eqF.
   have k'n0 : 1 + k'%:R != 0 :> R by rewrite nat1r gt_eqF.
-  by field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
+  by field.  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
 set lhs := esrc(_, _).
 suff -> : lhs = 1 - Pr (P `^ k)%fdist (`TS P k (lambda / 2)).
   rewrite lerBlDr addrC -lerBlDr.
@@ -201,7 +201,7 @@ rewrite inE /=; apply/negPn/negPn.
   apply: (@le_trans _ _ (2 `^ (1 + k%:R * (`H P + lambda / 2)))); last first.
     rewrite gt1_ler_powRr ?ltr1n// lerD2r//.
     move: Hdelta; rewrite ge_max => /andP[_ Hlambda].
-    rewrite -(@ler_pM2r _ (2 / lambda)); last first.
+    rewrite -(@ler_pM2r _ (2 / lambda)).
       by rewrite divr_gt0//; exact: lambda_gt0.
     rewrite mul1r -mulrA.
     rewrite -[in leRHS]invf_div// mulVf ?mulr1//.
@@ -215,7 +215,7 @@ rewrite inE /=; apply/negPn/negPn.
   + rewrite lerD2r -[leLHS](powRr0 2).
     rewrite ler_powR ?ler1n// mulr_ge0// addr_ge0//; first exact: entropy_ge0.
     by rewrite divr_ge0// ltW// lambda_gt0.
-  + rewrite -mulr2n -[leLHS]mulr_natl powRD; last by rewrite pnatr_eq0 implybT.
+  + rewrite -mulr2n -[leLHS]mulr_natl powRD; first by rewrite pnatr_eq0 implybT.
     by rewrite ler_pM2r ?powR_gt0// powRr1.
 Qed.
 

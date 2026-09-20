@@ -1,5 +1,5 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From mathcomp Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq choice.
 From mathcomp Require Import fintype tuple.
 From Stdlib Require Import BinPos BinNat PArith.
@@ -26,7 +26,6 @@ Require Import ssr_ext.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -365,7 +364,7 @@ have Hx' : bin_of_nat x <> N0.
   exact: bin_of_nat_inj.
 case: (@bitseq_of_N_leading_bit _ Hx') => y Hy.
 rewrite Hy.
-rewrite rem_lea_false_pad_seqL; last first.
+rewrite rem_lea_false_pad_seqL.
   move: (size_bitseq_of_N_ub Hx x_m).
   by rewrite -size_rev Hy.
 exact: Npos_pos_of_bitseq_rev.
@@ -415,8 +414,8 @@ rewrite (_ : N_of_bitseq (false :: s) = N_of_bitseq s) //.
 rewrite /pad_seqL size_rev.
 have Hsz := size_N_of_bitseqK Hs'.
 rewrite !ifT //.
-  by rewrite subSn.
-by apply: leqW.
+  by apply: leqW.
+ by rewrite subSn.
 Qed.
 
 Definition tuple2N {m} (x : m.-tuple bool) := match x with Tuple x _ => N_of_bitseq x end.
@@ -475,7 +474,7 @@ case=> //.
 case=> //.
 move=> n /(_ Logic.eq_refl) => IH _.
 rewrite (_ : n.+4 - 3 = n.+1)%nat //.
-rewrite (_ : n.+3 - 3 = n)%nat // in IH; last by rewrite 3!subSS subn0.
+rewrite (_ : n.+3 - 3 = n)%nat // in IH; first by rewrite 3!subSS subn0.
 transitivity (BinNat.N.mul 2 (bin_of_nat (7 * 2 ^ n))); last by rewrite {}IH -BinPos.Pos.add_diag.
 set lhs := bin_of_nat _.
 set rhs := BinNat.N.mul _ _.
@@ -517,7 +516,7 @@ contradict H.
 apply: (@eq_from_nth _ false).
 - by rewrite /= size_pad_seqL size_nseq.
 - move=> j Hj.
-  rewrite (_ : size _ = n) in Hj; last by apply/eqP; rewrite size_bitseq_of_nat.
+  rewrite (_ : size _ = n) in Hj; first by apply/eqP; rewrite size_bitseq_of_nat.
   move/rowP : H => /(_ (Ordinal Hj)).
   rewrite !mxE /= => Hj'.
   rewrite nth_nseq Hj.
@@ -608,9 +607,9 @@ case: n y => [|n0] y.
 apply/rowP => i.
 rewrite mxE /nat_of_rV.
 set tmp := [seq bool_of_F2 i | i <- _].
-rewrite [X in bitseq_of_nat _ X](_ : _ = size tmp); last by rewrite size_map size_tuple.
-rewrite N_of_bitseqK; last by rewrite size_tuple.
-rewrite /tmp (nth_map (0 : 'F_2)); last by rewrite size_tuple.
+rewrite [X in bitseq_of_nat _ X](_ : _ = size tmp); first by rewrite size_map size_tuple.
+rewrite N_of_bitseqK; first by rewrite size_tuple.
+rewrite /tmp (nth_map (0 : 'F_2)); first by rewrite size_tuple.
 by rewrite bool_of_F2K /tuple_of_row nth_mktuple.
 Qed.
 
@@ -667,7 +666,7 @@ rewrite rev_cat /=.
 rewrite /pad_seqL /=.
 rewrite size_nseq.
 case: ifP => H //.
-  rewrite (_ : n - (n - 3).+3 = 0)%nat //; last first.
+  rewrite (_ : n - (n - 3).+3 = 0)%nat //.
   destruct n => //.
   destruct n => //.
   destruct n => //.

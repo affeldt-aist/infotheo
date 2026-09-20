@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssrnum ssrint ssralg matrix.
-From mathcomp Require Import lra ring archimedean.
-From mathcomp Require Import mathcomp_extra Rstruct reals exp.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssrnum ssrint ssralg matrix archimedean.
+From mathcomp Require Import arithmetic_tactic ring_tactic field_tactic.
+From mathcomp Require Import Rstruct reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba entropy aep typ_seq channel.
 
@@ -41,7 +41,6 @@ Declare Scope jtyp_seq_scope.
 Reserved Notation "'`JTS'".
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -55,11 +54,8 @@ Local Open Scope ring_scope.
 Import Order.Theory GRing.Theory Num.Theory.
 
 Section joint_typ_seq_definition.
-Variables A B : finType.
-Variable P : {fdist A}.
-Variable W : `Ch(A, B).
-Variable n : nat.
-Variable epsilon : R.
+Context {A B : finType} (P : {fdist A}) (W : `Ch(A, B)) (n : nat)
+  (epsilon : R).
 
 Definition jtyp_seq (t : 'rV[A * B]_n) :=
   [&& typ_seq P epsilon (rV_prod t).1,
@@ -85,9 +81,8 @@ Notation "'`JTS'" := (set_jtyp_seq) : jtyp_seq_scope.
 Local Open Scope jtyp_seq_scope.
 
 Section jtyp_seq_upper.
-Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)).
-Variable n : nat.
-Variable epsilon : R.
+Context {A B : finType} (P : {fdist A}) (W : `Ch(A, B)) (n : nat)
+  (epsilon : R).
 
 Lemma JTS_sup :
   #| `JTS P W n epsilon|%:R <= 2 `^ (n%:R * (`H(P , W) + epsilon)%channel).
@@ -103,8 +98,7 @@ Qed.
 End jtyp_seq_upper.
 
 Section jtyp_seq_transmitted.
-Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)).
-Variable epsilon : R.
+Context {A B : finType} (P : {fdist A}) (W : `Ch(A, B)) (epsilon : R).
 
 Definition Nup (x : R) := `| Num.floor x |.+1.
 
@@ -112,7 +106,7 @@ Lemma Nup_gt x : x < (Nup x)%:R.
 Proof.
 apply: (lt_le_trans (floorD1_gt x)).
 rewrite /Nup.
-rewrite [leLHS](_ : _ = (Num.Def.floor x)%:~R + 1%:~R); last by rewrite intrD1.
+rewrite [leLHS](_ : _ = (Num.Def.floor x)%:~R + 1%:~R); first by rewrite intrD1.
 by rewrite -natr1 lerD // natr_absz ler_int ler_norm.
 Qed.
 
@@ -197,7 +191,7 @@ have : (JTS_1_bound <= n)%nat ->
     rewrite lerBlDr addrC -lerBlDr; apply: le_trans.
     by rewrite Pr_to_cplt setCK.
   move=> Hn.
-  rewrite [in X in _ <= X](_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3); last by field.
+  rewrite [in X in _ <= X](_ : epsilon = epsilon / 3 + epsilon / 3 + epsilon / 3); first by field.
   move: Hn; rewrite 2!geq_max => /andP[Hn1 /andP[Hn2 Hn3]].
   rewrite !Pr_DMC_rV_prod.
   apply: lerD; first by apply: lerD; [exact: HnP | exact: HnPW].
@@ -225,7 +219,7 @@ Qed.
 End jtyp_seq_transmitted.
 
 Section non_typicality.
-Variables (A B : finType) (P : {fdist A}) (W : `Ch(A, B)) (n : nat) (epsilon : R).
+Context {A B : finType} (P : {fdist A}) (W : `Ch(A, B)) (n : nat) (epsilon : R).
 
 Lemma non_typical_sequences : Pr ((P `^ n) `x ((`O(P , W)) `^ n))%fdist
   [set x | prod_rV x \in `JTS P W n epsilon] <= 2 `^ (- n%:R * (`I(P, W) - 3 * epsilon)).
@@ -233,7 +227,7 @@ Proof.
 rewrite /Pr /=.
 apply: (@le_trans _ _ (\sum_(i | i \in `JTS P W n epsilon)
     (2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W ) - epsilon))))) => /=.
-  rewrite (reindex_onto (fun y => prod_rV y) (fun x => rV_prod x)) /=; last first.
+  rewrite (reindex_onto (fun y => prod_rV y) (fun x => rV_prod x)) /=.
     by move=> ? ?; rewrite rV_prodK.
   apply: leR_sumRl => i; rewrite inE => iJTS.
   - rewrite fdist_prodE ler_pM //.
@@ -244,7 +238,7 @@ apply: (@le_trans _ _ (\sum_(i | i \in `JTS P W n epsilon)
 rewrite (_ : \sum_(_ | _) _ =
   #| `JTS P W n epsilon|%:R *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W) - epsilon)));
-  last by rewrite big_const iter_addr addr0 -[LHS]mulr_natl mulrA.
+  first by rewrite big_const iter_addr addr0 -[LHS]mulr_natl mulrA.
 apply: (@le_trans _ _ (2 `^ (n%:R * (`H( P , W )%channel + epsilon)) *
   2 `^ (- n%:R * (`H P - epsilon)) * 2 `^ (- n%:R * (`H( P `o W ) - epsilon)))).
   by rewrite !ler_wpM2r ?powR_ge0 // JTS_sup.

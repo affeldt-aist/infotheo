@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
 (* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import boot ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import bigop_ext ssralg_ext f2 subgraph_partition.
 
@@ -18,13 +18,12 @@ Reserved Notation "''V(' x ',' y ')'" (format "''V(' x ','  y ')'").
 Reserved Notation "''F(' x ',' y ')'" (format "''F(' x ','  y ')'").
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
 Module Tanner.
 Section tanner.
-Variable (V : finType).
+Context (V : finType).
 
 Record graph (r : rel V) := {
   connected : forall a b, connect r a b;
@@ -42,7 +41,7 @@ Coercion tanneredges := Tanner.edges.
 
 Section tanner_relation.
 Local Open Scope ring_scope.
-Variable (m n : nat) (H : 'M['F_2]_(m, n)).
+Context m n (H : 'M['F_2]_(m, n)).
 
 Definition tanner_rel' : rel ('I_ m + 'I_n) :=
   fun x y =>
@@ -73,7 +72,7 @@ End tanner_relation.
 
 Section next_graph.
 Local Open Scope ring_scope.
-Variables (m n : nat) (H : 'M['F_2]_(m, n)).
+Context m n (H : 'M['F_2]_(m, n)).
 
 (** Variable nodes *)
 Definition Vnext m0 := locked [set n0 | H m0 n0 == 1].
@@ -217,7 +216,7 @@ Qed.
 End next_graph.
 
 Section subscript_set.
-Variables (m n : nat) (H : 'M['F_2]_(m, n)).
+Context m n (H : 'M['F_2]_(m, n)).
 Local Notation "''V'" := (Vnext H).
 
 Local Open Scope ring_scope.
@@ -232,13 +231,13 @@ move=> Hsyndrome m0.
 have : (H *m c^T) m0 ord0 = 0 by rewrite Hsyndrome mxE.
 rewrite mxE => <-.
 rewrite [in RHS](bigID (fun j => H m0 j == 0)) /=.
-rewrite [in RHS](eq_bigr (fun=> 0)); last by move=> ? /eqP ->; rewrite mul0r.
+rewrite [in RHS](eq_bigr (fun=> 0)); first by move=> ? /eqP ->; rewrite mul0r.
 rewrite [in RHS]big1 // add0r.
 apply: congr_big => //.
   move=> x.
   by rewrite -F2_eq1 VnextE //= sym_tanner_rel // /tanner_rel /=; unlock.
 move=> n1 n1m0; rewrite (_ : H _ _ = 1) ?mul1r ?mxE //.
-apply/eqP; by move: n1m0; rewrite VnextE /tanner_rel; unlock.
+by apply/eqP; move: n1m0; rewrite VnextE /tanner_rel; unlock.
 Qed.
 
 End subscript_set.

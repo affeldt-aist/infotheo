@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg ssrnum.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg ssrnum.
 From mathcomp Require Import reals.
 Require Import fdist.
 
@@ -17,7 +17,6 @@ Reserved Notation "'d(' P ',' Q ')'".
 Declare Scope variation_distance_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -45,7 +44,7 @@ Lemma def_var_dist p q : d( p , q) = 0 -> p = q.
 Proof.
 rewrite /var_dist => H; apply/fdist_ext => a.
 apply/eqP; rewrite -subr_eq0; apply/eqP/normr0_eq0; move: H.
-move/eqP; rewrite (bigD1 a) //= paddr_eq0 //; first by case/andP=> /eqP->.
+move/eqP; rewrite (bigD1 a) //= paddr_eq0 //; last by case/andP=> /eqP->.
 by apply/sumr_ge0 => ? _; apply/normr_ge0.
 Qed.
 

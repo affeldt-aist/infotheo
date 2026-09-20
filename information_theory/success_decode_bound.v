@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum matrix.
 From mathcomp Require Import Rstruct reals exp.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist entropy.
 Require Import num_occ types jtypes divergence conditional_divergence.
@@ -31,7 +31,6 @@ Require Import entropy channel_code channel.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -84,7 +83,7 @@ transitivity (#|M|%:R^-1 * \sum_(m : M) \sum_(V | V \in \nu^{B}(P))
   by rewrite mulrC.
 f_equal.
 apply: eq_bigr=> m _.
-rewrite (reindex_onto (@row_of_tuple B n) (@tuple_of_row B n)); last first.
+rewrite (reindex_onto (@row_of_tuple B n) (@tuple_of_row B n)).
   move=> i Hi; by rewrite tuple_of_rowK.
 rewrite /=.
 rewrite (sum_tuples_ctypes (typed_prop tc m))//.
@@ -131,9 +130,9 @@ Hypothesis Vctyp : V \in \nu^{B}(P).
 
 Lemma success_factor_bound_part1 : success_factor tc V <= 1.
 Proof.
-rewrite -(@ler_pM2l _ #|M|%:R)//; last by rewrite ltr0n.
+rewrite -(@ler_pM2l _ #|M|%:R)//; first by rewrite ltr0n.
 rewrite /success_factor -(mulrC (#|M|%:R)^-1) 2!mulrA.
-rewrite mulfV; last first.
+rewrite mulfV.
   by rewrite pnatr_eq0 gt_eqF.
 rewrite mul1r.
 (* TODO: dirty *)
@@ -141,7 +140,7 @@ rewrite [leRHS]GRing.mulr_natl.
 rewrite -[leRHS]addr0.
 rewrite -iter_addr.
 rewrite -big_const /=.
-rewrite (_ : \sum_(m | m \in M ) 1 = \sum_(m : M) 1); last exact/eq_bigl.
+rewrite (_ : \sum_(m | m \in M ) 1 = \sum_(m : M) 1); first exact/eq_bigl.
 rewrite big_distrr /=.
 apply: ler_sum => m _.
 rewrite mulNr.
@@ -207,11 +206,11 @@ rewrite /success_factor -mulrA (mulrC (#|M|%:R)^-1) !mulrA.
 apply: ler_wpM2r.
   by rewrite invr_ge0//.
 rewrite /mutual_info_chan addrC addrA.
-rewrite (_ : - `H(type.d P , V) + `H P = - `H( V | P ))%channel; last first.
+rewrite (_ : - `H(type.d P , V) + `H P = - `H( V | P ))%channel.
   rewrite /cond_entropy_chan.
   by rewrite opprB addrC.
 rewrite [in leRHS]mulrDr mulrN -mulNr.
-rewrite powRD; last by rewrite pnatr_eq0 implybT.
+rewrite powRD; first by rewrite pnatr_eq0 implybT.
 apply: ler_wpM2l => //.
   by rewrite exp.powR_ge0.
 rewrite -natr_sum; apply: (@le_trans _ _ #| T_{`tO( V )} |%:R); last first.
@@ -221,11 +220,11 @@ apply: (@leq_trans (\sum_m #| T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-
 - apply: leq_sum => m _.
   exact/subset_leq_card/setSI/shell_subset_output_type.
 - set lhs := (\sum__ _)%nat.
-  rewrite (_ : lhs = #|\bigcup_(i : M) (T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some i]))) | ); last first.
+  rewrite (_ : lhs = #|\bigcup_(i : M) (T_{`tO( V )} :&: (@tuple_of_row B n @: (dec tc @^-1: [set Some i]))) | ).
     subst lhs.
     rewrite -cover_pre_image.
     move: trivIset_pre_image ; rewrite /trivIset => /eqP => <-.
-    rewrite big_imset /= ; last first.
+    rewrite big_imset /=.
       move=> m l _.
       rewrite in_set; case/existsP => tb Htb.
       move/setP/(_ tb); rewrite Htb; move: Htb.
@@ -256,7 +255,7 @@ have [H|H] := Order.TotalTheory.leP 0 (log #|M|%:R / n%:R - (`I(P, V))).
   + apply/eqW/esym.
     rewrite mulrDr mulrC.
     rewrite mulrNN -mulrA mulrN mulVf ?pnatr_eq0//.
-    rewrite mulrN mulr1 powRD//; last by rewrite pnatr_eq0 implybT.
+    rewrite mulrN mulr1 powRD//; first by rewrite pnatr_eq0 implybT.
     rewrite mulrC; f_equal.
     rewrite exp.powRN.
     by rewrite logK// ltr0n.
@@ -356,7 +355,7 @@ apply: (@le_trans _ _ (#| P_ n ( A ) |%:R * scha W (Pmax.-typed_code c))); last 
   by rewrite -natrX ler_nat; exact/(type_counting A n).
 apply: (@le_trans _ _ (\sum_(P : P_ n ( A )) scha W (P.-typed_code c))); last first.
   rewrite (_ : #| P_ n ( A ) |%:R * scha W (Pmax.-typed_code c) =
-             \sum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)); last first.
+             \sum_(P : P_ n ( A )) scha W (Pmax.-typed_code c)).
     by rewrite big_const iter_addr addr0 mulr_natl.
   apply: ler_sum => P _.
   by move : (arg_rmax2 P0 (fun P1 : P_ n (A) => scha(W, P1.-typed_code c)) P).

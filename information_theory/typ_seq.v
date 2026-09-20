@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix lra.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum matrix arithmetic_tactic.
 From mathcomp Require Import reals exp.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist proba entropy aep.
 
@@ -30,7 +30,6 @@ Declare Scope typ_seq_scope.
 Reserved Notation "'`TS'".
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -42,8 +41,7 @@ Local Open Scope ring_scope.
 Import Order.TTheory GRing.Theory Num.Theory.
 
 Section typical_sequence_definition.
-Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A) (n : nat) (epsilon : R).
+Context {R : realType} (A : finType) (P : R.-fdist A) (n : nat) (epsilon : R).
 
 Definition typ_seq (t : 'rV[A]_n) :=
   2 `^ (- n%:R * (`H P + epsilon)) <= (P `^ n)%fdist t <=
@@ -75,8 +73,7 @@ apply/andP; split.
 Qed.
 
 Section typ_seq_prop.
-Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A) (epsilon : R) (n : nat).
+Context {R : realType} (A : finType) (P : R.-fdist A) (epsilon : R) (n : nat).
 
 Lemma TS_sup : #| `TS P n epsilon |%:R <= 2 `^ (n%:R * (`H P + epsilon)).
 Proof.
@@ -84,7 +81,7 @@ suff Htmp : #| `TS P n epsilon |%:R * 2 `^ (- n%:R * (`H P + epsilon)) <= 1.
   by rewrite -(mulr1 (2 `^ _)) mulrC -ler_pdivrMr// ?powR_gt0// -powRN// -mulNr.
 rewrite -[leRHS](FDist.f1 (P `^ n)%fdist).
 rewrite (_ : _ * _ =
-    \sum_(x in `TS P n epsilon) (2 `^ (- n%:R * (`H P + epsilon)))); last first.
+    \sum_(x in `TS P n epsilon) (2 `^ (- n%:R * (`H P + epsilon)))).
   by rewrite big_const iter_addr addr0 mulr_natl.
 by apply: leR_sumRl => //= i; rewrite inE; case/andP.
 Qed.
@@ -99,14 +96,14 @@ Lemma typ_seq_definition_equiv2 x : x \in `TS P n.+1 epsilon ->
 Proof.
 rewrite inE /typ_seq => /andP[H1 H2]; apply/andP; split;
   rewrite -(@ler_pM2r _ n.+1%:R) ?ltr0n//.
-- rewrite mulrAC mulNr mulVf; last by rewrite pnatr_eq0.
+- rewrite mulrAC mulNr mulVf; first by rewrite pnatr_eq0.
   rewrite mulN1r.
   rewrite lerNr.
-  rewrite -ler_log ?posrE// in H2; last 2 first.
+  rewrite -ler_log ?posrE// in H2.
     by rewrite (lt_le_trans _ H1)// powR_gt0.
     by rewrite powR_gt0.
   by rewrite mulNr powRN logV ?powR_gt0// log_powR log2 mulr1 mulrC in H2.
-- rewrite mulrAC mulNr mulVf; last by rewrite pnatr_eq0.
+- rewrite mulrAC mulNr mulVf; first by rewrite pnatr_eq0.
   have := FDist.ge0 ((P `^ n.+1)%fdist) x; rewrite le_eqVlt => /predU1P[H3|H3].
     have : 0 < 2 `^ (1 *- n.+1 * (`H P + epsilon)) by rewrite powR_gt0.
     rewrite -H3 in H1.
@@ -120,8 +117,7 @@ Qed.
 End typ_seq_prop.
 
 Section typ_seq_more_prop.
-Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A) (epsilon : R) (n : nat).
+Context {R : realType} (A : finType) (P : R.-fdist A) (epsilon : R) (n : nat).
 
 Hypothesis He : 0 < epsilon.
 
@@ -164,7 +160,7 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
           exact/(lt_trans _ LHS)/powR_gt0.
         have : 0 < 2 `^ (1 *- n.+1 * (`H P - epsilon)) by exact/powR_gt0.
         move/ltr_log : LHS => /[apply].
-        rewrite log_powR log2 mulr1 -ltr_ndivrMl; last first.
+        rewrite log_powR log2 mulr1 -ltr_ndivrMl.
           by rewrite oppr_lt0 ltr0n.
         rewrite -ltrN2 opprB ltrBlDr => /lt_le_trans; apply.
         rewrite addrC -opprB mulNr opprB -[in leRHS]opprD normrN.
@@ -174,16 +170,16 @@ have -> : Pr (P `^ n.+1)%fdist (~: p) =
       rewrite gt_eqF//= negb_and H1 /= -leNgt.
       have : log (2 `^ (1 *- n.+1 * (`H P + epsilon))) <= log ((P `^ n.+1)%fdist i).
         by rewrite ler_log// posrE powR_gt0.
-      rewrite log_powR log2 mulr1 -ler_ndivrMl; last by rewrite oppr_lt0 ltr0n.
+      rewrite log_powR log2 mulr1 -ler_ndivrMl; first by rewrite oppr_lt0 ltr0n.
       rewrite -lerBlDl invrN => {}H2.
       rewrite ler_norml H2 andbT.
       have : log ((P `^ n.+1)%fdist i) <= log (2 `^ (1 *- n.+1 * (`H P - epsilon))).
         by rewrite ler_log// posrE powR_gt0.
-      rewrite log_powR log2 mulr1 -ler_ndivlMl; last by rewrite oppr_lt0 ltr0n.
+      rewrite log_powR log2 mulr1 -ler_ndivlMl; first by rewrite oppr_lt0 ltr0n.
       by rewrite invrN addrC -{1}(opprK (`H P)) lerBlDr.
   rewrite disjoint_Pr_setU // disjoints_subset; apply/subsetP => /= i.
   by rewrite !inE /= => /eqP Hi; rewrite negb_and Hi ltxx.
-rewrite {1}/Pr big1 ?add0r; last by move=> /= v; rewrite inE => /eqP.
+rewrite {1}/Pr big1 ?add0r; first by move=> /= v; rewrite inE => /eqP.
 apply/(le_trans _ (aep He k0_k))/subset_Pr/subsetP => /= t.
 rewrite !inE /= => /andP[-> H3].
 by rewrite /log_RV /= /scale_RV !RV_fctE/= -mulr_regl mulrN -mulNr ltW.

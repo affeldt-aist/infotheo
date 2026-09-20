@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg ssrnum finalg perm.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg ssrnum finalg perm.
 From mathcomp Require Import zmodp matrix vector order interval_inference.
-From mathcomp Require Import lra ring mathcomp_extra Rstruct reals.
+From mathcomp Require Import arithmetic_tactic ring_tactic Rstruct reals.
 Require Import realType_ext ssr_ext ssralg_ext f2 bigop_ext fdist proba.
 Require Import channel_code channel binary_symmetric_channel hamming pproba.
 
@@ -30,7 +30,6 @@ Reserved Notation "t .-BDD f" (at level 2, format "t  .-BDD  f").
 Declare Scope ecc_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -74,11 +73,11 @@ elim: s a => // hd tl IH a; rewrite in_cons; case/orP.
     by rewrite Hh// inE itl orbT.
   apply/esym/max_idPr.
   rewrite -(IH a)//.
+    move=> c0 Hc0.
     apply: Hh.
-    by rewrite mem_head.
-   move=> c0 Hc0.
-   apply: Hh.
-   by rewrite in_cons Hc0 orbC.
+    by rewrite in_cons Hc0 orbC.
+  apply: Hh.
+  by rewrite mem_head.
 Qed.
 
 (* TODO: mv *)
@@ -254,11 +253,11 @@ Proof.
 rewrite ler_wpM2l//=.
 rewrite /ErrRateCond /=.
 rewrite [leRHS](eq_bigr
-  (fun m => 1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m])); last first.
+  (fun m => 1 - Pr (W ``(|enc m)) [set tb | phi tb == Some m])).
   move=> m _; rewrite Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
 rewrite [leLHS](eq_bigr
-  (fun m => 1 - Pr (W ``(|enc m)) [set tb | dec tb == Some m])); last first.
+  (fun m => 1 - Pr (W ``(|enc m)) [set tb | dec tb == Some m])).
   move => m _.
   rewrite [in LHS]Pr_to_cplt; congr (_ - Pr _ _).
   apply/setP => t; by rewrite !inE negbK.
@@ -266,8 +265,8 @@ rewrite 2!big_split /=; apply: lerD => //.
 rewrite -2!big_morph_oppr lerNr opprK /Pr (exchange_big_dep xpredT) //=.
 rewrite [leRHS](exchange_big_dep xpredT) //=.
 apply: ler_sum => /= tb _.
-rewrite (eq_bigl (fun m => phi tb == Some m)); last by move=> m; rewrite inE.
-rewrite [leRHS](eq_bigl (fun m => dec tb == Some m)); last by move=> m; rewrite inE.
+rewrite (eq_bigl (fun m => phi tb == Some m)); first by move=> m; rewrite inE.
+rewrite [leRHS](eq_bigl (fun m => dec tb == Some m)); first by move=> m; rewrite inE.
 (* show that phi_ML succeeds more often than phi *)
 have [dectb_None|dectb_Some] := eqVneq (dec tb) None.
   case/boolP : (receivable_prop P W tb) => [Hy|Htb].
@@ -278,15 +277,15 @@ have [dectb_None|dectb_Some] := eqVneq (dec tb) None.
     apply/existsP; exists (enc m).
     rewrite Htb andbT fdist_uniform_supp_neq0 inE.
     move/subsetP : enc_img; apply; apply/imsetP; by exists m.
-  rewrite (eq_bigr (fun=> 0)); last by move=> m _; rewrite W_tb.
+  rewrite (eq_bigr (fun=> 0)); first by move=> m _; rewrite W_tb.
   by rewrite big1 //; apply: sumr_ge0.
 have [->|phi_tb] := eqVneq (phi tb) None.
   by rewrite big_pred0 //; apply: sumr_ge0.
 have [m1 Hm1] : exists m', dec tb = Some m' by destruct (dec tb) => //; exists s.
 have [m2 Hm2] : exists m', phi tb = Some m' by destruct (phi tb) => //; exists s.
 rewrite Hm1 {}Hm2.
-rewrite (eq_bigl [pred m | m == m2]); last by move=> ?; rewrite eq_sym.
-rewrite [leRHS](eq_bigl [pred m | m == m1]); last by move=> ?; rewrite eq_sym.
+rewrite (eq_bigl [pred m | m == m2]); first by move=> ?; rewrite eq_sym.
+rewrite [leRHS](eq_bigl [pred m | m == m1]); first by move=> ?; rewrite eq_sym.
 rewrite 2!big_pred1_eq; apply: ML_err_rate.
   move: Hm1; rewrite /dec ffunE /omap /obind /oapp.
   move H : (repair tb) => h.
@@ -345,14 +344,14 @@ transitivity (\big[Order.max/0]_(c in C) (g (dH_y c))); last first.
 (* the function maxed over is decreasing so we may look for its minimizer,
    which is given by minimum distance decoding *)
 rewrite (@bigmaxR_bigmin_vec_helper _ _ _ _ _ _ _ _ _ _ _ codebook_not_empty) //.
-- apply: eq_bigl => i.
-  by rewrite inE.
 - by apply: bsc_prob_prop.
 - by move=> r; rewrite /g mulr_ge0 ?exprn_ge0 ?subr_ge0 ?inE//.
 - rewrite inE; move/subsetP: f_img; apply.
   rewrite inE; apply/existsP; by exists (receivable_rV y); apply/eqP.
 - by move=> ? _; rewrite /dH_y max_dH.
 - by rewrite /dH_y MD.
+- apply: eq_bigl => i.
+  by rewrite inE.
 Qed.
 
 End MD_ML_decoding.
@@ -387,36 +386,36 @@ move: (HMAP tb) => [m [tbm]].
 rewrite /fdist_post_prob. unlock. simpl.
 under [in X in _ = X -> _]eq_bigr do rewrite ffunE.
 move=> H.
-evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H; last first.
+evar (h : 'rV[A]_n -> R); rewrite (eq_bigr h) in H.
   by move=> v vC; rewrite /h; reflexivity.
-rewrite -bigmaxR_distrl in H; last first.
+rewrite -bigmaxR_distrl in H.
   by rewrite invr_ge0; exact/fdist_post_prob_den_ge0.
 rewrite {2 3}/P in H.
 set r := index_enum _ in H.
 move: H.
 under [in X in _ = X / _ -> _]eq_bigr.
   move=> i iC.
-  rewrite fdist_uniform_supp_in; last by rewrite inE.
+  rewrite fdist_uniform_supp_in; first by rewrite inE.
   over.
 move=> H.
-rewrite -bigmaxR_distrr in H; last exact/ltW/Hunpos.
+rewrite -bigmaxR_distrr in H; first exact/ltW/Hunpos.
 exists m; split; first exact: tbm.
 rewrite ffunE in H.
 set x := (X in _ * _ / X) in H.
 have x0 : x^-1 <> 0 by apply/eqP/invr_neq0; rewrite -receivable_propE receivableP.
 move: H => /(congr1 (fun z => z * x)).
-rewrite -!mulrA mulVf ?mul1r//; last first.
+rewrite -!mulrA mulVf ?mul1r//.
  move/eqP : x0.
  by rewrite invr_eq0.
 move=> H.
-rewrite /= fdist_uniform_supp_in ?inE // in H; last first.
+rewrite /= fdist_uniform_supp_in ?inE // in H.
   move/subsetP : dec_img; apply.
   by rewrite inE; apply/existsP; exists (receivable_rV tb); apply/eqP.
 move/lt0r_neq0/eqP: Hunpos => Hunpos.
 move: H => /(congr1 (fun z => #|[set cw in C]|%:R * z)).
-rewrite !mulrA divff ?(mul1r,mulr1)//; last first.
-  move/eqP : Hunpos.
-  by rewrite invr_eq0.
+rewrite !mulrA divff ?(mul1r,mulr1)//.
+move/eqP : Hunpos.
+by rewrite invr_eq0.
 Qed.
 
 End MAP_decoding_prop.

@@ -1,9 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_algebra matrix.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot algebra matrix.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
-From mathcomp Require Import mathcomp_extra Rstruct.
+From mathcomp Require Import Rstruct.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 Require Import entropy binary_entropy_function channel hamming channel_code.
 
@@ -17,7 +17,6 @@ Require Import entropy binary_entropy_function channel hamming channel_code.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -52,9 +51,9 @@ Qed.
 Lemma f1 (a : A) : \sum_(a' : {:option A}) f a a' = 1.
 Proof.
 rewrite (bigD1 None) //= (bigD1 (Some a)) //= !ffunE eqxx /=.
-rewrite [X in _ + (_ + X)](_ : _ = 0).
+rewrite [X in _ + (_ + X)](_ : _ = 0); last first.
   by rewrite addr0 add_onemK.
-apply/eqP; rewrite psumr_eq0/=; last first.
+apply/eqP; rewrite psumr_eq0/=.
   rewrite /f; move => [a'|//].
   rewrite ffunE.
   case: ifPn => [_ _|//].

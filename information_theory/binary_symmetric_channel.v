@@ -1,10 +1,11 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum zmodp matrix lra.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum zmodp matrix.
+From mathcomp Require Import arithmetic_tactic.
 From mathcomp Require Import interval_inference.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
-From mathcomp Require Import mathcomp_extra classical_sets Rstruct.
+From mathcomp Require Import classical_sets Rstruct.
 From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist entropy binary_entropy_function channel hamming.
@@ -22,7 +23,6 @@ Require Import channel_code pproba.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -61,7 +61,7 @@ Lemma HP_HPW : `H P - `H(P, BSC.c card_A p_01)%channel = - H2 p.
 Proof.
 rewrite {2}/entropy /=.
 rewrite (eq_bigr (fun a => ((P `X (BSC.c card_A p_01))) (a.1, a.2) *
-  log (((P `X (BSC.c card_A p_01))) (a.1, a.2)))); last first.
+  log (((P `X (BSC.c card_A p_01))) (a.1, a.2)))).
   case=> //=.
 rewrite -(pair_big xpredT xpredT (fun a b => (P `X (BSC.c card_A p_01))
   (a, b) * log ((P `X (BSC.c card_A p_01)) (a, b)))) /=.
@@ -78,10 +78,10 @@ have [H1|H1] := eqVneq (P a) 0.
   rewrite H1 add0r => ->.
   rewrite log1 !(mul0r, mulr0, addr0, add0r, mul1r, mulr1).
   by rewrite /onem mulN1r opprK opprB opprK addrC.
-rewrite logM; last 2 first.
+rewrite logM.
   by rewrite lt_neqAle eq_sym H1/=.
   by case/andP: p_01' => ? ?; exact/onem_gt0.
-rewrite logM; last 2 first.
+rewrite logM.
   by rewrite lt_neqAle eq_sym H1/=.
   by case/andP: p_01'.
 have [H2|H2] := eqVneq (P b) 0.
@@ -91,10 +91,10 @@ have [H2|H2] := eqVneq (P b) 0.
   rewrite log1 !(mul0r, mulr0, addr0, add0r, mul1r, mulr1).
   rewrite /onem/=.
   by rewrite mulN1r opprK opprB opprK addrC.
-rewrite logM; last 2 first.
+rewrite logM.
   by rewrite lt_neqAle eq_sym H2/=.
   by case/andP: p_01' => ? ?.
-rewrite logM; last 2 first.
+rewrite logM.
   by rewrite lt_neqAle eq_sym H2/=.
   by case/andP: p_01' => ? ?; exact/onem_gt0.
 rewrite /onem.
@@ -192,7 +192,7 @@ have has_sup_E : has_sup E.
   exists 1 => y [P _ <-{y}].
   have := IPW card_A P p_01'.
   set tmp := (X in `I(_, BSC.c _ X)).
-  rewrite (_ : tmp = p_01)//; last first.
+  rewrite (_ : tmp = p_01)//.
     exact: val_inj.
   move=> ->.
   rewrite lerBlDr (le_trans (H_out_max card_A P p_01'))//.
@@ -204,10 +204,10 @@ apply/eqP; rewrite eq_le; apply/andP; split.
   suff : `H(d `o BSC.c card_A p_01) <= 1.
     have := IPW card_A d p_01'.
     set tmp := (X in `I(_, BSC.c _ X)).
-    rewrite (_ : tmp = p_01)//; last first.
+    rewrite (_ : tmp = p_01)//.
       exact: val_inj.
     set tmp' := (X in _ = `H(d `o (BSC.c card_A X)) - _ -> _).
-    rewrite (_ : tmp' = p_01)//; last first.
+    rewrite (_ : tmp' = p_01)//.
       exact: val_inj.
     rewrite dx => -> ?.
     by rewrite lerBlDr subrK.
@@ -267,10 +267,10 @@ Proof.
 move=> /[dup] /ltW q0 q1 qr /andP [] n12 n2n.
 have r1 := lt_le_trans q1 qr.
 have r0 := ltW r1.
-rewrite [leLHS](_ : _ = q ^+ n1 * q ^+ (n2 - n1)%N * r ^+ (n - n2)%N);
-  last by rewrite -exprD subnKC // mulrC.
-rewrite [leRHS](_ : _ = q ^+ n1 * r ^+ (n2 - n1)%N * r ^+ (n - n2)%N);
-  last by rewrite -mulrA -exprD addnBAC // subnKC // mulrC.
+rewrite [leLHS](_ : _ = q ^+ n1 * q ^+ (n2 - n1)%N * r ^+ (n - n2)%N).
+  by rewrite -exprD subnKC // mulrC.
+rewrite [leRHS](_ : _ = q ^+ n1 * r ^+ (n2 - n1)%N * r ^+ (n - n2)%N).
+  by rewrite -mulrA -exprD addnBAC // subnKC // mulrC.
 apply: ler_pM => //; [by apply/mulr_ge0; apply/exprn_ge0 | by apply/exprn_ge0 | ].
 apply: ler_pM => //; [by apply/exprn_ge0 | by apply/exprn_ge0 |].
 rewrite -[leLHS]mul1r -ler_pdivlMr ?exprn_gt0 // -expr_div_n.
@@ -324,9 +324,9 @@ Lemma bsc_post (a : A) :
   if a == a' then 1 - p else p.
 Proof.
 rewrite fdist_post_probE /= !fdist_rVE DMCE big_ord_recl big_ord0.
-rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))); last first.
+rewrite (eq_bigr (fun x : 'M_1 => P a * (BSC.c card_A p_01) ``( (\row__ a') | x))).
   by move=> i _; rewrite /P !fdist_rVE big_ord_recl big_ord0 !fdist_uniformE mulr1.
-rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1); last first.
+rewrite -big_distrr /= (_ : \sum_(_ | _) _ = 1).
   transitivity (\sum_(i in 'M_1) fdist_binary card_A p_01 (i ``_ ord0) a').
     apply: eq_bigr => i _.
     by rewrite DMCE big_ord_recl big_ord0 mulr1 /BSC.c mxE.

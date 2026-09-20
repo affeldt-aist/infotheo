@@ -1,8 +1,8 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
 Require Program.Wf.
-From mathcomp Require Import all_boot ssralg fingroup finalg perm zmodp.
+From mathcomp Require Import boot ssralg fingroup finalg perm zmodp.
 From mathcomp Require Import matrix.
 Require Import ssr_ext ssralg_ext num_occ f2 hamming tanner linearcode.
 
@@ -17,7 +17,6 @@ Declare Scope letter_scope.
 Declare Scope bec_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -209,7 +208,7 @@ case/letterP : x xblank => //= _.
   apply/eqP; rewrite -notin_num_occ_0; apply/nseqP; by case.
 - rewrite (_ : N(Bit 0 | _) = O) //.
   apply/eqP; rewrite -notin_num_occ_0; apply/nseqP; by case.
-- rewrite !add0n (_ : N(Bit 1 | _) = O); last first.
+- rewrite !add0n (_ : N(Bit 1 | _) = O).
     apply/eqP; rewrite -notin_num_occ_0; apply/nseqP; by case.
   rewrite (_ : N(Bit 0 | _) = O) //.
   apply/eqP; rewrite -notin_num_occ_0; apply/nseqP; by case.
@@ -300,7 +299,7 @@ Proof.
 move=> H0 IH.
 rewrite (Prod_filter_Star A n0 s).
 set tmp := [seq _ | _ <- _ & _].
-rewrite (_ : tmp = nseq (size tmp) (Bit b)); last first.
+rewrite (_ : tmp = nseq (size tmp) (Bit b)).
   apply: all_pred1P.
   apply/allP => /= x0.
   case/mapP => /= m1 Hm1 x0m1.
@@ -331,7 +330,7 @@ case/boolP : (Bit b \in l) => Hl.
   case/mapP : Hl => m1 H2 H3.
   exists m1; rewrite -?H3 //; by rewrite mem_enum in H2.
 right.
-rewrite (_ : l = nseq (size l) Star); last first.
+rewrite (_ : l = nseq (size l) Star).
   apply/all_pred1P/allP => /= x.
   case/mapP => m1 Hm1 Hx.
   move: H1 => /allP H1.
@@ -351,14 +350,14 @@ Lemma Kop_proof x1 x2 x3 y1 y2 y3 :
 Proof.
 move=> /andP [Hx Hx1] /andP [Hy Hy1].
 rewrite (@leq_trans (x3+y2)) ?leq_add2r //=.
-  apply/implyP=> H3.
-  move/implyP: Hx1 => ->.
-    move/implyP: Hy1 => -> //.
-    rewrite -(leq_add2r y3) (eqP H3) leq_add2l in Hx.
-    by rewrite eqn_leq Hy Hx.
+  by rewrite leq_add2l Hy.
+apply/implyP=> H3.
+move/implyP: Hx1 => ->.
   rewrite -(leq_add2l x3) (eqP H3) leq_add2r in Hy.
   by rewrite eqn_leq Hx Hy.
-by rewrite leq_add2l Hy.
+move/implyP: Hy1 => -> //.
+rewrite -(leq_add2r y3) (eqP H3) leq_add2l in Hx.
+ by rewrite eqn_leq Hy Hx.
 Qed.
 
 Definition num_stars m n (A : 'M[letter]_(m, n)) : nat :=
@@ -515,17 +514,17 @@ have Hrhs : rhs = \sum_(i0 < _ | i0 \in 'V m0 :\ n0) c ``_ i0.
   transitivity (\sum_(H0 < n | (H0 != n0) && (m0 \in 'F H0)) H m0 H0 * c^T H0 ord0).
     rewrite (bigID (fun j => m0 \in 'F j)) /=.
     rewrite (_ : \sum_(i0 < n | (i0 != n0) && (m0 \notin 'F i0)) H m0 i0 * c^T i0 ord0 = 0).
-      by rewrite addr0.
-    rewrite (eq_bigr (fun=> 0)).
-      by rewrite big_const /= iter_addr0.
-    move=> /= i0 /andP[] i0j.
-    rewrite FnextE VnextE tanner_relE -F2_eq0 => /eqP ->; by rewrite mul0r.
+      rewrite (eq_bigr (fun=> 0)).
+        move=> /= i0 /andP[] i0j.
+        by rewrite FnextE VnextE tanner_relE -F2_eq0 => /eqP ->; rewrite mul0r.
+      by rewrite big1.
+    by rewrite addr0.
   apply: eq_big.
     by move=> j0 /=; rewrite in_setD1 FnextE.
   move=> i0 /andP[] H1.
   rewrite FnextE VnextE tanner_relE => /eqP ->; by rewrite mul1r mxE.
-rewrite Hrhs (_ : H _ _ = 1) ?mul1r ?mxE in Hc'; last first.
-  move: m0n0; by rewrite FnextE VnextE tanner_relE => /eqP.
+rewrite Hrhs (_ : H _ _ = 1) ?mul1r ?mxE in Hc'.
+  by move: m0n0; rewrite FnextE VnextE tanner_relE => /eqP.
 move/eqP : Hc'.
 rewrite addr_eq0 => /eqP ->.
 by rewrite (@sum_rowVnextD1 c) ?oppr_pchar2 // => *; rewrite mxE H0.
@@ -569,7 +568,7 @@ case/boolP : (Bit b \in l) => Hlst.
   case/mapP : Hlst => m1 H2 H3.
   exists m1; rewrite -?H3 //; by rewrite mem_enum in H2.
 - right.
-  rewrite (_ : l = nseq (size l) Star); last first.
+  rewrite (_ : l = nseq (size l) Star).
     apply/all_pred1P/allP => /= x.
     case/mapP => m1 Hm1 Hx.
     move: H1 => /allP/(_ _ Hm1).
@@ -652,21 +651,21 @@ case/orP : (letter_split b) Hpa' => [/existsP[b' /eqP -> Hpa']|].
   rewrite /mxProd !mxE in Hpa Hpa'.
   case: ifP => Hi in Hpa Hpa'.
     rewrite (Prod_cons_Bit c_le_y') in Hpa => //.
-      by rewrite -Hpa lell.
-      move=> i.
+    - move=> i.
       move/'forall_forallP : y'A => /(_ i ord0)/forallP/(_ n0).
       by rewrite !mxE.
-    apply/hasP; exists (Bit b') => //.
-    move/Prod_Bit: Hpa'.
-    rewrite in_cons => /orP [|].
-      by rewrite in_cons => ->.
-    move/mapP=> [k Hk Hk'].
-    move/'forall_forallP/(_ k n0): AB.
-    move: Hk'; rewrite mxE => <-; rewrite lel_Bit => /eqP <-.
-    rewrite in_cons; apply/orP; right.
-    apply/mapP; exists k => //; by rewrite mxE.
-  move/'forall_forallP/(_ m0 n0) : AB Hc'.
-  by rewrite Hpa Hpa' lel_Bit => /eqP ->.
+    - apply/hasP; exists (Bit b') => //.
+      move/Prod_Bit: Hpa'.
+      rewrite in_cons => /orP [|].
+        by rewrite ?in_cons => ->.
+      move/mapP=> [k Hk Hk'].
+      move/'forall_forallP/(_ k n0): AB.
+      move: Hk'; rewrite mxE => <-; rewrite lel_Bit => /eqP <-.
+      rewrite ?in_cons; apply/orP; right.
+      by apply/mapP; exists k => //; rewrite mxE.
+    - by rewrite -Hpa lell.
+    - move/'forall_forallP/(_ m0 n0) : AB Hc'.
+      by rewrite Hpa Hpa' lel_Bit => /eqP ->.
 move=> Hb Hpa'.
 move: Hpa' Hb.
 rewrite /mxProd !mxE.

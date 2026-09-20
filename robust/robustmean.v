@@ -1,15 +1,14 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order all_algebra.
-From mathcomp Require Import lra ring.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order algebra.
+From mathcomp Require Import arithmetic_tactic ring_tactic.
 From mathcomp Require boolp.
-From mathcomp Require Import mathcomp_extra reals.
+From mathcomp Require Import reals.
 From infotheo Require Import ssr_ext ssralg_ext bigop_ext.
 From infotheo Require Import realType_ext fdist proba.
 From HB Require Import structures.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 
@@ -176,16 +175,16 @@ have [|a0] := eqVneq a 0.
   have -> : `E (X `* Y) = 0.
     apply/eqP.
     rewrite psumr_eq0.
-      apply/allP => u _; rewrite inE !RV_fctE/=.
-      by case: (HY u) => ->; rewrite ?mulr0 ?scaler0 ?scale0r.
-    move => u _; rewrite !RV_fctE/=.
-    by case : (HY u) => -> ; rewrite ?mulr0 ?scaler0 ?scale0r.
+      move => u _; rewrite !RV_fctE/=.
+      by case : (HY u) => -> ; rewrite ?mulr0 ?scaler0 ?scale0r.
+    apply/allP => u _; rewrite inE !RV_fctE/=.
+    by case: (HY u) => ->; rewrite ?mulr0 ?scaler0 ?scale0r.
   by rewrite expr0n; exact/mulr_ge0.
 have [|b0] := eqVneq b 0.
   move/eqP; rewrite sqrtr_eq0. move/(conj EXge0)/andP/le_anti/esym=> b0.
   have HX : forall x, X x = 0 \/ P x = 0 by apply/Ex_square_eq0/b0.
   have -> : `E (X `* Y) = 0.
-    apply/eqP; rewrite psumr_eq0 !RV_fctE/=; last first.
+    apply/eqP; rewrite psumr_eq0 !RV_fctE/=.
       by move=> u _; case : (HX u) => -> ; rewrite ?mul0r ?scaler0 ?scale0r.
     apply/allP => u _.
     by case : (HX u) => -> ; rewrite ?mul0r ?scaler0 ?scale0r.
@@ -197,10 +196,10 @@ have {}b0 : 0 < b.
 rewrite -[leRHS]sqr_sqrtr ?mulr_ge0 // sqrtrM // -/a -/b.
 rewrite -subr_le0 -oppr_ge0 opprB subr_sqr.
 rewrite mulr_ge0 // -[X in _ + X]opprK subr_ge0 ?opprK.
-- rewrite -(@ler_pM2l _ (2 * a * b)); last by do 2 apply: mulr_gt0 => //.
+- rewrite -(@ler_pM2l _ (2 * a * b)); first by do 2 apply: mulr_gt0 => //.
   rewrite -subr_ge0 H2ab -2!mulNr -mulrN -(mulrNN a a) -Ex_square_expansion.
   exact/Ex_ge0/sq_RV_ge0.
-- rewrite -(@ler_pM2l _ (2 * a * b)); last by do 2 apply: mulr_gt0 => //.
+- rewrite -(@ler_pM2l _ (2 * a * b)); first by do 2 apply: mulr_gt0 => //.
   rewrite -subr_ge0 -mulrN opprK H2ab -Ex_square_expansion.
   exact/Ex_ge0/sq_RV_ge0.
 Qed.
@@ -475,7 +474,7 @@ have[FIH0|FIHneq0]:= eqVneq (Pr P (F :&: H)) 0.
   rewrite FIH0 mulr0 !addr0=> FIGF.
   by congr (_ * _)=> //; apply: cEx_sub_eq=> //; exact: subsetIl.
 move=> FGHF.
-rewrite !cExE !(mulrC _ (Pr _ _)) !mulrA !mulfV // !mul1r -big_union_nondisj /=; last first.
+rewrite !cExE !(mulrC _ (Pr _ _)) !mulrA !mulfV // !mul1r -big_union_nondisj /=.
   have/setIidPl/(congr1 (Pr P)):= FsubGUH.
   rewrite setIUr Pr_setU FGHF=> /eqP.
   rewrite -subr_eq0 addrAC subrr add0r oppr_eq0 => /eqP /psumr_eq0P P0.
@@ -498,7 +497,7 @@ Lemma cExID (X : {RV P -> R}) (F G : {set U}) :
     `E_[ X | F ] * Pr P F.
 Proof.
 rewrite setDE cEx_union ?setUCr //.
-rewrite -big_union_nondisj /=; last by rewrite setICA -setIA setICr !setI0 big_set0.
+rewrite -big_union_nondisj /=; first by rewrite setICA -setIA setICr !setI0 big_set0.
 by rewrite -setIUr setUCr setIT.
 Qed.
 
@@ -544,9 +543,9 @@ have/orP[]:= le_total delta (1/2) => delta_12.
   rewrite -!mulrA; apply: (ler_wpM2l (cvariance_ge0 _ _)).
   apply: (@le_trans _ _ (1 / delta)).
     rewrite ler_pdivlMr //.
-    rewrite mulrC -ler_pdivlMr; last exact: divr_gt0.
+    rewrite mulrC -ler_pdivlMr; first exact: divr_gt0.
     by rewrite div1r invfM invrK mulrC.
-  by rewrite mulrA ler_pM2r; [lra|rewrite invr_gt0].
+  by rewrite mulrA ler_pM2r; [rewrite invr_gt0|lra].
 have delta_neq0: delta != 0 by lra.
 have delta_pos: 0 < delta by lra.
 have FG_pos: 0 < Pr P F / Pr P G by exact: (lt_le_trans delta_gt0 delta_FG).
@@ -614,22 +613,22 @@ have Hcompl : Pr P (good :\: drop) / Pr P (~: drop) = 1 - eps'.
   by rewrite -lt0Pr Pr_setC; lra.
 have eps'_ge0 : 0 <= eps' by rewrite mulr_ge0 // ?invr_ge0 Pr_ge0.
 have eps'_le1 : eps' <= 1.
-  rewrite ler_pdivrMr; last by rewrite Pr_setC; lra.
+  rewrite ler_pdivrMr; first by rewrite Pr_setC; lra.
   by rewrite mul1r subset_Pr // subsetDr.
 (* Remaining good points: 1 - (4 * eps) / (1 - eps) *)
 pose delta := 1 - (4 * eps) / (1 - eps).
 have min_good_remain : delta <= Pr P (good :\: drop) / Pr P good.
   rewrite /delta Pr_setD H.
   apply: (@le_trans _ _ ((1 - eps - 4 * eps) / (1 - eps))).
-    rewrite ler_pdivlMr; last lra.
+    rewrite ler_pdivlMr; first lra.
     by rewrite mulrDl -mulNr -(mulrA _ _^-1) mulVf //; lra.
-  rewrite ler_pdivrMr; last lra.
+  rewrite ler_pdivrMr; first lra.
   rewrite -[X in _ <= X]mulrA mulVf ?mulr1; lra.
 have delta_gt0 : 0 < delta.
-  rewrite -(@ltr_pM2r _ (1 - eps)); last lra.
+  rewrite -(@ltr_pM2r _ (1 - eps)); first lra.
   by rewrite mul0r mulrDl mul1r -mulNr -mulrA mulVf //; lra.
 have delta_le1 : delta <= 1.
-  rewrite -(@ler_pM2r _ (1 - eps)); last lra.
+  rewrite -(@ler_pM2r _ (1 - eps)); first lra.
   by rewrite mul1r mulrDl mul1r -mulNr -mulrA mulVf ?mulr1 //; lra.
 have Exgood_bound : `| `E_[X | good :\: drop ] - `E_[X | good] | <=
                      Num.sqrt (`V_[X | good] * 2 * (1 - delta) / delta).
@@ -638,23 +637,23 @@ have Exgood_bound : `| `E_[X | good :\: drop ] - `E_[X | good] | <=
       by move=> ->; rewrite subrr normr0 sqrtr_ge0.
     by apply: cEx_sub_eq => //; exact: subsetDl.
   - apply: cresilience.
-    + rewrite -(@ltr_pM2r _ (1 - eps)); last lra.
+    + rewrite -(@ltr_pM2r _ (1 - eps)); first lra.
       by rewrite mul0r mulr_gt0 //; lra.
     + lra.
     + exact: subsetDl.
 have Exbad_bound : 0 < Pr P (bad :\: drop) ->
     `| `E_[ X | bad :\: drop ] - mu | <= Num.sqrt (sigma / eps).
   move=> Pr_bd.
-  rewrite -(mulr1 mu) -(@Ind_one _ U P (bad :\: drop)); last lra.
+  rewrite -(mulr1 mu) -(@Ind_one _ U P (bad :\: drop)); first lra.
   rewrite 2!cEx_ExInd -mulNr mulrA -(Ind_idem P) -mulrDl big_distrr /=.
   rewrite /Ex -big_split /= [X in `|X / _|](_ : _ =
-      \sum_(i in U) (X i - mu) * @Ind _ U (bad :\: drop) i * P i); last first.
+      \sum_(i in U) (X i - mu) * @Ind _ U (bad :\: drop) i * P i).
     apply: eq_bigr => u _; rewrite -!mulr_regl.
-    by rewrite mulrCA -mulrDl mulrAC mulrA.
-  rewrite normrM (@ger0_norm _ _^-1); last by rewrite ltW // invr_gt0.
+    by rewrite (mulrCA (P u)) -mulrDl mulrAC mulrA.
+  rewrite normrM (@ger0_norm _ _^-1); first by rewrite ltW // invr_gt0.
   rewrite ler_pdivrMr //; apply: (le_trans (ler_norm_sum _ _ _)).
   rewrite (bigID [pred i | i \in bad :\: drop]) /=.
-  rewrite [X in _ + X]big1 ?addr0; last first.
+  rewrite [X in _ + X]big1 ?addr0.
     by move=> u /negbTE abaddrop; rewrite /Ind abaddrop mulr0 mul0r normr0.
   rewrite /Pr big_distrr /=; apply: ler_sum => i ibaddrop.
   rewrite normrM (@ger0_norm _ (P i)) // ler_wpM2r //.
@@ -664,7 +663,7 @@ have Exbad_bound : 0 < Pr P (bad :\: drop) ->
 have max_bad_remain : Pr P (bad :\: drop) <= eps / Pr P (~: drop).
   rewrite Pr_setC Hdrop_ratio Pr_setD Hbad_ratio.
   apply: (@le_trans _ _ eps); first by rewrite lerBlDr lerDl Pr_ge0.
-  by rewrite ler_pdivlMr; [nra|lra].
+  by rewrite ler_pdivlMr; [lra|nra].
 have Ex_not_drop : `E_[ X | ~: drop ] =
     (`E_[ X | good :\: drop ] * Pr P (good :\: drop) +
      `E_[ X | bad :\: drop ] * Pr P (bad :\: drop))
@@ -673,7 +672,7 @@ have Ex_not_drop : `E_[ X | ~: drop ] =
   rewrite -mulrA mulfV ?mulr1 // Pr_setC.
   lra.
 rewrite -(mulr1 mu).
-rewrite (_ : 1 = eps' + Pr P (good :\: drop) / Pr P (~: drop)); last first.
+rewrite (_ : 1 = eps' + Pr P (good :\: drop) / Pr P (~: drop)).
   by rewrite Hcompl addrCA subrr addr0.
 rewrite (mulrDr mu) opprD.
 rewrite /mu_hat Ex_not_drop mulrDl.
@@ -684,9 +683,9 @@ rewrite -addrA addrC addrA -!mulNr -(mulrDl _ _ eps').
 rewrite -addrA -mulrDl.
 rewrite (addrC (-mu)).
 rewrite (le_trans (ler_normD _ _)) //.
-rewrite (normrM _ eps') (@ger0_norm _ eps'); last lra.
+rewrite (normrM _ eps') (@ger0_norm _ eps'); first lra.
 rewrite normrM.
-rewrite mulNr -/eps' (@ger0_norm _ (1 - eps')); last lra.
+rewrite mulNr -/eps' (@ger0_norm _ (1 - eps')); first lra.
 apply: (@le_trans _ _ (Num.sqrt (`V_[ X | good] / eps) * eps' +
     Num.sqrt (`V_[ X | good] * 2 * (1 - delta) / delta) * (1 - eps'))).
   have [->|/eqP eps'0] := eqVneq eps' 0.
@@ -697,39 +696,39 @@ apply: (@le_trans _ _ (Num.sqrt (`V_[ X | good] / eps) * eps' +
     by rewrite /eps' => ->; rewrite mul0r.
   have [bd0|bd0] := eqVneq (Pr P (bad :\: drop)) 0.
     by exfalso; apply/eps'0; rewrite /eps' bd0 mul0r.
-  apply: lerD; (rewrite ler_pM2r; last lra).
+  apply: lerD; (rewrite ler_pM2r; first lra).
   - by apply: Exbad_bound; rewrite lt0Pr.
   - exact: Exgood_bound.
-rewrite /sigma !sqrtrM //; last 4 first.
+rewrite /sigma !sqrtrM //.
   - exact: cvariance_ge0.
-  - by apply: mulr_ge0; [exact: cvariance_ge0|lra].
   - apply: mulr_ge0; [|lra].
     by apply: mulr_ge0; [exact: cvariance_ge0|lra].
+  - by apply: mulr_ge0; [exact: cvariance_ge0|lra].
   - exact: cvariance_ge0.
 rewrite addrCA subrr addr0.
 rewrite -(mulr_natl _ 8) -!mulrA -mulrDr mul1r.
 rewrite -!(mulrCA (Num.sqrt `V_[ X | good])).
 apply: ler_wpM2l; first exact: sqrtr_ge0.
-rewrite mulrA -sqrtrM; [|lra].
-rewrite mulrA -sqrtrM; [|lra].
+rewrite mulrA -sqrtrM; [lra|].
+rewrite mulrA -sqrtrM; [lra|].
 rewrite addrC -lerBrDr (mulrC 8) -mulrBr.
-rewrite -(@ger0_norm _ (1 - eps')) -?sqrtr_sqr; last lra.
-rewrite -(@ger0_norm _ (8 - eps')) -?sqrtr_sqr; last lra.
+rewrite -(@ger0_norm _ (1 - eps')) -?sqrtr_sqr; first lra.
+rewrite -(@ger0_norm _ (8 - eps')) -?sqrtr_sqr; first lra.
 rewrite [leLHS]mulrC [leRHS]mulrC.
 rewrite -sqrtrM ?sqr_ge0 //.
 rewrite -sqrtrM ?sqr_ge0 //.
-rewrite ler_sqrt 1?mulr_ge0 ?sqr_ge0 ?invr_ge0 //; last by rewrite ltW.
+rewrite ler_sqrt 1?mulr_ge0 ?sqr_ge0 ?invr_ge0 //; first by rewrite ltW.
 apply: ler_pM.
 - exact: sqr_ge0.
 - by rewrite !mulr_ge0 ?invr_ge0 //; lra.
 - rewrite ler_sqr ?nnegrE; lra.
-- rewrite -[leRHS]mulr1 ler_pdivlMl; last lra.
-  rewrite [leLHS](_ : _ = 8 * eps * eps / (1 - 5 * eps)); last first.
+- rewrite -[leRHS]mulr1 ler_pdivlMl; first lra.
+  rewrite [leLHS](_ : _ = 8 * eps * eps / (1 - 5 * eps)).
     rewrite /delta.
     have en0 : 1 - eps != 0 by lra.
     have fen0 : 1 - 5 * eps != 0 by lra.
-    by field; do ?[apply/andP; split].  (* Remove "by " and "; do ?[apply/andP; split]" when requiring MathComp >= 2.6.0 *)
-  rewrite ler_pdivrMr; last lra.
+    field.
+  rewrite ler_pdivrMr; first lra.
   rewrite mul1r (@le_trans _ _ eps) //; last lra.
   by rewrite ler_piMl //; lra.
 Qed.

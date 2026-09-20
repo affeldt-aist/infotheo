@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order all_algebra perm.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order algebra perm.
 From mathcomp Require Import interval_inference reals exp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist jfdist_cond proba binary_entropy_function divergence.
@@ -33,7 +33,6 @@ Require Import fdist jfdist_cond proba binary_entropy_function divergence.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -111,7 +110,7 @@ Lemma entropy_uniform n (An1 : #|A| = n.+1) :
 Proof.
 rewrite /entropy.
 under eq_bigr do rewrite fdist_uniformE.
-rewrite big_const iter_addr addr0 logV; last by rewrite An1.
+rewrite big_const iter_addr addr0 logV; first by rewrite An1.
 rewrite -mulNrn mulrN opprK -mulrnAr -(mulr_natr (log _) #|A|) mulrCA.
 by rewrite mulVf ?mulr1// An1 pnatr_eq0.
 Qed.
@@ -165,7 +164,7 @@ Lemma entropy_fdist_perm n (P : R.-fdist 'rV[A]_n) (s : 'S_n) :
   `H (fdist_perm P s) = `H P.
 Proof.
 rewrite /entropy; congr (- _) => /=; apply/esym.
-rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ s) xpredT); last first.
+rewrite (@reindex_inj _ _ _ _ (@col_perm _ _ _ s) xpredT).
   exact: col_perm_inj.
 by apply: eq_bigr => v _; rewrite fdist_permE.
 Qed.
@@ -181,7 +180,7 @@ Lemma entropy_fdistmap
 Proof.
 move=> f_inj; congr -%R; set rhs := RHS.
 rewrite (bigID (mem [set f a | a in A]))/=.
-rewrite big_imset/=; last by move=> *; exact: f_inj.
+rewrite big_imset/=; first by move=> *; exact: f_inj.
 under eq_bigr=> a _.
   rewrite fdistmapE;
   under eq_bigl do rewrite !inE/=;
@@ -206,8 +205,7 @@ Proof. exact/entropy_fdistmap/inj_prodA. Qed.
 End entropy_fdistA.
 
 Section entropy_fdist_rV.
-Context {R : realType} {A : finType}.
-Variables (P : R.-fdist A) (n : nat).
+Context {R : realType} {A : finType} (P : R.-fdist A) (n : nat).
 
 Lemma entropy_fdist_rV : `H (P `^ n)%fdist = n%:R * `H P.
 Proof.
@@ -219,13 +217,13 @@ rewrite /= -opprD; congr (- _).
 rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
     (\sum_(j in 'rV[A]_n0) (\prod_(i0 < n0) P j ``_ i0)) +
      \sum_(i | i \in A) P i * \sum_(j in 'rV[A]_n0)
-    (\prod_(i0 < n0) P j ``_ i0) * log (\prod_(i0 < n0) P j ``_ i0)); last first.
+    (\prod_(i0 < n0) P j ``_ i0) * log (\prod_(i0 < n0) P j ``_ i0)).
   rewrite -big_split /=; apply: eq_bigr => i _.
   rewrite -mulrA -mulrDr (mulrC (log (P i))) (big_distrl (log (P i)) _ _) /=.
   rewrite -big_split /= big_distrr /=.
   apply: eq_bigr => i0 _.
   rewrite fdist_rVE.
-  rewrite big_ord_recl (_ : _ ``_ ord0 = i); last first.
+  rewrite big_ord_recl (_ : _ ``_ ord0 = i).
     by rewrite mxE; case: splitP => // j Hj; rewrite mxE.
   rewrite -mulrA.
   have:= FDist.ge0 P i; rewrite le_eqVlt => /predU1P[<-|pi_pos].
@@ -234,7 +232,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   rewrite -mulrDr.
   rewrite (@eq_bigr _ _ _ _ _ _
       (fun x => P ((row_mx (\row_(_ < 1) i) i0) ``_ (lift ord0 x)))
-      (fun x => P i0 ``_ x)) => [|i1 _]; last first.
+      (fun x => P i0 ``_ x)) => [i1 _|].
     congr (P _).
     rewrite mxE.
     case: splitP => j; first by rewrite (ord1 j).
@@ -244,7 +242,7 @@ rewrite [LHS](_ :_ = \sum_(i | i \in A) P i * log (P i) *
   have rmul_pos : 0 < \prod_(i1<n0) P i0 ``_ i1.
     by rewrite lt0r eq_sym rmul_non0; apply/prodr_ge0 => ?.
   by rewrite logM//.
-rewrite (_ : \sum_(j in 'rV_n0) _ = 1); last first.
+rewrite (_ : \sum_(j in 'rV_n0) _ = 1).
   rewrite -[RHS](FDist.f1 (P `^ n0)%fdist).
   by apply: eq_bigr => i _; rewrite fdist_rVE.
 rewrite -big_distrl /= mulr1 [in RHS]addrC; congr +%R.
@@ -255,7 +253,7 @@ Qed.
 End entropy_fdist_rV.
 
 Section joint_entropy.
-Variables (R : realType) (A B : finType) (P : R.-fdist (A * B)).
+Context {R : realType} {A B : finType} (P : R.-fdist (A * B)).
 
 (* eqn 2.8 *)
 Definition joint_entropy := `H P.
@@ -267,7 +265,7 @@ Proof. by rewrite /joint_entropy entropy_Ex. Qed.
 Lemma joint_entropyC : joint_entropy = `H (fdistX P).
 Proof.
 congr (- _) => /=.
-rewrite (eq_bigr (fun a => P (a.1, a.2) * log (P (a.1, a.2)))); last by case.
+rewrite (eq_bigr (fun a => P (a.1, a.2) * log (P (a.1, a.2)))); first by case.
 rewrite -(pair_bigA _ (fun a1 a2 => P (a1, a2) * log (P (a1, a2)))) /=.
 by rewrite exchange_big pair_big; apply: eq_bigr => -[a b] _; rewrite fdistXE.
 Qed.
@@ -284,15 +282,15 @@ by rewrite fdist_belast_last_of_rVE.
 Qed.
 
 Section joint_entropy_RV_def.
-Variable R : realType.
-Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
+Context {R : realType} {U A B : finType} (P : R.-fdist U) (X : {RV P -> A})
+  (Y : {RV P -> B}).
 Definition joint_entropy_RV := joint_entropy `p_[% X, Y].
 End joint_entropy_RV_def.
 Notation "'`H(' X ',' Y ')'" := (joint_entropy_RV X Y) : entropy_scope.
 
 Section joint_entropy_RVCA.
-Context {R : realType} {U A B C : finType} {P : R.-fdist U}.
-Variables (X : {RV P -> A}) (Y : {RV P -> B}) (Z : {RV P -> C}).
+Context {R : realType} {U A B C : finType} {P : R.-fdist U} (X : {RV P -> A})
+  (Y : {RV P -> B}) (Z : {RV P -> C}).
 
 Lemma joint_entropy_RVC : `H(X, Y) = `H(Y, X).
 Proof.
@@ -308,8 +306,8 @@ Qed.
 End joint_entropy_RVCA.
 
 Section joint_entropy_RV_prop.
-Variable R : realType.
-Variables (U A B : finType) (P : R.-fdist U) (X : {RV P -> A}) (Y : {RV P -> B}).
+Context {R : realType} {U A B : finType} (P : R.-fdist U) (X : {RV P -> A})
+  (Y : {RV P -> B}).
 
 (* 2.9 *)
 Lemma eqn29 : `H(X, Y) = - `E (`log `p_[% X, Y]).
@@ -318,13 +316,13 @@ Proof. by rewrite /joint_entropy_RV joint_entropyE E_opp_RV. Qed.
 End joint_entropy_RV_prop.
 
 Section joint_entropy_prop.
-Variable (R : realType) (A : finType) (P : R.-fdist A).
+Context {R : realType} {A : finType} (P : R.-fdist A).
 
 Lemma joint_entropy_self : joint_entropy (fdist_self P) = `H P.
 Proof.
 congr (- _).
 rewrite (eq_bigr (fun a => fdist_self P (a.1, a.2) *
-                           log (fdist_self P (a.1, a.2)))); last by case.
+                           log (fdist_self P (a.1, a.2)))); first by case.
 rewrite -(pair_bigA _ (fun a1 a2 => fdist_self P (a1, a2) *
                                     log (fdist_self P (a1, a2)))) /=.
 apply/eq_bigr => a _.
@@ -335,9 +333,8 @@ Qed.
 End joint_entropy_prop.
 
 Section injective_joint_entropy_RV.
-Context {R : realType} (U A B : finType) (P : R.-fdist U).
-Variables (X : {RV P -> A}) (Y : {RV P -> B}).
-Variable (f : A -> B).
+Context {R : realType} (U A B : finType) (P : R.-fdist U) (X : {RV P -> A})
+  (Y : {RV P -> B}) (f : A -> B).
 
 Lemma injective_joint_entropy (C : finType) (Z : {RV P -> C}):
   injective f -> `H(f `o X, Z) = `H(X, Z).
@@ -355,8 +352,7 @@ End injective_joint_entropy_RV.
 
 (* definitions using probability distributions, see below for RVs *)
 Section conditional_entropy_def.
-Context {R : realType} {A B : finType}.
-Variable QP : R.-fdist (B * A).
+Context {R : realType} {A B : finType} (QP : R.-fdist (B * A)).
 
 (* H(Y|X = x), see eqn 2.10 *)
 Definition centropy1 a := - \sum_(b in B)
@@ -372,7 +368,7 @@ Notation cond_entropy1 := centropy1 (only parsing).
 Notation cond_entropy := centropy (only parsing).
 
 Section conditional_entropy_lemmas.
-Variables (R : realType) (A B : finType) (QP : R.-fdist (B * A)).
+Context {R : realType} {A B : finType} (QP : R.-fdist (B * A)).
 
 Let P := QP`2.
 Let PQ := fdistX QP.
@@ -411,8 +407,8 @@ Notation cond_entropy_ge0E:= centropy_ge0 (only parsing).
 
 (* definitions using RVs *)
 Section centropy1_RV_def.
-Context {R : realType} {U A B : finType} {P : R.-fdist U}.
-Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+Context {R : realType} {U A B : finType} {P : R.-fdist U} (X : {RV P -> A})
+  (Y : {RV P -> B}).
 
 Definition centropy1_RV a := centropy1 `p_[% Y, X] a.
 
@@ -427,7 +423,7 @@ Lemma centropyC {R : realType} (T : finType) (P : R.-fdist T)
   `H(X | [% Y, Z]) = `H(X | [% Z, Y]).
 Proof.
 rewrite /centropy_RV /centropy /=.
-rewrite (reindex unstable.swap)/=; last exact/onW_bij/bij_swap.
+rewrite (reindex unstable.swap)/=; first exact/onW_bij/bij_swap.
 apply: eq_bigr => -[c b] _ /=.
 rewrite !snd_RV2 !dist_of_RVE pfwd1_pairC; congr *%R.
 rewrite /centropy1; congr (- _).
@@ -437,8 +433,8 @@ by rewrite !setX1 !Pr_set1 !dist_of_RVE !pfwd1_pairA pfwd1_pairAC (pfwd1_pairC Z
 Qed.
 
 Section conditional_entropy_RV_lemmas.
-Context {R : realType} {U A B : finType} {P : R.-fdist U}.
-Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+Context {R : realType} {U A B : finType} {P : R.-fdist U} (X : {RV P -> A})
+  (Y : {RV P -> B}).
 
 Lemma centropy_RVE' : `H(Y | X) = \sum_(a in A) `Pr[X = a] * `H[Y | X = a].
 Proof. by apply: eq_bigr => a _; rewrite snd_RV2 dist_of_RVE. Qed.
@@ -460,8 +456,8 @@ Proof. by rewrite /centropy_RV centropy_ge0. Qed.
 End conditional_entropy_RV_lemmas.
 
 Section centropy1_RV_prop.
-Context {R : realType} {U A B : finType} {P : R.-fdist U}.
-Variables (X : {RV P -> A}) (Y : {RV P -> B}).
+Context {R : realType} {U A B : finType} {P : R.-fdist U} (X : {RV P -> A})
+  (Y : {RV P -> B}).
 
 Lemma centropy1_RVE a : (`p_[% X, Y])`1 a != 0 ->
   `H[Y | X = a] = `H (`p_[% X, Y] `(| a )).
@@ -474,8 +470,8 @@ Qed.
 End centropy1_RV_prop.
 
 Section conditional_entropy1_RV_comp0.
-Context {R : realType} {U A B : finType} {P : R.-fdist U}.
-Variables (X : {RV P -> A}) (x : A).
+Context {R : realType} {U A B : finType} {P : R.-fdist U} (X : {RV P -> A})
+  (x : A).
 
 Hypothesis pr_X_neq0 : `Pr[ X = x ] != 0.
 
@@ -493,8 +489,7 @@ Qed.
 End conditional_entropy1_RV_comp0.
 
 Section conditional_entropy_RV_comp0.
-Context {R : realType} {U A B : finType} {P : R.-fdist U}.
-Variables (X : {RV P -> A}).
+Context {R : realType} {U A B : finType} {P : R.-fdist U} (X : {RV P -> A}).
 
 Lemma centropy_RV_comp0 (f : A -> B) : `H( f `o X | X ) = 0.
 Proof.
@@ -506,7 +501,7 @@ Qed.
 End conditional_entropy_RV_comp0.
 
 Section conditional_entropy_prop.
-Variables (R : realType) (A B C : finType) (PQR : R.-fdist (A * B * C)).
+Context {R : realType} {A B C : finType} (PQR : R.-fdist (A * B * C)).
 
 Lemma centropy1_fdistAC b c : centropy1 (fdistA PQR) (b, c) =
                               centropy1 (fdistA (fdistAC PQR)) (c, b).
@@ -520,7 +515,7 @@ Lemma centropy_fdistA :
 Proof.
 rewrite /centropy /=.
 rewrite (eq_bigr (fun a => (fdistA PQR)`2 (a.1, a.2) *
-                           centropy1 (fdistA PQR) (a.1, a.2))); last by case.
+                           centropy1 (fdistA PQR) (a.1, a.2))); first by case.
 rewrite -(pair_bigA _ (fun a1 a2 => (fdistA PQR)`2 (a1, a2) *
                                     centropy1 (fdistA PQR) (a1, a2))) /=.
 rewrite exchange_big pair_big /=; apply: eq_bigr => -[c b] _ /=; congr (_ * _).
@@ -588,13 +583,13 @@ move=> Hremoval.
 rewrite 2!centropy_RVE' (partition_big f xpredT) //=.
 apply: eq_bigr => z _.
 under eq_bigr=> y /eqP fyz.
-  rewrite [_ * _](_ : _ = `Pr[ Y = y ] * `H[ X | (f `o Y) = z]); first over.
+  rewrite [_ * _](_ : _ = `Pr[ Y = y ] * `H[ X | (f `o Y) = z]); last over.
   have [->|/Hremoval H] := eqVneq (`Pr[Y=y]) 0; first by rewrite !mul0r.
   by rewrite -fyz cPr_centropy1_RV_comp.
 rewrite -big_distrl /=; congr (_ * _).
 rewrite pfwd1E /Pr.
 under [RHS]eq_bigr do rewrite pfwd1E /Pr.
-rewrite (partition_big Y (fun y => f y == z))/=; last by move=> ?; rewrite inE.
+rewrite (partition_big Y (fun y => f y == z))/=; first by move=> ?; rewrite inE.
 apply: eq_bigr => y yz; apply: eq_bigl => a /=.
 by rewrite !inE /comp_RV andb_idl// => /eqP ->.
 Qed.
@@ -673,12 +668,12 @@ Proof.
 move=> j; rewrite /put_back /put_front; case: (ifPn (j == i)) => [ji|].
   rewrite eqxx; exact/esym/eqP.
 rewrite neq_ltn => /orP[|] ji.
-  rewrite ji ifF; last first.
+  rewrite ji ifF.
     apply/negbTE/eqP => /(congr1 val) => /=.
     by rewrite inordK // ltnS (leq_trans ji) // -ltnS/=.
-  rewrite inordK; last by rewrite ltnS (leq_trans ji) // -ltnS/=.
+  rewrite inordK; first by rewrite ltnS (leq_trans ji) // -ltnS/=.
   by rewrite ji /=; apply: val_inj => /=; rewrite inordK.
-rewrite ltnNge (ltnW ji) /= ifF; last first.
+rewrite ltnNge (ltnW ji) /= ifF.
   by apply/negbTE; rewrite -lt0n (leq_trans _ ji).
 by rewrite leqNgt ji.
 Qed.
@@ -701,19 +696,19 @@ destruct n as [|n']; first by rewrite (ord1 i) eqxx in i0.
 transitivity (\sum_(x : A) P
   (\row_(k < n'.+2) (if k == i then x else v ``_ (inord (unbump i k)))))%R.
   rewrite (reindex_onto (fun a => \row_k (if k == i then a else v ``_ (inord (unbump i k))))
-    (fun w => w ``_ i)); last first.
+    (fun w => w ``_ i)).
     move=> w wv.
     apply/rowP => j.
     rewrite !mxE; case: ifPn => [/eqP -> //|ji].
     rewrite -(eqP wv) mxE; congr (w _ _).
     move: ji; rewrite neq_ltn => /orP[|] ji.
       apply: val_inj => /=.
-      rewrite inordK; last first.
+      rewrite inordK.
         by rewrite /unbump (ltnNge i j) (ltnW ji) subn0 (leq_trans ji) // -ltnS/=.
       by rewrite unbumpK //= inE ltn_eqF.
     apply: val_inj => /=.
-    rewrite inordK; last first.
-      by rewrite /unbump ji subn1 prednK //; [rewrite -ltnS | rewrite (leq_ltn_trans _ ji)].
+    rewrite inordK.
+      by rewrite /unbump ji subn1 prednK //; [rewrite (leq_ltn_trans _ ji)|rewrite -ltnS].
     by rewrite unbumpK //= inE gtn_eqF.
   apply: eq_bigl => a /=.
   apply/andP; split.
@@ -730,18 +725,18 @@ rewrite /put_front_perm /= permE /put_front.
 case: ifPn => [ki|]; first by rewrite row_mx_row_ord0.
 rewrite neq_ltn => /orP[|] ki.
   rewrite ki.
-  rewrite (_ : inord _ = rshift 1 (inord k)); last first.
+  rewrite (_ : inord _ = rshift 1 (inord k)).
     apply/val_inj => /=.
     rewrite add1n inordK /=.
-      by rewrite inordK // (leq_trans ki) // -ltnS/=.
-    by rewrite ltnS (leq_trans ki) // -ltnS/=.
+      by rewrite ltnS (leq_trans ki) // -ltnS/=.
+    by rewrite inordK // (leq_trans ki) // -ltnS/=.
   rewrite (@row_mxEr _ _ 1); congr (v ``_ _).
   apply: val_inj => /=.
   rewrite /unbump ltnNge (ltnW ki) subn0 inordK //.
   by rewrite (leq_trans ki) // -ltnS/=.
 rewrite ltnNge (ltnW ki) /=; move: ki.
 have [->//|k0] := eqVneq k ord0.
-rewrite (_ : k = rshift 1 (inord k.-1)); last first.
+rewrite (_ : k = rshift 1 (inord k.-1)).
   by apply: val_inj => /=; rewrite add1n inordK ?prednK // ?lt0n // -ltnS.
 rewrite (@row_mxEr _ 1 1) /=.
 rewrite inordK ?prednK ?lt0n // -1?ltnS // ltnS add1n prednK ?lt0n // => ik.
@@ -771,19 +766,19 @@ Lemma chain_rule_corollary :
 Proof.
 rewrite !centropyE -opprD; congr (- _).
 rewrite [in X in _ = _ + X](eq_bigr (fun j => \sum_(i in B) (fdistX QPR) ((j.1, j.2), i) *
-                                                            log \Pr_QPR[[set i] | [set (j.1, j.2)]])); last by case.
+                                                            log \Pr_QPR[[set i] | [set (j.1, j.2)]])); first by case.
 rewrite -[in RHS](pair_bigA _ (fun j1 j2 => \sum_(i in B) (fdistX QPR ((j1, j2), i) *
                                                           log \Pr_QPR[[set i] | [set (j1, j2)]]))) /=.
 rewrite [in X in _ = _ + X]exchange_big /= -big_split; apply: eq_bigr => c _ /=.
 rewrite [in LHS](eq_bigr (fun j => (fdistX PQR) (c, (j.1, j.2)) *
-                                   log \Pr_PQR[[set (j.1, j.2)] | [set c]])); last by case.
+                                   log \Pr_PQR[[set (j.1, j.2)] | [set c]])); first by case.
 rewrite -[in LHS](pair_bigA _ (fun j1 j2 => (fdistX PQR) (c, (j1, j2)) *
                                             log \Pr_PQR[[set (j1, j2)] | [set c]])) /=.
 rewrite -big_split; apply: eq_bigr => a _ /=.
 rewrite fdistXE fdist_proj13E big_distrl /= -big_split; apply: eq_bigr => b _ /=.
 rewrite !(fdistXE,fdistAE,fdistC12E) /= -mulrDr.
 have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0r.
-rewrite -logM; last 2 first.
+rewrite -logM.
   by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1; exact: fdist_proj13_dominN H0.
   by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1 fdistAE /= fdistC12E.
 congr (_ * log _).
@@ -1098,14 +1093,14 @@ Lemma cond_mutual_infoE : cond_mutual_info PQR = \sum_(x in {: A * B * C}) PQR x
 Proof.
 rewrite /cond_mutual_info 2!centropyE /= big_morph_oppr.
 rewrite (eq_bigr (fun a => \sum_(b in A) (fdistX (fdistA PQR)) (a.1, a.2, b) *
-                                          log \Pr_(fdistA PQR)[[set b] | [set (a.1, a.2)]])); last by case.
+                                          log \Pr_(fdistA PQR)[[set b] | [set (a.1, a.2)]])); first by case.
 rewrite -(pair_bigA _ (fun a1 a2 => \sum_(b in A) (fdistX (fdistA PQR)) ((a1, a2), b) *
                                                    log \Pr_(fdistA PQR)[[set b] | [set (a1, a2)]])).
 rewrite /= exchange_big /= opprK -big_split /=.
 rewrite (eq_bigr (fun x => PQR (x.1, x.2) * log
 (\Pr_PQR[[set x.1] | [set x.2]] /
         (\Pr_(fdist_proj13 PQR)[[set x.1.1] | [set x.2]] *
-         \Pr_(fdist_proj23 PQR)[[set x.1.2] | [set x.2]])))); last by case.
+         \Pr_(fdist_proj23 PQR)[[set x.1.2] | [set x.2]])))); first by case.
 rewrite -(pair_bigA _ (fun x1 x2 => PQR (x1, x2) * log
 (\Pr_PQR[[set x1] | [set x2]] /
         (\Pr_(fdist_proj13 PQR)[[set x1.1] | [set x2]] *
@@ -1115,7 +1110,7 @@ rewrite big_morph_oppr /= exchange_big -big_split /=.
 rewrite (eq_bigr (fun i => PQR ((i.1, i.2), c) * log
        (\Pr_PQR[[set (i.1, i.2)] | [set c]] /
         (\Pr_(fdist_proj13 PQR)[[set i.1] | [set c]] *
-         \Pr_(fdist_proj23 PQR)[[set i.2] | [set c]])))); last by case.
+         \Pr_(fdist_proj23 PQR)[[set i.2] | [set c]])))); first by case.
 rewrite -(pair_bigA _ (fun i1 i2 => PQR (i1, i2, c) * log
   (\Pr_PQR[[set (i1, i2)] | [set c]] /
   (\Pr_(fdist_proj13 PQR)[[set i1] | [set c]] * \Pr_(fdist_proj23 PQR)[[set i2] | [set c]])))).
@@ -1125,7 +1120,7 @@ apply: eq_bigr => b _ /=.
 rewrite fdistXE fdistAE /= -mulrN -mulrDr.
 have [->|H0] := eqVneq (PQR (a, b, c)) 0; first by rewrite !mul0r.
 congr (_ * _).
-rewrite addrC -logDiv; last 2 first.
+rewrite addrC -logDiv.
   by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1; exact: fdistA_dominN H0.
   by rewrite -Pr_jcPr_gt0 lt0Pr setX1 Pr_set1; exact: fdist_proj13_dominN H0.
 congr (log _).
@@ -1144,7 +1139,7 @@ rewrite cond_mutual_infoE.
 rewrite (eq_bigr (fun x => PQR (x.1, x.2) * log
   (\Pr_PQR[[set x.1] | [set x.2]] /
     (\Pr_(fdist_proj13 PQR)[[set x.1.1] | [set x.2]] *
-     \Pr_(fdist_proj23 PQR)[[set x.1.2] | [set x.2]])))); last by case.
+     \Pr_(fdist_proj23 PQR)[[set x.1.2] | [set x.2]])))); first by case.
 rewrite -(pair_bigA _ (fun x1 x2 => PQR (x1, x2) * log
   (\Pr_PQR[[set x1] | [set x2]] /
     (\Pr_(fdist_proj13 PQR)[[set x1.1] | [set x2]] *
@@ -1181,7 +1176,7 @@ rewrite /cond_mutual_info; congr (centropy _ - _).
 (* TODO: lemma *)
 rewrite /centropy.
 rewrite (eq_bigr (fun a => (fdistA (fdistC12 PQR))`2 (a.1, a.2) *
-                            centropy1 (fdistA (fdistC12 PQR)) (a.1, a.2))); last by case.
+                            centropy1 (fdistA (fdistC12 PQR)) (a.1, a.2))); first by case.
 rewrite -(pair_bigA _ (fun a1 a2 => (fdistA (fdistC12 PQR))`2 (a1, a2) *
                                      centropy1 (fdistA (fdistC12 PQR)) (a1, a2))).
 rewrite exchange_big pair_big; apply: eq_bigr => -[c a] _ /=; congr (_ * _).
@@ -1223,17 +1218,16 @@ Lemma chain_rule_relative_entropy :
 Proof.
 move=> PQ.
 rewrite {2}/div /cond_relative_entropy -big_split /= {1}/div /=.
-rewrite (eq_bigr (fun a => Pj (a.1, a.2) * (log (Pj (a.1, a.2) / (Qj (a.1, a.2)))))); last by case.
+rewrite (eq_bigr (fun a => Pj (a.1, a.2) * (log (Pj (a.1, a.2) / (Qj (a.1, a.2)))))); first by case.
 rewrite -(pair_bigA _ (fun a1 a2 => Pj (a1, a2) * (log (Pj (a1, a2) / (Qj (a1, a2)))))) /=.
 rewrite exchange_big; apply: eq_bigr => a _ /=.
-rewrite [in X in _ = X * _ + _](_ : P1 a = Pj`2 a); last by rewrite /P fdistX2 fdist_prod1.
+rewrite [in X in _ = X * _ + _](_ : P1 a = Pj`2 a); first by rewrite /P fdistX2 fdist_prod1.
 rewrite fdist_sndE big_distrl /= big_distrr /= -big_split /=; apply: eq_bigr => b _.
-rewrite [X in _ = _ + X]mulrA [X in _ = _ + X * _](_ : P.1 a * _ = Pj (b, a)); last first.
+rewrite [X in _ = _ + X]mulrA [X in _ = _ + X * _](_ : P.1 a * _ = Pj (b, a)).
   rewrite /jcPr Pr_set1 -/P1 mulrCA setX1 Pr_set1 {1}/Pj fdistX2 fdist_prod1.
   have [P2a0|P2a0] := eqVneq (P1 a) 0.
-    have Pba0 : Pj (b, a) = 0.
-      by rewrite /P fdistXE fdist_prodE P2a0 mul0r.
-    by rewrite Pba0 mul0r.
+    suff : Pj (b, a) = 0  by move=> ->; rewrite mul0r.
+    by rewrite /P fdistXE fdist_prodE P2a0 mul0r.
   by rewrite mulfV // ?mulr1.
 rewrite -mulrDr.
 have [->|H0] := eqVneq (Pj (b, a)) 0; first by rewrite !mul0r.
@@ -1244,7 +1238,7 @@ have P1a0 : P1 a != 0.
 have Qba0 := dominatesEN PQ H0.
 have Q2a0 : Q1 a != 0.
   apply: contra Qba0; rewrite /Q fdistXE fdist_prodE => /eqP ->; by rewrite mul0r.
-rewrite -logM; last 2 first.
+rewrite -logM.
   by rewrite divr_gt0// fdist_gt0.
   by rewrite divr_gt0// -Pr_jcPr_gt0 setX1 Pr_set1 fdist_gt0.
 congr (log _).
@@ -1297,7 +1291,7 @@ have -> : centropy PY = \sum_(j < n.+1)
   transitivity (`H YP - `H Y); first by rewrite /YP entropy_fdist_rV_of_prod.
   rewrite (chain_rule_rV YP).
   rewrite [in LHS]big_ord_recl /=.
-  rewrite (_ : `H (head_of_fdist_rV YP) = `H Y); last first.
+  rewrite (_ : `H (head_of_fdist_rV YP) = `H Y).
     by rewrite /YP /head_of_fdist_rV (fdist_prod_of_rVK (fdistX PY)) fdistX1.
   rewrite addrAC subrr add0r.
   apply: eq_bigr => j _.
@@ -1313,9 +1307,9 @@ have -> : centropy PY = \sum_(j < n.+1)
       have H1 : (n.+2 - bump 0 (bump 0 0) = n)%nat.
         by rewrite /bump !leq0n !add1n subn2.
       rewrite (big_cast_rV H1).
-      rewrite (eq_bigr (fun x => PY (x.1, x.2))); last by case.
+      rewrite (eq_bigr (fun x => PY (x.1, x.2))); first by case.
       rewrite -(pair_big (fun i : 'rV_n.+1 => i ``_ ord0 == a) (fun i => i == a1 ``_ ord0) (fun i1 i2 => PY (i1, i2))) /=.
-      rewrite [in RHS](eq_bigl (fun i : 'rV_n.+1 => (xpred1 a (i ``_ ord0)) && (xpredT i))); last first.
+      rewrite [in RHS](eq_bigl (fun i : 'rV_n.+1 => (xpred1 a (i ``_ ord0)) && (xpredT i))).
         move=> i; by rewrite andbT.
       rewrite -(big_rV_cons_behead (fun i => \sum_(j | j == a1 ``_ ord0) PY (i, j))
                                    (fun i => i == a) xpredT).
@@ -1332,29 +1326,29 @@ have -> : centropy PY = \sum_(j < n.+1)
           have @i1 : 'I_(bump 0 0).+1.
             apply: (@Ordinal _ i.+1); abstract: Hi1.
             by rewrite /bump leq0n add1n -i0.
-          rewrite (_ : cast_ord _ _ = lshift (n.+2 - bump 0 (bump 0 0)) i1); last exact/val_inj.
+          rewrite (_ : cast_ord _ _ = lshift (n.+2 - bump 0 (bump 0 0)) i1); first exact/val_inj.
           rewrite row_mxEl castmxE /= 2!cast_ord_id.
-          rewrite (_ : cast_ord _ _ = rshift 1 (Ordinal (ltn_ord ord0))); last first.
+          rewrite (_ : cast_ord _ _ = rshift 1 (Ordinal (ltn_ord ord0))).
             by apply: val_inj => /=; rewrite add1n -i0.
           rewrite row_mxEr mxE.
           set i2 : 'I_1 := Ordinal (ltn_ord ord0).
-          rewrite (_ : i = lshift n i2); last exact/val_inj.
+          rewrite (_ : i = lshift n i2); first exact/val_inj.
           by rewrite (@row_mxEl _ _ 1) mxE.
         move=> [:Hi1].
         have @i1 : 'I_(n.+2 - bump 0 (bump 0 0)).
           apply: (@Ordinal _ i.-1); abstract: Hi1.
           by rewrite /bump !leq0n !add1n subn2 prednK //= -ltnS.
-        rewrite (_ : cast_ord _ _ = rshift (bump 0 0).+1 i1); last first.
+        rewrite (_ : cast_ord _ _ = rshift (bump 0 0).+1 i1).
           by apply/val_inj => /=; rewrite /bump !leq0n !add1n add2n prednK.
         rewrite row_mxEr castmxE /= !cast_ord_id.
         have @i2 : 'I_n by apply: (@Ordinal _ i.-1); rewrite prednK // -ltnS.
-        rewrite (_ : i = rshift 1 i2); last first.
+        rewrite (_ : i = rshift 1 i2).
           by apply/val_inj => /=; rewrite add1n prednK.
         rewrite (@row_mxEr _ _ 1) //; congr (v _ _); exact/val_inj.
       rewrite castmxE /=.
-      rewrite (_ : cast_ord _ _ = lshift (n.+2 - bump 0 (bump 0 0)) (Ordinal (ltn_ord ord0))); last exact/val_inj.
+      rewrite (_ : cast_ord _ _ = lshift (n.+2 - bump 0 (bump 0 0)) (Ordinal (ltn_ord ord0))); first exact/val_inj.
       rewrite row_mxEl castmxE /= 2!cast_ord_id.
-      rewrite (_ : cast_ord _ _ = lshift 1 (Ordinal (ltn_ord ord0))); last exact/val_inj.
+      rewrite (_ : cast_ord _ _ = lshift 1 (Ordinal (ltn_ord ord0))); first exact/val_inj.
       rewrite row_mxEl /=; congr (a1 ``_ _); exact/val_inj.
     congr (_ * _).
       rewrite 2!fdist_sndE; apply: eq_bigr => a _; by rewrite H1.
@@ -1380,31 +1374,31 @@ have -> : centropy PY = \sum_(j < n.+1)
       rewrite /YP /fdistX /fdist_belast_last_of_rV /fdist_take /fdist_rV_of_prod.
       rewrite /fdistA /fdistC12 /fdist_prod_take !fdistmap_comp !fdistmapE /=.
       apply: eq_bigl => -[w b0]; rewrite /= !inE /=.
-      rewrite (_ : rlast _ = w ``_ j); last first.
+      rewrite (_ : rlast _ = w ``_ j).
         rewrite /rlast !mxE !castmxE /= cast_ord_id.
-        rewrite (_ : cast_ord _ _ = rshift 1%nat j); last exact/val_inj.
+        rewrite (_ : cast_ord _ _ = rshift 1%nat j); first exact/val_inj.
         by rewrite (@row_mxEr _ 1%nat 1%nat n.+1).
       rewrite !xpair_eqE; congr (_ && _).
       rewrite (_ : rbelast _ =
-        row_take (lift ord0 j) (rbelast (row_mx (\row_(k<1) b0) w))); last first.
+        row_take (lift ord0 j) (rbelast (row_mx (\row_(k<1) b0) w))).
         apply/rowP => i; rewrite !mxE !castmxE /= esymK !cast_ord_id.
         by rewrite /rbelast mxE; congr (row_mx _ _ _ _); exact: val_inj.
-      rewrite (_ : rbelast _ = row_mx (\row_(k<1) b0) (rbelast w)); last first.
+      rewrite (_ : rbelast _ = row_mx (\row_(k<1) b0) (rbelast w)).
         apply/rowP => i; rewrite mxE /rbelast.
         have [i0|i0] := eqVneq (i : nat) O.
-          rewrite (_ : widen_ord _ _ = ord0); last exact: val_inj.
-          rewrite (_ : i = ord0); last exact: val_inj.
+          rewrite (_ : widen_ord _ _ = ord0); first exact: val_inj.
+          rewrite (_ : i = ord0); first exact: val_inj.
           by rewrite 2!row_mx_row_ord0.
         have @k : 'I_n.+1.
           apply: (@Ordinal _ i.-1).
           by rewrite prednK // ?lt0n // -ltnS (leq_trans (ltn_ord i)).
-        rewrite (_ : widen_ord _ _ = rshift 1%nat k); last first.
+        rewrite (_ : widen_ord _ _ = rshift 1%nat k).
           by apply: val_inj => /=; rewrite -subn1 subnKC // lt0n.
         rewrite (@row_mxEr _ 1%nat 1%nat n.+1).
         have @k' : 'I_n.
           apply: (@Ordinal _ i.-1).
           by rewrite prednK // ?lt0n // -ltnS (leq_trans (ltn_ord i)).
-        rewrite (_ : i = rshift 1%nat k'); last first.
+        rewrite (_ : i = rshift 1%nat k').
           by apply: val_inj => /=; rewrite -subn1 subnKC // lt0n.
         rewrite (@row_mxEr _ 1%nat 1%nat n) mxE; congr (w ord0 _); exact: val_inj.
       apply/idP/idP; last first.
@@ -1412,19 +1406,19 @@ have -> : centropy PY = \sum_(j < n.+1)
         apply/eqP/rowP => k.
         rewrite !mxE !castmxE /= esymK !cast_ord_id.
         have [k0|k0] := eqVneq (nat_of_ord k) 0%N.
-          rewrite (_ : cast_ord _ _ = ord0); last exact: val_inj.
-          rewrite (_ : k = ord0); last exact: val_inj.
+          rewrite (_ : cast_ord _ _ = ord0); first exact: val_inj.
+          rewrite (_ : k = ord0); first exact: val_inj.
           by rewrite 2!row_mx_row_ord0.
         have @l : 'I_n.
           apply: (@Ordinal _ k.-1).
           by rewrite prednK // ?lt0n // -ltnS (leq_trans (ltn_ord k)).
-        rewrite (_ : cast_ord _ _ = rshift 1%nat l); last first.
+        rewrite (_ : cast_ord _ _ = rshift 1%nat l).
           by apply: val_inj => /=; rewrite add1n prednK // lt0n.
         rewrite (@row_mxEr _ 1%nat 1%nat n) //.
         have @l0 : 'I_(widen_ord (leqnSn n.+1) j).
           apply: (@Ordinal _ k.-1).
           by rewrite prednK // ?lt0n // -ltnS (leq_trans (ltn_ord k)).
-        rewrite (_ : k = rshift 1%nat l0); last first.
+        rewrite (_ : k = rshift 1%nat l0).
           by apply: val_inj => /=; rewrite add1n prednK // lt0n.
         rewrite (@row_mxEr _ 1%nat 1%nat) //.
         rewrite !mxE !castmxE /= cast_ord_id; congr (w _ _).
@@ -1432,7 +1426,7 @@ have -> : centropy PY = \sum_(j < n.+1)
       move/eqP/rowP => H.
       move: (H ord0).
       rewrite !mxE !castmxE /= 2!cast_ord_id esymK.
-      rewrite (_ : cast_ord _ _ = ord0); last exact: val_inj.
+      rewrite (_ : cast_ord _ _ = ord0); first exact: val_inj.
       rewrite 2!row_mx_row_ord0 => ->; rewrite eqxx andbT.
       apply/eqP/rowP => k.
       have @k1 : 'I_(bump 0 j).
@@ -1443,12 +1437,12 @@ have -> : centropy PY = \sum_(j < n.+1)
       have @k2 : 'I_n.
         apply: (@Ordinal _ k).
         by rewrite (leq_trans (ltn_ord k)) // -ltnS (leq_trans (ltn_ord j)).
-      rewrite (_ : cast_ord _ _ = rshift 1%nat k2); last first.
+      rewrite (_ : cast_ord _ _ = rshift 1%nat k2).
         by apply: val_inj => /=; rewrite add1n.
       rewrite (@row_mxEr _ 1%nat 1%nat) mxE.
-      rewrite (_ : cast_ord _ _ = widen_ord (leqnSn n) k2); last exact: val_inj.
+      rewrite (_ : cast_ord _ _ = widen_ord (leqnSn n) k2); first exact: val_inj.
       move=> ->.
-      rewrite (_ : k1 = rshift 1%nat k); last by apply: val_inj => /=; rewrite add1n.
+      rewrite (_ : k1 = rshift 1%nat k); first by apply: val_inj => /=; rewrite add1n.
       by rewrite row_mxEr.
     apply: eq_bigr => -[v b] _ /=.
     rewrite 2!fdist_sndE; congr (_ * _).
@@ -1472,7 +1466,7 @@ case: ifPn => j0.
     by rewrite /fAC /f fdist_proj13_AC fdistC12_fst belast_last_take.
   + rewrite /fAC /f /fdistAC fdistC12I /centropy /=.
     rewrite (eq_bigr (fun a => (fdistA (fdistC12 (fdist_prod_take PY j)))`2 (a.1, a.2) *
-       centropy1 (fdistA (fdistC12 (fdist_prod_take PY j))) (a.1, a.2))); last by case.
+       centropy1 (fdistA (fdistC12 (fdist_prod_take PY j))) (a.1, a.2))); first by case.
     rewrite -(pair_bigA _ (fun a1 a2 => (fdistA (fdistC12 (fdist_prod_take PY j)))`2 (a1, a2) *
        centropy1 (fdistA (fdistC12 (fdist_prod_take PY j))) (a1, a2))) /=.
     rewrite exchange_big pair_bigA /=; apply: eq_bigr => -[b v] _ /=.
@@ -1517,8 +1511,8 @@ Lemma mi_bound : PQR`1 = P `x Q (* P and Q independent *) ->
   mutual_info (fdist_proj23 PQR) <= mutual_info PQR.
 Proof.
 move=> PQ; rewrite chain_rule_mutual_info lerD2l /cond_mutual_info.
-rewrite [X in _ <= X - _](_ : _ = `H Q); last first.
-  rewrite centropy_indep; last first.
+rewrite [X in _ <= X - _](_ : _ = `H Q).
+  rewrite centropy_indep.
     rewrite fdist_proj13_fst fdistA1 fdistX1 fdistA21 -/Q.
     rewrite fdist_proj13_snd fdistX2 -/P.
     rewrite -[RHS]fdistXI fdistX_prod -PQ.
@@ -1562,7 +1556,7 @@ Lemma independence_bound_on_entropy : `H P <= \sum_(i < n.+1) `H (fdist_nth P i)
 Proof.
 rewrite chain_rule_rV; apply: ler_sum => /= i _.
 case: ifPn => [/eqP|] i0.
-  rewrite (_ : i = ord0); last exact/val_inj.
+  rewrite (_ : i = ord0); first exact/val_inj.
   by rewrite head_of_fdist_rV_fdist_nth lexx.
 by rewrite (le_trans (le_centropy _))// fdistX1 fdist_take_nth lexx.
 Qed.
@@ -1590,8 +1584,8 @@ Proof.
 rewrite /markov_chain => mc.
 rewrite cond_mutual_infoE (eq_bigr (fun=> 0)) ?big1// => x _.
 have [->|H0] := eqVneq (PRQ x) 0; first by rewrite mul0r.
-rewrite (_ : _ / _ = 1); first by rewrite log1 mulr0.
-rewrite eqr_divrMr ?mul1r; last first.
+rewrite (_ : _ / _ = 1); last by rewrite log1 mulr0.
+rewrite eqr_divrMr ?mul1r.
   rewrite mulf_neq0//.
     (* TODO: lemma? *)
     rewrite /jcPr mulf_neq0 (* TODO: lemma divf_neq0 *) //.
@@ -1617,7 +1611,7 @@ transitivity (Pr PQ [set (x.1.1,x.2)] * \Pr_RQ[[set x.1.2]|[set x.2]] / Pr Q [se
   congr (_ / _).
   case: x H0 => [[a c] b] H0 /=.
   rewrite /PRQ [LHS]Pr_set1 fdistACE /= mc; congr (_ * _).
-  rewrite /jcPr {2}/QP fdistX2 -/P Pr_set1 mulrCA mulfV ?mulr1; last first.
+  rewrite /jcPr {2}/QP fdistX2 -/P Pr_set1 mulrCA mulfV ?mulr1.
     move/dom_by_fdist_fstN/dom_by_fdist_fstN: H0.
     by rewrite /PRQ fdistAC_fst_fst.
   by rewrite /QP Pr_fdistX setX1.
@@ -1713,14 +1707,14 @@ have H2 : centropy (fdistA (fdistAC Q)) = centropy (fdist_prod_of_rV P).
   rewrite -centropy_fdistA /centropy /=.
   rewrite (partition_big (@row_take A _ i) xpredT) //=.
   rewrite (eq_bigr (fun a => (fdistA Q)`2 (a.1, a.2) *
-           centropy1 (fdistA Q) (a.1, a.2))%R); last by case.
+           centropy1 (fdistA Q) (a.1, a.2))%R); first by case.
   rewrite -(pair_bigA _ (fun a1 a2 => (fdistA Q)`2 (a1, a2) *
            centropy1 (fdistA Q) (a1, a2))%R) /=.
   apply: eq_bigr => v _.
 (* TODO: lemma *)
   rewrite (@reindex_onto _ _ _ 'rV[A]_n' 'rV[A]_(n' - i)
     (fun w => (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w)))
-    (@row_drop A _ i)) /=; last first.
+    (@row_drop A _ i)) /=.
     move=> w wv; apply/rowP => j.
     rewrite castmxE /= cast_ord_id /row_drop mxE; case: splitP => [j0 /= jj0|k /= jik].
     - rewrite -(eqP wv) mxE castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
@@ -1742,7 +1736,7 @@ have H2 : centropy (fdistA (fdistAC Q)) = centropy (fdist_prod_of_rV P).
       congr (_ / _)%R.
       rewrite !fdist_sndE; apply: eq_bigr => a0 _.
       by rewrite fdistAE fdist_take_dropE fdist_prod_of_rVE.
-rewrite (_ : _ - _ = cond_mutual_info (fdistAC Q))%R; last by rewrite /cond_mutual_info H1 H2.
+rewrite (_ : _ - _ = cond_mutual_info (fdistAC Q))%R; first by rewrite /cond_mutual_info H1 H2.
 exact/cond_mutual_info_ge0.
 Qed.
 
@@ -1752,27 +1746,27 @@ Lemma han_helper (R : realType) (A : finType) (n' : nat) (n := n'.+1 : nat)
   centropy (fdistX (fdist_belast_last_of_rV (fdist_take P (lift ord0 i)))).
 Proof.
 rewrite (_ : fdistX _ = fdist_prod_of_rV (fdist_perm
-    (fdist_take P (lift ord0 i)) (put_front_perm (inord i)))); last first.
+    (fdist_take P (lift ord0 i)) (put_front_perm (inord i)))).
   apply/fdist_ext => /= -[a v].
   rewrite fdistXE fdist_belast_last_of_rVE fdist_prod_of_rVE /= fdist_permE.
   rewrite !(fdist_takeE _ (lift ord0 i)); apply: eq_bigr => /= w _; congr (P _); apply/rowP => k.
   rewrite !castmxE /= cast_ord_id.
   have [ki|ki] := ltnP k i.+1.
     have @k1 : 'I_i.+1 := Ordinal ki.
-    rewrite (_ : cast_ord _ k = lshift (n - bump 0 i) k1); last exact/val_inj.
+    rewrite (_ : cast_ord _ k = lshift (n - bump 0 i) k1); first exact/val_inj.
     rewrite 2!row_mxEl castmxE /= cast_ord_id [in RHS]mxE.
     have [ki'|] := ltnP k i.
-      rewrite (_ : cast_ord _ _ = lshift 1%nat (Ordinal ki')) /=; last exact/val_inj.
-      rewrite row_mxEl /put_front_perm permE /put_front ifF; last first.
+      rewrite (_ : cast_ord _ _ = lshift 1%nat (Ordinal ki')) /=; first exact/val_inj.
+      rewrite row_mxEl /put_front_perm permE /put_front ifF.
         apply/negbTE/eqP => /(congr1 val) /=.
         by rewrite inordK // => /eqP; rewrite ltn_eqF.
-      rewrite inordK //= ki' (_ : inord k.+1 = rshift 1%nat (Ordinal ki')); last first.
+      rewrite inordK //= ki' (_ : inord k.+1 = rshift 1%nat (Ordinal ki')).
         by apply/val_inj => /=; rewrite inordK.
       by rewrite (@row_mxEr _ 1%nat 1%nat).
     rewrite permE /put_front leq_eqVlt => /orP[|] ik.
-      rewrite ifT; last first.
+      rewrite ifT.
         apply/eqP/val_inj => /=; rewrite inordK //; exact/esym/eqP.
-      rewrite row_mx_row_ord0 (_ : cast_ord _ _ = rshift i ord0); last first.
+      rewrite row_mx_row_ord0 (_ : cast_ord _ _ = rshift i ord0).
         by apply: val_inj => /=; rewrite addn0; apply/esym/eqP.
       by rewrite row_mxEr mxE.
     by move: (leq_ltn_trans ik ki); rewrite ltnn.
@@ -1781,23 +1775,23 @@ rewrite (_ : fdistX _ = fdist_prod_of_rV (fdist_perm
     apply: (@Ordinal _ (k - i.+1)).
     abstract: Hk1.
     by rewrite /bump leq0n add1n ltn_sub2r // (leq_ltn_trans _ (ltn_ord k)).
-  rewrite (_ : cast_ord _ _ = rshift i.+1 k1); last by apply: val_inj => /=; rewrite subnKC.
+  rewrite (_ : cast_ord _ _ = rshift i.+1 k1); first by apply: val_inj => /=; rewrite subnKC.
   by rewrite 2!row_mxEr.
 rewrite (_ : fdist_perm (fdist_take _ _) _ =
-  fdist_take (fdist_perm P (put_front_perm i)) (lift ord0 i)); last first.
+  fdist_take (fdist_perm P (put_front_perm i)) (lift ord0 i)).
   apply/fdist_ext => /= w.
   rewrite fdist_permE 2!(fdist_takeE _ (lift ord0 i)); apply: eq_bigr => /= v _.
   rewrite fdist_permE; congr (P _); apply/rowP => /= k.
   rewrite /col_perm mxE !castmxE /= !cast_ord_id /=.
   have [ki|ki] := ltnP k (bump 0 i).
-    rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal ki)); last exact/val_inj.
+    rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal ki)); first exact/val_inj.
     rewrite row_mxEl mxE /put_front_perm !permE /= /put_front /=.
     have [ik|ik] := eqVneq k i.
-      rewrite ifT; last first.
+      rewrite ifT.
         by apply/eqP/val_inj => //=; rewrite ik inordK.
-      rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) ord0); last exact/val_inj.
+      rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) ord0); first exact/val_inj.
       by rewrite row_mxEl.
-    rewrite ifF; last first.
+    rewrite ifF.
       apply/negbTE/eqP => /(congr1 val) /=.
       by apply/eqP;rewrite inordK.
     have [{}ik|{}ik] := ltnP k i.
@@ -1807,15 +1801,15 @@ rewrite (_ : fdist_perm (fdist_take _ _) _ =
         apply: (@Ordinal _ k.+1).
         abstract: Hk1.
         by rewrite /bump leq0n add1n.
-      rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) k1); last first.
+      rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) k1).
         apply/val_inj => /=; rewrite inordK // ltnS.
         by rewrite (leq_trans ik) // -ltnS.
       rewrite row_mxEl; congr (w _ _).
       by apply: val_inj => /=; rewrite inordK.
-    rewrite ifF; last first.
+    rewrite ifF.
       apply/negbTE.
       by rewrite -leqNgt -ltnS inordK.
-    rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal ki)); last exact/val_inj.
+    rewrite (_ : cast_ord _ _ = lshift (n - bump 0 i) (Ordinal ki)); first exact/val_inj.
     by rewrite row_mxEl.
   rewrite /bump leq0n add1n in ki.
   move=> [:Hk1].
@@ -1823,8 +1817,8 @@ rewrite (_ : fdist_perm (fdist_take _ _) _ =
     apply: (@Ordinal _ (k - i.+1)).
     abstract: Hk1.
     by rewrite /bump leq0n add1n ltn_sub2r // (leq_trans _ (ltn_ord k)).
-  rewrite (_ : cast_ord _ _ = rshift i.+1 k1); last by apply/val_inj => /=; rewrite subnKC.
-  rewrite row_mxEr permE /put_front /= ifF; last first.
+  rewrite (_ : cast_ord _ _ = rshift i.+1 k1); first by apply/val_inj => /=; rewrite subnKC.
+  rewrite row_mxEr permE /put_front /= ifF.
      by move: ki; rewrite ltnNge; apply: contraNF => /eqP ->.
   rewrite ltnNge (ltnW ki) /=.
   move=> [:Hk2].
@@ -1832,7 +1826,7 @@ rewrite (_ : fdist_perm (fdist_take _ _) _ =
     apply: (@Ordinal _ (k - i.+1)).
     abstract: Hk2.
     by rewrite /bump leq0n add1n ltn_sub2r // (leq_trans _ (ltn_ord k)).
-  rewrite (_ : cast_ord _ _ = rshift (bump 0 i) k2); last first.
+  rewrite (_ : cast_ord _ _ = rshift (bump 0 i) k2).
     by apply/val_inj => /=; rewrite /bump leq0n add1n subnKC.
   rewrite row_mxEr; congr (v _ _); exact/val_inj.
 exact/information_cant_hurt_cond.
@@ -1851,7 +1845,7 @@ rewrite -big_split /= -{1}(card_ord n) -sum1_card.
 rewrite natr_sum big_distrl /=.
 apply: ler_sum => i _; rewrite mul1r.
 case: ifPn => [/eqP|] i0.
-  rewrite (_ : i = ord0); last exact/val_inj.
+  rewrite (_ : i = ord0); first exact/val_inj.
   rewrite -tail_of_fdist_rV_fdist_col' /tail_of_fdist_rV /head_of_fdist_rV.
   rewrite -{1}(fdist_rV_of_prodK P) entropy_fdist_rV_of_prod.
   move: (chain_rule (fdist_prod_of_rV P)); rewrite /joint_entropy => ->.

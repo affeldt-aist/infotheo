@@ -1,13 +1,14 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg perm matrix interval.
+From mathcomp Require Import boot order ssralg perm matrix interval.
+From mathcomp Require Import ring_tactic arithmetic_tactic field_tactic.
+From mathcomp Require Import ssrnum archimedean ereal interval_inference.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
-From mathcomp Require Import mathcomp_extra boolp classical_sets.
-From mathcomp Require Import ssrnum archimedean ereal interval_inference.
+From mathcomp Require Import boolp classical_sets.
+From mathcomp Require Import reals.
 From mathcomp Require Import realfun.
-From mathcomp Require Import ring lra reals.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist.
 From mathcomp Require vector.
 From mathcomp.analysis Require Import (canonicals)convex.
@@ -100,7 +101,7 @@ From mathcomp.analysis Require Import (canonicals)convex.
 (*       Conv_IsHomo == mixin for the monotonicity law:                       *)
 (*                      le_convl : a <= a' -> a <|p|> b <= a' <|p|> b         *)
 (*                      NB: le_convr : b <= b' -> a <|p|> b <= a' <|p|> b is  *)
-(*                          derived from le_convl                             *) 
+(*                          derived from le_convl                             *)
 (*  porderedConvType == porderConvType with Conv_IsHomo                       *)
 (* ```                                                                        *)
 (* Instances: R, T -> U, U^d (for T : convType and U : porder(ed)ConvType)    *)
@@ -170,7 +171,6 @@ Reserved Notation "p *: a" (at level 40).
 Declare Scope convex_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -239,14 +239,14 @@ case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
   rewrite fdist1E; case j0 : (_ == _) => /=.
     by move=> _; rewrite (eqP j0).
   by move/eqP; rewrite eq_sym oner_eq0.
-rewrite (_ : probfdist _ _ = 0%:i01) ?conv0; last first.
+rewrite (_ : probfdist _ _ = 0%:i01) ?conv0.
   apply: val_inj => /=; move: b01; rewrite !fdist1E => j0.
   by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
 have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
 have j0' : (0 < j)%N by rewrite lt0n; apply: contra j0 => /eqP j0; apply/eqP/val_inj.
 move=> [:H]; have @j' : 'I_n.
   by apply: (@Ordinal _ j.-1 _); abstract: H; rewrite prednK // -ltnS.
-rewrite (_ : fdist_del b01 = fdist1 j'); last first.
+rewrite (_ : fdist_del b01 = fdist1 j').
   apply/fdist_ext => /= k.
   rewrite fdist_delE fdistD1E /= !fdist1E /= (negbTE j0) subr0 divr1.
   congr (GRing.natmul _ (nat_of_bool _)).
@@ -647,7 +647,7 @@ rewrite le_eqVlt => /predU1P[<-|p0].
   by rewrite mul0r !scale0pt.
 rewrite le_eqVlt => /predU1P[<-|q0].
   by rewrite mulr0 scale0pt scalept0.
-case: x => [r x|]; rewrite ?scalept0 // !scalept_gt0; first exact: mulr_gt0.
+case: x => [r x|]; rewrite ?scalept0 // !scalept_gt0; last exact: mulr_gt0.
 by move=> Hpq; congr (_ *: _); apply: val_inj => /=; rewrite mulrA.
 Qed.
 
@@ -662,7 +662,7 @@ rewrite le_eqVlt => /predU1P[<-|p0].
 rewrite le_eqVlt => /predU1P[<-|q0].
   by rewrite scale0pt addr0 addpt0.
 case: x => [r c|]; last by rewrite !scalept0.
-rewrite !scalept_gt0 => [|pq0 /=]; first by apply: addr_gt0.
+rewrite !scalept_gt0 => [pq0 /=|]; last by apply: addr_gt0.
 by rewrite convmm; congr (_ *: _); apply: val_inj; rewrite /= mulrDl.
 Qed.
 
@@ -772,7 +772,7 @@ have : 0 <= p%:num by []; rewrite le_eqVlt => /predU1P[p0|p0].
   by rewrite (_ : p = 0%:i01) ?conv0 //; exact/val_inj.
 have : p%:num <= 1 by []; rewrite le_eqVlt => /predU1P[p1|p1].
   by rewrite (_ : p = 1%:i01) ?conv1 //; exact/val_inj.
-rewrite convptE (scalept_gt0 _ _ p0) (@scalept_gt0 p%:num.~).
+rewrite convptE (scalept_gt0 _ _ p0) (@scalept_gt0 p%:num.~); last first.
   exact/onem_gt0.
 move=> mp0/=; congr (_ *: _)%scaled => /=.
   by apply/val_inj => /=; rewrite !mulr1 add_onemK.
@@ -798,7 +798,7 @@ Lemma convA0 (p q r s : {prob R}) a b c :
 Proof.
 move=> H1 H2.
 have [r0|r0] := eqVneq r 0%:i01.
-  rewrite r0 conv0 (_ : p = 0%:i01) ?conv0; last first.
+  rewrite r0 conv0 (_ : p = 0%:i01) ?conv0.
     by apply/val_inj; rewrite /= H1 r0 mul0r.
   congr (_ <| _ |> _); move: H2; rewrite H1 r0 mul0r onem0 mul1r.
   by move/(congr1 (@onem R)); rewrite !onemK => ?; exact/val_inj.
@@ -891,7 +891,7 @@ Proof.
 elim: n g d => [|n IH] g d.
   by move: (FDist.f1 d); rewrite /= big_ord0 => /esym/eqP; rewrite oner_eq0.
 rewrite /=; case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb]Hd.
-  rewrite (bigD1 ord0) //= Hd big1 /=.
+  rewrite (bigD1 ord0) //= Hd big1 /=; last first.
     rewrite addpt0 (@scalept_gt0 _ _ 1).
     by congr (_ *: _); apply: val_inj; rewrite /= mulr1.
   move=> i Hi; have := FDist.f1 d.
@@ -902,7 +902,7 @@ rewrite /=; case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb]Hd.
 set d' := fdist_del Hd.
 set g' := fun i => g (fdist_del_idx ord0 i).
 rewrite /index_enum -enumT (bigD1_seq ord0) ?enum_uniq ?mem_enum //=.
-rewrite -big_filter (perm_big (map (lift ord0) (enum 'I_n))); last first.
+rewrite -big_filter (perm_big (map (lift ord0) (enum 'I_n))).
   exact: perm_filter_enum_ord.
 rewrite 2!affine_conv/=; congr addpt.
 rewrite IH -barycenter_map scalept_barycenter //.
@@ -971,7 +971,7 @@ Lemma Convn_proj n (g : 'I_n -> T) (d : {fdist 'I_n}) i :
 Proof.
 move=> Hd; apply: (S1_inj R).
 rewrite [LHS]S1_Convn (bigD1 i)//=.
-rewrite big1; first by rewrite addpt0 Hd scale1pt.
+rewrite big1; last by rewrite addpt0 Hd scale1pt.
 move=> j Hj.
 by move/eqP/fdist1P: Hd => -> //; rewrite scale0pt.
 Qed.
@@ -1043,14 +1043,14 @@ case: Bool.bool_dec => [/eqP|/Bool.eq_true_not_negb b01].
   rewrite fdist1E; case j0 : (_ == _) => /=.
     by move=> _; rewrite (eqP j0).
   by move/eqP; rewrite eq_sym oner_eq0.
-rewrite (_ : probfdist _ _ = 0%:i01) ?conv0; last first.
+rewrite (_ : probfdist _ _ = 0%:i01) ?conv0.
   apply: val_inj => /=; move: b01; rewrite !fdist1E => j0.
   by case j0' : (_ == _) => //; rewrite j0' eqxx in j0.
 have j0 : ord0 != j by apply: contra b01 => /eqP <-; rewrite fdist1xx.
 have j0' : (0 < j)%N by  move: j0; rewrite lt0n -(inj_eq val_inj)/= eq_sym.
 move=> [:H]; have @j' : 'I_n.
   by apply: (@Ordinal _ j.-1 _); abstract: H; rewrite prednK // -ltnS.
-rewrite (_ : fdist_del b01 = fdist1 j'); last first.
+rewrite (_ : fdist_del b01 = fdist1 j').
   apply/fdist_ext => /= k.
   rewrite fdist_delE fdistD1E /= !fdist1E /= (negbTE j0) subr0 divr1.
   congr (GRing.natmul _ (nat_of_bool _)).
@@ -1135,9 +1135,9 @@ Lemma Convn_idem (a : T) (n : nat) (d : {fdist 'I_n}) (g : 'I_n -> T) :
 Proof.
 move=> Hg; apply: (S1_inj R).
 rewrite S1_Convn (eq_bigr (fun i => scalept (d i) (S1 a))).
-  by rewrite -S1_Convn Convn_cst.
-move=> /= i _.
-by have [-> //|/Hg ->//] := eqVneq (d i) 0; rewrite !scale0pt.
+  move=> /= i _.
+  by have [-> //|/Hg ->//] := eqVneq (d i) 0; rewrite !scale0pt.
+by rewrite -S1_Convn Convn_cst.
 Qed.
 
 Lemma Convn_weak n m (u : 'I_m -> 'I_n) (d : {fdist 'I_m}) (g : 'I_n -> T) :
@@ -1346,8 +1346,8 @@ apply/idP/idP => H; apply/asboolP.
   elim => [g d|n IH g d]; first by move: (fdistI0_False d).
   case: n => [|n] in IH g d * => gX.
     rewrite {IH} (@Convn_proj _ _ _ _ _ ord0) //.
-      exact/gX/classical_sets.imageP.
-    by apply/eqP; rewrite fdist1E1 (fdist1I1 d).
+      by apply/eqP; rewrite fdist1E1 (fdist1I1 d).
+    exact/gX/classical_sets.imageP.
   have [d01|d01] := eqVneq (d ord0) 1.
     suff -> : <|>_d g = g ord0 by apply: gX; exists ord0.
     by rewrite (@Convn_proj _ _ _ _ _ ord0).
@@ -1363,9 +1363,9 @@ have [->|p1] := eqVneq p 1%:i01; first by rewrite conv1.
 set g : 'I_2 -> T := fun i => if i == ord0 then x else y.
 have gX : range g `<=` X by move=> a -[i _ <-]; rewrite /g; case: ifPn.
 move/asboolP : H => /(_ _ g (fdistI2 p) gX).
-rewrite ConvnIE; first by rewrite fdistI2E eqxx.
+rewrite ConvnIE; last by rewrite fdistI2E eqxx.
 move=> p1'.
-rewrite {1}/g eqxx (_ : probfdist _ _ = p); last first.
+rewrite {1}/g eqxx (_ : probfdist _ _ = p).
   by apply: val_inj; rewrite /= fdistI2E eqxx.
 by rewrite (_ : <|>_ _ _ = y) // (_ : (fun _ => _) = (fun=> y)) ?ConvnI1E.
 Qed.
@@ -1856,7 +1856,7 @@ exists k; split; last first.
   exists (Ordinal ilt'); rewrite /k; case: splitP.
     by case=> j ji/= <-; rewrite eqxx; exact/oner_neq0.
   by case=> j jni/= /eqP; rewrite lt_eqF// ltEnat/= addSn ltnS leq_addr.
-rewrite big_split_ord big_ord_recr/= big1 ?add0r; last first.
+rewrite big_split_ord big_ord_recr/= big1 ?add0r.
   case=> j ji _; rewrite /k; case: splitP.
     by case=> m mi /= jm; rewrite -jm lt_eqF ?ltEnat// !scale0r.
   by case=> m mni /= jim; move: ji; rewrite jim addSnnS -ltn_subRL subnn.
@@ -1934,11 +1934,11 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
      by move=>y [i _ <-]; apply: gA; eexists.
    move=>/(_ gA' (fun i => mu (f' i))).
    have mu'R : \sum_(i0 < n.+1) mu (f' i0) = 0.
-     rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [| exact: nil ].
+     rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [exact: nil|].
      by rewrite big_map -[in RHS]muR; apply: congr_big=>// [[j jlt]] _; congr mu; apply: fcan'.
    move=>/(_ mu'R).
    have mu'E: \sum_(i0 < n.+1) mu (f' i0) *: g (f' i0) = 0.
-      rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [| exact: nil ].
+      rewrite (perm_big _ (perm_map_bij _ fbij)) /=; [exact: nil|].
       rewrite big_map -[in RHS]muE; apply: congr_big=>// j _.
       by congr (mu _ *: g _); exact/fcan'.
    move=>/(_ mu'E (f' im)).
@@ -1948,7 +1948,7 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
      0 < mu (f' j) ->
      fdistmap f' d (f' im) / mu (f' (f' im)) <= fdistmap f' d j / mu (f' j).
      move=> /muim.
-     rewrite fcan' fdistmapE (big_pred1 im) /=; last first.
+     rewrite fcan' fdistmapE (big_pred1 im) /=.
        move=> i; apply/idP/idP; rewrite !inE; last by move=> /eqP ->.
        by move=> /eqP /(bij_inj fbij) /eqP.
      rewrite fdistmapE (big_pred1 (f' j)) //.
@@ -1959,7 +1959,7 @@ wlog: g d gA mu muR muE im muip muim / (im == ord0)%N.
    move=>/(_ im0) [n' [g' [d' [n'le g'A e]]]].
    exists n', g', d'; split=>//; rewrite -e.
    rewrite 2!avgnrE /avgnr.
-   rewrite (perm_big _ (perm_map_bij _ fbij)); [| exact: nil ].
+   rewrite (perm_big _ (perm_map_bij _ fbij)); [exact: nil|].
    rewrite big_map; apply: congr_big=>// j _.
    rewrite fdistmapE (big_pred1 (f' j))=>// k /=.
    by rewrite unfold_in=>/=; apply/eqP/eqP=>e'; apply: (bij_inj fbij); rewrite fcan'.
@@ -2217,7 +2217,7 @@ Lemma scalept_conv (T : convType R) (x y : R^o) (s : scaled T) (p : {prob R}):
   0 <= x -> 0 <= y ->
   scalept (x <|p|> y) s = scalept x s <|p|> scalept y s.
 Proof.
-move=> x0 y0; rewrite scaleptDl; [|exact/mulr_ge0|exact/mulr_ge0].
+move=> x0 y0; rewrite scaleptDl; [exact/mulr_ge0|exact/mulr_ge0|].
 by rewrite convptE !scaleptA.
 Qed.
 
@@ -2283,8 +2283,8 @@ Lemma d_enum0 : forall b, 0 <= d_enum b. Proof. by move=> ?; rewrite ffunE. Qed.
 
 Lemma d_enum1 : \sum_(b in 'I_n) d_enum b = 1.
 Proof.
-rewrite -(@FDist.f1 R T d') (eq_bigr (d' \o enum)); last by move=> i _; rewrite ffunE.
-rewrite (@reindex _ _ _ _ _ enum_rank) //; last first.
+rewrite -(@FDist.f1 R T d') (eq_bigr (d' \o enum)); first by move=> i _; rewrite ffunE.
+rewrite (@reindex _ _ _ _ _ enum_rank) //.
   by exists enum_val => i; [rewrite enum_rankK | rewrite enum_valK].
 apply: eq_bigr => i _; congr (d' _); by rewrite -[in RHS](enum_rankK i).
 Qed.
@@ -2307,7 +2307,7 @@ Variables (A : convType R) (T : finType) (d : R.-fdist T) (f : T -> A).
 Lemma S1_Convn_finType : S1 (<$>_d f) = \ssum_i scalept (d i) (S1 (f i)).
 Proof.
 rewrite /Convn_finType.Convn_finType S1_Convn /=.
-rewrite (reindex_onto enum_rank enum_val) /=; last by move=> i _; rewrite enum_valK.
+rewrite (reindex_onto enum_rank enum_val) /=; first by move=> i _; rewrite enum_valK.
 apply: eq_big => /=; first by move=> i; rewrite enum_rankK eqxx.
 move=> i _; rewrite /Convn_finType.d_enum ffunE.
 by rewrite enum_rankK.
@@ -2586,7 +2586,7 @@ move=> /(_ (probinvn 1)).
 rewrite /probinvn /= 3!avgRE /=.
 set a := (1 + 1)%:R^-1.
 rewrite !(mul1r,mulr1,mulrN1) -opprD add_onemK.
-rewrite (_ : - a + a.~ = 0); last first.
+rewrite (_ : - a + a.~ = 0).
   by rewrite /a /onem addrCA -opprD -div1r -splitr subrr.
 by rewrite mul0r lerNr oppr0 leNgt ltr01.
 Qed.
@@ -2704,7 +2704,7 @@ Lemma R_concave_functionB (f g : T -> R^o) :
   concave_function (fun x => f x - g x).
 Proof.
 move=> Hf Hg.
-rewrite (_ : (fun _ => _) = (fun x => - (g x - f x))); last first.
+rewrite (_ : (fun _ => _) = (fun x => - (g x - f x))).
   by apply/funext => x; rewrite opprB.
 exact/R_concave_functionN/R_convex_functionB.
 Qed.
@@ -2972,7 +2972,7 @@ Lemma concave_function_atN f x y t : concave_function_at f x y t ->
 Proof.
 move=> H k k0; rewrite /concave_function_at /convex_function_at.
 rewrite leEdual avgRE.
-rewrite /= -avgR_mulDl.
+rewrite /= -[leLHS]avgR_mulDl.
 exact: ler_wpM2r.
 Qed.
 
@@ -3044,7 +3044,7 @@ Lemma LE x : L x = (b - x) / (b - a) * f a + (x - a) / (b - a) * f b.
 Proof.
 rewrite /L mulrBr [in LHS]addrA addrAC; congr (_ + _).
 rewrite -{1}(mul1r (f a)) -mulrBl; congr (_ * _).
-rewrite -(@mulfV _ (b - a)); last first.
+rewrite -(@mulfV _ (b - a)).
   by rewrite subr_eq0 gt_eqF//.
 by rewrite -mulrBl opprB addrA subrK.
 Qed.
@@ -3091,7 +3091,7 @@ case/andP: axb.
   by rewrite /L subrr mul0r mul0r addr0 subrr.
 move=> ax.
 rewrite le_eqVlt => -/predU1P[->|xb].
-  rewrite /L mulfV ?mul1r; last by rewrite subr_eq0 gt_eqF.
+  rewrite /L mulfV ?mul1r; first by rewrite subr_eq0 gt_eqF.
   by rewrite addrCA subrr addr0 subrr.
 have {step1}step2 : L x - f x =
   (x - a) * (b - x) / (b - a) * ((f b - f x) / (b - x)) -
@@ -3249,7 +3249,7 @@ Lemma magnified_prob_proof :
 Proof.
 have pr' := negbT (lt_eqF pr).
 have[|qnep]:= eqVneq q p.
-  by move/(congr1 \val) /magnified_weight_eq1 ->; first exact/andP.
+  by move/(congr1 \val) /magnified_weight_eq1 ->; last exact/andP.
 have[|qner]:= eqVneq q r.
   by move/(congr1 \val) /magnified_weight_eq0 ->; exact/andP.
 case/andP: pqr => pq qr.

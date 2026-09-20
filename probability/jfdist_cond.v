@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix.
-From mathcomp Require boolp.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum matrix.
+From mathcomp Require unstable boolp.
 From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba.
@@ -40,7 +40,6 @@ Reserved Notation "\Pr_[ A | B ]" (at level 6, A, B at next level,
 Reserved Notation "P `(| a ')'" (at level 6, a at next level, format "P `(| a )").
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -111,7 +110,7 @@ Hypothesis cov : cover (F @: I) = [set: B].
 Lemma jtotal_prob_cond : Pr P`1 E = \sum_(i in I) \Pr_[E | F i] * Pr P`2 (F i).
 Proof.
 rewrite -Pr_XsetT -EsetT.
-rewrite (@total_prob_cond _ _ _ _ _ (fun i => T`* F i)); last 2 first.
+rewrite (@total_prob_cond _ _ _ _ _ (fun i => T`* F i)).
   - move=> i j ij; rewrite -setI_eq0 !setTE setIX setTI.
     by move: (dis ij); rewrite -setI_eq0 => /eqP ->; rewrite setX0.
   - (* TODO: lemma? *) apply/setP => -[a b]; rewrite inE /cover.
@@ -247,7 +246,7 @@ Lemma jproduct_rule E F : Pr P (E `* F) = \Pr_P[E | F] * Pr (P`2) F.
 Proof.
 have [/eqP PF0|PF0] := boolP (Pr (P`2) F == 0).
   rewrite jcPrE /cPr -{1}(setIT E) -{1}(setIT F) -setIX.
-  rewrite [LHS]Pr_domin_setI; last by rewrite -Pr_fdistX fst_Pr_domin_setX // fdistX1.
+  rewrite [LHS]Pr_domin_setI; first by rewrite -Pr_fdistX fst_Pr_domin_setX // fdistX1.
   by rewrite setIC Pr_domin_setI ?mul0r // setTE Pr_setTX.
 rewrite -{1}(setIT E) -{1}(setIT F) -setIX product_rule.
 rewrite -EsetT setTT cPrET Pr_setT mulr1 jcPrE.
@@ -264,7 +263,7 @@ Lemma jcPr_fdistmap_r {R : realType} (A B B' : finType) (f : B -> B') (d : R.-fd
   \Pr_d [E | F] = \Pr_(fdistmap (fun x => (x.1, f x.2)) d) [E | f @: F].
 Proof.
 move=> injf; rewrite /jcPr; congr (_ / _).
-- rewrite (@Pr_fdistmap _ _ _ (fun x => (x.1, f x.2))) /=; last first.
+- rewrite (@Pr_fdistmap _ _ _ (fun x => (x.1, f x.2))) /=.
     by move=> [? ?] [? ?] /= [-> /injf ->].
   congr (Pr _ _); apply/setP => -[a b]; rewrite !inE /=.
   apply/imsetP/andP.
@@ -280,7 +279,7 @@ Lemma jcPr_fdistmap_l {R : realType} (A A' B : finType) (f : A -> A') (d : R.-fd
   \Pr_d [E | F] = \Pr_(fdistmap (fun x => (f x.1, x.2)) d) [f @: E | F].
 Proof.
 move=> injf; rewrite /jcPr; congr (_ / _).
-- rewrite (@Pr_fdistmap _ _ _ (fun x => (f x.1, x.2))) /=; last first.
+- rewrite (@Pr_fdistmap _ _ _ (fun x => (f x.1, x.2))) /=.
     by move=> [? ?] [? ?] /= [/injf -> ->].
   congr (Pr _ _); apply/setP => -[a b]; rewrite !inE /=.
   apply/imsetP/andP.
@@ -294,10 +293,10 @@ Arguments jcPr_fdistmap_l {R} [A] [A'] [B] [f] [d] [E] [F] _.
 Lemma Pr_jcPr_unit {R : realType} (A : finType) (E : {set A}) (P : R.-fdist A) :
   Pr P E = \Pr_(fdistmap (fun a => (a, tt)) P) [E | setT].
 Proof.
-rewrite /jcPr/= (_ : [set: unit] = [set tt]); last first.
+rewrite /jcPr/= (_ : [set: unit] = [set tt]).
   by apply/setP => -[]; rewrite !inE eqxx.
 rewrite (Pr_set1 _ tt).
-rewrite (_ : _`2 = fdist1 tt) ?fdist1xx ?divr1; last first.
+rewrite (_ : _`2 = fdist1 tt) ?fdist1xx ?divr1.
   rewrite /fdist_snd fdistmap_comp; apply/fdist_ext; case.
   by rewrite fdistmapE fdist1xx (eq_bigl xpredT) // FDist.f1.
 rewrite /Pr big_setX /=; apply: eq_bigr => a _; rewrite (big_set1 _ tt) /=.
@@ -364,7 +363,7 @@ Proof.
 rewrite -pr_in1 pr_inE' Pr_set1 -{1}(fst_RV2 _ Y) => Xa0.
 set Q := `p_[% X, Y] `(| a ).
 rewrite -[RHS](FDist.f1 Q) [in RHS](bigID (mem (fin_img Y))) /=.
-rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
+rewrite [X in _ = _ + X](eq_bigr (fun=> 0)).
   move=> b bY.
   rewrite /Q jfdist_condE // /jcPr /Pr !(big_setX,big_set1) /= fdistXE fdistX2 fst_RV2.
   rewrite !dist_of_RVE !pfwd1E.
@@ -374,7 +373,7 @@ rewrite [X in _ = _ + X](eq_bigr (fun=> 0)); last first.
   move/negP : bY; apply.
   by rewrite mem_undup; apply/mapP; exists u => //; rewrite mem_enum.
 rewrite big_const iter_addr mul0rn !addr0.
-rewrite big_uniq; last by rewrite /fin_img undup_uniq.
+rewrite big_uniq; first by rewrite /fin_img undup_uniq.
 apply: eq_bigr => b; rewrite mem_undup => /mapP[u _ bWu].
 rewrite /Q jfdist_condE // fdistX_RV2.
 by rewrite jcPrE -cpr_inE' cpr_in1.
@@ -451,10 +450,11 @@ Proof.
 rewrite /den !fdistE [RHS]big_mkcond /=.
 under eq_bigl do rewrite inE.
 apply/eq_bigr => a _.
-rewrite !fdistE /= (big_pred1 (a,i)) ?fdistE /=;
-    last by case=> x y; rewrite /= !xpair_eqE andbC.
-rewrite eq_sym 2!inE.
-by case: eqP => // _; rewrite (mulr0,mulr1).
+rewrite inE/=.
+rewrite fdistXE/= !fdistE/=.
+have [?|iKa] := eqVneq i (K a).
+  by rewrite mulr1.
+by rewrite mulr0.
 Qed.
 
 Lemma dE j : fdistmap K e i != 0 ->
@@ -462,9 +462,9 @@ Lemma dE j : fdistmap K e i != 0 ->
 Proof.
 rewrite -denE => NE.
 rewrite jfdist_condE // {NE} /jcPr /proba.Pr.
-rewrite (big_pred1 (j,i)); last first.
+rewrite (big_pred1 (j,i)).
   by move=> k; rewrite !inE [in RHS](surjective_pairing k) xpair_eqE.
-rewrite (big_pred1 i); last by move=> k; rewrite !inE.
+rewrite (big_pred1 i); first by move=> k; rewrite !inE.
 rewrite !fdistE big_mkcond [in RHS]big_mkcond /=.
 congr (_ / _)%R.
 under eq_bigr => k do rewrite {2}(surjective_pairing k).
@@ -491,7 +491,7 @@ under eq_bigr => /= a _.
       by move/psumr_eq0P => -> //; rewrite ?(mul0r,inE) // eq_sym.
   over.
   rewrite FDistPart.dE // fdistE /= mulrCA mulfV ?mulr1;
-    last by rewrite fdistE in Ka0.
+    first by rewrite fdistE in Ka0.
 over.
 move=> /=.
 rewrite (bigD1 (K j)) //= eqxx mulr1.
@@ -509,7 +509,7 @@ Lemma fdistpart1 (n m : nat) (f : 'I_m -> 'I_n) (i : 'I_m) j :
   j = f i -> FDistPart.d f (fdist1 i) j = fdist1 i :> R.-fdist 'I_m.
 Proof.
 move=> jfi; apply/fdist_ext=> k.
-rewrite FDistPart.dE/=; last first.
+rewrite FDistPart.dE/=.
   by rewrite fdistmap1 jfi fdist1E eqxx/= oner_neq0.
 have[->|] := eqVneq k i; last first.
   by rewrite fdist1E => /negPf -> /=; rewrite !mul0r.
@@ -524,7 +524,7 @@ Lemma fdistpart_unif (n m : nat) (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (i : 'I_
   fdist_uniform (fdist_card_prednK d) :> R.-fdist 'I_m.
 Proof.
 move=> fdi0.
-rewrite /FDistPart.d jfdist_cond_dflt.
+rewrite /FDistPart.d jfdist_cond_dflt; last first.
   by apply: fdist_ext=> ?; rewrite !fdist_uniformE.
 rewrite negbK; apply/eqP.
 rewrite fdist_fstE big1// => k ?.
@@ -537,13 +537,13 @@ rewrite mem_index_enum !inE/= eqxx => /(_ erefl) /eqP ->.
 by rewrite mul0r.
 Qed.
 
-Lemma fdistpart1_unif (n m : nat) (f : 'I_m -> 'I_n) (i : 'I_m) j :
+Lemma fdistpart1_unif n m (f : 'I_m -> 'I_n) (i : 'I_m) j :
   j != f i ->
   FDistPart.d f (fdist1 i) j =
   fdist_uniform (fdist_card_prednK (@fdist1 R _ i)) :> R.-fdist 'I_m.
 Proof. by move=> jfi; rewrite fdistpart_unif// fdistmap1 fdist1E (negPf jfi). Qed.
 
-Lemma fdistpart_eq1 (n m : nat) (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (i : 'I_m) j :
+Lemma fdistpart_eq1 n m (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) (i : 'I_m) j :
   (fdist_supp d :&: f @^-1: [set j] == [set i]) && (j == f i) ->
   FDistPart.d f d j = fdist1 i :> R.-fdist 'I_m.
 Proof.
@@ -561,9 +561,9 @@ have[/eqP|fki]:= eqVneq (f k) (f i) => /=; last first.
   by move: fki; apply: contraNN => /eqP->.
 move=> /[dup] fki /f_inj_k ->.
 rewrite mulr1/= [X in X^-1](_ : _ = d k) ?divff//.
-rewrite (bigID (fun k => d k == 0))/= big1; last by move=> ? /andP[] _ /eqP.
+rewrite (bigID (fun k => d k == 0))/= big1; first by move=> ? /andP[] _ /eqP.
 under eq_bigl=> l.
-  rewrite andbC (_ : _ && _ = (l == i)); first over.
+  rewrite andbC (_ : _ && _ = (l == i)); last over.
   apply/idP/idP; last by move/eqP->; rewrite di0 eqxx.
   by have:= f_inj => /subsetP /(_ l) /[!inE] /[apply].
 rewrite add0r (big_pred1 k)// => ? /=.
@@ -571,7 +571,7 @@ by rewrite (eqP (f_inj_k fki)).
 Qed.
 
 #[local]
-Lemma fdistpart1_eq1 (n m : nat) (f : 'I_m -> 'I_n) (i j : 'I_m) k :
+Lemma fdistpart1_eq1 n m (f : 'I_m -> 'I_n) (i j : 'I_m) k :
   (FDistPart.d f (fdist1 i) k = fdist1 j :> R.-fdist 'I_m) -> i = j.
 Proof.
 have[]:= eqVneq k (f i); first by move/fdistpart1 -> => /fdist1_inj.
@@ -580,7 +580,7 @@ rewrite card_ord => m1; move: i j; rewrite m1 => i j.
 by rewrite (ord1 i) (ord1 j).
 Qed.
 
-Lemma fdistpart1_eq1P (n m : nat) (f : 'I_m -> 'I_n) (i j : 'I_m) k :
+Lemma fdistpart1_eq1P n m  (f : 'I_m -> 'I_n) (i j : 'I_m) k :
   reflect (FDistPart.d f (fdist1 i) k = fdist1 j :> R.-fdist 'I_m)
           ((i == j) && ((k == f i) || (m == 1))).
 Proof.
@@ -606,7 +606,7 @@ rewrite invf_lt1 ?[ltLHS](_ : 1 = 1%:R)// ?[ltLHS](_ : 0 = 0%:R)// ltr_nat//.
 exact: (ltn_trans _ m1).
 Qed.
 
-Lemma fdistpart_eq0 (n m : nat) (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) i j :
+Lemma fdistpart_eq0 n m (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) i j :
   FDistPart.d f d j i = 0 -> (j != f i) || (d i == 0).
 Proof.
 move/eqP; apply: contraLR.
@@ -616,7 +616,7 @@ rewrite invr_neq0// psumr_neq0 ?FDist_ge0//.
 by apply/hasP; exists i => /=; rewrite ?mem_index_enum// eqxx fdist_gt0.
 Qed.
 
-Lemma fdistpart_neq0 (n m : nat) (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) i j :
+Lemma fdistpart_neq0 n m (f : 'I_m -> 'I_n) (d : R.-fdist 'I_m) i j :
   fdistmap f d j != 0 -> FDistPart.d f d j i != 0 -> (j == f i) && (d i != 0).
 Proof.
 move=> mf pf; have:= conj mf pf => /andP; apply/contraLR.

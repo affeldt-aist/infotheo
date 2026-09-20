@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg ssrnum perm.
+From mathcomp Require Import boot order ssralg ssrnum perm.
 From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals exp.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln fdist entropy.
@@ -38,7 +38,6 @@ Reserved Notation "'\nu^{' B '}' '(' P ')'" (at level 0,
 Reserved Notation "'`tO(' V )" (at level 0).
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -297,8 +296,8 @@ apply: (@leq_trans (size (map (@ffun_of_jtype A B n) (Finite.enum (P_ n (A, B)))
   by rewrite 2!size_map.
 rewrite cardE.
 apply: uniq_leq_size.
-  rewrite map_inj_uniq.
-  rewrite -enumT; by apply: enum_uniq.
+  rewrite map_inj_uniq; last first.
+    by rewrite -enumT; apply: enum_uniq.
   move=> [c f Hf Hc] [c1 f1 Hf1 Hc1] /= ?; subst f1.
   by apply/jtype_eqP => /=.
 move=> /= x.
@@ -320,7 +319,7 @@ have [tmp Htmp] : {f : {ffun A -> {ffun B -> 'I_n.+1}} |
   exists [ffun a1 => [ffun b1 => if (a1, b1) == (a, b) then
     Ordinal (ltnSn n) else Ordinal (ltn0Sn n)]].
   rewrite pair_big /=.
-  rewrite (bigD1 (a, b)) //= big1 ; first by rewrite 2!ffunE eqxx addn0.
+  rewrite (bigD1 (a, b)) //= big1 ; last by rewrite 2!ffunE eqxx addn0.
   by move=> p /negbTE Hp ; rewrite 2!ffunE -surjective_pairing Hp.
 have Htmp' : (forall a b,
         (chan_of_jtype Anot0 Bnot0 tmp) a b =
@@ -479,7 +478,7 @@ Proof.
 move=> Hincl.
 have <- : #| cons_tuples @: Z' | = #|Z'|.
   apply: card_in_imset; case=> [a1 a2] [b1 b2] Ha Hb [] /eqP.
-  rewrite eqseq_cat; last by rewrite 2!size_tuple.
+  rewrite eqseq_cat; first by rewrite 2!size_tuple.
   case/andP => /eqP H1 /eqP H2.
   f_equal; by apply: val_inj.
 apply/subset_leq_card/subsetP => tb Htb.
@@ -517,10 +516,10 @@ set a := enum_val k.
 case/card_gt0P : Bnot0 => b _.
 rewrite -(mkseq_nth (a, b) (zip ta tb)) -map_take -map_drop filter_map size_zip 2!size_tuple minnn.
 f_equal.
-rewrite drop_take_iota; last by rewrite sum_num_occ_inc_loc sum_num_occ_leq_n.
+rewrite drop_take_iota; first by rewrite sum_num_occ_inc_loc sum_num_occ_leq_n.
 apply: eq_in_filter => /= i.
 rewrite mem_iota leq0n add0n /= => Hi.
-rewrite nth_zip /=; last by rewrite 2!size_tuple.
+rewrite nth_zip /=; first by rewrite 2!size_tuple.
 transitivity (ta!_(Ordinal Hi) == a); by [rewrite -sum_num_occ_is_enum_val | rewrite (tnth_nth a)].
 Qed.
 
@@ -544,7 +543,7 @@ move=> Hsb.
 set a := enum_val k.
 rewrite /num_co_occ /num_occ // Hsb -!size_filter.
 rewrite -(_ : filter (fun p => p.2 == b) (filter (fun p => p.1 == a) (zip ta tb)) =
-              filter (pred1 (a, b)) (zip ta tb)) ; last first.
+              filter (pred1 (a, b)) (zip ta tb)).
   rewrite -filter_predI /predI; apply: eq_in_filter => i Hi /=.
   symmetry; by rewrite andbC {1}(surjective_pairing i) xpair_eqE.
 set l1 := drop _ _.
@@ -672,7 +671,7 @@ apply/andP; split.
   rewrite -Htb_2 in Ht.
   apply/eqP.
   have Ht2 : tval t = drop (sum_num_occ ta k) (take (sum_num_occ ta k.+1) tb).
-    rewrite Ht {1}sum_num_occ_rec take_drop take_takel; last by rewrite addnC.
+    rewrite Ht {1}sum_num_occ_rec take_drop take_takel; first by rewrite addnC.
     by rewrite addnC sum_num_occ_rec.
   congr (_ %:R / _%:R).
   exact/esym/num_occ_num_co_occ.
@@ -704,13 +703,13 @@ Lemma split_nocc_rec : forall k, k <= #|A| ->
   #|take_shell ta V k| <= \prod_ (i < #|A| | i < k) card_type_of_row i.
 Proof.
 elim.
-- move=> _; rewrite big_pred0; last by move=> ? /=; rewrite ltn0.
+- move=> _; rewrite big_pred0; first by move=> ? /=; rewrite ltn0.
   rewrite -(expn0 #|B|) -[X in _ <= expn _ X](sum_num_occ_0 ta) -card_tuple -cardsT.
   exact/subset_leq_card/subsetT.
 - move=> k IH HSk /=.
   move: (IH (ltnW HSk)) => {}IH.
   rewrite (bigD1 (Ordinal HSk)) //=.
-  rewrite (eq_bigl (fun i : 'I_#|A| => i < k) _); last first.
+  rewrite (eq_bigl (fun i : 'I_#|A| => i < k) _).
     move=> i /=.
     have [ik|ki] := ltnP i k.
     - have -> : i != Ordinal HSk by rewrite neq_ltn; apply/orP; apply: or_introl.
@@ -730,7 +729,7 @@ Lemma card_shelled_tuples_leq_prod_card :
   #| V.-shell ta | <= \prod_ ( i < #|A|) card_type_of_row i.
 Proof.
 rewrite -full_take_shell.
-rewrite [leqRHS](_ : _ = \prod_(i < #|A| | i < #|A|) card_type_of_row i); last first.
+rewrite [leqRHS](_ : _ = \prod_(i < #|A| | i < #|A|) card_type_of_row i).
   by apply: eq_bigl => ?; exact/esym/ltn_ord.
 exact: (split_nocc_rec (leqnn #|A|)).
 Qed.
@@ -758,12 +757,12 @@ apply: (@le_trans _ _ (\prod_(i < #|A|) card_type_of_row Hta Vctyp i)%:R).
 - rewrite ler_nat.
   exact/card_shelled_tuples_leq_prod_card.
 - rewrite (mulrC n%:R) powRrM' natr_prod.
-  rewrite (@big_morph _ _ (fun r => (2%:R `^ r) ^+ n) 1%R *%R _ +%R _); last 2 first.
+  rewrite (@big_morph _ _ (fun r => (2%:R `^ r) ^+ n) 1%R *%R _ +%R _).
     by move=> a b /=;rewrite powR2D exprMn_comm// /GRing.comm mulrC.
     by rewrite powRr0 expr1n.
-  rewrite (reindex_onto enum_rank enum_val) => [|i _]; last by rewrite enum_valK.
+  rewrite (reindex_onto enum_rank enum_val) => [i _|]; first by rewrite enum_valK.
   rewrite (_ : \prod_(j | enum_val (enum_rank j) == j) _ =
-               \prod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R); last first.
+               \prod_(j : A) (card_type_of_row Hta Vctyp (enum_rank j))%:R).
     by apply: eq_bigl => a; rewrite enum_rankK; exact/eqP.
   apply: ler_prod => a aA; apply/andP; split => //.
   rewrite -powRrM'.
@@ -771,7 +770,7 @@ apply: (@le_trans _ _ (\prod_(i < #|A|) card_type_of_row Hta Vctyp i)%:R).
     rewrite -[X in X <= _](powRr0 2).
     by rewrite gt1_ler_powRr ?ltr1n// !mulr_ge0//; exact: entropy_ge0.
   set pta0 := type_of_row Hta Vctyp _.
-  rewrite (_ : _ `^ _ = 2 `^ (N(a | ta)%:R * `H pta0)).
+  rewrite (_ : _ `^ _ = 2 `^ (N(a | ta)%:R * `H pta0)); last first.
     by rewrite -[in X in _ <= _ _ (X * _)](enum_rankK a); apply: card_typed_tuples.
   congr (_ `^ _).
   rewrite mulrC mulrA.
@@ -792,7 +791,7 @@ Lemma map_pred1_nseq {A : eqType} : forall (l : seq A) n a, a \notin l ->
 Proof.
 elim=> [n0 a Ha /=|h t IH n0 a]; first by rewrite big_nil.
 rewrite in_cons negb_or => /andP[H1 H2] /=.
-rewrite map_cat IH // (_ : map _ _ = nseq (n0 h) false); last first.
+rewrite map_cat IH // (_ : map _ _ = nseq (n0 h) false).
   by rewrite map_nseq /= -(negbTE H1) eqtype.eq_sym.
 by rewrite big_cons nseqD.
 Qed.
@@ -804,12 +803,12 @@ Lemma map_filter_nseq_nil {A : eqType} : forall (l : seq A) (p : pred A) n,
 Proof.
 elim=> // h t IH p n0 H /=.
 rewrite IH.
-- rewrite cats0.
-  transitivity (filter xpred0 (nseq (n0 h) h)).
-    apply: eq_in_filter => a /nseqP[-> _].
-    apply/negP/negP/H; by rewrite in_cons eqxx.
-  by rewrite filter_pred0.
-by move=> x0 Hx0; rewrite H// in_cons Hx0 orbC.
+ by move=> x0 Hx0; rewrite H// in_cons Hx0 orbC.
+rewrite cats0.
+transitivity (filter xpred0 (nseq (n0 h) h)).
+  apply: eq_in_filter => a /nseqP[-> _].
+  apply/negP/negP/H; by rewrite in_cons eqxx.
+by rewrite filter_pred0.
 Qed.
 
 (* TODO: move? *)
@@ -821,15 +820,15 @@ case/andP=> H1 H2.
 rewrite in_cons.
 case/predU1P.
   move => ?; subst a.
-  rewrite {IH} map_filter_nseq_nil //; last first.
+  rewrite {IH} map_filter_nseq_nil //.
     move=> x0 x0_t /=.
     apply/eqP => ?; subst x0.
     by rewrite x0_t in H1.
-  rewrite (_ : filter _ _ = filter xpredT (nseq (n0 h) h)); last first.
+  rewrite (_ : filter _ _ = filter xpredT (nseq (n0 h) h)).
     apply: eq_in_filter => i /nseqP[-> /= ]; by rewrite eqxx.
   by rewrite filter_predT /= cats0.
 move=> a_t.
-rewrite IH // (_ : filter _ _ = filter xpred0 (nseq (n0 h) h)); last first.
+rewrite IH // (_ : filter _ _ = filter xpred0 (nseq (n0 h) h)).
   apply: eq_in_filter => i /nseqP[-> /= _].
   by apply: contraNF H1 => /eqP  ->.
 by rewrite filter_pred0.
@@ -855,7 +854,7 @@ set cdom := flatten _.
 have /eqP Hy : size cdom = n.
   rewrite size_flatten /shape -map_comp sumn_big_addn big_map [LHS]big_filter.
   rewrite -[RHS](sum_num_occ_all ta).
-  rewrite [RHS](reindex_onto enum_rank enum_val) => [|i _] ; last by rewrite enum_valK.
+  rewrite [RHS](reindex_onto enum_rank enum_val) => [i _|]; first by rewrite enum_valK.
   apply: eq_big.
   - move=> ? /=; by rewrite enum_rankK eqxx.
   - move=> a _ /=.
@@ -871,7 +870,7 @@ apply/forallP => b.
 rewrite /num_co_occ /num_occ /=.
 apply/eqP.
 rewrite (@sorted_is_flattened _ _ (@le_rank_trans _)
-  (@le_rank_asym _) (@le_rank_refl _) #|A| (enum A) ta) //; last 4 first.
+  (@le_rank_asym _) (@le_rank_refl _) #|A| (enum A) ta) //.
   by rewrite cardE.
   by apply: enum_uniq.
   by apply: sorted_enum.
@@ -889,7 +888,7 @@ have Hdom : size dom = n.
   apply: eq_bigr => a' _ /=; by rewrite size_nseq.
 move/eqP in Hy.
 rewrite -size_filter (_ : filter _ _ = filter
-  (predI (fun x => x.2 == b) (fun x => x.1 == a)) (zip dom cdom)); last first.
+  (predI (fun x => x.2 == b) (fun x => x.1 == a)) (zip dom cdom)).
   apply: eq_in_filter; case=> i1 i2 Hi /=; by rewrite xpair_eqE andbC.
 rewrite filter_predI (@filter_zip_L _ _ n) //.
 have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (JType.f V a b) b | b <- enum B].
@@ -897,43 +896,44 @@ have -> : mask (map (pred1 a) dom) cdom = flatten [seq nseq (JType.f V a b) b | 
     have /splitPr[A1 A2] : a \in enum A by rewrite mem_enum.
     by exists A1, A2.
   rewrite /cdom /dom A12 map_cat flatten_cat map_cat.
-  rewrite [in X in mask _ X]map_cat flatten_cat mask_cat; last first.
+  rewrite [in X in mask _ X]map_cat flatten_cat mask_cat.
     rewrite size_map size_flatten /shape -map_comp sumn_big_addn big_map.
     rewrite size_flatten /shape -map_comp sumn_big_addn big_map.
     apply: eq_bigr => i _ /=; by rewrite sz_flat size_nseq.
   rewrite (_ : _ :: _ = [:: a] ++ A2) //.
-  rewrite map_cat.
+  rewrite (map_cat _ _ A2).
   rewrite [in X in _ ++ mask _ X = _]map_cat flatten_cat.
-  rewrite mask_cat; last first.
+  rewrite map_cat.
+  rewrite mask_cat.
     by rewrite size_map /= cats0 sz_flat size_nseq.
   transitivity (mask (map (pred1 a) (flatten [seq nseq N(a1 | ta) a1 | a1 <- [:: a]]))
      (flatten [seq flatten [seq nseq (JType.f V a1 b1) b1 | b1 <- enum B] | a1 <- [:: a]])).
     move: (enum_uniq A); rewrite A12 cat_uniq /= negb_or /=.
     case/andP => uniqA1 /andP [] /andP [a_A1 _] /andP [a_A2 _].
-    rewrite {1}(_ : mask _ _ = [::]); last by rewrite map_pred1_nseq // mask_false.
-    rewrite (_ : mask (map _ (flatten [seq _ a | a <- A2])) _ = [::]); last first.
+    rewrite {1}(_ : mask _ _ = [::]); first by rewrite map_pred1_nseq // mask_false.
+    rewrite (_ : mask (map _ (flatten [seq _ a | a <- A2])) _ = [::]).
       by rewrite map_pred1_nseq // mask_false.
     by rewrite 3!cats0 cat0s.
   rewrite /= 2!cats0 map_nseq /= eqxx mask_true // sz_flat; by apply: eq_leq.
-rewrite (@filter_zip_R _ _ N(a | ta)) //; last first.
+rewrite (@filter_zip_R _ _ N(a | ta)) //.
   rewrite /dom filter_flatten size_flatten /shape -!map_comp sumn_big_addn.
-  rewrite big_map (bigD1 a) // big1 /= => [|a1 Ha1].
-  - rewrite (_ : filter _ _ = filter (xpredT) (nseq N(a | ta) a)); last first.
-      apply: eq_in_filter => i /nseqP[-> _]; by rewrite /pred1 /= eqxx.
-    by rewrite addn0 filter_predT size_nseq.
-  - rewrite (_ : filter _ _ = filter (xpred0) (nseq N(a1 | ta) a1)); last first.
+  rewrite big_map (bigD1 a) // big1 /= => [a1 Ha1|].
+  - rewrite (_ : filter _ _ = filter (xpred0) (nseq N(a1 | ta) a1)).
       apply: eq_in_filter => j /nseqP[-> _].
       by rewrite /pred1 /= (negbTE Ha1).
     by rewrite filter_pred0.
-rewrite size_zip size_mask; last first.
-  rewrite size_map /dom sz_flat (_ : filter _ _ = nseq N(a | ta) a); last first.
+  - rewrite (_ : filter _ _ = filter (xpredT) (nseq N(a | ta) a)).
+      by apply: eq_in_filter => i /nseqP[-> _]; rewrite /pred1 /= eqxx.
+    by rewrite addn0 filter_predT size_nseq.
+rewrite size_zip size_mask.
+  rewrite size_map /dom sz_flat (_ : filter _ _ = nseq N(a | ta) a).
     by rewrite filter_flatten map_filter_pred1_nseq // ?enum_uniq // ?mem_enum.
   by rewrite size_nseq.
 rewrite size_filter.
 set x1 := count _ _. set x2 := count _ _.
 have -> : x1 = x2 by rewrite /x1 /x2 count_map; apply: eq_in_count.
 have -> : x2 = JType.f V a b.
-  rewrite /x2 -size_filter (_ : filter _ _ = nseq (JType.f V a b) b); last first.
+  rewrite /x2 -size_filter (_ : filter _ _ = nseq (JType.f V a b) b).
     by rewrite filter_flatten map_filter_pred1_nseq // ?enum_uniq // ?mem_enum.
   by rewrite size_nseq.
 exact/minn_idPl.
@@ -1232,7 +1232,7 @@ exists (num_co_occ_jtype ta tb).-shell ta.
     rewrite in_set => /forallP/(_ a)/eqP.
     rewrite Hta'.
     move=> /(congr1 (fun x => x * n%:R)%R).
-    rewrite -!mulrA mulVf ?mulr1; last first.
+    rewrite -!mulrA mulVf ?mulr1.
       by rewrite (_ : 0%R = 0%:R)// eqr_nat.
     by move=> /eqP; rewrite eqr_nat => /eqP.
 - rewrite in_set.

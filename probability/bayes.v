@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From Stdlib Require Import PeanoNat.
-From mathcomp Require Import all_boot ssralg ssrnum matrix reals.
+From mathcomp Require Import boot ssralg ssrnum matrix reals.
 From mathcomp Require boolp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 Require Import fdist proba.
@@ -29,7 +29,6 @@ Local Open Scope proba_scope.
 Local Open Scope ring_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -392,8 +391,8 @@ apply/esym/preim_varsP; case: ifP.
 - move/negP => /= Hf Hcap; elim: Hf.
   apply/eqP/ffunP => /= i.
   rewrite /prod_vars (prod_vals_eq (vals2:=set_vals C vals)).
-    by rewrite prod_vals_set_vals.
-  rewrite ffunE; exact: Hcap.
+    rewrite ffunE; exact: Hcap.
+  by rewrite prod_vals_set_vals.
 Qed.
 
 (* Simple version, using singletons *)
@@ -424,10 +423,10 @@ split.
       case ac: (a == c).
         rewrite -(eqP ac); exact.
       move=> _ _ _.
-      rewrite (proj2 (cPr_eq0P _ _ _)); last first.
+      rewrite (proj2 (cPr_eq0P _ _ _)).
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /andP [] /= /eqP ->; rewrite ac.
-      rewrite (proj2 (cPr_eq0P _ _ _)); last first.
+      rewrite (proj2 (cPr_eq0P _ _ _)).
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /= /eqP ->; rewrite ac.
       by rewrite mul0r.
@@ -469,7 +468,7 @@ split.
       case bc: (b == c).
         rewrite (eqP bc); exact.
       move=> _ _ _.
-      rewrite (proj2 (cPr_eq0P _ _ _)); last first.
+      rewrite (proj2 (cPr_eq0P _ _ _)).
         apply/Pr_set0P => u.
         by rewrite !inE => /andP [] /andP [] _ /= /eqP ->; rewrite bc.
       rewrite GRing.mulrC (proj2 (cPr_eq0P _ _ _)) ?GRing.mul0r //.
@@ -541,7 +540,7 @@ Lemma Pr_preim_vars_sub (e f : {set 'I_n}) (vals : univ_types types) :
    Pr P (preim_vars e (set_vals (nth_fin_img A) vals)).
 Proof.
 rewrite /Pr => fe.
-rewrite -partition_disjoint_bigcup; last first.
+rewrite -partition_disjoint_bigcup.
   move=> /= A B.
   rewrite -(tnth_uniq A B (t:=in_tuple _)) ?undup_uniq => // AB.
   exact: disjoint_preim_vars.
@@ -578,13 +577,13 @@ transitivity (\sum_(A : Tfin_img (prod_vars (e :\: e')))
     move/subsetP/(_ i): e'e.
     move/subsetP/(_ i): ee'.
     by cases_in i.
-  rewrite Pr_preim_vars_sub; last by apply/subsetP=> i; cases_in i.
+  rewrite Pr_preim_vars_sub; first by apply/subsetP=> i; cases_in i.
   rewrite big_distrl; apply: eq_bigr => A _ /=.
   by rewrite -!preim_vars_inter (@preim_vars_set_vals_tl g).
 under eq_bigr => A _ /=.
   rewrite Hef (@preim_vars_set_vals_tl g) // (@preim_vars_set_vals_tl f).
-    over.
   apply/setP => i; move/subsetP/(_ i): ee'; by cases_in i.
+  over.
 rewrite -2!big_distrl /=.
 rewrite [in RHS]/cPr.
 congr (_ * _ * _).
@@ -594,7 +593,7 @@ have -> : e' :|: g = (e :|: g) :\: (e :\: e').
   move/subsetP/(_ i): e'e.
   move/subsetP/(_ i): ee'.
   by cases_in i.
-rewrite Pr_preim_vars_sub; last by apply/subsetP=> i; cases_in i.
+rewrite Pr_preim_vars_sub; first by apply/subsetP=> i; cases_in i.
 apply: eq_bigr => A _.
 by rewrite preim_vars_inter (@preim_vars_set_vals_tl g) //.
 Qed.
@@ -615,7 +614,7 @@ move=> {}Hp vals.
 move/(_ vals): Hp.
 rewrite /cinde_events /cPr /Pr -!preim_vars_inter.
 rewrite (_ : _ :|: g = (e :&: f) :|: g);
-  last by apply/setP => j; cases_in j.
+  first by apply/setP => j; cases_in j.
 rewrite 2!(_ : _ :\: _ :|: _ = (e :&: f) :|: g);
   try by apply/setP => j; cases_in j.
 by rewrite setUid.
@@ -635,7 +634,7 @@ case /boolP: [forall i in (e :&: g), _].
 rewrite negb_forall => /existsP [i].
 rewrite inE negb_imply => /andP [] /andP [Hie Hig] /eqP Hvi.
 right; rewrite /cinde_events.
-rewrite (proj2 (cPr_eq0P _ _ _)); last first.
+rewrite (proj2 (cPr_eq0P _ _ _)).
   apply/Pr_set0P => u; rewrite !inE => Hprod; elim: Hvi.
   case/andP: Hprod => /andP[] /eqP <- _ /eqP <-; exact: prod_vars_inter.
 rewrite (proj2 (cPr_eq0P _ _ _)) ?GRing.mul0r //.
@@ -662,7 +661,7 @@ set num := Pr _ _ => Hnum.
 have {}Hnum : num = den.
   by rewrite -[RHS]mul1r -Hnum -mulrA mulVf ?mulr1.
 rewrite -Hnum in Hden.
-rewrite (proj2 (Pr_set0P _ _)); last first.
+rewrite (proj2 (Pr_set0P _ _)).
   move=> u; rewrite !inE => /andP[] /andP[] /eqP HA /eqP HB.
   by rewrite -HA -HB !set_vals_prod_vars in Hvi.
 suff : `Pr_P[finset (prod_vars f @^-1 B) | finset (prod_vars g @^-1 C)] = 0.
@@ -673,7 +672,7 @@ rewrite !inE => /andP [] /eqP HB /eqP HC.
 move: Hnum; rewrite /den.
 have -> : g = (e :&: f :|: g) :\: ((e :&: f) :\: g).
   by apply/setP => j; cases_in j.
-rewrite Pr_preim_vars_sub; last by apply/subsetP => j; cases_in j.
+rewrite Pr_preim_vars_sub; first by apply/subsetP => j; cases_in j.
 have : prod_vals ((e :&: f) :\: g) vals
                  \in fin_img (prod_vars ((e :&: f) :\: g)).
   case/boolP: (_ \in _) => // /negP HA.
@@ -690,12 +689,12 @@ case/fin_imgP => v Hv {Hden}.
 set a := map_fin_img (prod_vars ((e :&: f) :\: g)) v.
 rewrite (bigD1 a) //= nth_fin_imgK -Hv.
 rewrite /num (@preim_vars_vals _ (prod_vals (e :&: f :|: g) vals) _ vals);
-  last by move=> j; rewrite set_vals_prod_vals_id.
+  first by move=> j; rewrite set_vals_prod_vals_id.
 rewrite -preim_vars_inter addrC => /eqP.
 rewrite -subr_eq subrr => /eqP/esym Hnum.
 have : Pr P (preim_vars (e :&: f :|: g)
       (set_vals (prod_vals (e :&: f :\: g) (set_vals B vals)) vals)) = 0.
-  rewrite (_ : prod_vals _ _ = prod_vars (e :&: f :\: g) u); last first.
+  rewrite (_ : prod_vals _ _ = prod_vars (e :&: f :\: g) u).
     apply/ffunP => k; apply/prod_vals_eq => Hk.
     rewrite -HB set_vals_prod_vars ?ffunE //.
     move: Hk; cases_in k.
@@ -713,9 +712,10 @@ case/boolP: (j \in g) => jg.
   by rewrite set_vals_tl ?inE ?jg // /vals -HC set_vals_prod_vars.
 rewrite inE (negbTE jg) orbF in Hj.
 rewrite -HB set_vals_prod_vals ?set_vals_prod_vars //.
-  move: Hj; by rewrite inE => /andP[].
-by rewrite inE Hj jg.
+  by rewrite inE Hj jg.
+by move: Hj; rewrite inE => /andP[].
 Qed.
+
 End cinde_preim_lemmas.
 
 Lemma cinde_preim_ok (e f g : {set 'I_n}) :
@@ -774,10 +774,10 @@ split.
       case/boolP: (j \in e) => // je.
       by rewrite set_vals_tl // set_vals_prod_vars.
     rewrite /cinde_events (proj2 (cPr_eq0P _ _ _)).
-      by rewrite (proj2 (cPr_eq0P _ _ _)) // GRing.mul0r.
-    apply/Pr_set0P => u Hu.
-    apply: (proj1 (Pr_set0P _ _) HAC).
-    move: Hu; by rewrite !inE => /andP[] /andP[] -> _ ->.
+      apply/Pr_set0P => u Hu.
+      apply: (proj1 (Pr_set0P _ _) HAC).
+      by move: Hu; rewrite !inE => /andP[] /andP[] -> _ ->.
+    by rewrite (proj2 (cPr_eq0P _ _ _)) // GRing.mul0r.
   (* cPr = 1 *)
   exact: (cinde_events_cPr1 (i:=i)).
 - move=> Hdrv vals.

@@ -1,13 +1,13 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum lra ring.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum arithmetic_tactic.
+From mathcomp Require Import ring_tactic field_tactic.
 From mathcomp Require Import reals.
 Require Import realType_ext ssralg_ext fdist proba.
 
 (* Coq/SSReflect/MathComp, Morikita, Sect. 7.2, without inord *)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -22,8 +22,7 @@ From mathcomp Require Import normedtype.
 Import numFieldNormedType.Exports.
 
 Section expected_value_variance_ordn.
-
-Variable R : realType.
+Context {R : realType}.
 
 Definition ord1 {n} := lift ord0 (@ord0 n).
 Definition ord2 {n} := lift ord0 (@ord1 n).

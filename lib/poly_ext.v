@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot fingroup perm ssralg zmodp.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot fingroup perm ssralg zmodp.
 From mathcomp Require Import matrix mxalgebra poly polydiv mxpoly.
 Require Import ssralg_ext.
 
@@ -9,7 +9,6 @@ Require Import ssralg_ext.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -17,33 +16,32 @@ Import GRing.Theory.
 Local Open Scope ring_scope.
 
 Section AboutPoly.
-
-Variable R : idomainType.
+Context {R : idomainType}.
 
 Lemma size_quot_eq0 : forall q d r : {poly R},
   d \is monic -> size r < size d -> (size (q * d + r) < size d) = (q == 0).
 Proof.
 move=> q d r mon sz; apply/eqP/eqP => [sz0 | ->]; apply/eqP.
 - apply/negPn; apply/negP=> ab_absurdo; move: sz0.
-  rewrite size_polyDl; last first.
+  rewrite size_polyDl.
     rewrite mulrC size_monicM //.
     have Htmp : 0 < size q by rewrite lt0n size_poly_eq0.
     rewrite -subn1 -addnBA //.
     apply: (@leq_trans (size d)) => //.
     by rewrite leq_addr.
-  rewrite mulrC size_monicM // prednK; last first.
+  rewrite mulrC size_monicM // prednK.
     rewrite addn_gt0.
     apply/orP; left.
     exact: (@leq_ltn_trans (size r)).
   move/eqP.
-  rewrite addnC -addnBA // subnn addn0 size_poly_eq0; by apply/negP.
+  by rewrite addnC -addnBA // subnn addn0 size_poly_eq0; apply/negP.
 - by rewrite mul0r add0r subn_eq0.
 Qed.
 
-Lemma poly_def_lead_coef : forall p : {poly R},
+Lemma poly_def_lead_coef (p : {poly R}) :
   p = \sum_(i < (size p).-1) p`_i *: 'X^i + lead_coef p *: 'X^((size p).-1).
 Proof.
-move=> p; case sz_p : (size _) => [|n].
+case sz_p : (size _) => [|n].
 - move/eqP: sz_p; rewrite size_poly_eq0; move/eqP => ->.
   by rewrite big_ord0 /lead_coef coef0 scale0r addr0.
 - by rewrite -{1}(coefK p) /lead_coef sz_p [_.-1]/= poly_def big_ord_recr /=.

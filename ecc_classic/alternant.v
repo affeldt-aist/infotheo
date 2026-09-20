@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg finalg poly polydiv.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg finalg poly polydiv.
 From mathcomp Require Import cyclic perm matrix mxpoly vector mxalgebra zmodp.
 From mathcomp Require Import finfield falgebra fieldext.
 Require Import ssr_ext ssralg_ext linearcode.
@@ -11,7 +11,6 @@ Require Import dft poly_decoding grs bch.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Unset Printing Implicit Defensive.
 

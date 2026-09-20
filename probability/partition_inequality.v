@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order all_algebra.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order algebra.
 From mathcomp Require Import reals.
 Require Import ssr_ext bigop_ext realType_ext realType_ln.
 Require Import fdist divergence log_sum variation_dist.
@@ -13,7 +13,6 @@ Require Import fdist divergence log_sum variation_dist.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -67,7 +66,7 @@ Lemma partition_inequality : D(P_A || Q_A) <= D(P || Q).
 Proof.
 have -> : D(P || Q) = \sum_(a in A_ 0) P a * log (P a / Q a) +
                       \sum_(a in A_ 1) P a * log (P a / Q a).
-  rewrite /div -big_union //; last by rewrite -setI_eq0 setIC dis eqxx.
+  rewrite /div -big_union //; first by rewrite -setI_eq0 setIC dis eqxx.
   apply: eq_big => // a; first by rewrite cov in_set inE.
 have step2 :
   (\sum_(a in A_ 0) P a) * log ((\sum_(a in A_ 0) P a) / \sum_(a in A_ 0) Q a) +
@@ -76,7 +75,7 @@ have step2 :
   by apply: lerD => //; exact: log_sum.
 apply: (le_trans _ step2) => {step2}.
 rewrite [X in _ <= X](_ : _ =
-  P_A 0 * log ((P_A 0) / (Q_A 0)) + P_A 1 * log ((P_A 1) / (Q_A 1))); last first.
+  P_A 0 * log ((P_A 0) / (Q_A 0)) + P_A 1 * log ((P_A 1) / (Q_A 1))).
   by rewrite !ffunE.
 rewrite /div big_bool.
 rewrite [P_A]lock [Q_A]lock /= -!lock.
@@ -99,20 +98,20 @@ rewrite le_eqVlt => /predU1P[/esym A0_P_0|A0_P_neq0]; last first.
   + have H2 : P_A 1 = 0%R.
       rewrite ffunE in A1_Q_0; move/psumr_eq0P in A1_Q_0.
       rewrite /bipart /= ffunE /bipart_pmf (eq_bigr (fun=> 0%R)).
-        by rewrite big1.
-      by move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_ff_ge0.
+        by move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_ff_ge0.
+      by rewrite big1.
     rewrite H2 !mul0r !addr0.
     have H3 : Q_A 0 = 1%R.
       rewrite -[X in X = _]addr0 -[X in _ + X = _]A1_Q_0 -(FDist.f1 Q).
       rewrite !ffunE -big_union //.
-      apply: eq_bigl => i; by rewrite cov in_set inE.
       by rewrite -setI_eq0 -dis setIC.
+      by apply: eq_bigl => i; rewrite cov in_set inE.
     by rewrite H3 logM// invr1.
 - have H1 : P_A 1 = 1%R.
     rewrite -[X in X = _]add0r -[X in X + _ = _]A0_P_0 -(FDist.f1 P).
     rewrite !ffunE -big_union //.
-    apply: eq_bigl => i; by rewrite cov in_set inE.
     by rewrite -setI_eq0 -dis setIC.
+    by apply: eq_bigl => i; rewrite cov in_set inE.
   have := FDist.ge0 Q_A 1.
   rewrite le_eqVlt => /predU1P[/esym A1_Q_0|A1_Q_neq0]; last first.
   + rewrite A0_P_0 !mul0r !add0r H1 !mul1r.
@@ -121,8 +120,8 @@ rewrite le_eqVlt => /predU1P[/esym A0_P_0|A0_P_neq0]; last first.
     rewrite ffunE in A1_Q_0; move/psumr_eq0P in A1_Q_0.
     have : P_A 1 = 0%R.
       rewrite !ffunE /bipart /= /bipart_pmf (eq_bigr (fun=> 0%R)).
-        by rewrite big1.
-      by move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_ff_ge0.
+        by move=> a ?; rewrite (dominatesE P_dom_by_Q) // A1_Q_0 // => b ?; exact/pos_ff_ge0.
+      by rewrite big1.
     by rewrite A0_P_0.
 Qed.
 

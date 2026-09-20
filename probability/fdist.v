@@ -1,12 +1,12 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg perm matrix.
+From mathcomp Require Import boot order ssralg perm matrix.
 From mathcomp Require Import interval_inference.
-From mathcomp Require Import all_algebra vector reals normedtype.
+From mathcomp Require Import algebra vector reals normedtype.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem and swap *)
-From mathcomp Require Import mathcomp_extra boolp.
+From mathcomp Require Import boolp.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext.
 
 (**md**************************************************************************)
@@ -102,7 +102,6 @@ Declare Scope fdist_scope.
 Delimit Scope fdist_scope with fdist.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -130,8 +129,11 @@ Proof. by case: d => ? /= /andP[? /eqP]. Qed.
 Lemma le1 (d : t) a : d a <= 1.
 Proof.
 rewrite -(f1 d) (_ : d a = \sum_(a' in A | a' == a) d a').
-  rewrite big_mkcond /=. apply: ler_sum => a0 _. case: ifPn => // _. exact: ge0.
-by rewrite big_pred1_eq.
+  by rewrite big_pred1_eq.
+rewrite big_mkcond /=.
+apply: ler_sum => a0 _.
+case: ifPn => // _.
+exact: ge0.
 Qed.
 
 Definition make (f : {ffun A -> R}) (H0 : forall a, (0 <= f a)%R)
@@ -201,8 +203,8 @@ Lemma fdist_supp_neq0 (d : fdist R A) : fdist_supp d != set0.
 Proof.
 apply/eqP => H; move: (FDist.f1 d).
 rewrite -[LHS]mulr1 big_distrl sum_fdist_supp H big1 //=.
-  by move=> /esym/eqP; rewrite oner_eq0.
-by move=> i; rewrite inE.
+  by move=> i; rewrite inE.
+by move=> /esym/eqP; rewrite oner_eq0.
 Qed.
 
 Lemma fdist_supp_mem (d : fdist R A) : {i | i \in fdist_supp d}.
@@ -219,9 +221,9 @@ move=> H1 d.
 move: {-2}(#|fdist_supp d|) (erefl (#|fdist_supp d|)) => n; move: n d.
 elim=> [d /esym /card0_eq Hd0|n IH d n13].
   move: (FDist.f1 d).
-  rewrite -[X in X = _]mulr1 big_distrl sum_fdist_supp big1 => [|a].
-    by move=> /esym/eqP; rewrite oner_eq0.
-  by rewrite Hd0.
+  rewrite -[X in X = _]mulr1 big_distrl sum_fdist_supp big1 => [a|].
+    by rewrite Hd0.
+  by move=> /esym/eqP; rewrite oner_eq0.
 have [b Hb] : {b : A | d b != 0}.
   suff : {x | x \in fdist_supp d} by case => a; rewrite inE => ?; exists a.
   by apply/sigW/set0Pn; rewrite -cards_eq0 -n13.
@@ -248,7 +250,7 @@ Let f0 b : 0 <= f b. Proof. by rewrite ffunE; exact: ler0n. Qed.
 
 Let f1 : \sum_(b in A) f b = 1.
 Proof.
-rewrite (bigD1 a) //= {1}/f ffunE eqxx /= (eq_bigr (fun=> 0)); last first.
+rewrite (bigD1 a) //= {1}/f ffunE eqxx /= (eq_bigr (fun=> 0)).
   by move=> b ba; rewrite /f ffunE (negbTE ba).
 by rewrite big1_eq // addr0.
 Qed.
@@ -364,7 +366,7 @@ Lemma fdistbindA R A B C (m : fdist R A) (f : A -> fdist R B)
   (m >>= f) >>= g = m >>= (fun x => f x >>= g).
 Proof.
 apply/fdist_ext => c; rewrite !fdistbindE /=.
-rewrite (eq_bigr (fun a => \sum_(a0 in A) m a0 * f a0 a * g a c)%R); last first.
+rewrite (eq_bigr (fun a => \sum_(a0 in A) m a0 * f a0 a * g a c)%R).
   by move=> b _; rewrite fdistbindE big_distrl.
 rewrite exchange_big /=; apply: eq_bigr => a _.
 by rewrite fdistbindE big_distrr /=; apply: eq_bigr => b _; rewrite mulrA.
@@ -656,7 +658,7 @@ Qed.
 Let f1 : \sum_(a in B) f a = 1.
 Proof.
 rewrite (bigD1 b) //= {1}/f ffunE eqxx add0r.
-rewrite (eq_bigr (fun c => X c / (1 - X b))); last first.
+rewrite (eq_bigr (fun c => X c / (1 - X b))).
   by move=> ? cb; rewrite /f ffunE (negbTE cb).
 rewrite -big_distrl /=.
 move: (FDist.f1 X); rewrite (bigD1 b) //=.
@@ -798,14 +800,14 @@ Let f1 : \sum_(i < n) [ffun x => (D \o h) x] i = 1.
 Proof.
 rewrite -(FDist.f1 D) /= (bigID (fun i : 'I_n.+1 => (i < j)%nat)) /=.
 rewrite (bigID (fun i : 'I_n => (i < j)%nat)) /=; congr (_ + _).
-  rewrite (@big_ord_narrow_cond _ _ _ j n.+1 xpredT); first by rewrite ltnW.
-  move=> jn; rewrite (@big_ord_narrow_cond _ _ _ j n xpredT); first by rewrite -ltnS.
+  rewrite (@big_ord_narrow_cond _ _ _ j n.+1 xpredT); last by rewrite ltnW.
+  move=> jn; rewrite (@big_ord_narrow_cond _ _ _ j n xpredT); last by rewrite -ltnS.
   move=> jn'; apply: eq_bigr => i _; rewrite ffunE; congr (D _).
   rewrite /h /= ltn_ord; exact/val_inj.
-rewrite (bigID (pred1 j)) /= [X in _ = X + _](_ : _ = 0) ?add0r; last first.
+rewrite (bigID (pred1 j)) /= [X in _ = X + _](_ : _ = 0) ?add0r.
   rewrite (big_pred1 j).
-  by rewrite /D fdistD1E eqxx.
   by move=> /= i; rewrite -leqNgt andbC andb_idr // => /eqP ->.
+  by rewrite /D fdistD1E eqxx.
 rewrite [in RHS]big_mkcond big_ord_recl /=.
 rewrite /= -leqNgt leqn0 eq_sym andbN add0r.
 rewrite big_mkcond; apply: eq_bigr => i _.
@@ -914,7 +916,7 @@ Definition fdist_perm : R.-fdist 'rV[A]_n := fdistmap (col_perm s^-1) P.
 
 Lemma fdist_permE v : fdist_perm v = P (col_perm s v).
 Proof.
-rewrite fdistmapE /= {1}(_ : v = col_perm s^-1 (col_perm s v)); last first.
+rewrite fdistmapE /= {1}(_ : v = col_perm s^-1 (col_perm s v)).
   by rewrite -col_permM mulVg col_perm1.
 rewrite big_pred1_inj //; exact: col_perm_inj.
 Qed.
@@ -922,8 +924,7 @@ End fdist_perm.
 
 Section fdistI_perm.
 Local Open Scope ring_scope.
-Variable R : realType.
-Variables (n : nat) (P : R.-fdist  'I_n) (s : 'S_n).
+Context {R : realType} n (P : R.-fdist  'I_n) (s : 'S_n).
 
 Let f := [ffun i : 'I_n => P (s i)].
 
@@ -934,8 +935,8 @@ Proof.
 transitivity (\sum_(i <- [tuple (s^-1)%g i | i < n]) f i).
   apply/perm_big/tuple_permP; exists s.
   destruct n; first by move: (fdistI0_False P).
-  rewrite /index_enum -enumT; apply/(@eq_from_nth _ ord0).
-    by rewrite size_map size_tuple -enumT size_enum_ord.
+  rewrite /index_enum/= -enumT; apply/(@eq_from_nth _ ord0).
+    by rewrite size_map size_tuple.
   move=> i; rewrite size_enum_ord => ni /=.
   rewrite (nth_map ord0) ?size_enum_ord //= tnth_map /=.
   apply: (@perm_inj _ s); by rewrite permKV /= tnth_ord_tuple.
@@ -1161,13 +1162,14 @@ pose P' := fun (a : 'I_n) b => P b.
 suff : \sum_(g : {ffun 'I_n -> A }) \prod_(i < n) P' i (g i) = 1.
   rewrite (reindex_onto (fun j : 'rV[A]_n => finfun (fun x => j ``_ x))
                         (fun i => \row_(j < n) i j)) /=.
-  - move=> H. rewrite /f -[RHS]H {H}.
+  move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
+  - move=> H.
+    rewrite /f -[RHS]H {H}.
     apply: eq_big => t /=.
     + by apply/esym/eqP/rowP => i; rewrite mxE ffunE.
-    + move=> _; rewrite ffunE; apply: eq_bigr => i _ /=; by rewrite ffunE.
-  move=> g _; apply/ffunP => i; by rewrite ffunE mxE.
+    + by move=> _; rewrite ffunE; apply: eq_bigr => i _ /=; rewrite ffunE.
 rewrite -bigA_distr_bigA /= /P'.
-rewrite [RHS](_ : _ = \prod_(i < n) 1); last by rewrite big1.
+rewrite [RHS](_ : _ = \prod_(i < n) 1); first by rewrite big1.
 by apply: eq_bigr => i _; exact: FDist.f1.
 Qed.
 
@@ -1237,7 +1239,7 @@ Lemma fdist_prod_of_rVE a :
   fdist_prod_of_rV a = P (row_mx (\row_(i < 1) a.1) a.2).
 Proof.
 case: a => x y; rewrite /fdist_prod_of_rV fdistmapE /=.
-rewrite (_ : (x, y) = f (row_mx (\row_(i < 1) x) y)); last first.
+rewrite (_ : (x, y) = f (row_mx (\row_(i < 1) x) y)).
   by rewrite /f row_mx_row_ord0 rbehead_row_mx.
 by rewrite (big_pred1_inj inj_f).
 Qed.
@@ -1258,7 +1260,7 @@ Lemma fdist_belast_last_of_rVE a : fdist_belast_last_of_rV a =
   P (castmx (erefl, addn1 n) (row_mx a.1 (\row_(i < 1) a.2))).
 Proof.
 case: a => x y; rewrite /fdist_belast_last_of_rV fdistmapE /=.
-rewrite (_ : (x, y) = g (castmx (erefl 1%nat, addn1 n) (row_mx x (\row__ y)))); last first.
+rewrite (_ : (x, y) = g (castmx (erefl 1%nat, addn1 n) (row_mx x (\row__ y)))).
   by rewrite /g rbelast_row_mx row_mx_row_ord_max.
 by rewrite (big_pred1_inj inj_g).
 Qed.
@@ -1294,7 +1296,7 @@ Definition fdist_rV_of_prod : R.-fdist 'rV[A]_n.+1 := fdistmap f P.
 Lemma fdist_rV_of_prodE a : fdist_rV_of_prod a = P (a ``_ ord0, rbehead a).
 Proof.
 rewrite /fdist_rV_of_prod fdistmapE /=.
-rewrite {1}(_ : a = f (a ``_ ord0, rbehead a)); last first.
+rewrite {1}(_ : a = f (a ``_ ord0, rbehead a)).
   by rewrite /f /= row_mx_rbehead.
 by rewrite (big_pred1_inj inj_f).
 Qed.
@@ -1425,7 +1427,7 @@ Proof.
 rewrite fdistmapE /=.
 rewrite (@reindex_onto _ _ _ 'rV[A]_n 'rV[A]_(n - i)
   (fun w => castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i))) (row_mx v w))
-  (@row_drop A n i)) /=; last first.
+  (@row_drop A n i)) /=.
   move=> w wv; apply/rowP => j.
   rewrite castmxE /= cast_ord_id /row_drop mxE; case: splitP => [j0 /= jj0|k /= jik].
   - rewrite -(eqP wv) mxE castmxE /= cast_ord_id; congr (w _ _); exact: val_inj.
@@ -1709,7 +1711,7 @@ Proof. rewrite /f ffunE; case: ifPn => [/eqP -> //| _]; exact: lexx. Qed.
 
 Let f1 : \sum_(x in {: A * A}) f x = 1.
 Proof.
-rewrite (eq_bigr (fun a => f (a.1, a.2))); last by case.
+rewrite (eq_bigr (fun a => f (a.1, a.2))); first by case.
 rewrite -(pair_bigA _ (fun a1 a2 => f (a1, a2))) /=.
 rewrite -(FDist.f1 P); apply/eq_bigr => a _.
 under eq_bigr do rewrite ffunE.
@@ -1750,7 +1752,7 @@ Lemma rsum_rmul_rV_pmf_tnth (R : realType) A n k (P : fdist R A) :
 Proof.
 transitivity (\sum_(j : {ffun 'I_k -> 'rV[A]_n}) \prod_(m : 'I_k) (P `^ _) (j m)).
   rewrite (reindex_onto (fun p : 'rV_k => [ffun i => p ``_ i])
-    (fun x : {ffun 'I_k -> 'rV_n} => \row_(i < k) x i)) //=; last first.
+    (fun x : {ffun 'I_k -> 'rV_n} => \row_(i < k) x i)) //=.
     by move=> f _; apply/ffunP => /= k0; rewrite ffunE mxE.
   apply: eq_big => //.
   - by move=> v /=; apply/esym/eqP/rowP => i; rewrite mxE ffunE.
@@ -1863,24 +1865,24 @@ rewrite /fdist_take_drop fdistmapE /=.
 rewrite (eq_bigl (fun a : 'rV_n.+1 => (g a == x)%bool)) //.
 rewrite {1}(_ : x = g (row_mx (\row_(k<1) x.1.1)
                                  (castmx (erefl 1%nat, subnKC (ltnS' (ltn_ord i)))
-                                 (row_mx x.1.2 x.2)))); last first.
+                                 (row_mx x.1.2 x.2)))).
   move: x => /= -[[x11 x12] x2].
   rewrite /g row_mx_row_ord0 /=; congr (_, _, _).
   apply/rowP => j; rewrite !mxE !castmxE /= cast_ord_id mxE esymK.
   have @k : 'I_n.
     by apply: (@Ordinal _ j); rewrite (leq_trans (ltn_ord j)) // -ltnS.
-  rewrite (_ : lift _ _ = rshift 1%nat k); last first.
+  rewrite (_ : lift _ _ = rshift 1%nat k).
     by apply: val_inj => /=; rewrite /bump leq0n.
   rewrite (@row_mxEr _ 1%nat 1%nat) // castmxE /= cast_ord_id.
   rewrite (_ : cast_ord _ k = lshift (n - i) j).
+    exact: val_inj.
   by rewrite row_mxEl.
-  exact: val_inj.
   apply/rowP => j; rewrite mxE castmxE /= cast_ord_id mxE esymK.
   have @k0 : 'I_n by apply: (@Ordinal _ (i + j)); rewrite -ltn_subRL.
-  rewrite (_ : lift _ _ = rshift 1%nat k0); last first.
+  rewrite (_ : lift _ _ = rshift 1%nat k0).
     apply: val_inj => /=; by rewrite /bump leq0n.
   rewrite (@row_mxEr _ 1%nat 1%nat) castmxE /=.
-  rewrite (_ : cast_ord _ _ = rshift i j); last exact: val_inj.
+  rewrite (_ : cast_ord _ _ = rshift i j); first exact: val_inj.
   by rewrite row_mxEr cast_ord_id.
 by rewrite (big_pred1_inj inj_g).
 Qed.
@@ -1946,28 +1948,28 @@ rewrite fdist_convE /= fdist_convnE (bigD1 j) //=; congr (_ + _).
 rewrite fdist_convnE big_distrr /=.
 rewrite (bigID (fun i : 'I_n.+1 => (i < j)%nat)) //=.
 rewrite (bigID (fun i : 'I_n => (i < j)%nat)) //=; congr (_ + _).
-  rewrite (@big_ord_narrow_cond _ _ _ j n.+1); first by rewrite ltnW.
-  move=> jn; rewrite (@big_ord_narrow_cond _ _ _ j n xpredT); first by rewrite -ltnS.
+  rewrite (@big_ord_narrow_cond _ _ _ j n.+1); last by rewrite ltnW.
+  move=> jn; rewrite (@big_ord_narrow_cond _ _ _ j n xpredT); last by rewrite -ltnS.
   move=> jn'.
   apply/eq_big.
   by move=> /= i; apply/negP => /eqP/(congr1 val) /=; apply/eqP; rewrite ltn_eqF.
   move=> /= i _.
-  rewrite fdist_delE /= ltn_ord fdistD1E /= ifF /=; last first.
+  rewrite fdist_delE /= ltn_ord fdistD1E /= ifF /=.
     by apply/negP => /eqP/(congr1 val) /=; apply/eqP; rewrite ltn_eqF.
-  rewrite mulrA mulrCA mulrV ?mulr1; last first.
-rewrite unitfE. rewrite onem_neq0 ?onem_neq0 //.
+  rewrite mulrA mulrCA mulrV ?mulr1.
+  rewrite unitfE. rewrite onem_neq0 ?onem_neq0 //.
   congr (P _ * _); first exact/val_inj.
   by rewrite /g' /fdist_del_idx /= ltn_ord; congr (g _ a); exact/val_inj.
-rewrite (eq_bigl (fun i : 'I_n.+1 => (j < i)%nat)); last first.
+rewrite (eq_bigl (fun i : 'I_n.+1 => (j < i)%nat)).
   move=> i; by rewrite -leqNgt eq_sym -ltn_neqAle.
-rewrite (eq_bigl (fun i : 'I_n => (j <= i)%nat)); last first.
+rewrite (eq_bigl (fun i : 'I_n => (j <= i)%nat)).
   move=> i; by rewrite -leqNgt.
 rewrite big_mkcond.
 rewrite big_ord_recl ltn0 /= add0r.
 rewrite [in RHS]big_mkcond.
 apply: eq_bigr => i _.
 rewrite /bump add1n ltnS; case: ifPn => // ji.
-rewrite fdist_delE fdistD1E ltnNge ji /= ifF; last first.
+rewrite fdist_delE fdistD1E ltnNge ji /= ifF.
   apply/eqP => /(congr1 val) => /=.
   rewrite /bump add1n => ij.
   by move: ji; apply/negP; rewrite -ij ltnn.
@@ -1975,6 +1977,7 @@ rewrite -[1 - P j]/(P j).~.
 rewrite [_ / _]mulrC !mulrA divrr ?unitfE ?onem_neq0 // mul1r.
 by rewrite /g' /fdist_del_idx ltnNge ji.
 Qed.
+
 End moved_from_convex.
 
 Module CodomDFDist.

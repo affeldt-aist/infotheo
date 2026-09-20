@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg poly polydiv fingroup perm.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg poly polydiv fingroup perm.
 From mathcomp Require Import finalg zmodp matrix mxalgebra mxpoly vector.
 Require Import ssralg_ext hamming linearcode decoding channel_code.
 
@@ -16,7 +16,6 @@ Require Import ssralg_ext hamming linearcode decoding channel_code.
 Import GRing.Theory.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -93,7 +92,7 @@ have : decode cyp_hat = Some (msg *m S).
     move/subsetP: (Encoder.enc_img (Lcode.enc C)); apply.
     apply/imsetP; exists (msg *m S) => //.
     by rewrite ffunE.
-  move: bdd => /=; rewrite /bdd /= => -> //; last first.
+  move: bdd => /=; rewrite /bdd /= => -> //.
     by rewrite /P -perm_mxV wH_perm_mx Hz.
   move: (@encode_discard (msg *m S *m 'G) H).
   rewrite ffunE => K.

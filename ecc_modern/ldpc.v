@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg finalg perm zmodp.
-From mathcomp Require Import matrix vector ssrnum lra ring.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg finalg perm zmodp.
+From mathcomp Require Import matrix vector ssrnum arithmetic_tactic ring_tactic.
 From mathcomp Require Import Rstruct reals.
 Require Import realType_ext ssr_ext ssralg_ext num_occ bigop_ext.
 Require Import fdist channel pproba f2 linearcode subgraph_partition tanner.
@@ -20,7 +20,6 @@ Require Import channel_code summary checksum summary_tanner.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -32,7 +31,7 @@ Local Open Scope ring_scope.
 
 Section regular_ldpc.
 Let R := Rdefinitions.R.
-Variables (m n : nat).
+Context (m n : nat).
 
 Definition Hreg_ldpc (H : 'M['F_2]_(m, n)) (lambda rho : nat) :=
   (forall n0, wH (col n0 H)^T = lambda) /\ (forall m0, wH (row m0 H) = rho).
@@ -64,12 +63,12 @@ have {}Htmp : (lam * n = rho * m)%N.
   apply: eq_bigr => i _; exact/esym/Hlam.
 apply: (@mulfI _ n%:R).
   by rewrite (_ : 0 = 0%:R)// eqr_nat; exact/eqP.
-rewrite mulrCA divff ?mulr1//; last first.
+rewrite mulrCA divff ?mulr1//.
   by rewrite (_ : 0 = 0%:R)// eqr_nat; exact/eqP.
 apply: (@mulfI _ rho%:R).
   by rewrite (_ : 0 = 0%:R)// eqr_nat; exact/eqP.
 rewrite mulrA [in X in _ = X](mulrC rho%:R).
-rewrite -mulrA (mulrCA rho%:R) mulfV ?mulr1; last first.
+rewrite -mulrA (mulrCA rho%:R) mulfV ?mulr1.
   by rewrite (_ : 0 = 0%:R)// eqr_nat; exact/eqP.
 by rewrite -natrM -Htmp natrM mulrC.
 Qed.
@@ -80,17 +79,13 @@ Local Open Scope proba_scope.
 Local Open Scope vec_ext_scope.
 
 Section DMC_sub_vec_Fnext_Vgraph.
-Variables (B : finType) (W : `Ch('F_2, B)).
-Variable n' : nat.
-Let n := n'.+1.
-Variable tb : 'rV[B]_n.
-Variable m : nat.
-Variable H : 'M['F_2]_(m, n).
+Context {B : finType} (W : `Ch('F_2, B)) n' (n := n'.+1)
+  (tb : 'rV[B]_n) m (H : 'M['F_2]_(m, n))
+  (tanner : Tanner.acyclic_graph (tanner_rel H)).
 Local Notation "''V(' x ',' y ')'" := (Vgraph H x y).
 Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
-Variable tanner : Tanner.acyclic_graph (tanner_rel H).
 
 Lemma DMC_sub_vec_Fnext t n0 :
   W ``(tb \# [set~ n0] | t \# [set~ n0]) =
@@ -102,13 +97,13 @@ transitivity (\prod_(i in setT :\ n0) W (t ``_ i) (tb ``_ i))%R.
     apply: eq_bigl => x /=; by rewrite !inE andbT.
   by rewrite -rprod_sub_vec.
 rewrite -{1}(cover_Vgraph_part_vnode (Tanner.connected tanner) n0).
-rewrite big_trivIset /=; last exact/trivIset_Vgraph_part_vnode/(Tanner.acyclic tanner).
+rewrite big_trivIset /=; first exact/trivIset_Vgraph_part_vnode/(Tanner.acyclic tanner).
 rewrite /Vgraph_part_vnode.
 (* specialize the bigop for non-empty A's only *)
 transitivity (\prod_(A in [set 'V(m0, n0) :\ n0 | m0 in 'F n0 & ('V(m0, n0) :\ n0 != set0)])
   \prod_(x in A) W (t ``_ x) (tb ``_ x))%R.
   rewrite (bigID [pred x | x == set0 ]) /=.
-  rewrite big1; last first.
+  rewrite big1.
     move=> i /andP [] Hi1 /eqP ->.
     rewrite big1 // => j.
     by rewrite inE.
@@ -130,7 +125,7 @@ transitivity (\prod_(A in [set 'V(m0, n0) :\ n0 | m0 in 'F n0 & ('V(m0, n0) :\ n
   case/imsetP => m1.
   rewrite inE => /andP [] Hm1 Hm1' Hi.
   by apply/imsetP; exists m1.
-rewrite big_imset; last first.
+rewrite big_imset.
   move=> /= m0 m1 Hm0 Hm1.
   rewrite inE /= in Hm0.
   rewrite inE /= in Hm1.
@@ -140,7 +135,7 @@ rewrite big_imset; last first.
 apply/esym.
 (* specialize the bigop for non-empty `V(i,n0):\n0 only *)
 rewrite /= (bigID [pred x | 'V(x, n0) :\ n0 == set0 ]) /=.
-rewrite [X in (X * _)%R = _](_ : _ = 1); last first.
+rewrite [X in (X * _)%R = _](_ : _ = 1).
   rewrite big1 // => i /andP [] Hi1 /eqP Hi2.
   rewrite Hi2 DMCE.
   rewrite big1 //= => j.
@@ -162,9 +157,9 @@ Proof.
 move=> m0n0.
 rewrite DMCE rprod_sub_vec.
 rewrite -{1}(cover_Vgraph_part_Vgraph (Tanner.acyclic tanner) m0n0).
-rewrite big_trivIset /=; last by apply: trivIset_Vgraph_part_Vgraph => //; by apply: (Tanner.acyclic tanner).
+rewrite big_trivIset /=; first by apply: trivIset_Vgraph_part_Vgraph => //; by apply: (Tanner.acyclic tanner).
 rewrite /Vgraph_part_Vgraph.
-rewrite big_imset /=; last first.
+rewrite big_imset /=.
   move=> n1 n2 Hn1 Hn2 /=.
   apply: Vgraph_injective3 Hn1 Hn2 => //; by apply: Tanner.acyclic tanner.
 apply: eq_bigr => n1 Hn1.
@@ -172,11 +167,11 @@ set body := BIG_F.
 transitivity (\prod_(i in [predU (pred1 n1) & [pred x | x \in \bigcup_(m1 in 'F n1 :\ m0) ('V(m1, n1) :\ n1)]]) (body i))%R.
   apply: eq_bigl => x /=.
   by rewrite !inE.
-rewrite {}/body bigU /=; last first.
+rewrite {}/body bigU /=.
   apply: bigcup_disjoint => m1 Hm1.
   rewrite (@eq_disjoint1 _ n1) //.
   by rewrite !inE eqxx /=.
-rewrite (@big_bigcup_partition _ _ _ _ _ (fun x => ('V(x, n1) :\ n1)) (fun x => (W (t ``_ x)) (tb ``_ x)) ('F n1 :\ m0)) /=; last first.
+rewrite (@big_bigcup_partition _ _ _ _ _ (fun x => ('V(x, n1) :\ n1)) (fun x => (W (t ``_ x)) (tb ``_ x)) ('F n1 :\ m0)) /=.
   move=> i j ij.
   rewrite -setI_eq0.
   apply/set0Pn; case=> n2.
@@ -188,7 +183,7 @@ rewrite (@big_bigcup_partition _ _ _ _ _ (fun x => ('V(x, n1) :\ n1)) (fun x => 
   apply/negP.
   move: Hn2.
   apply: disjoint_Vgraph => //; by apply: Tanner.acyclic tanner.
-rewrite (big_pred1 n1); last first.
+rewrite (big_pred1 n1).
   move=> x /=.
   by rewrite !inE.
 congr (_ * _)%R.
@@ -201,16 +196,12 @@ End DMC_sub_vec_Fnext_Vgraph.
 Local Open Scope summary_scope.
 
 Section alpha_beta.
-
-Variable (m n : nat).
-Variable H : 'M['F_2]_(m, n).
+Context m n (H : 'M['F_2]_(m, n)) {B : finType} (W : `Ch('F_2, B))
+  (y : 'rV[B]_n).
 Local Notation "''V'" := (Vnext H).
 Local Notation "''F'" := (Fnext H).
 Local Notation "''V(' x ',' y ')'" := (Vgraph H x y).
 Local Notation "''F(' x ',' y ')'" := (Fgraph H x y).
-Variable B : finType.
-Variable W : `Ch('F_2, B).
-Variable y : 'rV[B]_n.
 
 Definition alpha m0 n0 d := \sum_(x = d [~'V(m0, n0) :\ n0])
   W ``(y \# 'V(m0, n0) :\ n0 | x \# 'V(m0, n0) :\ n0) *
@@ -265,7 +256,7 @@ transitivity (\sum_(x = d' [~'V(m0, n0) :\ n0])
      by rewrite /dproj_V sub_vec_dproj.
    apply: eq_bigr => i Hi.
    by rewrite checksubsum_dproj_freeon.
-rewrite (reindex_onto (dproj_V m0 n0 d) (dproj_V m0 n0 d')) /=; last first.
+rewrite (reindex_onto (dproj_V m0 n0 d) (dproj_V m0 n0 d')) /=.
   move=> ? ?; by rewrite /dproj_V dprojIdef dproj_freeon.
 apply: eq_big => /= i.
   apply/andP/forallP.
@@ -336,7 +327,7 @@ transitivity (\sum_(x = d' [~'V(m1, n0) :\ n0])
       by rewrite /dproj_V sub_vec_dproj.
     apply: eq_bigr => i Hi.
     by rewrite checksubsum_dproj_freeon.
-rewrite (reindex_onto (dproj_V m1 n0 d) (dproj_V m1 n0 d')) /=; last first.
+rewrite (reindex_onto (dproj_V m1 n0 d) (dproj_V m1 n0 d')) /=.
   move=> ? ?; by rewrite /dproj_V dprojIdef dproj_freeon.
 apply: eq_big => /= i.
   apply/andP/forallP.
@@ -385,11 +376,8 @@ Qed.
 End alpha_beta.
 
 Section sum_prod_correctness.
-
-Variables (m n' : nat).
-Let n := n'.+1.
-Variable H : 'M['F_2]_(m, n).
-Variable (B : finType) (W : `Ch('F_2, B)).
+Context m n' (n := n'.+1) (H : 'M['F_2]_(m, n)) {B : finType}
+  (W : `Ch('F_2, B)).
 Let C := kernel H.
 Let C_not_empty := Lcode0.not_empty C.
 Variable y : (`U C_not_empty).-receivable W.
@@ -428,7 +416,7 @@ transitivity (W `(y ``_ n0 | b) *
    \prod_(m0 < m) (\delta ('V m0) x)%:R)).
   rewrite big_distrr /=; apply: eq_bigr => t Ht.
   rewrite mulrA; congr (_ * _)%R.
-  rewrite /b (freeon_notin Ht); last by rewrite !inE eqxx.
+  rewrite /b (freeon_notin Ht); first by rewrite !inE eqxx.
   rewrite DMCE (bigD1 n0) //=; congr (_ * _).
   rewrite DMCE rprod_sub_vec; apply: eq_big => i //=.
   by rewrite in_setC in_set1.
@@ -480,13 +468,13 @@ transitivity (\sum_(t in 'rV['F_2]_n)
     rewrite -!mulrA.
     congr (_ * _).
     rewrite fdist_uniform_supp_restrict /= fdist_uniform_supp_distrr /=; last first.
-    rewrite invrM; last 2 first.
+    rewrite invrM.
       exact/invr_neq0.
-      rewrite (eq_bigl (fun x => x \in [set cw in C])); last by move=> i; rewrite inE.
+      rewrite (eq_bigl (fun x => x \in [set cw in C])); first by move=> i; rewrite inE.
       by rewrite unitfE -not_receivable_prop_uniform receivableP.
     rewrite invrK [X in _ = _ * X]mulrAC mulVr ?mul1r ?coqRE ?mulVr //.
     by rewrite unitfE -not_receivable_prop_uniform receivableP.
-  rewrite fdist_post_probE fdist_uniform_supp_notin; last by rewrite inE; exact/negbT.
+  rewrite fdist_post_probE fdist_uniform_supp_notin; first by rewrite inE; exact/negbT.
   by rewrite !mul0r.
 rewrite -big_mkcond /=.
 rewrite /alpha.
@@ -515,13 +503,13 @@ transitivity (\sum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
   rewrite [in X in _ = X] (bigID [pred x : 'rV_n | x ``_ n0 == Zp0]) /=.
   congr (_ + _).
   + rewrite (eq_bigl [pred x : 'rV_n | x ``_ n0 == Zp0]) /=.
-      by apply: eq_bigr => ta /eqP ->.
-    move=> ta /=.
-    by rewrite -freeon_all mxE eqxx.
+      move=> ta /=.
+      by rewrite -freeon_all mxE eqxx.
+    by apply: eq_bigr => ta /eqP ->.
   + rewrite (eq_bigl [pred x : 'rV_n | x ``_ n0 != Zp0]) /=.
-      apply: eq_bigr => ta.
-      by rewrite -F2_eq1 => /eqP ->.
-    move=> v /=; by rewrite -freeon_all mxE eqxx F2_eq1.
+      by move=> v /=; by rewrite -freeon_all mxE eqxx F2_eq1.
+    apply: eq_bigr => ta.
+     by rewrite -F2_eq1 => /eqP ->.
 transitivity (\sum_(ta : 'rV_n) W (ta ``_ n0) (y ``_ n0) *
     (\prod_(m1 in 'F n0) W ``(y \# 'V(m1, n0) :\ n0 | ta \# 'V(m1, n0) :\ n0)) *
     (\prod_(m1 in 'F n0) (\prod_(m2 in 'F(m1, n0)) (\delta ('V m2) ta)%:R))).
@@ -547,7 +535,7 @@ transitivity (\sum_(ta : 'rV_n) (\prod_(k < n) (W ta ``_ k) y ``_ k) *
   by rewrite -(rprod_Fgraph_part_fnode (Tanner.connected tanner) (Tanner.acyclic tanner) (fun m0 => (\delta ('V m0) t)%:R)).
 rewrite [in X in X = _](bigID [pred x | x \in kernel H])
   /=.
-rewrite addrC (eq_bigr (fun=> 0)); last first.
+rewrite addrC (eq_bigr (fun=> 0)).
   by move=> ta /negbTE Hta; rewrite checksubsum_in_kernel Hta mulr0.
 rewrite big_const iter_addr mul0rn !add0r.
 apply: eq_bigr => ta Ha.
@@ -563,9 +551,9 @@ Lemma filter_out_set0 m0 t (g : 'I_m -> 'rV['F_2]_n -> R) (s : {set 'I_n}) :
                  | n1 in [set n1 in s | 'F n1 :\ m0 != set0]])
      \prod_(x in A) (g x t).
 Proof.
-rewrite (bigID [pred x | x == set0]) /= big1 ?mul1r; last first.
+rewrite (bigID [pred x | x == set0]) /= big1 ?mul1r.
   move=> ms.
-  case/andP => _ /eqP ->; by rewrite big_set0.
+  by case/andP => _ /eqP ->; rewrite big_set0.
 apply: eq_bigl => /= ms.
 apply/esym/imsetP.
 case: ifPn.
@@ -684,17 +672,17 @@ transitivity (\sum_(x = d [~'V(m0, n0) :\ n0])
   apply: eq_bigr => /= t Ht.
   rewrite -[in X in _ = X]mulrA -[in X in _ = X]mulrC -[in X in _ = X]mulrA.
   congr (_ * _)%R.
-  rewrite (bigD1 m0) /=; last by apply: Fgraph_m0.
+  rewrite (bigD1 m0) /=; first by apply: Fgraph_m0.
   rewrite mulrC; congr (_ * _)%R.
   transitivity (\prod_(i in 'F(m0, n0) :\ m0) (\delta ('V i) t)%:R : R).
     apply: eq_bigl => /= m1.
     by rewrite 2![in X in _ = X]inE andbC.
   rewrite -(cover_Fgraph_part_Fgraph (Tanner.acyclic tanner)) //.
-  rewrite big_trivIset /=; last first.
-    by apply: (@trivIset_Fgraph_part_Fgraph _ _ _ (Tanner.acyclic tanner)).
+  rewrite big_trivIset /=.
+    exact: (@trivIset_Fgraph_part_Fgraph _ _ _ (Tanner.acyclic tanner)).
   rewrite /Fgraph_part_Fgraph.
   rewrite (filter_out_set0 _ _ (fun x t => (\delta ('V x) t)%:R)).
-  rewrite big_imset /=; last first.
+  rewrite big_imset /=.
     move=> n1 /= n2 Hn1 Hn2 n1xn2x.
     rewrite inE in Hn1; case/andP : Hn1 => Hn1 H1.
     rewrite inE in Hn2; case/andP : Hn2 => Hn2 H2.
@@ -765,10 +753,10 @@ Lemma alpha_one_successor n1 m1 d :
   'V m1 = [set n1] -> alpha m1 n1 d = (~~ (bool_of_F2 (d ``_ n1)))%:R.
 Proof.
 move=> Vm1.
-rewrite recursive_computation; last first.
+rewrite recursive_computation.
   by rewrite Vm1 in_set1.
 rewrite Vm1.
-rewrite -{1}(setU0 [set n1]) setU1K; last by rewrite in_set0.
+rewrite -{1}(setU0 [set n1]) setU1K; first by rewrite in_set0.
 rewrite rsum_freeon0.
 rewrite -[X in _ = X]mulr1 checksubsum_set1; congr (_ * _).
 rewrite big_pred0 // => /= n2.
@@ -779,8 +767,8 @@ Lemma alpha_two_successors n1 n2 m1 d : n1 != n2 ->
   'V m1 = [set n1; n2] -> alpha m1 n1 d = beta n2 m1 (d `[ n2 := d ``_ n1 ]).
 Proof.
 move=> n1n2 Hm1.
-rewrite recursive_computation; last by rewrite Hm1 in_setU in_set1 eqxx.
-rewrite Hm1 (_ : [set n1; n2] :\ n1 = [set n2]); last by rewrite setU1K // in_set1.
+rewrite recursive_computation; first by rewrite Hm1 in_setU in_set1 eqxx.
+rewrite Hm1 (_ : [set n1; n2] :\ n1 = [set n2]); first by rewrite setU1K // in_set1.
 rewrite rsum_freeon1 2!big_set1.
 do 2 rewrite checksubsum_set2 //.
 rewrite [in X in X%:R]/row_set !mxE (negbTE n1n2) eqxx.

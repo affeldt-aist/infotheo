@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum matrix.
 From mathcomp Require boolp.
 From mathcomp Require Import reals exp.
 Require Import realType_ext ssr_ext bigop_ext ssralg_ext realType_ln.
@@ -20,7 +20,6 @@ Require Import fdist proba entropy.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -37,8 +36,7 @@ From mathcomp Require Import normedtype.
 Import numFieldNormedType.Exports.
 
 Section mlog_prop.
-Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A).
+Context {R : realType} {A : finType} (P : R.-fdist A).
 
 Definition aep_sigma2 : R := `E ((`-- (`log P)) `^2) - (`H P)^+2.
 
@@ -74,7 +72,7 @@ elim : n => [|n IH].
   rewrite /mlogprodP /mlogP /sum_mlog_prod /cast_fun_rV10 /= mxE /=.
   by rewrite boolp.funeqE => ta; rewrite big_ord_recl big_ord0 addr0.
 - rewrite [X in _ \=sum X](_ : _ =
-      row_mx (\row_(i < 1) (`-- (`log P))) (\row_(i < n.+1) `-- (`log P))); last first.
+      row_mx (\row_(i < 1) (`-- (`log P))) (\row_(i < n.+1) `-- (`log P))).
     apply/rowP => b; rewrite !mxE; case: splitP.
       by move=> a; rewrite {a}(ord1 a) => _; rewrite mxE.
     by move=> k _; rewrite mxE.
@@ -84,8 +82,7 @@ elim : n => [|n IH].
 Qed.
 
 Section aep_k0_constant.
-Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A).
+Context {R : realType} {A : finType} (P : R.-fdist A).
 
 Definition aep_bound epsilon : R := (aep_sigma2 P / epsilon ^+ 3)%R.
 
@@ -96,7 +93,7 @@ Lemma aep_bound_decreasing e e' : 0 < e' <= e -> aep_bound e <= aep_bound e'.
 Proof.
 case/andP=> Oe' e'e.
 apply: ler_wpM2l; first exact: aep_sigma2_ge0.
-rewrite lef_pV2 ?posrE; [|apply/exprn_gt0..] => //; last first.
+rewrite lef_pV2 ?posrE; [apply/exprn_gt0..|] => //.
   by rewrite (lt_le_trans _ e'e).
 by rewrite lerXn2r// ?nnegrE ltW// (lt_le_trans _ e'e).
 Qed.
@@ -104,8 +101,7 @@ Qed.
 End aep_k0_constant.
 
 Section AEP.
-Context {R : realType}.
-Variables (A : finType) (P : R.-fdist A) (n : nat) (epsilon : R).
+Context {R : realType} {A : finType} (P : R.-fdist A) (n : nat) (epsilon : R).
 Hypothesis Hepsilon : 0 < epsilon.
 
 Lemma aep : aep_bound P epsilon <= n.+1%:R ->

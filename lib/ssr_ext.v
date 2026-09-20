@@ -1,10 +1,9 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From Stdlib Require Import NArith.
-From mathcomp Require Import all_boot all_order fingroup perm.
+From mathcomp Require Import boot order fingroup perm.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for swap *)
-From mathcomp Require Import mathcomp_extra.
 Import NArith.BinNatDef.
 
 (**md**************************************************************************)
@@ -19,7 +18,6 @@ Reserved Notation "A `* B"  (at level 46, left associativity).
 Reserved Notation "A :+: B" (at level 52, left associativity).
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -134,10 +132,10 @@ rewrite in_cons => /orP [/eqP|] Hx.
   - by rewrite in_cons Hi orbT.
   - by subst x; apply: contra Hal => /eqP <-.
 rewrite Hy //=.
-- apply: IH => // y Hyl; apply: Hy.
-  by rewrite in_cons Hyl orbT.
 - by apply: mem_head.
 - by apply: contra Hal => /eqP ->.
+- apply: IH => // y Hyl; apply: Hy.
+  by rewrite in_cons Hyl orbT.
 Qed.
 
 Lemma uniq_flatten_map x y l :
@@ -200,12 +198,12 @@ Proof.
 move=> /andP[ab bc].
 set f := fun n => a <= n < b.
 rewrite -(subnKC bc) iotaD take_cat size_iota subnn take0 add0n (ltnn b) cats0 filter_cat.
-rewrite (_ : filter f (iota b (c-b)) = [::]) ; last first.
+rewrite (_ : filter f (iota b (c-b)) = [::]).
   apply/eqP/negPn ; rewrite -has_filter ; apply/hasPn => l.
   rewrite mem_iota (subnKC bc) /f negb_and => /andP [bl _].
   by rewrite -leqNgt bl orbT.
 rewrite cats0 -(subnKC ab) iotaD drop_cat size_iota subnn drop0 add0n (ltnn a) filter_cat.
-rewrite (_ : filter f (iota 0 a) = [::]) ; last first.
+rewrite (_ : filter f (iota 0 a) = [::]).
   apply/eqP/negPn ; rewrite -has_filter ; apply/hasPn => l.
   rewrite mem_iota /f negb_and add0n => /andP [_ H].
   by rewrite -ltnNge H orTb.
@@ -243,7 +241,7 @@ Proof.
 move=> ll'na; move/(congr1 (drop (size l))) : (ll'na).
 rewrite drop_cat ltnn subnn drop0 => ->.
 have := nseqD (size l) (n - size l) a.
-rewrite subnKC; last by rewrite -(size_nseq n a) -ll'na size_cat leq_addr.
+rewrite subnKC; first by rewrite -(size_nseq n a) -ll'na size_cat leq_addr.
 by move=> ->; rewrite drop_cat size_nseq ltnn subnn drop0.
 Qed.
 
@@ -363,6 +361,12 @@ rewrite {1}X1 {X1} /=.
 congr (_ ++ _).
 move: lst_uniq => /= /andP[hdtl tl_uniq].
 rewrite (IH tl (filter (predC (pred1 hd)) v) lst_sz tl_uniq).
+- destruct tl => //=.
+  by case/andP : lst_sorted.
+- exact: sorted_filter.
+- move=> i.
+  rewrite mem_filter /= => /andP[ihd] /Hincl.
+  by rewrite inE => /orP[|//]; rewrite (negbTE ihd).
 - congr flatten.
   apply/eq_in_map => i i_tl.
   rewrite -filter_predI.
@@ -371,12 +375,6 @@ rewrite (IH tl (filter (predC (pred1 hd)) v) lst_sz tl_uniq).
   apply/negP => /eqP ?; subst j.
   move/eqP : ij => ?; subst i.
   by rewrite i_tl in hdtl.
-- destruct tl => //=.
-  by case/andP : lst_sorted.
-- exact: sorted_filter.
-- move=> i.
-  rewrite mem_filter /= => /andP[ihd] /Hincl.
-  by rewrite inE => /orP[|//]; rewrite (negbTE ihd).
 Qed.
 
 Lemma filter_zip_L m (l : seq A) (k : seq B) a :
@@ -429,7 +427,7 @@ split.
     apply/negP => /eqP X; subst h.
     have : uniq (i :: t) by rewrite -p_t; exact: undup_uniq.
     rewrite /= => /andP[]; by rewrite it.
-  + rewrite -filter_map undup_filter p_t /= ifF; last first.
+  + rewrite -filter_map undup_filter p_t /= ifF.
       apply/negP => X.
       have : uniq (h :: t) by rewrite -p_t undup_uniq.
       by rewrite /= X.
@@ -801,7 +799,7 @@ Lemma tnth_zip_1 (B : finType) n (x1 : n.-tuple A) (x2 : n.-tuple B) i:
   (tnth [tuple of zip x1 x2] i).1 = tnth x1 i.
 Proof.
 rewrite /tnth; set def := tnth_default _ _; case: def => ? ?.
-rewrite nth_zip /=; last by rewrite !size_tuple.
+rewrite nth_zip /=; first by rewrite !size_tuple.
 apply: set_nth_default; by rewrite size_tuple.
 Qed.
 
@@ -809,8 +807,8 @@ Lemma tnth_zip_2 (B : finType) n (x1 : n.-tuple A) (x2 : n.-tuple B) i:
   (tnth [tuple of zip x1 x2] i).2 = tnth x2 i.
 Proof.
 rewrite /tnth; set def := tnth_default _ _; case: def => ? ?.
-rewrite nth_zip /=; last by rewrite !size_tuple.
-apply: set_nth_default; by rewrite size_tuple.
+rewrite nth_zip /=; first by rewrite !size_tuple.
+by apply: set_nth_default; rewrite size_tuple.
 Qed.
 
 Lemma thead_tuple1 : forall (i : 1.-tuple A), [tuple thead i] = i.
@@ -999,16 +997,16 @@ apply: eq_from_tnth; case.
 destruct n as [|n] => //.
 case=> [Hi | i Hi].
   rewrite (tnth_nth (thead a, thead b)) (tnth_nth (thead (zip_tuple a b))).
-  rewrite /= enum_ordSl /= (tnth_nth (thead a, thead b)) /= nth_zip; last first.
+  rewrite /= enum_ordSl /= (tnth_nth (thead a, thead b)) /= nth_zip.
     by rewrite (size_tuple a) (size_tuple b).
   by rewrite (tnth_nth (thead a)) /= (tnth_nth (thead b)).
 rewrite (tnth_nth (thead a, thead b)) (tnth_nth (thead (zip_tuple a b))) /=.
-rewrite enum_ordSl /= nth_zip; last by rewrite 4!size_map size_enum_ord.
-rewrite [in RHS](nth_map ord0); last by rewrite size_map size_enum_ord.
+rewrite enum_ordSl /= nth_zip; first by rewrite 4!size_map size_enum_ord.
+rewrite [in RHS](nth_map ord0); first by rewrite size_map size_enum_ord.
 rewrite [in RHS](tnth_nth (thead a, thead b)) [in RHS]/zip_tuple /=.
-rewrite [in RHS]nth_zip; last by rewrite (size_tuple a) (size_tuple b).
-rewrite (nth_map ord0); last by rewrite size_map size_enum_ord.
-rewrite (nth_map ord0); last by rewrite size_map size_enum_ord.
+rewrite [in RHS]nth_zip; first by rewrite (size_tuple a) (size_tuple b).
+rewrite (nth_map ord0); first by rewrite size_map size_enum_ord.
+rewrite (nth_map ord0); first by rewrite size_map size_enum_ord.
 by rewrite (tnth_nth (thead a)) (tnth_nth (thead b)).
 Qed.
 
@@ -1046,8 +1044,9 @@ rewrite mem_filter mem_enum andbT.
 symmetry.
 case: (unliftP j k) => /= [a|] ->.
   rewrite eq_sym neq_lift.
-  rewrite mem_map. by rewrite mem_enum inE.
-  by apply: lift_inj.
+  rewrite mem_map.
+    exact: lift_inj.
+   by rewrite mem_enum inE.
 rewrite eqxx.
 apply/mapP => /= -[x Hx].
 move/(f_equal (@nat_of_ord _)).
@@ -1101,7 +1100,7 @@ case: ifPn.
 rewrite -leqNgt => i0.
 rewrite subn1 /= rs nth_rev ?(leq_ltn_trans _ Hi) // ?leq_pred // prednK //.
 move/pathP : H1 => /(_ x (size h - i)).
-rewrite -cat1s nth_cat /= ifF; last first.
+rewrite -cat1s nth_cat /= ifF.
   apply/negbTE; by rewrite -leqNgt subn_gt0 (leq_trans _ Hi).
 rewrite -subnDA addn1; apply.
 by rewrite -{2}(subn0 (size h)) ltn_sub2l // (leq_trans _ Hi).
@@ -1214,8 +1213,8 @@ rewrite /perm_eq -enumT -forallb_tnth; apply/forallP=>i /=.
 case: fbij => g fg gf.
 rewrite enumT enumP count_map -size_filter (@eq_in_filter _ _
     (pred1 (g (tnth (cat_tuple (enum_tuple T) (map_tuple [eta f] (enum_tuple T))) i)))).
-  by rewrite size_filter enumP.
-by move=> x _ /=; apply/eqP/eqP => [/(congr1 g) <-|->//].
+  by move=> x _ /=; apply/eqP/eqP => [/(congr1 g) <-|->//].
+by rewrite size_filter enumP.
 Qed.
 
 End fintype_extra.

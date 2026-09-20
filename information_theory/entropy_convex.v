@@ -1,13 +1,13 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
 From HB Require Import structures.
-From mathcomp Require Import all_boot all_order ssralg ssrnum matrix interval.
-From mathcomp Require Import ring.
+From mathcomp Require Import boot order ssralg ssrnum matrix interval.
+From mathcomp Require Import interval_inference ring_tactic.
 From mathcomp Require boolp.
 #[warning="-warn-library-file-internal-analysis"]
 From mathcomp Require Import unstable. (* imported for onem *)
-From mathcomp Require Import mathcomp_extra reals.
-From mathcomp Require Import interval_inference set_interval.
+From mathcomp Require Import reals.
+From mathcomp Require Import set_interval.
 (* ssrfun and functions are defining incompatible notations [fun ... ]*)
 #[warning="-notation-incompatible-prefix"]
 From mathcomp Require Import functions topology normedtype realfun derive exp.
@@ -42,7 +42,6 @@ Require Import binary_entropy_function log_sum divergence.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -57,8 +56,7 @@ Import Order.POrderTheory GRing.Theory Num.Theory.
 Import numFieldNormedType.Exports.
 
 Section entropy_log_div.
-Variable R : realType.
-Variables (A : finType) (p : R.-fdist A) (n : nat) (An1 : #|A| = n.+1).
+Context {R : realType} {A : finType} (p : R.-fdist A) (n : nat) (An1 : #|A| = n.+1).
 Let u := @fdist_uniform R _ _ An1.
 
 Local Open Scope divergence_scope.
@@ -70,7 +68,7 @@ evar (RHS : A -> R).
 have H a : p a * log (p a / u a) = RHS a.
   have:= FDist.ge0 p a.
   rewrite le_eqVlt=> /orP [/eqP H|H]; last first.
-  - rewrite fdist_uniformE invrK logM//; last by rewrite An1.
+  - rewrite fdist_uniformE invrK logM//; first by rewrite An1.
     rewrite mulrDr.
     by instantiate (RHS := fun a => p a * log (p a) + p a * log #|A|%:R).
   - by rewrite /RHS -H /= 3!mul0r add0r.
@@ -79,11 +77,11 @@ have -> : \sum_(a in A) p a * log (p a / u a) = \sum_(a in A) RHS a.
 rewrite /RHS big_split /= -big_distrl /= (FDist.f1 p) mul1r.
 by rewrite opprD addrC -addrA addNr addr0.
 Qed.
+
 End entropy_log_div.
 
 Section dominated_pair.
-Variable R : realType.
-Variable A : finType.
+Context {R : realType} {A : finType}.
 Implicit Types p q : {prob R}.
 
 Definition dom_pair := {d : R.-fdist A * {fdist A} | d.1 `<< d.2}.
@@ -97,7 +95,7 @@ Lemma dom_conv p (x y u v : {fdist A}) :
 Proof.
 move=> /dominatesP xy /dominatesP uv; apply/dominatesP => a.
 rewrite !fdist_convE.
-move/eqP; rewrite paddr_eq0; [|exact/mulr_ge0 |exact/mulr_ge0].
+move/eqP; rewrite paddr_eq0; [exact/mulr_ge0 |exact/mulr_ge0|].
 rewrite !mulf_eq0=> /andP [/orP [/eqP ->|/eqP /xy ->]].
   rewrite onem0 (negPf (oner_neq0 _)) /= => /eqP /uv ->.
   by rewrite mul0r mulr0 addr0.
@@ -137,8 +135,7 @@ End dominated_pair.
 
 Section divergence_convex.
 Local Open Scope divergence_scope.
-Variable R : realType.
-Variables A : finType.
+Context {R : realType} {A : finType}.
 
 Lemma convex_div : convex_function (uncurry_dom_pair (@div R A)).
 Proof.
@@ -148,23 +145,23 @@ have [->|p0] := eqVneq p 0%:i01.
   apply/eqW/eq_bigr=> a _ /=.
   by rewrite !conv0 mul0r add0r onem0 mul1r.
 have [/onem_eq0 p1|t0] := eqVneq p%:num.~ 0.
-  rewrite (_ : p = 1%:i01)//; last by apply/val_inj.
+  rewrite (_ : p = 1%:i01)//; first by apply/val_inj.
   apply/eqW/eq_bigr=> a _ /=.
   by rewrite !conv1 mul1r onem1 mul0r addr0.
 have quv (q u v : R) : q != 0 -> q * u / (q * v) = u / v.
   by move=> ?; rewrite invfM mulrACA divff// mul1r.
 apply: ler_sum => a _; rewrite 2!fdist_convE.
 have [y2a0|y2a0] := eqVneq (y.2 a) 0.
-  rewrite y2a0 (_ : y.1 a = 0) ?(mulR0,addR0,mul0R); last first.
+  rewrite y2a0 (_ : y.1 a = 0) ?(mulR0,addR0,mul0R).
     by move/dominatesP : Hy; exact.
   have [x2a0|x2a0] := eqVneq (x.2 a) 0.
     rewrite (_ : x.1 a = 0).
-      by rewrite ?(mul0r,mulr0,addr0).
-    exact/((dominatesP _ _).1 Hx).
+      exact/((dominatesP _ _).1 Hx).
+    by rewrite ?(mul0r,mulr0,addr0).
   apply/eqW; rewrite !mulrA !(mul0r,mulr0,addr0); congr (_ * _ * ln _ * _).
   by rewrite quv.
 have [x2a0|x2a0] := eqVneq (x.2 a) 0.
-  rewrite x2a0 (_ : x.1 a = 0)// ?(mulR0,add0R,mul0R); last first.
+  rewrite x2a0 (_ : x.1 a = 0)// ?(mulR0,add0R,mul0R).
     by move/dominatesP : Hx; exact.
   apply/eqW; rewrite !(mulrA, mulr0, mul0r, add0r); congr (_ * _ * ln _ * _).
   by rewrite quv.
@@ -205,8 +202,7 @@ End divergence_convex.
 
 Section entropy_concave.
 Local Open Scope divergence_scope.
-Variable R : realType.
-Variable A : finType.
+Context {R : realType} {A : finType}.
 Hypothesis cardA_gt0 : (0 < #|A|)%nat.
 
 Let cardApredS : #|A| = #|A|.-1.+1.
@@ -228,7 +224,7 @@ Module entropy_concave_alternative_proof_binary_case.
 Import classical_sets.
 
 Section realType.
-Variable R : realType.
+Context {R : realType}.
 Local Notation H2 := (@H2 R^o : R^o -> R^o).
 
 Lemma concavity_of_entropy_x_le_y x y (t : {prob R}) :
@@ -289,7 +285,7 @@ End entropy_concave_alternative_proof_binary_case.
 
 Section mutual_information_concave.
 Local Open Scope fdist_scope.
-Variables (R : realType) (A B : finType) (W : A -> R.-fdist B).
+Context {R : realType} {A B : finType} (W : A -> R.-fdist B).
 Hypothesis B_not_empty : (0 < #|B|)%nat.
 
 Lemma mutual_information_concave :
@@ -321,23 +317,23 @@ have [Hp|Hp] := eqVneq (t%:num * p a) 0.
   rewrite Hp ?(add0R,mul0R).
   have [->|/eqP Hq] := eqVneq (t%:num.~ * q a) 0.
     by rewrite ?(mul0r,add0r).
-  rewrite jcPr_fdistX_prod /=; last first.
+  rewrite jcPr_fdistX_prod /=.
     by rewrite fdist_convE Hp add0r.
   rewrite !mul0r !add0r; congr (_ * _).
   rewrite jcPr_fdistX_prod//; apply/eqP; move/eqP: Hq; apply: contraNN.
   by move/eqP->; rewrite mulr0.
 have [Hq|Hq] := eqVneq (t%:num.~ * q a) 0.
   rewrite Hq !(mul0r,addr0).
-  rewrite jcPr_fdistX_prod; last first.
+  rewrite jcPr_fdistX_prod.
     by rewrite fdist_convE Hq addr0; apply/eqP.
   congr (_ * _).
   rewrite jcPr_fdistX_prod//; apply/eqP; move: Hp; apply: contraNN.
   by move/eqP->; rewrite mulr0.
-rewrite jcPr_fdistX_prod; last first.
+rewrite jcPr_fdistX_prod.
   rewrite fdist_convE.
   by apply/eqP; rewrite paddr_eq0// ?(negPf Hp) ?(negPf Hq)//; exact: mulr_ge0.
 by rewrite !jcPr_fdistX_prod ?mulrDl//; apply/eqP;
-   [move: Hq | move: Hp]; apply: contraNN => /eqP ->; rewrite mulr0.
+   [move: Hp | move: Hq]; apply: contraNN => /eqP ->; rewrite mulr0.
 Qed.
 
 End mutual_information_concave.
@@ -345,7 +341,7 @@ End mutual_information_concave.
 Section mutual_information_convex.
 Local Open Scope divergence_scope.
 Local Open Scope fdist_scope.
-Variables (R : realType) (A B : finType) (P : R.-fdist A).
+Context {R : realType} {A B : finType} (P : R.-fdist A).
 
 Lemma mutual_information_convex :
   convex_function (fun W : A -> R.-fdist B => mutual_info (P `X W)).

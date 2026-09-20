@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg fingroup finalg zmodp matrix.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg fingroup finalg zmodp matrix.
 From mathcomp Require Import reals.
 Require Import ssr_ext ssralg_ext f2.
 
@@ -28,7 +28,6 @@ Reserved Notation "\sum_ ( x '=' d [~ s ] '|' P ) F"
 Declare Scope summary_scope.
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -118,10 +117,10 @@ Proof.
 transitivity (\sum_(t | (t \in [set d `[ n2 := x ] | x in 'F_2])) F t)%R.
   apply: eq_bigl => /= t.
   by rewrite freeon1.
-rewrite big_imset /=; last by exact: inj_row_set.
+rewrite big_imset /=; first by exact: inj_row_set.
 rewrite (bigID (pred1 Zp0)) /= (big_pred1 Zp0) //.
-rewrite (bigID (pred1 Zp1)) /= (big_pred1 Zp1); last by case/F2P.
-rewrite big_pred0; last by case/F2P.
+rewrite (bigID (pred1 Zp1)) /= (big_pred1 Zp1); first by case/F2P.
+rewrite big_pred0; first by case/F2P.
 by rewrite GRing.addr0.
 Qed.
 
@@ -146,12 +145,12 @@ transitivity (\sum_(f in {ffun 'I_n -> 'F_2} | freeon s (\row_i f i) d)
   e (\row_(k0 < n) if k0 \in s then (fgraph f) !_ (cast_ord (esym (@card_ord n)) k0)
     else d ``_ k0))%R.
   rewrite (reindex_onto (fun p => [ffun x => p !_ (cast_ord (esym (@card_ord n)) x)])
-    (fun y => fgraph y)) /=; last first.
+    (fun y => fgraph y)) /=.
     move=> /= f Hf.
     apply/ffunP => /= k0.
     by rewrite ffunE -enum_rank_ord tnth_fgraph enum_rankK.
   rewrite (reindex_onto (fun p => row_of_tuple (tcast (@card_ord n) p))
-    (fun y => tcast (esym (@card_ord n)) (tuple_of_row y))) /=; last first.
+    (fun y => tcast (esym (@card_ord n)) (tuple_of_row y))) /=.
     move=> k0 Hk0.
     apply/rowP => b.
     by rewrite !mxE 2!tcastE tnth_mktuple esymK -enum_rank_ord -enum_val_ord enum_rankK.
@@ -180,7 +179,7 @@ transitivity (\sum_(f in {ffun 'I_n -> bool} | freeon s d (\row_i F2_of_bool (f 
                   then F2_of_bool ((fgraph f) !_ (cast_ord (esym (card_ord n)) k0))
                   else d ``_ k0)))%R.
   rewrite (reindex_onto (fun f : {ffun 'I_n -> bool} => [ffun x => F2_of_bool (f x)])
-    (fun f : {ffun 'I_n -> 'F_2} => [ffun x => bool_of_F2 (f x)])); last first.
+    (fun f : {ffun 'I_n -> 'F_2} => [ffun x => bool_of_F2 (f x)])).
     move=> /= f Hf.
     apply/ffunP => /= k0.
     by rewrite !ffunE bool_of_F2K.
@@ -199,24 +198,24 @@ transitivity (\sum_(f in {set 'I_n} | freeon s d (\row_i F2_of_bool (i \in f)))
       e (\row_k0 (if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0)))%R.
   have @f' : {set 'I_n} -> {ffun 'I_n -> bool} := (fun x => [ffun i => i \in x]).
   rewrite (reindex_onto (fun f : {ffun 'I_n -> bool} => [set x | f x ]) f').
-    apply: eq_big => /= f.
-      rewrite -[LHS]andbT; congr (freeon s d _ && _).
-        by apply/rowP => i; rewrite !mxE inE.
-      apply/esym/eqP/ffunP => /= i.
-      by rewrite /f' ffunE inE.
-    move=> Hf.
-    congr e.
-    apply/rowP => b; rewrite !mxE.
-    case: (b \in s) => //.
-    by rewrite inE tnth_fgraph -enum_rank_ord enum_rankK.
-  move=> /= f Hf.
-  apply/setP => /= k0.
-  by rewrite inE /f' ffunE.
+    move=> /= f Hf.
+    apply/setP => /= k0.
+    by rewrite inE /f' ffunE.
+  apply: eq_big => /= f.
+    rewrite -[LHS]andbT; congr (freeon s d _ && _).
+      by apply/rowP => i; rewrite !mxE inE.
+    apply/esym/eqP/ffunP => /= i.
+    by rewrite /f' ffunE inE.
+  move=> Hf.
+  congr e.
+  apply/rowP => b; rewrite !mxE.
+  case: (b \in s) => //.
+  by rewrite inE tnth_fgraph -enum_rank_ord enum_rankK.
 transitivity (\sum_(f in {set 'I_n} | f \subset s) e (\row_(k0 < n) if k0 \in s then F2_of_bool (k0 \in f) else d ``_ k0))%R; last first.
   apply: eq_bigl => /= s0.
   by rewrite powersetE.
 rewrite (reindex_onto (fun f => f :|: [set j | (j \notin s) && bool_of_F2 (d ``_ j)])
-                      (fun f => f :&: s)); last first.
+                      (fun f => f :&: s)).
   move=> /= f fs.
   apply/setP => /= k0.
   rewrite !inE.
@@ -263,7 +262,7 @@ elim => {s} [|n1 s IH] d e Hs /=.
   rewrite powerset0 big_set1; congr e.
   apply/rowP => i; by rewrite mxE /= in_set0.
 rewrite (partition_big_imset (fun s : {set 'I_n} => n1 \in s)).
-rewrite (_ : [set n1 \in (s0 : {set 'I_n}) | s0 in _] = [set: bool]); last first.
+rewrite (_ : [set n1 \in (s0 : {set 'I_n}) | s0 in _] = [set: bool]).
   apply/setP => x; rewrite !inE /=.
   apply/imsetP; case: x.
   - exists [set n1]; last by rewrite in_set1 eqxx.
@@ -273,8 +272,8 @@ rewrite (_ : [set n1 \in (s0 : {set 'I_n}) | s0 in _] = [set: bool]); last first
 rewrite (reindex F2_of_bool bijective_F2_of_bool).
 apply: eq_big => [i|i _]; first by rewrite /= !inE.
 case/andP : Hs => /= Hn1 Hs.
-rewrite -IH; last by [].
-rewrite (reindex_onto (fun f => if i then n1 |: f else f) (fun f => f :\ n1)); last first.
+rewrite -IH; first by [].
+rewrite (reindex_onto (fun f => if i then n1 |: f else f) (fun f => f :\ n1)).
   move=> /= j; rewrite !inE.
   move/andP=> [] /subsetP Hj.
   case: i => Hi.
@@ -295,7 +294,7 @@ apply: eq_big=> j; last first.
 case: ifP => [Hi|Hi].
 - rewrite /powerset !inE eqxx andbT /=.
   case/boolP : (j \subset [set i in s]) => Hj.
-    rewrite setU1K ?eqxx ?andbT; last first.
+    rewrite setU1K ?eqxx ?andbT.
       apply: contra Hn1; move/subsetP : Hj => /(_ n1).
       by rewrite inE.
     apply/subsetP => x /setU1P -[|] Hx.

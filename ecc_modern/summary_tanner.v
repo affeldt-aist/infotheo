@@ -1,7 +1,7 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot ssralg ssrnum finalg zmodp.
-From mathcomp Require Import matrix lra ring.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot ssralg ssrnum finalg zmodp.
+From mathcomp Require Import matrix arithmetic_tactic ring_tactic.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext f2 summary.
 Require Import subgraph_partition tanner tanner_partition fdist channel.
@@ -21,7 +21,6 @@ Require Import checksum.
 *)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -29,12 +28,9 @@ Local Open Scope vec_ext_scope.
 Local Open Scope ring_scope.
 
 Section dprojs_comb.
+Context (n : nat ) (F : finFieldType).
 
-Variables (n : nat) (F : finFieldType).
-
-Implicit Types d t : 'rV[F]_n.
-Implicit Types s : {set 'I_n}.
-Implicit Types A : finType.
+Implicit Types (d t : 'rV[F]_n) (s : {set 'I_n}) (A : finType).
 
 Definition dproj d s t :=
   locked (\row_(j < n) if j \in s then t ``_ j else d ``_ j).
@@ -147,7 +143,7 @@ Lemma checksubsum_dprojD1 d n0 t s : t ``_ n0 = d ``_ n0 ->
   \delta s (dproj d (s :\ n0) t) = \delta s t.
 Proof.
 move=> ?; rewrite checksubsum_dproj // => n1.
-by rewrite in_setD in_setD1 negb_and negbK => /andP[] /orP[/eqP -> //|/negbTE ->].
+by rewrite in_setD in_setD1 negb_and negbK => /andP[] /predU1P[-> //|/negbTE ->].
 Qed.
 
 Lemma checksubsum_dproj_freeon d s0 s t : freeon s0 d t ->
@@ -300,14 +296,14 @@ Lemma rmul_rsum_commute0 (R := Rdefinitions.R) d n0 (B : finType) (t : 'rV[B]_n)
     (W _ (t \# 'V(m0, n0) :\ n0) (t' \# 'V(m0, n0) :\ n0) * \prod_(m1 in 'F(m0, n0)) F m1 t')).
 Proof.
 rewrite (big_distr_big_dep d [pred x in 'F n0] (fun i => freeon ('V(i, n0) :\ n0) d)) [LHS]/=.
-rewrite (reindex_onto (dprojs_V H d n0) (comb_V H d n0)); last first.
+rewrite (reindex_onto (dprojs_V H d n0) (comb_V H d n0)).
   rewrite /= => f Hf; by apply: (@dprojs_comb_V d n0 (fun n => 'F n)).
 rewrite [LHS]/=.
 apply/esym/eq_big.
 - move=> /= t'.
   case Hlhs : (freeon _ _ t').
     apply/esym.
-    rewrite comb_dprojs_V => //; last first.
+    rewrite comb_dprojs_V => //.
       by rewrite (freeon_notin Hlhs) // !inE eqxx.
     by rewrite eqxx andbT pfamily_dprojs_V.
   apply/esym/negbTE.
@@ -377,7 +373,7 @@ pose pT : predType _ := [predType of simpl_pred 'rV['F_2]_n].
 case/(@pfamilyP _ _ pT): H0 => H0 /(_ _ Hn1).
 rewrite inE => /andP[_].
 move/eqP/rowP/(_ n1).
-rewrite comb_dprojs_V_not_in_partition; last first.
+rewrite comb_dprojs_V_not_in_partition.
   by move=> m3; rewrite in_setD1 eqxx.
 rewrite /dprojs_V2 dprojs_in // inE Hn1 /=.
 apply/existsP; exists m1; by rewrite Hm1 /= root_in_Vgraph.
@@ -406,7 +402,7 @@ case=> n2 Hn2.
 have [n2' Hn2'] : exists n2', [pick a | n1 \in ssgraph H m0 n0 a] = Some n2'.
   case: pickP Hn2 => [x Hx _ | /(_ n2) -> //]; by exists x.
 rewrite (@comb_in _ _ _ _ _ _ _ n2') //.
-rewrite dprojs_in; first by [].
+rewrite dprojs_in; last by [].
 case: pickP Hn2'.
   by move=> x hx [<-].
 move=> _ ?.
@@ -442,7 +438,7 @@ Proof.
 move=> Hlhs2.
 apply/forallP => /= n1.
 rewrite in_setD1 negb_and negbK.
-apply/implyP => /orP[/eqP ->{n1}|].
+apply/implyP => /predU1P[->{n1}|].
   rewrite -(freeon_notin Hlhs2) ?in_setD1 ?eqxx //.
   by rewrite (freeon_notin Ht) // !inE eqxx.
 move=> Hn1.
@@ -463,9 +459,8 @@ move=> <-.
 apply: (freeon_trans m0n0 Ht).
 apply/forallP => /= n1.
 rewrite in_setD1 negb_and negbK.
-apply/implyP => /orP[/eqP ->{n1}|].
+apply/implyP => /predU1P[->{n1}|Hn1].
   by rewrite comb_dprojs_V2_Vnext // (freeon_notin Ht) // !inE eqxx.
-move=> Hn1.
 by rewrite comb_dprojs_V2_not_in_subgraph.
 Qed.
 
@@ -482,7 +477,7 @@ pose pT : predType _ := [predType of simpl_pred 'rV['F_2]_n].
 apply/(@pfamilyP _ _ pT); split.
   apply/supportP => n1.
   rewrite 2!inE /= negb_and negbK.
-  case/orP => [ /eqP ->{n1}| m0n1].
+  case/predU1P => [->{n1}| m0n1].
     apply/rowP => n2 /=.
     by rewrite /dprojs_V2 dprojs_out // inE /ssgraph 2!inE eqxx.
   apply/rowP => n2 /=.
@@ -499,8 +494,7 @@ apply/andP; split.
     apply/implyP => Hn2.
     by rewrite /dprojs_V2 dprojs_out.
   rewrite negb_and negbK.
-  case/orP => [ | m1n1 /=].
-    move/eqP => -> {m1} /=.
+  case/predU1P => [-> {m1}/= | m1n1 /=].
     rewrite /dprojs_V /dprojs_V2.
     apply/eqP/rowP => n2.
     case/boolP : (n2 \in `V( m0, n1) :\ n1) => K; last by rewrite dprojs_out.
@@ -526,11 +520,11 @@ apply/andP; split.
   case/andP => Hn2' Hn2.
   move/negP : Hn2'; apply.
   rewrite Vgraph_set1 in Hn2.
-    by rewrite in_set1 in Hn2.
-  by rewrite -FnextE.
+    by rewrite -FnextE.
+  by rewrite in_set1 in Hn2.
 rewrite comb_dprojs_V //.
 case/boolP: [exists m1, (m1 \in `F n1 :\ m0) && (n1 \in `V( m1, n1))] => X.
-  rewrite /dprojs_V2 dprojs_in //; last by rewrite inE /ssgraph Hn1 X.
+  rewrite /dprojs_V2 dprojs_in //; first by rewrite inE /ssgraph Hn1 X.
   by rewrite -d'td dproj_in.
 by rewrite /dprojs_V2 dprojs_out // inE /ssgraph Hn1.
 Qed.
@@ -548,7 +542,7 @@ case/boolP : (n1 == n0) => [/eqP ?|n1n0].
 case/boolP : [exists n2, n1 \in ssgraph H m0 n0 n2] => [/existsP[n2 Hn2]|].
   rewrite comb_dprojs_V2_in_partition //; by exists n2.
 rewrite negb_exists => H0.
-rewrite comb_out; last first.
+rewrite comb_out.
   case: pickP => // => x.
   by move/forallP : H0 => /(_ x) /negbTE ->.
 rewrite -d'td.
@@ -580,20 +574,18 @@ case: pickP => //.
 move=> n1'; rewrite inE => /andP[Hn1' /existsP[m1' Hm1']].
 case/boolP : (n1 \in ssgraph H m0 n0 n1') => [|L]; last first.
   by rewrite dprojs_out.
-rewrite dprojs_in; last first.
+rewrite dprojs_in.
   rewrite /ssgraph Hn1' /= inE.
-  apply/existsP; exists m1'; by rewrite Hm1'.
+  by apply/existsP; exists m1'; rewrite Hm1'.
 rewrite /ssgraph Hn1' /=.
 case/andP: Hm1' => Hm1'.
-rewrite 3!inE; case/orP => [/eqP ?|].
+rewrite !inE; case/predU1P => [?|].
   subst n1'.
   move=> abs.
-  rewrite inE in abs.
   exfalso.
   move/negP : tmp; apply.
   case/existsP : abs => m1 /andP[abs _].
-  apply/existsP; by exists m1.
-rewrite inE.
+  by apply/existsP; exists m1.
 case/andP => n1'm1' /connectP [] /= p.
 case/shortenP => p' Hp' Hun p'p Hlast.
 exfalso.
@@ -665,7 +657,7 @@ Proof.
 case/boolP : [exists m1, (m1 \in `F n1 :\ m0)] => [/existsP[m1 K]|K].
   rewrite /dprojs_V2 dprojs_in // inE /ssgraph Hn1 /=.
   by apply/existsP; exists m1; rewrite K root_in_Vgraph.
-rewrite dprojs_out /=; last first.
+rewrite dprojs_out /=.
   rewrite inE /ssgraph Hn1 /=.
   apply: contra K => /existsP[x /andP[Hx _]].
   by apply/existsP; exists x.
@@ -678,7 +670,7 @@ suff n31 : n3 = n1.
   move/forallP : K => /(_ m1).
   by rewrite -{1}n31 Hm1.
 move: Hn1''.
-rewrite inE in_set1 /= => /orP[/eqP //|].
+rewrite inE in_set1 /= => /predU1P[//|].
 rewrite 2!inE.
 case/andP => m1n3 /connectP [] /= p.
 case/shortenP => p' Hp' Hun pp' Hlast.
@@ -737,9 +729,9 @@ apply/ffunP => /= n1.
 apply/rowP => n2.
 case/boolP : (n2 \in ssgraph H m0 n0 n1).
   rewrite inE; case/andP => Hn1 /existsP [] m1 Hm1.
-  rewrite dprojs_in => /=; last first.
+  rewrite dprojs_in => /=.
     rewrite /ssgraph Hn1 /= inE.
-    apply/existsP; exists m1; by rewrite Hm1.
+    by apply/existsP; exists m1; rewrite Hm1.
   move H0 : [pick a | n2 \in ssgraph H m0 n0 a] => [n1'|]; last first.
     case: pickP H0 => //.
     move/(_ n1); rewrite inE Hn1 /= => /negbT; rewrite negb_exists => /forallP/(_ m1).
@@ -753,21 +745,20 @@ case/boolP : (n2 \in ssgraph H m0 n0 n1).
   subst n1'.
   by rewrite (@comb_in _ _ d _ t' (ssgraph H m0 n0) _ n1).
 rewrite inE negb_and.
-case/orP => [Hn1|].
-  rewrite dprojs_out /=; last by rewrite inE negb_and Hn1.
-  case/pfamilyP : Ht' => Ht' _.
-  move/supportP : Ht'.
+case/orP => [Hn1|Hn1].
+  rewrite dprojs_out /=; first by rewrite inE negb_and Hn1.
+  case/pfamilyP : Ht' => + _.
+  move/supportP.
   by move/(_ n1 Hn1) => ->.
-move=> tmp.
-case/boolP : (n1 \in 'V m0 :\ n0) => Hn1; last first.
-  rewrite dprojs_out //; last by rewrite inE /ssgraph (negbTE Hn1).
+case/boolP : (n1 \in 'V m0 :\ n0) => Hn1'; last first.
+  rewrite dprojs_out //; first by rewrite inE /ssgraph (negbTE Hn1').
   case/pfamilyP : (Ht').
-  by move/supportP => /(_ _ Hn1) ->.
-case/pfamilyP : (Ht') => _ /(_ _ Hn1).
+  by move/supportP => /(_ _ Hn1') ->.
+case/pfamilyP : (Ht') => _ /(_ _ Hn1').
 rewrite {1}/in_mem /=.
 case/andP => H1 /eqP <-.
-rewrite dprojs_out //; last by rewrite inE /ssgraph Hn1.
-rewrite (comb_V_support _ tmp) //; by case/pfamilyP : H1.
+rewrite dprojs_out //; first by rewrite inE /ssgraph Hn1'.
+by rewrite (comb_V_support _ Hn1) //; case/pfamilyP : H1.
 Qed.
 
 End dprojs_subsubgraph_acyclic.

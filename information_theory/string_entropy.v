@@ -1,6 +1,6 @@
 (* infotheo: information theory and error-correcting codes in Rocq            *)
-(* Copyright (C) 2025 infotheo authors, license: LGPL-2.1-or-later            *)
-From mathcomp Require Import all_boot all_order ssralg ssrnum.
+(* Copyright (C) 2026 infotheo authors, license: LGPL-2.1-or-later            *)
+From mathcomp Require Import boot order ssralg ssrnum.
 From mathcomp Require Import classical_sets reals exp interval_inference.
 Require Import ssr_ext ssralg_ext realType_ext realType_ln.
 Require Import fdist entropy convex jensen num_occ.
@@ -20,7 +20,6 @@ Require Import fdist entropy convex jensen num_occ.
 (******************************************************************************)
 
 Set Implicit Arguments.
-Set SsrOldRewriteGoalsOrder.  (* change Set to Unset when porting the file, then remove the line when requiring MathComp >= 2.6 *)
 Unset Strict Implicit.
 Import Prenex Implicits.
 
@@ -34,7 +33,7 @@ Import Order.POrderTheory GRing.Theory Num.Theory.
 Local Notation "x /:R y" := (x%:R / y%:R) (at level 40, left associativity).
 
 Section log_concave.
-Variable R : realType.
+Context (R : realType).
 
 (* TODO: already in MathComp-Analysis?*)
 (* TODO: move to convex_analysis.v *)
@@ -49,15 +48,15 @@ rewrite leEdual /= /log /Log /=.
 rewrite [in X in X <= _]avgRE !mulrA -mulrDl -avgRE.
 by rewrite ler_wpM2r // invr_ge0 ln2_ge0.
 Qed.
+
 End log_concave.
 
 Section seq_nat_fdist.
-Variables (R : realType) (A : finType) (f : A -> nat).
+Context (R : realType) (A : finType) (f : A -> nat) (total : nat).
 (*
 Let N2R x : R := x%:R.
 #[reversible=yes] Local Coercion N2R' := N2R.
 *)
-Variable total : nat.
 Hypothesis sum_f_total : (\sum_(a in A) f a)%N = total.
 Hypothesis total_gt0 : total != O.
 
@@ -74,13 +73,14 @@ by rewrite sum_f_total divrr // unitfE pnatr_eq0.
 Qed.
 
 Definition seq_nat_fdist := FDist.make f_div_total_pos f_div_total_1.
+
 End seq_nat_fdist.
 
 Section string.
-Variables (R : realType) (A : finType).
+Context (R : realType) (A : finType).
 
 Section entropy.
-Variable S : seq A.
+Context (S : seq A).
 Hypothesis S_nonempty : size S != O.
 
 Definition pchar c : R := N(c|S) /:R size S.
@@ -107,13 +107,14 @@ Definition nHs (s : seq A) : R :=
 Lemma szHs_is_nHs s (H : size s != O) :
   (size s)%:R * `H (@num_occ_dist s H) = nHs s :> R.
 Proof.
-rewrite /entropy /nHs /num_occ_dist /=.
-rewrite (big_morph _ (id1:=0) (@opprD _)) ?oppr0 // big_distrr /=.
+rewrite /entropy /nHs /num_occ_dist/=.
+rewrite (big_morph _ (id1 := 0) (@opprD _)) ?oppr0// big_distrr/=.
 apply: eq_bigr => a _ /=; rewrite ffunE.
 case: ifPn => [/eqP -> | Hnum]; first by rewrite !mul0r oppr0 mulr0.
-rewrite (mulrC N(a | s)%:R) mulrN 3![in LHS]mulrA mulrV ?unitfE ?pnatr_eq0 //.
-rewrite mul1r -mulrA -mulrN -logV 1?mulrC ?invf_div //.
-by apply: divr_gt0; rewrite ltr0n lt0n.
+rewrite -mulrN -logV.
+  by rewrite divr_gt0 ?ltr0n ?lt0n.
+rewrite mulrA; congr (_ * _); last by rewrite invf_div.
+by rewrite mulrCA divff ?mulr1// pnatr_eq0.
 Qed.
 
 Definition mulnrdep (x : nat) (y : x != O -> R) : R.
@@ -137,7 +138,7 @@ Qed.
 Lemma szHs_is_nHs_full s : mulnrdep (size s) (fun H => Hs0 H) = nHs s.
 Proof.
 rewrite /mulnrdep; destruct boolP; last by apply: szHs_is_nHs.
-rewrite /nHs (eq_bigr (fun a => 0)); first by rewrite big1.
+rewrite /nHs (eq_bigr (fun a => 0)); last by rewrite big1.
 move=> a _; suff -> : N(a|s) == O by [].
 by rewrite /num_occ -leqn0 -(eqP i) count_size.
 Qed.
@@ -157,14 +158,14 @@ rewrite exchange_big /nHs /=.
 apply: ler_sum => a _.
 (* Remove strings containing no occurrences *)
 rewrite (bigID (fun s => N(a|s) == O)) /=.
-rewrite big1; last by move=> i ->.
+rewrite big1; first by move=> i ->.
 rewrite num_occ_flatten add0r.
 rewrite [in X in _ <= X](bigID (fun s => N(a|s) == O)).
 rewrite [in X in _ <= X]big1 //= ?add0n;
-  last by move=> i /eqP.
+  first by move=> i /eqP.
 rewrite (eq_bigr
        (fun i => N(a|i)%:R * log (size i /:R N(a|i))));
-  last by move=> i /negbTE ->.
+  first by move=> i /negbTE ->.
 rewrite -big_filter -[in X in _ <= X]big_filter.
 (* ss' contains only strings with ocurrences *)
 set ss' := [seq s <- ss | N(a|s) != O].
@@ -231,15 +232,13 @@ rewrite -(big_tnth _ _ _ xpredT
 move/(@ler_wpM2r R N(a|flatten ss')%:R (ler0n _ _)).
 rewrite !big_distrl /=.
 rewrite (eq_bigr
-  (fun i => N(a|i)%:R * log (size i /:R N(a|i))));
-  last first.
+  (fun i => N(a|i)%:R * log (size i /:R N(a|i)))).
   move=> i _; rewrite mulrAC -!mulrA (mulrA _^-1) mulVr ?mul1r //.
   by rewrite unitfE pnatr_eq0 -lt0n -(ltr0n R).
 move/le_trans; apply. (* LHS matches *)
 rewrite mulrC -num_occ_flatten big_filter.
 rewrite (eq_bigr
-  (fun i => size i /:R N(a|flatten ss')));
-  last first.
+  (fun i => size i /:R N(a|flatten ss'))).
   move=> i Hi; rewrite mulrCA mulrAC.
   by rewrite mulrV ?mul1r // unitfE pnatr_eq0.
 rewrite -big_filter -/ss' -big_distrl /= -natr_sum.
@@ -252,11 +251,14 @@ End string.
 
 (* tentative definition *)
 Section higher_order_empirical_entropy.
+Context (R : realType) (A : finType) (l : seq A).
 
-Variables (R : realType) (A : finType) (l : seq A).
 Hypothesis A0 : (O < #|A|)%N.
+
 Let n := size l.
+
 Let def : A. Proof. move/card_gt0P : A0 => /sigW[def _]; exact: def. Defined.
+
 Hypothesis l0 : n != O.
 
 (* the string consisting of the concatenation of the symbols following w in s *)
@@ -277,7 +279,7 @@ Definition hoH (k : nat) := n%:R^-1 *
 
 Lemma hoH_decr (k : nat) : hoH k.+1 <= hoH k.
 Proof.
-rewrite /hoH; rewrite ler_pM2l//; last first.
+rewrite /hoH; rewrite ler_pM2l//.
   by rewrite invr_gt0 ltr0n lt0n.
 (* TODO *)
 Abort.
