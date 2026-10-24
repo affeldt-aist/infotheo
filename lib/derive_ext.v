@@ -126,7 +126,7 @@ Let DQ (R : numFieldType) (V W : normedModType R) (f : V -> W) v a h :=
 
 Let near_eq_difference_quotient (R : numFieldType) (V W : normedModType R)
   (f g : V -> W) (a v : V) :
-  v != 0 -> (\near a, f a = g a) ->
+  v != 0 -> (\forall a0 \near a, f a0 = g a0) ->
   \forall h \near nbhs (0^')%classic, DQ f v a h = DQ g v a h.
 Proof.
 move=> vn0 fg.
@@ -157,7 +157,7 @@ Qed.
 
 Lemma near_eq_derive (R : numFieldType) (V W : normedModType R)
   (f g : V -> W) (a v : V) :
-  v != 0 -> (\near a, f a = g a) -> 'D_v f a = 'D_v g a.
+  v != 0 -> (\forall a0 \near a, f a0 = g a0) -> 'D_v f a = 'D_v g a.
 Proof.
 move=> vn0 fg.
 rewrite /derive.
@@ -170,7 +170,7 @@ Qed.
 
 Lemma near_eq_derivable (R : numFieldType) (V W : normedModType R)
   (f g : V -> W) (a v : V) :
-  v != 0 -> (\near a, f a = g a) -> derivable f a v = derivable g a v.
+  v != 0 -> (\forall a0 \near a, f a0 = g a0) -> derivable f a v = derivable g a v.
 Proof.
 move=> vn0 nfg.
 rewrite /derivable.
@@ -183,7 +183,7 @@ Qed.
 
 Lemma near_eq_is_derive (R : numFieldType) (V W : normedModType R)
   (f g : V -> W) (a v : V) (df : W) :
-  v != 0 -> (\near a, f a = g a) ->
+  v != 0 -> (\forall a0 \near a, f a0 = g a0) ->
   is_derive a v f df = is_derive a v g df.
 Proof.
 move=> vn0; move: f g.

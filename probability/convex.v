@@ -203,7 +203,7 @@ Fixpoint Convn {R : realType} (A : Type) (f : {prob R} -> A -> A -> A) n : {fdis
     end
   end.
 
-HB.mixin Record isConvexSpace0 {R : realType} T of Choice T := {
+HB.mixin Record isConvexSpace0 {R : realType} T & Choice T := {
   conv : {prob R} -> T -> T -> T ;
   convn : forall n, {fdist 'I_n} -> ('I_n -> T) -> T ;
   convnE : forall n d g, convn n d g = Convn conv d g ;
@@ -445,7 +445,7 @@ Notation "[ 'point' 'of' x ]" := (@point _ _ _ (@weight_gt0 _ _ _ x))
 Notation "[ 'weight' 'of' x ]" := (weight_neq0 x)
   (at level 0, format "[ 'weight'  'of'  x ]").
 
-HB.mixin Record isQuasiRealCone {R : realType} A of Choice A := {
+HB.mixin Record isQuasiRealCone {R : realType} A & Choice A := {
   addpt : A -> A -> A ;
   zero : A ;
   addptC : commutative addpt ;
@@ -512,7 +512,7 @@ Notation "\ssum_ ( i | P ) F" := (\big[addpt/@zero _ _]_(i | P) F).
 Notation "\ssum_ ( i < n | P ) F" := (\big[addpt/@zero _ _]_(i < n | P%B) F).
 Notation "\ssum_ ( i < n ) F" := (\big[addpt/@zero _ _]_(i < n) F).
 
-HB.mixin Record isRealCone {R : realType} A of QuasiRealCone R A := {
+HB.mixin Record isRealCone {R : realType} A & QuasiRealCone R A := {
   scaleptDl : forall (p q : R) (x : A), 0 <= p -> 0 <= q ->
     scalept (p + q) x = addpt (scalept p x) (scalept q x)
 }.
@@ -1017,7 +1017,7 @@ Proof. by rewrite -convnE convnI2E. Qed.
 
 End convex_space_prop2.
 
-HB.factory Record isConvexSpace {R : realType} T of Choice T := {
+HB.factory Record isConvexSpace {R : realType} T & Choice T := {
   conv : {prob R} -> T -> T -> T ;
   conv1 : forall a b, conv 1%:i01 a b = a ;
   convmm : forall p a, conv p a a = a ;
@@ -1025,7 +1025,7 @@ HB.factory Record isConvexSpace {R : realType} T of Choice T := {
   convA : forall (p q : {prob R}) (a b c : T),
       conv p a (conv q b c) = conv [s_of p, q] (conv [r_of p, q] a b) c }.
 
-HB.builders Context R T of isConvexSpace R T.
+HB.builders Context R T & isConvexSpace R T.
 
 Definition convn := Convn conv.
 
@@ -2339,7 +2339,7 @@ Notation orderedConvType := porderConvType.
 Module OrderedConvexSpace := POrderConvexSpace.
 *)
 
-HB.mixin Record Conv_IsHomo d {R : realType} T of
+HB.mixin Record Conv_IsHomo d {R : realType} T &
   POrderConvexSpace d R T:= {
     le_convl (p : {prob R}) (b : T) :
     {homo (fun (a : T) => conv p a b) : a a' / (a <= a')%O} }.

@@ -553,7 +553,7 @@ Qed.
    lattice. For now, I write down the following definition of semilattice
    independently of the two, as it seems hard to insert a new layer in the
    mathcomp hierarchy. *)
-HB.mixin Record isSemiLattice (T : Type) of Choice T := {
+HB.mixin Record isSemiLattice (T : Type) & Choice T := {
   lub : T -> T -> T ;
   lubC : commutative lub;
   lubA : associative lub;
@@ -567,7 +567,7 @@ Notation "x [+] y" := (lub x y) : latt_scope.
 Local Open Scope latt_scope.
 
 Section semilattice_lemmas.
-Variable L : semiLattType.
+Context {L : semiLattType}.
 Local Notation lub := (@lub L).
 
 Lemma lubAC : right_commutative lub.
@@ -593,7 +593,7 @@ Proof. by rewrite lubAC lubC lubxx. Qed.
 
 End semilattice_lemmas.
 
-HB.mixin Record isSemiCompSemiLatt T of isSemiLattice T & Choice T := {
+HB.mixin Record isSemiCompSemiLatt T & isSemiLattice T & Choice T := {
   biglub : neset T -> T ;
   (* [Reiterman] p.326, axiom 3 *)
   biglub1 : forall x : T, biglub [set x]%:ne = x ;
@@ -697,7 +697,7 @@ Local Open Scope convex_scope.
 Local Open Scope latt_scope.
 Local Open Scope classical_set_scope.
 
-HB.mixin Record isSemiLattConv {R : realType} L of ConvexSpace R L & SemiLattice L := {
+HB.mixin Record isSemiLattConv {R : realType} L & ConvexSpace R L & SemiLattice L := {
   lubDr : forall (p : {prob R}) (x y z : L),
     conv p x (y [+] z) = (conv p x y) [+] (conv p x z) }.
 
@@ -711,9 +711,7 @@ HB.structure Definition SemiLattConv {R : realType} :=
 Section semilattconvtype_lemmas.
 Local Open Scope latt_scope.
 Local Open Scope convex_scope.
-Context {R : realType}.
-
-Variable L : semiLattConvType R.
+Context {R : realType} {L : semiLattConvType R}.
 
 Lemma lubDl p : left_distributive (fun x y => x <|p|> y) (@lub L).
 Proof. by move=> x y z; rewrite convC lubDr -(convC _ x z) -(convC _ y z). Qed.
@@ -757,7 +755,7 @@ Fail Lemma lub_absorbs_convn (n : nat) (d : {fdist 'I_n}) (f : 'I_n -> L) :
   \lub_(i < n) f i = (\lub_(i < n) f i) [+] (<|>_d f).
 End semilattconvtype_lemmas.
 
-HB.mixin Record isSemiCompSemiLattConv {R : realType} L of SemiCompSemiLatt L &
+HB.mixin Record isSemiCompSemiLattConv {R : realType} L & SemiCompSemiLatt L &
                                             ConvexSpace R L := {
   biglubDr : forall (p : {prob R}) (x : L) (I : neset L),
     conv p x (|_| I) = |_| ((conv p x) @` I)%:ne
@@ -775,8 +773,7 @@ Notation "{ 'Biglub_affine'  T '->'  R }" :=
   (BiglubAffine.type T R) : convex_scope.
 
 Section biglub_affine_functor_laws.
-
-Variables (R' : realType) (R S T : semiCompSemiLattConvType R')
+Context {R' : realType} {R S T : semiCompSemiLattConvType R'}
   (f : {Biglub_affine S -> T}) (g : {Biglub_affine R -> S}).
 
 Let biglubmorph_idfun : biglubmorph (@idfun R).
@@ -1208,8 +1205,7 @@ End bind.
 End necset_bind.
 
 Section technical_corollaries.
-Variable R : realType.
-Variable L : semiCompSemiLattConvType R.
+Context {R : realType} {L : semiCompSemiLattConvType R}.
 
 Corollary Varacca_Winskel_Lemma_5_6 (Y Z : neset L) :
   hull Y = hull Z -> |_| Y = |_| Z.

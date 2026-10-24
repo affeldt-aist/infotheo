@@ -86,7 +86,7 @@ Local Open Scope fset_scope.
    (This is actually a "structure" in the model-theoretic sense.)
    Various laws are stated with respect to this. *)
 
-HB.mixin Record hasNaryConvOp (R : realType) (T : Type) of Choice T := {
+HB.mixin Record hasNaryConvOp (R : realType) (T : Type) & Choice T := {
   convn : forall n, (R.-fdist 'I_n) -> ('I_n -> T) -> T
 }.
 
@@ -466,7 +466,7 @@ Import NaryConvLaws.
 (* We endow naryConvOpType with Bonchi's axioms: naryConvType *)
 
 HB.mixin Record isNaryConvexSpace
-  (R : realType) (T : Type) of NaryConvOp R T := {
+  (R : realType) (T : Type) & NaryConvOp R T := {
   axbary : ax_bary T;
   axproj : ax_proj T;
 }.
@@ -517,12 +517,12 @@ Import NaryConvexSpaceTheory.
  *)
 
 HB.factory Record isNaryBeaulieuConvexSpace
-    (R : realType) (T : Type) of NaryConvOp R T := {
+    (R : realType) (T : Type) & NaryConvOp R T := {
   axpart : ax_part T ;
   axidem : ax_idem T
 }.
 
-HB.builders Context R T of isNaryBeaulieuConvexSpace R T.
+HB.builders Context R T & isNaryBeaulieuConvexSpace R T.
 
 Lemma axproj : ax_proj T.
 Proof. exact/ax_proj_of_idem/axidem. Qed.
@@ -535,13 +535,13 @@ HB.instance Definition _ := isNaryConvexSpace.Build R T axbary axproj.
 HB.end.
 
 HB.factory Record isNaryBaryMapConstConvexSpace
-    (R : realType) (T : Type) of NaryConvOp R T := {
+    (R : realType) (T : Type) & NaryConvOp R T := {
   axbary : ax_bary T ;
   axmap : ax_map T ;
   axconst : ax_const T
 }.
 
-HB.builders Context R T of isNaryBaryMapConstConvexSpace R T.
+HB.builders Context R T & isNaryBaryMapConstConvexSpace R T.
 
 Lemma axproj : ax_proj T.
 Proof.
@@ -553,12 +553,12 @@ HB.instance Definition _ := isNaryConvexSpace.Build R T axbary axproj.
 HB.end.
 
 HB.factory Record isNaryBarypartIdemConvexSpace
-  (R : realType) (T : Type) of NaryConvOp R T := {
+  (R : realType) (T : Type) & NaryConvOp R T := {
   axbarypart : ax_barypart T;
   axidem : ax_idem T;
 }.
 
-HB.builders Context R T of isNaryBarypartIdemConvexSpace R T.
+HB.builders Context R T & isNaryBarypartIdemConvexSpace R T.
 
 Lemma axbary : ax_bary T.
 Proof.
@@ -575,13 +575,13 @@ HB.end.
 
 
 HB.factory Record isNaryProjPartConstConvexSpace
-  (R : realType) (T : Type) of NaryConvOp R T := {
+  (R : realType) (T : Type) & NaryConvOp R T := {
   axproj : ax_proj T;
   axpart : ax_part T;
   axconst : ax_const T;
 }.
 
-HB.builders Context R T of isNaryProjPartConstConvexSpace R T.
+HB.builders Context R T & isNaryProjPartConstConvexSpace R T.
 
 Lemma axidem : ax_idem T.
 Proof.
