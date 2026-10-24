@@ -54,11 +54,13 @@ tested_rocq_opam_versions:
   repo: 'mathcomp/mathcomp'
 - version: '2.6.0-rocq-prover-9.2'
   repo: 'mathcomp/mathcomp'
+- version: '9.3'
+  repo: 'rocq/rocq-prover'
 
 dependencies:
   - opam:
       name: rocq-core
-      version: '{ (>= "9.1.1" & < "9.4~") }'
+      version: '{ (>= "9.1" & < "9.4~") }'
     description: |-
       Rocq core
   - opam:
