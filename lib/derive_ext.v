@@ -95,7 +95,6 @@ Lemma is_derive1_lnf_eq [R : realType] [f : R -> R] [x Df D : R] :
   is_derive x 1 (ln (R := R) \o f) D.
 Proof. by move=> ? ? <-; exact: is_derive1_lnf. Qed.
 
-
 End is_derive.
 
 Section near_eq.
@@ -104,10 +103,10 @@ Section near_eq.
 Lemma open_norm_subball (R : numFieldType) (M : normedModType R)
   (A : set M) (x : M) :
   open A -> A x ->
-  \forall e \near ((0 : R)^')%classic, (ball x `|e| `<=` A)%classic.
+  \forall e \near (0 : R)^'%classic, (ball x `|e| `<=` A)%classic.
 Proof.
 move/(@conj (open A) _)/[apply]/open_nbhs_nbhs/nbhsr0P.
-rewrite -!nbhs_nearE=> H.
+rewrite -!nbhs_nearE => H.
 under [X in nbhs _ X]funext=> e.
   rewrite /subset.
   under eq_forall=> y do rewrite -ball_normE /=.
@@ -187,17 +186,16 @@ Lemma near_eq_is_derive (R : numFieldType) (V W : normedModType R)
   is_derive a v f df = is_derive a v g df.
 Proof.
 move=> vn0; move: f g.
-suff fg f g (nfg : \near a, f a = g a) :
+suff fg f g (nfg : \forall x \near a, f x = g x) :
   is_derive a v f df -> is_derive a v g df.
   move=> f g nfg; apply: propext; split; apply: fg => //.
-  suff->: (\near a, g a = f a) = (\near a, f a = g a) by [].
-  by apply: eq_near=> ?; split; exact: esym.
+  by near do apply/esym.
 move/[dup]/@ex_derive=> H.
 move/@derive_val<-.
 rewrite (near_eq_derive vn0 nfg).
 apply/derivableP.
 by rewrite -(near_eq_derivable vn0 nfg).
-Qed.
+Unshelve. all: by end_near. Qed.
 
 End near_eq.
 Arguments near_eq_derive [R V W] f g [a].

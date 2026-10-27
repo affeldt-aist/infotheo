@@ -10,7 +10,7 @@ clean: Makefile.coq
 	rm -f Makefile.coq Makefile.coq.conf
 
 Makefile.coq: _CoqProject
-	$(COQMAKEFILE) -f _CoqProject -o Makefile.coq
+	$(COQMAKEFILE) --rocq-package infotheo -f _CoqProject -o Makefile.coq
 
 _CoqProject Makefile: ;
 
