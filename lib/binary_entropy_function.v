@@ -85,11 +85,12 @@ Lemma DnH2E : {in `]0, 1[%classic, forall x : R, 'D_1 (\- H2) x = DnH2 x}.
 Proof. by move=> x /(svalP (sig_derive1_nH2 x))/@derive_val. Qed.
 
 Lemma near_DnH2E :
-  {in `]0, 1[%classic, forall x : R, \near x, 'D_1 (\- H2) x = DnH2 x}.
+  {in `]0, 1[%classic, forall x : R, \forall x0 \near x, 'D_1 (\- H2) x0 = DnH2 x0}.
 Proof.
-apply: open_in_nearW; first exact: (@itv_open _ (R : realFieldType)).
-exact: DnH2E.
-Qed.
+move=> /= x /set_mem /= x01.
+near=> x0; rewrite DnH2E// inE/=.
+by near: x0; exact: near_in_itvoo.
+Unshelve. all: by end_near. Qed.
 
 Definition sig_derive1_DnH2 (x : R) :
   {D : R | x \in `]0, 1[%classic -> is_derive x 1 ('D_1 (\- H2)) D}.
