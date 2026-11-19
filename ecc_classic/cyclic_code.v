@@ -127,7 +127,7 @@ Lemma sub_XrVpoly_rcs (R : idomainType) n (x : 'rV[R]_n.+1) :
   'X * rVpoly x - rVpoly (rcs x) = (x 0 (inord n))%:P * ('X^(n.+1) - 1).
 Proof.
 apply/polyP => i.
-rewrite coef_add_poly coefXM coefCM coef_add_poly coefXn 2!coef_opp_poly coefC.
+rewrite coefD coefXM coefCM coefD coefXn 2!coefN coefC.
 case: ifPn => [/eqP ->|i0]; last rewrite subr0.
   rewrite 2!add0r mulrN1 coef_rVpoly /=.
   case: insubP => //= j _ j0.
