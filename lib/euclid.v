@@ -777,8 +777,8 @@ have step2 : u j * V = (-U) * v j.
   move: step1.
   rewrite [in X in _ = X -> _]mulrC {}key_eqn' mulrC {}E1'.
   rewrite -(mulrA _ (v j)) mulrCA mulrA.
-  move/eqP; rewrite -subr_eq addrK -subr_eq0 -mulrBl => /eqP.
-  move/poly_idomainAxiom; rewrite (negbTE r0_neq0) orbF subr_eq0 => /eqP.
+  move/eqP; rewrite -subr_eq addrK -subr_eq0 -mulrBl.
+  rewrite mulf_eq0 (negbTE r0_neq0) orbF subr_eq0 => /eqP.
   rewrite mulrC => ->; by rewrite mulrC.
 have [l [Hl1 Hl2]] : exists l, (-U) = l * u j /\ V = l * v j.
   have Hcoprime : coprimep (u j) (v j).
@@ -800,11 +800,9 @@ have [l [Hl1 Hl2]] : exists l, (-U) = l * u j /\ V = l * v j.
   suff : k = k' by move => ->.
   move: step2.
   rewrite Hk Hk' mulrCA -mulrA => /eqP.
-  rewrite -subr_eq0 -mulrBl => /eqP.
-  move/poly_idomainAxiom => /orP[|/eqP]; first by rewrite subr_eq0 => /eqP.
-  move/poly_idomainAxiom => /orP[] /eqP abs; last first.
-    move: Hk'; rewrite abs mulr0 => /eqP; by rewrite (negbTE v_neq0).
-  by rewrite abs eqxx in uj0.
+  rewrite -subr_eq0 -mulrBl 2!mulf_eq0 subr_eq0 => /or3P [] /eqP // abs.
+    by rewrite abs eqxx in uj0.
+  move: Hk'; rewrite abs mulr0 => /eqP; by rewrite (negbTE v_neq0).
 exists l; split.
   move=> ?; subst l.
   rewrite mul0r in Hl2.

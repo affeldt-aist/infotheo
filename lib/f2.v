@@ -110,7 +110,7 @@ Section AboutPolyF2.
 Implicit Types p q : {poly 'F_2}.
 
 Lemma F2_poly_add p : p + p = 0.
-Proof. apply/polyP => i; by rewrite coef0 coef_add_poly addrr_pchar2. Qed.
+Proof. apply/polyP => i; by rewrite coef0 coefD addrr_pchar2. Qed.
 
 Lemma size_lead_coef_F2 p : size p <> O -> lead_coef p = 1.
 Proof.
