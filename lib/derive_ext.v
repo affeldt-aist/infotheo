@@ -30,24 +30,24 @@ Local Open Scope ring_scope.
 
 Section is_derive.
 
-Lemma is_deriveD_eq [R : numFieldType] [V W : normedModType R] [f g : V -> W]
+Lemma is_deriveD_eq d [R : numFieldType] [V W : normedModType d R] [f g : V -> W]
   [x v : V] [Df Dg D : W] :
   is_derive x v f Df -> is_derive x v g Dg -> Df + Dg = D ->
   is_derive x v (f + g) D.
 Proof. by move=> ? ? <-; exact: is_deriveD. Qed.
 
-Lemma is_deriveB_eq [R : numFieldType] [V W : normedModType R] [f g : V -> W]
+Lemma is_deriveB_eq d [R : numFieldType] [V W : normedModType d R] [f g : V -> W]
   [x v : V] [Df Dg D : W] :
   is_derive x v f Df -> is_derive x v g Dg -> Df - Dg = D ->
   is_derive x v (f - g) D.
 Proof. by move=> ? ? <-; exact: is_deriveB. Qed.
 
-Lemma is_deriveN_eq [R : numFieldType] [V W : normedModType R] [f : V -> W]
+Lemma is_deriveN_eq d [R : numFieldType] [V W : normedModType d R] [f : V -> W]
   [x v : V] [Df D : W] :
   is_derive x v f Df -> - Df = D -> is_derive x v (- f) D.
 Proof. by move=> ? <-; exact: is_deriveN. Qed.
 
-Lemma is_deriveM_eq [R : numFieldType] [V : normedModType R] [f g : V -> R]
+Lemma is_deriveM_eq d [R : numFieldType] [V : normedModType d R] [f g : V -> R]
   [x v : V] [Df Dg D : R] :
   is_derive x v f Df -> is_derive x v g Dg ->
   f x *: Dg + g x *: Df = D ->
@@ -61,19 +61,19 @@ Lemma is_deriveV_eq [R : realType] [f : R -> R] [x v Df D : R] :
   is_derive x v (inv_fun f) D.
 Proof. by move=> ? ? <-; exact: is_deriveV. Qed.
 
-Lemma is_deriveZ_eq [R : numFieldType] [V W : normedModType R] [f : V -> W]
+Lemma is_deriveZ_eq d [R : numFieldType] [V W : normedModType d R] [f : V -> W]
   (k : R) [x v : V] [Df D : W] :
   is_derive x v f Df -> k *: Df = D ->
   is_derive x v (k \*: f) D.
 Proof. by move=> ? <-; exact: is_deriveZ. Qed.
 
-Lemma is_deriveX_eq [R : numFieldType] [V : normedModType R] [f : V -> R]
+Lemma is_deriveX_eq d [R : numFieldType] [V : normedModType d R] [f : V -> R]
   (n : nat) [x v : V] [Df D: R] :
   is_derive x v f Df -> (n.+1%:R * f x ^+ n) *: Df = D ->
   is_derive x v (f ^+ n.+1) D.
 Proof. by move=> ? <-; exact: is_deriveX. Qed.
 
-Lemma is_derive_sum_eq [R : numFieldType] [V W : normedModType R] [n : nat]
+Lemma is_derive_sum_eq d [R : numFieldType] [V W : normedModType d R] [n : nat]
   [h : 'I_n -> V -> W] [x v : V] [Dh : 'I_n -> W] [D : W] :
   (forall i : 'I_n, is_derive x v (h i) (Dh i)) ->
   \sum_(i < n) Dh i = D ->
@@ -100,7 +100,7 @@ End is_derive.
 Section near_eq.
 
 (* TODO: check open_subball in MathComp-Analysis 1.9.0 *)
-Lemma open_norm_subball (R : numFieldType) (M : normedModType R)
+Lemma open_norm_subball d (R : numFieldType) (M : normedModType d R)
   (A : set M) (x : M) :
   open A -> A x ->
   \forall e \near (0 : R)^'%classic, (ball x `|e| `<=` A)%classic.
@@ -120,10 +120,10 @@ apply: (He `|e'|).
 - exact: ltW.
 Qed.
 
-Let DQ (R : numFieldType) (V W : normedModType R) (f : V -> W) v a h :=
+Let DQ d (R : numFieldType) (V W : normedModType d R) (f : V -> W) v a h :=
   (h^-1 *: (f (h *: v + a) - f a)).
 
-Let near_eq_difference_quotient (R : numFieldType) (V W : normedModType R)
+Let near_eq_difference_quotient d (R : numFieldType) (V W : normedModType d R)
   (f g : V -> W) (a v : V) :
   v != 0 -> (\forall a0 \near a, f a0 = g a0) ->
   \forall h \near nbhs (0^')%classic, DQ f v a h = DQ g v a h.
@@ -154,7 +154,7 @@ move: fg.
 by rewrite -nbhs_nearE nbhsE=> -[] U [] oU Ua /(_ a Ua) ->.
 Qed.
 
-Lemma near_eq_derive (R : numFieldType) (V W : normedModType R)
+Lemma near_eq_derive d (R : numFieldType) (V W : normedModType d R)
   (f g : V -> W) (a v : V) :
   v != 0 -> (\forall a0 \near a, f a0 = g a0) -> 'D_v f a = 'D_v g a.
 Proof.
@@ -167,7 +167,7 @@ rewrite eqEsubset; split; apply: near_eq_cvg=> //.
 by move/filterS: Dfg; apply=> ?; exact: fsym.
 Qed.
 
-Lemma near_eq_derivable (R : numFieldType) (V W : normedModType R)
+Lemma near_eq_derivable d (R : numFieldType) (V W : normedModType d R)
   (f g : V -> W) (a v : V) :
   v != 0 -> (\forall a0 \near a, f a0 = g a0) -> derivable f a v = derivable g a v.
 Proof.
@@ -180,7 +180,7 @@ rewrite eqEsubset; split; apply: near_eq_cvg=> //.
 by move/filterS: Dfg; apply=> ?; exact: fsym.
 Qed.
 
-Lemma near_eq_is_derive (R : numFieldType) (V W : normedModType R)
+Lemma near_eq_is_derive d (R : numFieldType) (V W : normedModType d R)
   (f g : V -> W) (a v : V) (df : W) :
   v != 0 -> (\forall a0 \near a, f a0 = g a0) ->
   is_derive a v f df = is_derive a v g df.
@@ -198,9 +198,9 @@ by rewrite -(near_eq_derivable vn0 nfg).
 Unshelve. all: by end_near. Qed.
 
 End near_eq.
-Arguments near_eq_derive [R V W] f g [a].
-Arguments near_eq_derivable [R V W] f g [a].
-Arguments near_eq_is_derive [R V W] f g [a].
+Arguments near_eq_derive [d R V W] f g [a].
+Arguments near_eq_derivable [d R V W] f g [a].
+Arguments near_eq_is_derive [d R V W] f g [a].
 
 Section derivable_monotone.
 

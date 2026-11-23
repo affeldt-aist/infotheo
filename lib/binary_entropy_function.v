@@ -131,7 +131,7 @@ by move/derivable1_diffP/diff_derivable.
 Qed.
 
 (* TODO: move to analysis *)
-Lemma continuous_id (T : topologicalType) : continuous (@idfun T).
+Lemma continuous_id d (T : topologicalType d) : continuous (@idfun T).
 Proof. exact/continuousP. Qed.
 
 Lemma continuous_log (x : R) : 0 < x -> {for x, continuous log}.

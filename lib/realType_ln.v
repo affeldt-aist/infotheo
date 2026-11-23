@@ -564,7 +564,7 @@ transitivity ('D_1 (fun x0 : R^o => x0 * ln x0) x).
 rewrite deriveM//=; first exact: derivable_ln.
 rewrite derive_val addrC; congr +%R.
   by rewrite /GRing.scale/= mulr1.
-rewrite (@derive_val _ _ _ _ _ _ _ (is_derive1_ln x_pos)).
+rewrite (@derive_val _ _ _ _ _ _ _ _ _ (is_derive1_ln x_pos)).
 by rewrite -(@mulfV _ x)// gt_eqF.
 Unshelve. all: by end_near. Qed.
 
@@ -629,7 +629,7 @@ have [->|x0] := eqVneq x 0.
       apply: is_derive1_ln.
       by rewrite (lt_trans _ tx).
     have := is_derive1_ln (lt_trans x0 tx).
-    move/(@derive_val R R^o R^o) => ->.
+    move/(@derive_val _ R R^o _ R^o) => ->.
     rewrite derive_id [X in X + _]mulfV ?gt_eqF//; first by rewrite (lt_trans x0).
     rewrite (@lt_le_trans _ _ (1 + ln y))//.
       rewrite ltrD2l.
@@ -662,7 +662,7 @@ Proof.
 move=> /andP[x0 x1].
 apply: derivableB.
   apply/derivable1_diffP.
-  have := (@differentiable_comp _ _ _ _ (fun t : R^o => 1 - t)%R
+  have := (@differentiable_comp _ _ _ _ _ _ _ (fun t : R^o => 1 - t)%R
     (xlnx: R^o -> R^o)).
   apply => //.
   apply/derivable1_diffP.
@@ -679,7 +679,7 @@ move=> /andP[] x0 x1 H.
 rewrite deriveB/=.
   (* TODO: copy past *)
   apply/derivable1_diffP.
-  have := (@differentiable_comp _ _ _ _ (fun t : R^o => 1 - t)%R xlnx).
+  have := (@differentiable_comp _ _ _ _ _ _ _ (fun t : R^o => 1 - t)%R xlnx).
   apply => //.
   apply/derivable1_diffP.
   apply: derivable_xlnx.
