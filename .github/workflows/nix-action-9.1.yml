@@ -1,6 +1,6 @@
 concurrency:
   cancel-in-progress: true
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref }}
 jobs:
   mathcomp-infotheo:
     needs: []
@@ -84,3 +84,5 @@ on:
   push:
     branches:
     - master
+permissions:
+  contents: read

@@ -122,13 +122,17 @@
           micromega-plugin.job = false;
       };
     in {
-      "9.1" = {
-        rocqPackages = common-bundle // {
-          rocq-core.override.version = "9.1";
-          rocq-core.job = false;
-          coq.override.version = "9.1";
-          coq.job = false;
-        } ;
+      "9.1".rocqPackages = common-bundle // {
+        rocq-core.override.version = "9.1";
+        rocq-core.job = false;
+        coq.override.version = "9.1";
+        coq.job = false;
+      };
+      "9.2".rocqPackages = common-bundle // {
+        rocq-core.override.version = "9.2";
+        rocq-core.job = false;
+        coq.override.version = "9.2";
+        coq.job = false;
       };
     };
 
