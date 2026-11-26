@@ -68,7 +68,7 @@ Lemma syndromepE r y :
 Proof.
 rewrite /syndromep poly_def.
 rewrite (eq_bigr (fun i : 'I_r=> 'X^i * (syndrome_coord i y)%:P)).
-  by move=> i _; rewrite mulrC -scale_polyE.
+  by move=> i _; rewrite mulrC -mulr_algl -alg_polyC.
 rewrite (eq_bigr (fun i : 'I_r => 'X^i * (syndrome_coord_supp i y)%:P)).
   move=> i _.
   by rewrite syndrome_coord_suppE.
