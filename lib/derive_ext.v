@@ -105,7 +105,7 @@ Lemma open_norm_subball d (R : numFieldType) (M : normedModType d R)
   open A -> A x ->
   \forall e \near (0 : R)^'%classic, (ball x `|e| `<=` A)%classic.
 Proof.
-move/(@conj (open A) _)/[apply]/open_nbhs_nbhs/nbhsr0P.
+move/(@conj (open A) _)/[apply] => -[oA] /(open_mem_nbhs oA) /nbhsr0P.
 rewrite -!nbhs_nearE => H.
 under [X in nbhs _ X]funext=> e.
   rewrite /subset.
