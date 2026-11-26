@@ -21,6 +21,9 @@ jobs:
           - 'mathcomp/mathcomp:2.6.0-rocq-prover-9.1'
           - 'mathcomp/mathcomp:2.6.0-rocq-prover-9.2'
           - 'mathcomp/mathcomp:2.6.0-rocq-prover-9.3'
+          - 'mathcomp/mathcomp-dev:rocq-prover-9.1'
+          - 'mathcomp/mathcomp-dev:rocq-prover-9.2'
+          - 'mathcomp/mathcomp-dev:rocq-prover-9.3'
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
