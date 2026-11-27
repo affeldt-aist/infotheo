@@ -3,6 +3,10 @@
 -arg -w -arg -notation-overridden
 -arg -w -arg -ambiguous-paths
 -arg -w -arg -notation-incompatible-format
+-arg -w -arg -rewrite-rw
+
+# This setting should be removed after dropping support for Rocq 9.2
+-arg -w -arg -notation-for-abbreviation
 
 lib/coqRE.v
 lib/realType_ext.v
