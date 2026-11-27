@@ -134,6 +134,12 @@
         coq.override.version = "9.2";
         coq.job = false;
       };
+      "9.3".rocqPackages = common-bundle // {
+        rocq-core.override.version = "9.3";
+        rocq-core.job = false;
+        coq.override.version = "9.3";
+        coq.job = false;
+      };
     };
 
   ## Cachix caches to use in CI
