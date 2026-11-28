@@ -472,7 +472,7 @@ transitivity (\sum_(t in 'rV['F_2]_n)
       exact/invr_neq0.
       rewrite (eq_bigl (fun x => x \in [set cw in C])); first by move=> i; rewrite inE.
       by rewrite unitfE -not_receivable_prop_uniform receivableP.
-    rewrite invrK [X in _ = _ * X]mulrAC mulVr ?mul1r ?coqRE ?mulVr //.
+    rewrite invrK [X in _ = _ * X]mulrAC mulVr ?mul1r ?mulVr //.
     by rewrite unitfE -not_receivable_prop_uniform receivableP.
   rewrite fdist_post_probE fdist_uniform_supp_notin; first by rewrite inE; exact/negbT.
   by rewrite !mul0r.
