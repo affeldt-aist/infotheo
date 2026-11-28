@@ -6,7 +6,6 @@ From mathcomp Require boolp.
 From mathcomp Require Import Rstruct reals.
 Require Import ssr_ext ssralg_ext bigop_ext realType_ext realType_ln.
 Require Import fdist proba.
-Require coqRE.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -768,7 +767,7 @@ Hypothesis low_eps : eps <= eps_max.
 Lemma bound_evar_ineq_by_interval : bound_evar_ineq eps_max.
 Proof.
 rewrite /bound_evar_ineq/bound_intermediate.
-apply/RleP; rewrite -!coqRE.coqRE; interval.
+apply/RleP; rewrite -!RealsE; interval.
 Qed.
 
 (**md ## lemma 1.4, page 5 (part 2) *)
@@ -811,7 +810,7 @@ have ->// :  2 / denom * `V (WP.-RV X) <=
   `V (WP.-RV X).
 rewrite ler_wpM2r // ?variance_ge0 // /bound_intermediate.
 apply/RleP; move: low_eps => /RleP. move: eps0 => /RleP.
-rewrite -!coqRE.coqRE => ? ?.
+rewrite -!RealsE => ? ?.
 interval with (i_bisect eps).
 Qed.
 
@@ -1041,7 +1040,7 @@ Lemma filter1D_correct :
                           Num.sqrt (16 * v * (2 * eps) / (1 - eps))
   else false.
 Proof.
-(*have sixteenE: 16%coqR = 16 by rewrite /16%coqR -INR_IPR /= coqRE.*)
+(*have sixteenE: 16%coqR = 16 by rewrite /16%coqR -INR_IPR /= RealsE.*)
 rewrite /filter1D.
 have tr x y : Rleb x y <> true -> y < x by move=> /negP/RlebP/RleP; rewrite -ltNge.
 have tr' x y : Rleb x y = true -> x <= y by move=> /RlebP/RleP.
